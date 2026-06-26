@@ -5,12 +5,7 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 
-@app.route("/")
-def lipat():
-    return redirect('/home')
-
-
-@app.route('/home')
+@app.route('/')
 def home():
     return render_template('Homepage.html')
 
