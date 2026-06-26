@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | PSU Volunteer Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#cfdaf1",
+                    "inverse-primary": "#adc7ff",
+                    "surface-container": "#e7eeff",
+                    "on-secondary-container": "#626567",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#ffcb44",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed": "#001a41",
+                    "primary": "#00408b",
+                    "on-secondary-fixed-variant": "#44474a",
+                    "outline-variant": "#c2c6d4",
+                    "surface-tint": "#0d5bbc",
+                    "secondary-container": "#e0e3e6",
+                    "on-surface-variant": "#424752",
+                    "on-background": "#111c2c",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary-container": "#725600",
+                    "primary-container": "#0057b8",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#bfd2ff",
+                    "inverse-surface": "#263142",
+                    "secondary": "#5b5f61",
+                    "secondary-fixed-dim": "#c4c7ca",
+                    "tertiary-fixed": "#ffdf99",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f0f3ff",
+                    "on-surface": "#111c2c",
+                    "on-primary-fixed-variant": "#004493",
+                    "surface-variant": "#d8e3fa",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#f6bf22",
+                    "surface-container-high": "#dee8ff",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "primary-fixed-dim": "#adc7ff",
+                    "outline": "#727784",
+                    "surface": "#f9f9ff",
+                    "on-tertiary-fixed-variant": "#5a4300",
+                    "on-secondary-fixed": "#191c1e",
+                    "background": "#f9f9ff",
+                    "secondary-fixed": "#e0e3e6",
+                    "surface-container-highest": "#d8e3fa",
+                    "primary-fixed": "#d8e2ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "tertiary": "#553f00",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "lg": "24px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "2xl": "48px",
+                    "sidebar-width": "260px",
+                    "md": "16px",
+                    "container-max-width": "1440px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .login-card-glow {
+            box-shadow: 0 0 40px rgba(0, 64, 139, 0.03);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex flex-col min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed">
+<main class="flex-grow flex items-center justify-center relative overflow-hidden px-lg">
+<!-- Atmospheric Background Element -->
+<div class="absolute inset-0 z-0 opacity-40">
+<div class="absolute top-[-10%] left-[-5%] w-[40%] h-[60%] rounded-full bg-primary-fixed-dim blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-5%] w-[30%] h-[50%] rounded-full bg-surface-dim blur-[100px]"></div>
+</div>
+<!-- Background Image Container -->
+<div class="absolute inset-0 z-[-1] opacity-5 mix-blend-multiply grayscale" data-alt="A sophisticated wide shot of a modern university campus courtyard at dawn. The architecture features clean lines, large glass windows, and stone masonry, reflecting a professional academic atmosphere. The lighting is soft and natural, with cool blue tones and gentle highlights on the manicured lawns and pathways. The scene conveys stability, prestige, and high-level education." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDW0TUnNTlX5l3k7Bpj_UdHQJqVTiIgfcX_VzU7ATj8QVKoNh045kYZXpqtRXMfPcPsIC58ENzoJCjEpqANe_QJOjUruun_5RMbf1iF2w7rDOL4v9cQhMwxymw5V7bUFudw_Mh84aDLT3gZTy-arwQSoXftfVKUsQey2S1TedEYSvwb_OzR_FWum4_NRnWSzxgBsKCdUS7yazhobO9gOIS2MiCB3xKfHKLBR2EGK5jCHTo86hEhUwphYcos14c4VFi6LWpwQGcWW5Fd')">
+</div>
+<!-- Login Container -->
+<div class="w-full max-w-[420px] z-10">
+<!-- Branding Header -->
+<div class="text-center mb-xl">
+<div class="inline-flex items-center justify-center mb-md">
+<div class="w-16 h-16 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined !text-[40px]">school</span>
+</div>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">PSU Volunteer Hub</h1>
+<p class="font-body-md text-body-md text-secondary mt-xs">Excellence in Service &amp; Community</p>
+</div>
+<!-- Login Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl login-card-glow">
+<div class="mb-lg">
+<h2 class="font-headline-md text-headline-md text-on-surface">Sign In</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">Access your university volunteer portal</p>
+</div>
+<form class="space-y-lg" onsubmit="event.preventDefault();">
+<!-- Email/ID Field -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="identifier">Email or ID Number</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<input class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="identifier" name="identifier" placeholder="e.g. 21-S-0001 or name@psu.edu.ph" required="" type="text"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-xs">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="password">Password</label>
+<a class="font-label-sm text-label-sm text-primary hover:underline transition-all" href="#">Forgot password?</a>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="w-full pl-[44px] pr-[44px] py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-md flex items-center text-outline hover:text-secondary transition-colors" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="toggleIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center space-x-sm px-1">
+<input class="w-4 h-4 text-primary border-outline-variant rounded bg-surface focus:ring-primary/20" id="remember" name="remember" type="checkbox"/>
+<label class="font-body-md text-body-md text-on-surface-variant cursor-pointer select-none" for="remember">Remember this device</label>
+</div>
+<!-- Submit Button -->
+<button class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-md rounded-lg shadow-sm hover:bg-primary-container hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-primary/30 focus:outline-none" type="submit">
+                        Sign In
+                    </button>
+</form>
+<div class="mt-xl pt-lg border-t border-outline-variant">
+<div class="flex flex-col space-y-md">
+<p class="font-label-md text-label-md text-on-surface-variant text-center">New to the Hub?</p>
+<button class="w-full border border-primary text-primary font-headline-sm text-headline-sm py-md rounded-lg hover:bg-primary/5 transition-all">
+                            Create Account
+                        </button>
+</div>
+</div>
+</div>
+<!-- Accessibility Links -->
+<div class="mt-lg flex justify-center space-x-lg text-secondary">
+<a class="font-label-md text-label-md hover:text-primary transition-colors" href="#">Privacy Notice</a>
+<span class="text-outline-variant">•</span>
+<a class="font-label-md text-label-md hover:text-primary transition-colors" href="#">Technical Support</a>
+</div>
+</div>
+</main>
+<!-- Simple Footer (Modified from JSON for Transactional Context) -->
+<footer class="w-full py-md bg-surface-container-lowest border-t border-outline-variant">
+<div class="max-w-[container-max-width] mx-auto px-lg flex flex-col md:flex-row justify-between items-center gap-sm">
+<span class="font-label-sm text-label-sm text-secondary">© 2024 Pangasinan State University. All rights reserved.</span>
+<div class="flex items-center space-x-md font-label-md text-label-md text-secondary">
+<span class="font-bold text-primary">Excellence in Service</span>
+<span class="text-outline-variant">|</span>
+<span>v2.1.0</span>
+</div>
+</div>
+</footer>
+<script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.innerText = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.innerText = 'visibility';
+            }
+        }
+
+        // Simple subtle entrance animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.querySelector('.z-10');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(10px)';
+            container.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+            
+            setTimeout(() => {
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body></html>

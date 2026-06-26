@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Volunteer Activity | PSU Volunteer Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#cfdaf1",
+                        "inverse-primary": "#adc7ff",
+                        "surface-container": "#e7eeff",
+                        "on-secondary-container": "#626567",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#ffcb44",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#001a41",
+                        "primary": "#00408b",
+                        "on-secondary-fixed-variant": "#44474a",
+                        "outline-variant": "#c2c6d4",
+                        "surface-tint": "#0d5bbc",
+                        "secondary-container": "#e0e3e6",
+                        "on-surface-variant": "#424752",
+                        "on-background": "#111c2c",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#ebf1ff",
+                        "tertiary-container": "#725600",
+                        "primary-container": "#0057b8",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#bfd2ff",
+                        "inverse-surface": "#263142",
+                        "secondary": "#5b5f61",
+                        "secondary-fixed-dim": "#c4c7ca",
+                        "tertiary-fixed": "#ffdf99",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f0f3ff",
+                        "on-surface": "#111c2c",
+                        "on-primary-fixed-variant": "#004493",
+                        "surface-variant": "#d8e3fa",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#f6bf22",
+                        "surface-container-high": "#dee8ff",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed-dim": "#adc7ff",
+                        "outline": "#727784",
+                        "surface": "#f9f9ff",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "on-secondary-fixed": "#191c1e",
+                        "background": "#f9f9ff",
+                        "secondary-fixed": "#e0e3e6",
+                        "surface-container-highest": "#d8e3fa",
+                        "primary-fixed": "#d8e2ff",
+                        "on-tertiary-fixed": "#251a00",
+                        "tertiary": "#553f00",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "2xl": "48px",
+                        "sidebar-width": "260px",
+                        "md": "16px",
+                        "container-max-width": "1440px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f5f7fa; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .form-input-focus:focus {
+            outline: none;
+            border-color: #00408b;
+            box-shadow: 0 0 0 4px rgba(0, 64, 139, 0.1);
+        }
+        .sidebar-active { background-color: #d8e2ff; color: #001a41; font-weight: 600; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c2c6d4; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #727784; }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<div class="flex items-center gap-sm mb-2xl">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="font-label-md text-label-md text-secondary">Excellence in Service</p>
+</div>
+</div>
+<nav class="flex-grow space-y-base">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg sidebar-active transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+<span class="font-body-md text-body-md">Opportunities</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-body-md text-body-md">Management</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md p-sm">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm font-bold text-on-surface">Admin User</p>
+<p class="font-label-sm text-label-sm text-secondary">PSU Administrator</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top Utility Bar -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<div class="flex items-center bg-surface-container-low rounded-full px-md py-xs w-96 border border-outline-variant focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-full" placeholder="Search activities, volunteers..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm hover:bg-surface-container-low rounded-full transition-all text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm hover:bg-surface-container-low rounded-full transition-all text-on-surface-variant">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<button class="flex items-center gap-sm p-xs hover:bg-surface-container-low rounded-lg transition-all">
+<div class="w-8 h-8 rounded-full bg-primary-fixed-dim border border-primary text-primary flex items-center justify-center font-bold">
+                    AD
+                </div>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] mt-16 p-lg max-w-[1440px]">
+<!-- Breadcrumbs & Header -->
+<div class="mb-xl">
+<nav class="flex items-center gap-xs text-secondary font-label-md text-label-md mb-xs">
+<a class="hover:text-primary" href="#">Dashboard</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-primary" href="#">Opportunities</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-semibold">Create Activity</span>
+</nav>
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Create New Activity</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Establish a new volunteer engagement program for the university community.</p>
+</div>
+<div class="flex gap-md">
+<button class="px-xl py-md rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary-fixed-dim transition-all">
+                        Save Draft
+                    </button>
+<button class="px-xl py-md rounded-lg bg-primary text-white font-label-sm text-label-sm shadow-sm hover:bg-primary-container transition-all">
+                        Publish Activity
+                    </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-xl">
+<!-- Left Column: Form Sections -->
+<div class="col-span-12 lg:col-span-8 space-y-xl">
+<!-- Section 1: Basic Information -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl">
+<div class="flex items-center gap-sm mb-lg border-b border-outline-variant pb-md">
+<span class="material-symbols-outlined text-primary">info</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Basic Information</h3>
+</div>
+<div class="space-y-lg">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Activity Title <span class="text-error">*</span></label>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="e.g., Annual Coastal Cleanup 2024" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-lg">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Category <span class="text-error">*</span></label>
+<select class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus bg-white">
+<option>Environmental</option>
+<option>Educational</option>
+<option>Community Service</option>
+<option>Disaster Response</option>
+<option>Healthcare</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Max Participants</label>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="e.g., 50" type="number"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Description <span class="text-error">*</span></label>
+<textarea class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="Provide a detailed overview of the volunteer activity..." rows="4"></textarea>
+</div>
+</div>
+</section>
+<!-- Section 2: Goals & Requirements -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl">
+<div class="flex items-center gap-sm mb-lg border-b border-outline-variant pb-md">
+<span class="material-symbols-outlined text-primary">task_alt</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Objectives &amp; Requirements</h3>
+</div>
+<div class="space-y-lg">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Objectives</label>
+<div class="space-y-sm">
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="Goal 1" type="text"/>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="Goal 2" type="text"/>
+<button class="flex items-center gap-xs text-primary font-label-sm text-label-sm mt-xs">
+<span class="material-symbols-outlined text-[18px]">add</span> Add another objective
+                                </button>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Required Skills</label>
+<div class="flex flex-wrap gap-sm">
+<span class="bg-surface-variant px-md py-xs rounded-full flex items-center gap-xs font-label-sm text-label-sm">
+                                    Leadership <span class="material-symbols-outlined text-[16px] cursor-pointer">close</span>
+</span>
+<span class="bg-surface-variant px-md py-xs rounded-full flex items-center gap-xs font-label-sm text-label-sm">
+                                    Communication <span class="material-symbols-outlined text-[16px] cursor-pointer">close</span>
+</span>
+<input class="border-none bg-transparent font-body-md text-body-md focus:ring-0 p-0 w-40" placeholder="Type and press Enter..." type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Schedule & Location -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl">
+<div class="flex items-center gap-sm mb-lg border-b border-outline-variant pb-md">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Schedule &amp; Location</h3>
+</div>
+<div class="space-y-lg">
+<div class="grid grid-cols-2 gap-lg">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Start Date &amp; Time</label>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" type="datetime-local"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">End Date &amp; Time</label>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" type="datetime-local"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-xs">Location Name</label>
+<input class="w-full border border-outline-variant rounded-lg p-md font-body-md text-body-md form-input-focus" placeholder="e.g., PSU Main Campus, Ground Floor Hall" type="text"/>
+</div>
+<div class="h-48 w-full rounded-lg bg-surface-dim overflow-hidden relative border border-outline-variant">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A clean, professional digital map interface showing a university campus layout with minimalist markers. The style is modern, using a light mode palette of whites, grays, and University Blue highlights, suitable for an enterprise dashboard. High-level cartographic design without clutter." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBi_QpM8NwL7ZEZIl_UV_QA8eENKcckez0JJHs2JblHKcH_y5Ha_CLA9XhlZ21qdpdWr-7W0INslhsDzfUwRqEOvOo5u7RPfOgRNbQN-33pu920M4tpdeS9B1njeYTRfXg6tysIWkU04Fkm40LI_tsh4rplbCMwPJCCPU8knOL-YTZHCFpJPmJQhwDxZMIJKLcOQa5a8orQrrFPlpRLcChxAIzlQdQScVcq-yYQfHB0mDXhl-SFktf_qcHvVY25o_lOR4kCAVPDZRsW')"></div>
+<div class="absolute bottom-md right-md bg-white p-sm rounded shadow-lg border border-outline-variant">
+<span class="font-label-sm text-label-sm flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined text-[16px]">map</span> Open Interactive Map
+                                </span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar Actions & Preview -->
+<div class="col-span-12 lg:col-span-4 space-y-xl">
+<!-- Preview Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="h-40 bg-surface-dim" data-alt="A vibrant and professional scene of students engaged in a community volunteer event at a university. Soft morning lighting creates a positive and welcoming mood. The image focuses on collaborative efforts with blurred campus architecture in the background. Colors are aligned with a professional corporate-academic brand." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA68PaF6QCSJR2MmgYJMsgaOFR8Jd8wqq6tqlUMgVJpJLCV-SnF8w0KDvZr_rsk9SXyikL0b0A8VUmgpNJZy2G8Ut4h_Tldexj0EnT7AW3KmmxtCCt1Wu1c9hI-iZFxrhiQLgqYhVpRU4nqcXxrijHKD8pzjxszGymRg22HKOtG7IfJfK8jsMqDc6jh3t1PLm2rhDd-LEHoIBcqkQf_HV5ZLmAxIL8YxepWSOTtwvk91W4u2d6WkpdBY6lANi8nNr_h1l9W3u9HvayE')"></div>
+<div class="p-lg">
+<div class="flex justify-between items-start mb-sm">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed px-md py-xs rounded-full font-label-sm text-label-sm">Preview Mode</span>
+<span class="text-primary font-bold font-headline-sm">0/50</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface mb-xs">New Volunteer Activity</h4>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-3 mb-md">The description you provide on the left will appear here to show how students will see the opportunity.</p>
+<div class="space-y-sm mb-lg">
+<div class="flex items-center gap-sm text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-primary text-[18px]">location_on</span>
+                                Location TBD
+                            </div>
+<div class="flex items-center gap-sm text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-primary text-[18px]">event</span>
+                                Schedule TBD
+                            </div>
+</div>
+<button class="w-full py-md rounded-lg bg-outline-variant text-white font-semibold opacity-50 cursor-not-allowed" disabled="">
+                            Apply Now (Coming Soon)
+                        </button>
+</div>
+</div>
+<!-- Settings & Rules -->
+<div class="bg-surface-container-highest rounded-xl p-lg space-y-lg">
+<h5 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined">settings_suggest</span>
+                        Posting Options
+                    </h5>
+<div class="space-y-md">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Allow automatic approval</span>
+<div class="relative inline-flex items-center h-6 rounded-full w-11 bg-outline-variant">
+<span class="inline-block w-4 h-4 transform bg-white rounded-full transition translate-x-1"></span>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Hide from public view</span>
+<div class="relative inline-flex items-center h-6 rounded-full w-11 bg-primary">
+<span class="inline-block w-4 h-4 transform bg-white rounded-full transition translate-x-6"></span>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Notify past volunteers</span>
+<div class="relative inline-flex items-center h-6 rounded-full w-11 bg-outline-variant">
+<span class="inline-block w-4 h-4 transform bg-white rounded-full transition translate-x-1"></span>
+</div>
+</label>
+</div>
+<div class="p-md bg-white border border-outline-variant rounded-lg">
+<p class="font-label-sm text-label-sm text-secondary leading-relaxed">
+<span class="font-bold text-on-surface">Note:</span> Once published, this activity will be visible to all registered PSU students. You can edit the details later, but existing applicants will be notified of major changes.
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="ml-[260px] border-t border-outline-variant mt-2xl bg-surface-container-lowest">
+<div class="max-w-[1440px] px-lg py-md flex flex-col md:flex-row justify-between items-center">
+<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<div class="flex items-center gap-lg mt-md md:mt-0">
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple toggle simulation
+        document.querySelectorAll('.cursor-pointer').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const dot = this.querySelector('.transform');
+                const bg = this.querySelector('div');
+                if (dot) {
+                    dot.classList.toggle('translate-x-1');
+                    dot.classList.toggle('translate-x-6');
+                }
+                if (bg) {
+                    bg.classList.toggle('bg-primary');
+                    bg.classList.toggle('bg-outline-variant');
+                }
+            });
+        });
+    </script>
+</body></html>

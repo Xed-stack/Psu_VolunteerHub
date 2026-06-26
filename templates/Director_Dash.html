@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Extension Director Dashboard | PSU Volunteer Hub</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#cfdaf1",
+                    "inverse-primary": "#adc7ff",
+                    "surface-container": "#e7eeff",
+                    "on-secondary-container": "#626567",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#ffcb44",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed": "#001a41",
+                    "primary": "#00408b",
+                    "on-secondary-fixed-variant": "#44474a",
+                    "outline-variant": "#c2c6d4",
+                    "surface-tint": "#0d5bbc",
+                    "secondary-container": "#e0e3e6",
+                    "on-surface-variant": "#424752",
+                    "on-background": "#111c2c",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary-container": "#725600",
+                    "primary-container": "#0057b8",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#bfd2ff",
+                    "inverse-surface": "#263142",
+                    "secondary": "#5b5f61",
+                    "secondary-fixed-dim": "#c4c7ca",
+                    "tertiary-fixed": "#ffdf99",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f0f3ff",
+                    "on-surface": "#111c2c",
+                    "on-primary-fixed-variant": "#004493",
+                    "surface-variant": "#d8e3fa",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#f6bf22",
+                    "surface-container-high": "#dee8ff",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "primary-fixed-dim": "#adc7ff",
+                    "outline": "#727784",
+                    "surface": "#f9f9ff",
+                    "on-tertiary-fixed-variant": "#5a4300",
+                    "on-secondary-fixed": "#191c1e",
+                    "background": "#f9f9ff",
+                    "secondary-fixed": "#e0e3e6",
+                    "surface-container-highest": "#d8e3fa",
+                    "primary-fixed": "#d8e2ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "tertiary": "#553f00",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "lg": "24px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "2xl": "48px",
+                    "sidebar-width": "260px",
+                    "md": "16px",
+                    "container-max-width": "1440px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #F5F7FA;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .chart-bar {
+        transition: height 1s ease-in-out;
+      }
+      /* Custom PSU Yellow/Gold implementation from tertiary */
+      .bg-psu-gold { background-color: #f6bf22; }
+      .text-psu-gold { color: #f6bf22; }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+<!-- SideNavBar (from JSON) -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<div class="flex items-center gap-sm mb-2xl">
+<div class="w-10 h-10 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1">school</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="text-label-md font-label-md text-secondary">Excellence in Service</p>
+</div>
+</div>
+<nav class="flex-1 space-y-base">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-md p-md bg-primary-fixed text-on-primary-fixed font-semibold rounded-lg transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">volunteer_activism</span>
+<span class="font-body-md text-body-md">Opportunities</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-body-md text-body-md">Management</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female university executive with a friendly yet authoritative expression, wearing business attire in a modern, brightly lit office environment. The lighting is soft and corporate, aligning with the PSU Volunteer Hub branding of trust and excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH85rMSFItWRTg5ZZwQ0_0p0fk1RaSx7WOGMxFgDP-TzSo3LigU95PyZi6paDNmJeQvc-MvWMwEFGtbk8awbs1nnhO7grw7VPThQqZkyPdGvGGoMpnMnLfVSidrg4ArX5Q9mbyIXQpZGZDO__XwpKL7_Hj8NXCLW2Kpp8vhpP10ZwCEnHfa5qtqygFhbZBAsouXKfKCIAz1h9XYc0dCidJ1DhElAlIeIvMPdFbsPB_CSQufnsFHEJ7ubvf8EyaepbvACcgeO88oiHC"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface font-bold">Dr. Elena Santos</p>
+<p class="text-label-sm font-label-sm text-secondary">Extension Director</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (from JSON) -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<div class="flex items-center flex-1 max-w-xl relative">
+<span class="material-symbols-outlined absolute left-3 text-secondary">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-body-md font-body-md focus:ring-2 focus:ring-primary/10" placeholder="Search campuses, reports, or volunteers..." type="text"/>
+</div>
+<div class="flex items-center gap-md ml-lg">
+<button class="p-base hover:bg-surface-container-low rounded-full transition-all text-secondary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-base hover:bg-surface-container-low rounded-full transition-all text-secondary">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-xs"></div>
+<div class="flex items-center gap-sm">
+<div class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed rounded-full font-label-sm text-label-sm">
+                    FY 2024-25
+                </div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] pt-16 min-h-screen">
+<div class="max-w-[1440px] p-lg mx-auto">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xl">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-background">Extension Director Dashboard</h2>
+<p class="font-body-lg text-body-lg text-secondary">University-wide strategic oversight and impact metrics.</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">file_download</span> Export Report
+                    </button>
+<button class="flex items-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded shadow-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add</span> Strategic Insight
+                    </button>
+</div>
+</div>
+<!-- Bento Grid - Executive KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg mb-lg">
+<!-- KPI Card 1 -->
+<div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-primary/10 text-primary rounded">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">group</span>
+</div>
+<span class="text-psu-gold font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12.4%
+                        </span>
+</div>
+<p class="text-secondary font-label-md text-label-md mb-xs">Total Active Volunteers</p>
+<h3 class="font-display-lg text-display-lg">12,482</h3>
+<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Across 9 PSU Campuses</p>
+</div>
+<!-- KPI Card 2 -->
+<div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-tertiary-fixed text-on-tertiary-fixed rounded">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">schedule</span>
+</div>
+<span class="text-psu-gold font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +8.1%
+                        </span>
+</div>
+<p class="text-secondary font-label-md text-label-md mb-xs">Total Service Hours</p>
+<h3 class="font-display-lg text-display-lg">48,290</h3>
+<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Verified community hours</p>
+</div>
+<!-- KPI Card 3 -->
+<div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-surface-dim text-primary rounded">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">handshake</span>
+</div>
+<span class="text-secondary font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">horizontal_rule</span> stable
+                        </span>
+</div>
+<p class="text-secondary font-label-md text-label-md mb-xs">Partner Organizations</p>
+<h3 class="font-display-lg text-display-lg">154</h3>
+<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Active MoUs in effect</p>
+</div>
+<!-- KPI Card 4 -->
+<div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
+<div class="flex justify-between items-start mb-md">
+<div class="p-sm bg-error-container text-on-error-container rounded">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">eco</span>
+</div>
+<span class="text-psu-gold font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +21%
+                        </span>
+</div>
+<p class="text-secondary font-label-md text-label-md mb-xs">SDG Alignment</p>
+<h3 class="font-display-lg text-display-lg">84%</h3>
+<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Sustainability impact rating</p>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
+<!-- Main Comparison Chart -->
+<div class="lg:col-span-2 bg-white p-lg rounded-lg border border-outline-variant">
+<div class="flex justify-between items-center mb-xl">
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Campus Participation Comparison</h4>
+<p class="text-label-md font-label-md text-secondary">Volunteers per campus for current semester</p>
+</div>
+<select class="bg-surface-container-low border-none rounded font-label-md text-label-md focus:ring-primary/20">
+<option>Monthly View</option>
+<option>Semester View</option>
+</select>
+</div>
+<!-- Simulated Bar Chart -->
+<div class="h-64 flex items-end justify-between gap-md pt-lg">
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 85%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Lingayen</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 60%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Urdaneta</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-psu-gold hover:opacity-80 transition-colors chart-bar rounded-t" style="height: 95%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-bold">Bayambang</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 45%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Binmaley</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 70%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">San Carlos</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 55%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Sta Maria</span>
+</div>
+<div class="flex flex-col items-center flex-1 gap-sm">
+<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 30%;"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Asingan</span>
+</div>
+</div>
+</div>
+<!-- Participation Trends -->
+<div class="bg-white p-lg rounded-lg border border-outline-variant">
+<div class="mb-xl">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Growth Trends</h4>
+<p class="text-label-md font-label-md text-secondary">Year over Year Participation</p>
+</div>
+<div class="space-y-lg">
+<div class="flex flex-col">
+<div class="flex justify-between mb-xs">
+<span class="text-label-sm font-label-sm text-on-surface">Community Service</span>
+<span class="text-label-sm font-label-sm text-primary">+24%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between mb-xs">
+<span class="text-label-sm font-label-sm text-on-surface">Literacy Programs</span>
+<span class="text-label-sm font-label-sm text-primary">+12%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 45%;"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between mb-xs">
+<span class="text-label-sm font-label-sm text-on-surface">Environmental Outreach</span>
+<span class="text-label-sm font-label-sm text-primary">+38%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-psu-gold h-full rounded-full" style="width: 90%;"></div>
+</div>
+</div>
+</div>
+<div class="mt-xl p-md bg-surface-container-low rounded border border-primary/10">
+<div class="flex gap-sm items-start">
+<span class="material-symbols-outlined text-primary text-[20px]">lightbulb</span>
+<p class="text-label-md font-label-md text-on-surface-variant">
+                                Environmental programs are driving 40% of new student registrations this month.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Top Campuses & Insights -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg mb-2xl">
+<!-- Top Performing Campuses Table -->
+<div class="bg-white rounded-lg border border-outline-variant overflow-hidden">
+<div class="p-lg border-b border-outline-variant">
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Top Performing Campuses</h4>
+</div>
+<table class="w-full">
+<thead class="bg-surface-container-low text-left">
+<tr>
+<th class="px-lg py-md font-label-sm text-label-sm text-secondary">Campus</th>
+<th class="px-lg py-md font-label-sm text-label-sm text-secondary">Volunteers</th>
+<th class="px-lg py-md font-label-sm text-label-sm text-secondary">Compliance</th>
+<th class="px-lg py-md font-label-sm text-label-sm text-secondary">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-body-md text-body-md font-semibold">Bayambang</td>
+<td class="px-lg py-md font-body-md text-body-md">2,410</td>
+<td class="px-lg py-md font-body-md text-body-md">98%</td>
+<td class="px-lg py-md">
+<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Exceeding</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-body-md text-body-md font-semibold">Lingayen</td>
+<td class="px-lg py-md font-body-md text-body-md">1,982</td>
+<td class="px-lg py-md font-body-md text-body-md">95%</td>
+<td class="px-lg py-md">
+<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Target</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md font-body-md text-body-md font-semibold">Urdaneta</td>
+<td class="px-lg py-md font-body-md text-body-md">1,540</td>
+<td class="px-lg py-md font-body-md text-body-md">92%</td>
+<td class="px-lg py-md">
+<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Target</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Strategic Insights / AI Summary -->
+<div class="grid grid-cols-1 gap-lg">
+<div class="bg-primary text-on-primary p-lg rounded-lg flex flex-col justify-between shadow-lg relative overflow-hidden">
+<!-- Abstract decorative pattern -->
+<div class="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none transform translate-x-12 -translate-y-12">
+<svg class="fill-white" viewbox="0 0 100 100">
+<circle cx="50" cy="50" r="50"></circle>
+</svg>
+</div>
+<div>
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined">auto_awesome</span>
+<h4 class="font-headline-sm text-headline-sm">Executive Summary</h4>
+</div>
+<p class="font-body-md text-body-md leading-relaxed opacity-90 mb-lg">
+                                University-wide participation is at an all-time high. Bayambang campus is currently the benchmark for engagement. Recommendation: Scale the 'Green Initiative' framework from Bayambang to Asingan and San Carlos to address participation gaps.
+                            </p>
+</div>
+<button class="w-fit px-lg py-sm bg-psu-gold text-on-tertiary-fixed font-semibold rounded hover:brightness-110 transition-all">
+                            Generate Full Strategy
+                        </button>
+</div>
+<div class="bg-white p-lg rounded-lg border border-outline-variant flex items-center gap-lg">
+<div class="flex-1">
+<h4 class="font-headline-sm text-headline-sm mb-xs">Next Board Review</h4>
+<p class="text-label-md font-label-md text-secondary">October 24, 2024 at 10:00 AM</p>
+</div>
+<div class="flex -space-x-2">
+<div class="w-10 h-10 rounded-full border-2 border-white bg-surface-dim flex items-center justify-center text-[10px] font-bold">ES</div>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-primary text-white flex items-center justify-center text-[10px] font-bold">JD</div>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center text-[10px] font-bold">+4</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer (from JSON) -->
+<footer class="ml-[260px] bg-surface-container-lowest border-t border-outline-variant py-md flex flex-col md:flex-row justify-between items-center px-lg">
+<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<div class="flex gap-lg mt-md md:mt-0">
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+<!-- Micro-interaction script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animate bar heights on load
+            const bars = document.querySelectorAll('.chart-bar');
+            bars.forEach(bar => {
+                const finalHeight = bar.style.height;
+                bar.style.height = '0';
+                setTimeout(() => {
+                    bar.style.height = finalHeight;
+                }, 100);
+            });
+            
+            // Hover effect for bars
+            bars.forEach(bar => {
+                bar.addEventListener('mouseenter', () => {
+                    bar.classList.add('opacity-90');
+                });
+                bar.addEventListener('mouseleave', () => {
+                    bar.classList.remove('opacity-90');
+                });
+            });
+        });
+    </script>
+</body></html>

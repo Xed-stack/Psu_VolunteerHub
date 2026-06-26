@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Volunteer Profile | PSU Volunteer Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#cfdaf1",
+                    "inverse-primary": "#adc7ff",
+                    "surface-container": "#e7eeff",
+                    "on-secondary-container": "#626567",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#ffcb44",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed": "#001a41",
+                    "primary": "#00408b",
+                    "on-secondary-fixed-variant": "#44474a",
+                    "outline-variant": "#c2c6d4",
+                    "surface-tint": "#0d5bbc",
+                    "secondary-container": "#e0e3e6",
+                    "on-surface-variant": "#424752",
+                    "on-background": "#111c2c",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary-container": "#725600",
+                    "primary-container": "#0057b8",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-container": "#bfd2ff",
+                    "inverse-surface": "#263142",
+                    "secondary": "#5b5f61",
+                    "secondary-fixed-dim": "#c4c7ca",
+                    "tertiary-fixed": "#ffdf99",
+                    "on-primary": "#ffffff",
+                    "surface-container-low": "#f0f3ff",
+                    "on-surface": "#111c2c",
+                    "on-primary-fixed-variant": "#004493",
+                    "surface-variant": "#d8e3fa",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#f6bf22",
+                    "surface-container-high": "#dee8ff",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#f9f9ff",
+                    "primary-fixed-dim": "#adc7ff",
+                    "outline": "#727784",
+                    "surface": "#f9f9ff",
+                    "on-tertiary-fixed-variant": "#5a4300",
+                    "on-secondary-fixed": "#191c1e",
+                    "background": "#f9f9ff",
+                    "secondary-fixed": "#e0e3e6",
+                    "surface-container-highest": "#d8e3fa",
+                    "primary-fixed": "#d8e2ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "tertiary": "#553f00",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "lg": "24px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "sm": "8px",
+                    "2xl": "48px",
+                    "sidebar-width": "260px",
+                    "md": "16px",
+                    "container-max-width": "1440px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F7FA; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .sidebar-fixed { width: 260px; }
+        .main-content { margin-left: 260px; max-width: calc(1440px - 260px); }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); }
+        @media (max-width: 1024px) {
+            .sidebar-fixed { display: none; }
+            .main-content { margin-left: 0; max-width: 100%; }
+        }
+    </style>
+</head>
+<body class="text-on-background">
+<!-- Sidebar Navigation -->
+<aside class="sidebar-fixed fixed left-0 top-0 h-full flex flex-col bg-surface border-r border-outline-variant z-50">
+<div class="p-lg flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">school</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="font-label-md text-label-md text-secondary">Excellence in Service</p>
+</div>
+</div>
+<nav class="flex-1 px-md space-y-xs mt-lg">
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">volunteer_activism</span> Opportunities
+            </a>
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span> Analytics
+            </a>
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined">manage_accounts</span> Management
+            </a>
+<!-- Active State: Settings/Profile -->
+<a class="flex items-center gap-md p-md rounded-lg font-semibold bg-primary-fixed text-on-primary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span> Settings
+            </a>
+</nav>
+<div class="p-lg border-t border-outline-variant">
+<div class="flex items-center gap-sm">
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional studio portrait of a university student with a friendly smile, set against a clean, softly lit academic library background. The lighting is bright and high-key, reflecting a corporate and modern PSU Volunteer Hub aesthetic. The student is wearing a neat, neutral-colored sweater, conveying a sense of approachability and dedication to community service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMg5dk8ytqG2zZFexX5l47Ekn4IquWPSd9kOEJy6iJlLc3mvqRrWJvQNib_4H1spt-9DSsvMUjRoyiL_sdOPQtHgIUH98sjs3biYUkWkLXj0PQ1w1Qwh3l5lNzbUpUkuZbHXCzIwI1nkHPxvIj7bnQlqtAvgouaEUcsa2QVnuCdpJFuE0bI5VaK9lIoMAj6YTMNrrTe8tZGOSiEhQI_NNeRIbq345_KLym-Gne9aU42GFlU2eF5Xy6XkW7s2U_J1lTxWfJrHhvVH88"/>
+<div class="overflow-hidden">
+<p class="font-label-sm text-label-sm font-bold truncate">Alex Rivera</p>
+<p class="font-label-sm text-label-sm text-secondary truncate">Student Volunteer</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="main-content min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="h-16 sticky top-0 bg-surface/80 backdrop-blur-md flex items-center justify-between px-lg z-40 border-b border-outline-variant">
+<div class="flex items-center bg-surface-container-low px-md py-xs rounded-full border border-outline-variant w-96">
+<span class="material-symbols-outlined text-secondary mr-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-full" placeholder="Search opportunities..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm hover:bg-surface-container-high rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm hover:bg-surface-container-high rounded-full transition-all">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant mx-xs"></div>
+<button class="bg-primary text-on-primary px-md py-xs rounded font-label-md hover:opacity-90 transition-opacity">
+                    Edit Profile
+                </button>
+</div>
+</header>
+<div class="p-lg">
+<!-- Profile Hero Section -->
+<div class="relative mb-lg">
+<div class="h-48 w-full bg-primary-container rounded-xl overflow-hidden relative">
+
+<div class="absolute bottom-0 left-0 w-full p-lg bg-gradient-to-t from-black/50 to-transparent">
+<div class="flex items-end gap-lg">
+<div class="relative group">
+<img class="w-32 h-32 rounded-xl border-4 border-white shadow-lg object-cover" data-alt="Close-up professional portrait of Alex Rivera, a student volunteer with a warm and confident expression. The lighting is cinematic yet professional, with soft highlights on the face and a blurred background featuring University blue and yellow tones. The image style is polished, high-resolution, and perfectly aligns with an enterprise dashboard user profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzMmdZvLrbvaWASBc0OZFQyV2EYKSS1bDQh1TyuuQiWknFWwcvp59BH3sw2biNqO8q7XqlW_QkaZhZR17czmbitpqtfsACUChCXkn6kVkZ6SpMOEoLHigrnjO_vk1Hpxt2AuHQiLZDqN9G3eWsWWq3R5edfpi6uugZUHcxOmLM7vMXMqwf5AzLlWMCRtS3kiG4XBWRk2ze3braVyG7QRvE2Wf_cEptxKETkw9mqEt1NTc9Bzvkg5gpSNP9vn1CGa_1Uvove8y3MmQk"/>
+<button class="absolute bottom-2 right-2 bg-white/90 p-1 rounded shadow-sm hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-primary text-[20px]">photo_camera</span>
+</button>
+</div>
+<div class="pb-2">
+<h2 class="font-display-lg text-white mb-xs">Alex Rivera</h2>
+<div class="flex items-center gap-md text-white/90 font-label-md">
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">school</span> PSU Lingayen Campus</span>
+<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">verified</span> Verified Volunteer</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Stats Overview (Left Column) -->
+<div class="md:col-span-4 space-y-lg">
+<!-- Impact Stats Card -->
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-lg">Overall Impact</h3>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-surface-container-low p-md rounded-lg">
+<p class="text-secondary font-label-md mb-xs">Total Hours</p>
+<p class="font-headline-lg text-primary">158.5</p>
+</div>
+<div class="bg-surface-container-low p-md rounded-lg">
+<p class="text-secondary font-label-md mb-xs">Activities</p>
+<p class="font-headline-lg text-primary">24</p>
+</div>
+</div>
+<div class="mt-lg p-md border border-primary/20 bg-primary/5 rounded-lg">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-label-md text-primary">Level 4: Community Leader</span>
+<span class="font-label-md text-secondary">85%</span>
+</div>
+<div class="w-full h-2 bg-outline-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 85%"></div>
+</div>
+<p class="font-label-sm text-secondary mt-xs">11.5 hours to next level</p>
+</div>
+</div>
+<!-- Affiliation Card -->
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md">Affiliation</h3>
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">apartment</span>
+</div>
+<div>
+<p class="font-label-md font-bold">College of Computing</p>
+<p class="font-label-sm text-secondary text-sm">BS Information Technology</p>
+</div>
+</div>
+</div>
+<!-- Skills Card -->
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md">Skills</h3>
+<div class="flex flex-wrap gap-sm">
+<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Web Development</span>
+<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Teaching</span>
+<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Graphic Design</span>
+<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Event Planning</span>
+<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Translation</span>
+</div>
+</div>
+</div>
+<!-- Participation & Achievement (Right Column) -->
+<div class="md:col-span-8 space-y-lg">
+<!-- Achievements Grid -->
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-sm text-headline-sm">Achievement Badges</h3>
+<a class="text-primary font-label-md hover:underline" href="#">View All</a>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-lg text-center">
+<div class="group cursor-pointer">
+<div class="w-16 h-16 mx-auto mb-sm bg-tertiary-fixed rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-on-tertiary-fixed" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<p class="font-label-sm text-on-surface">Top Recruiter</p>
+</div>
+<div class="group cursor-pointer">
+<div class="w-16 h-16 mx-auto mb-sm bg-primary-fixed rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+</div>
+<p class="font-label-sm text-on-surface">Helping Hand</p>
+</div>
+<div class="group cursor-pointer">
+<div class="w-16 h-16 mx-auto mb-sm bg-surface-variant rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">timer</span>
+</div>
+<p class="font-label-sm text-on-surface">100+ Hours</p>
+</div>
+<div class="group cursor-pointer opacity-50 grayscale">
+<div class="w-16 h-16 mx-auto mb-sm bg-outline-variant rounded-full flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-secondary">star</span>
+</div>
+<p class="font-label-sm text-secondary">Legendary</p>
+</div>
+</div>
+</div>
+<!-- History / Activity Table -->
+<div class="bg-white rounded-xl border border-outline-variant overflow-hidden">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm">Recent Participation</h3>
+<div class="flex gap-sm">
+<button class="px-sm py-1 border border-outline-variant rounded font-label-md hover:bg-surface-container-low transition-colors">Download Report</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md">
+<thead class="bg-surface-container-low text-label-sm border-b border-outline-variant">
+<tr>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Opportunity</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Category</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Date</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider text-right">Hours</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md">
+<p class="font-semibold text-on-surface">Coastal Cleanup 2024</p>
+<p class="text-xs text-secondary">PSU Environmental Society</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[11px] font-bold">Environment</span>
+</td>
+<td class="px-lg py-md text-secondary">Oct 12, 2024</td>
+<td class="px-lg py-md text-right font-semibold">4.0</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md">
+<p class="font-semibold text-on-surface">Coding for Kids Workshop</p>
+<p class="text-xs text-secondary">IT Student Council</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[11px] font-bold">Education</span>
+</td>
+<td class="px-lg py-md text-secondary">Sep 28, 2024</td>
+<td class="px-lg py-md text-right font-semibold">6.0</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md">
+<p class="font-semibold text-on-surface">Blood Donation Drive</p>
+<p class="text-xs text-secondary">PSU Health Services</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[11px] font-bold">Health</span>
+</td>
+<td class="px-lg py-md text-secondary">Sep 05, 2024</td>
+<td class="px-lg py-md text-right font-semibold">2.5</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-lg py-md">
+<p class="font-semibold text-on-surface">Food Bank Logistics</p>
+<p class="text-xs text-secondary">Community Welfare Office</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold">Social</span>
+</td>
+<td class="px-lg py-md text-secondary">Aug 21, 2024</td>
+<td class="px-lg py-md text-right font-semibold">5.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-low text-center">
+<button class="text-primary font-label-md hover:underline">View Full History</button>
+</div>
+</div>
+<!-- Preferred Categories & Interests -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md">Preferred Categories</h3>
+<div class="space-y-sm">
+<div class="flex items-center justify-between">
+<span class="font-body-md">Technology &amp; IT</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-md">Education</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-md">Environment</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md">Interests</h3>
+<div class="flex flex-wrap gap-sm">
+<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Sustainability</span>
+<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Child Mentoring</span>
+<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Open Source</span>
+<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Disaster Response</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Section -->
+<footer class="mt-2xl border-t border-outline-variant bg-surface-container-lowest">
+<div class="max-w-[1440px] px-lg py-lg flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="flex items-center gap-sm">
+<span class="font-label-sm text-label-sm font-bold text-primary">PSU VOLUNTEER HUB</span>
+<span class="text-secondary text-xs">|</span>
+<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+</div>
+<div class="flex gap-lg">
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- Contextual FAB - Suppression on Profile/Settings as per rules, but included if needed for mobile navigation -->
+<!-- Not rendered as this is a high-level detail profile page -->
+<script>
+        // Micro-interactions and subtle effects
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                // Subtle lift or active state logic
+            });
+        });
+
+        // Search Bar Focus Effect
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('ring-2', 'ring-primary/20', 'border-primary');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('ring-2', 'ring-primary/20', 'border-primary');
+        });
+    </script>
+</body></html>

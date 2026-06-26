@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PSU Volunteer Hub | Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        /* Custom Scrollbar for high-density UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d8e3fa; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c2c6d4; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#727784",
+                        "surface": "#f9f9ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#adc7ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#f6bf22",
+                        "primary": "#00408b",
+                        "on-surface": "#111c2c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdf99",
+                        "tertiary-container": "#725600",
+                        "surface-dim": "#cfdaf1",
+                        "secondary": "#5b5f61",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#ebf1ff",
+                        "on-secondary-fixed-variant": "#44474a",
+                        "on-primary-container": "#bfd2ff",
+                        "secondary-fixed-dim": "#c4c7ca",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-container": "#626567",
+                        "on-primary-fixed": "#001a41",
+                        "background": "#f9f9ff",
+                        "outline-variant": "#c2c6d4",
+                        "inverse-primary": "#adc7ff",
+                        "secondary-container": "#e0e3e6",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "tertiary": "#553f00",
+                        "on-background": "#111c2c",
+                        "on-surface-variant": "#424752",
+                        "surface-container": "#e7eeff",
+                        "inverse-surface": "#263142",
+                        "secondary-fixed": "#e0e3e6",
+                        "surface-tint": "#0d5bbc",
+                        "surface-container-highest": "#d8e3fa",
+                        "surface-variant": "#d8e3fa",
+                        "primary-container": "#0057b8",
+                        "on-secondary-fixed": "#191c1e",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#ffcb44"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "container-max-width": "1440px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "2xl": "48px",
+                        "sidebar-width": "260px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<div class="mb-xl">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="font-label-sm text-label-sm text-secondary">Excellence in Service</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-base">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">volunteer_activism</span>
+<span class="font-body-md text-body-md">Opportunities</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<!-- Active Navigation Item: Management -->
+<a class="flex items-center gap-md px-md py-sm rounded bg-primary-fixed text-on-primary-fixed font-semibold transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">manage_accounts</span>
+<span class="font-body-md text-body-md">Management</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md p-sm">
+<img class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional studio portrait of a university administrator in a modern office environment, soft daylighting, high-end commercial photography style, neutral corporate color palette with deep blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvbjnQZrfpUW33ZQ1NUgwdNFc2BuZKdHJkxWlmpFQH_LV4NF1kWvMiZRWqj34PIRvncllk2os7Em5NWjBXoTrqphGOqrHwDOGcvZj8kr3VCO0JporZuLnKppDeqcy03KbqekfPvzo4RT3tWFC4Ck9_KkbZAjhNI5Gy6hL6buatAPRC-yg-cXEvUiTWDk8cKqTkuUyjUqTIorBSI1U94h_MkdM-LmNZQZ2I1Wq4UdTrw71Rd_Q6qvYtCY4uKBmXD7uinoThSmPHo1KC"/>
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md font-bold truncate">Admin Dr. Reyes</p>
+<p class="font-label-sm text-label-sm text-secondary truncate">System Administrator</p>
+</div>
+<button class="ml-auto text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[260px] min-h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 right-0 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<div class="flex items-center gap-md flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all" placeholder="Search system logs, users, or settings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg ml-lg">
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-secondary">Campus:</span>
+<select class="bg-transparent border-none font-label-md text-label-md font-bold text-primary focus:ring-0 cursor-pointer">
+<option>Lingayen (Main)</option>
+<option>Urdaneta</option>
+<option>San Carlos</option>
+</select>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-lg space-y-lg max-w-[1440px]">
+<!-- System Overview Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- Server Status -->
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="space-y-sm">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Server Status</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">Optimal</h3>
+<div class="flex items-center gap-xs text-primary font-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Uptime: 99.9%</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl">dns</span>
+</div>
+<!-- Active Users -->
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="space-y-sm">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Active Users</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">1,284</h3>
+<div class="flex items-center gap-xs text-secondary font-label-sm">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+12% from yesterday</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl">group</span>
+</div>
+<!-- Pending Approvals -->
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="space-y-sm">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Pending Approvals</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">42</h3>
+<div class="flex items-center gap-xs text-tertiary font-label-sm">
+<span class="material-symbols-outlined text-sm">priority_high</span>
+<span>Needs immediate review</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary text-3xl">approval_delegation</span>
+</div>
+<!-- Security Alerts -->
+<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="space-y-sm">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Security Alerts</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">0</h3>
+<div class="flex items-center gap-xs text-secondary font-label-sm">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span>System is secure</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-3xl">security</span>
+</div>
+</section>
+<!-- Main Dashboard Layout: Table and Side Panels -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- User Management Table -->
+<section class="lg:col-span-2 space-y-md">
+<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden">
+<div class="p-md border-b border-outline-variant flex flex-wrap justify-between items-center gap-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">User Management</h2>
+<div class="flex gap-sm">
+<select class="bg-surface-container-low border border-outline-variant rounded px-sm py-1 font-label-md text-label-md">
+<option>Role: All</option>
+<option>Admin</option>
+<option>Director</option>
+<option>Student</option>
+</select>
+<select class="bg-surface-container-low border border-outline-variant rounded px-sm py-1 font-label-md text-label-md">
+<option>Campus: All</option>
+<option>Lingayen</option>
+<option>Urdaneta</option>
+</select>
+<button class="bg-primary text-on-primary px-md py-1 rounded font-label-md transition-all hover:brightness-110 flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">person_add</span>
+                                    Add User
+                                </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase">User</th>
+<th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase">Role</th>
+<th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase">Campus</th>
+<th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase">Status</th>
+<th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs">MA</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Maria Santos</p>
+<p class="font-label-sm text-label-sm text-secondary">m.santos@psu.edu.ph</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md font-label-md">Director</td>
+<td class="px-md py-md font-label-md">Lingayen</td>
+<td class="px-md py-md">
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed text-[10px] font-bold uppercase">Active</span>
+</td>
+<td class="px-md py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-1 hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></button>
+<button class="p-1 hover:text-error transition-colors" title="Suspend"><span class="material-symbols-outlined text-lg">block</span></button>
+<button class="p-1 hover:text-primary transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">JD</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Juan Dela Cruz</p>
+<p class="font-label-sm text-label-sm text-secondary">j.delacruz@psu.edu.ph</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md font-label-md">Admin</td>
+<td class="px-md py-md font-label-md">Urdaneta</td>
+<td class="px-md py-md">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase">Away</span>
+</td>
+<td class="px-md py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg">block</span></button>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-md py-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold text-xs">EL</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Elena Luna</p>
+<p class="font-label-sm text-label-sm text-secondary">e.luna@psu.edu.ph</p>
+</div>
+</div>
+</td>
+<td class="px-md py-md font-label-md">Director</td>
+<td class="px-md py-md font-label-md">San Carlos</td>
+<td class="px-md py-md">
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase">Pending</span>
+</td>
+<td class="px-md py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
+<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg">block</span></button>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md bg-surface-container-low flex items-center justify-between">
+<p class="font-label-sm text-label-sm text-secondary">Showing 1-10 of 124 users</p>
+<div class="flex gap-base">
+<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">Previous</button>
+<button class="px-3 py-1 bg-primary text-on-primary rounded font-label-sm transition-all">1</button>
+<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">2</button>
+<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">Next</button>
+</div>
+</div>
+</div>
+<!-- Administrative Controls Section -->
+<div class="bg-surface border border-outline-variant rounded-xl p-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-md">Administrative Controls</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<span class="material-symbols-outlined text-3xl text-primary mb-sm">domain_add</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Add New Campus</span>
+</button>
+<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<span class="material-symbols-outlined text-3xl text-primary mb-sm">campaign</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Global Notifications</span>
+</button>
+<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<span class="material-symbols-outlined text-3xl text-primary mb-sm">cloud_sync</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Database Backup</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Sidebar Panels: Audit Logs -->
+<aside class="space-y-lg">
+<section class="bg-surface border border-outline-variant rounded-xl flex flex-col h-[600px]">
+<div class="p-md border-b border-outline-variant flex justify-between items-center">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Audit Logs</h2>
+<button class="text-primary font-label-md hover:underline transition-all">View All</button>
+</div>
+<div class="flex-1 overflow-y-auto p-md space-y-md">
+<!-- Log Entry -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">history_edu</span>
+</div>
+<div class="w-px h-full bg-outline-variant my-1"></div>
+</div>
+<div class="pb-md">
+<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Director]</span> approved <span class="font-bold">Coastal Cleanup Drive</span></p>
+<p class="font-label-sm text-label-sm text-secondary mt-1">2 minutes ago</p>
+</div>
+</div>
+<!-- Log Entry -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">password</span>
+</div>
+<div class="w-px h-full bg-outline-variant my-1"></div>
+</div>
+<div class="pb-md">
+<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Admin]</span> reset password for <span class="font-bold">user_8821</span></p>
+<p class="font-label-sm text-label-sm text-secondary mt-1">15 minutes ago</p>
+</div>
+</div>
+<!-- Log Entry -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">shield</span>
+</div>
+<div class="w-px h-full bg-outline-variant my-1"></div>
+</div>
+<div class="pb-md">
+<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[System]</span> firewall rules updated automatically</p>
+<p class="font-label-sm text-label-sm text-secondary mt-1">1 hour ago</p>
+</div>
+</div>
+<!-- Log Entry -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">person_add</span>
+</div>
+<div class="w-px h-full bg-outline-variant my-1"></div>
+</div>
+<div class="pb-md">
+<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Director]</span> invited 12 new volunteers to <span class="font-bold">Project REACH</span></p>
+<p class="font-label-sm text-label-sm text-secondary mt-1">3 hours ago</p>
+</div>
+</div>
+<!-- Log Entry -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">warning</span>
+</div>
+<div></div>
+</div>
+<div>
+<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-error">[Security]</span> Multiple failed login attempts from IP: 192.168.1.1</p>
+<p class="font-label-sm text-label-sm text-secondary mt-1">5 hours ago</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Server Health Visualization -->
+<div class="bg-surface border border-outline-variant rounded-xl p-md overflow-hidden relative">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Traffic Load</h3>
+<div class="h-32 w-full flex items-end gap-1">
+<!-- Simple Animated Bar Chart -->
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 40%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 60%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 45%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 80%"></div>
+<div class="bg-primary-container flex-1 transition-all duration-1000" style="height: 95%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 70%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 55%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 85%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 40%"></div>
+<div class="bg-primary flex-1 transition-all duration-1000" style="height: 30%"></div>
+</div>
+<div class="flex justify-between mt-sm">
+<span class="font-label-sm text-label-sm text-secondary">00:00</span>
+<span class="font-label-sm text-label-sm text-secondary">12:00</span>
+<span class="font-label-sm text-label-sm text-secondary">23:59</span>
+</div>
+</div>
+</aside>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-auto py-md px-lg bg-surface-container-lowest border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-md">
+<p class="font-label-sm text-label-sm font-bold text-primary">© 2024 Pangasinan State University. All rights reserved.</p>
+<div class="flex gap-lg">
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+</main>
+<script>
+        // Simple Micro-interaction for the Traffic Load simulation
+        function updateTraffic() {
+            const bars = document.querySelectorAll('.bg-primary, .bg-primary-container');
+            bars.forEach(bar => {
+                const randomHeight = Math.floor(Math.random() * 70) + 20;
+                bar.style.height = randomHeight + '%';
+            });
+        }
+        setInterval(updateTraffic, 3000);
+    </script>
+</body></html>

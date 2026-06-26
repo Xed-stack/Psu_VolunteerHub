@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Analytics Dashboard | PSU Volunteer Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .chart-container { position: relative; transition: all 0.3s ease; }
+        .chart-container:hover { transform: translateY(-2px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d8e3fa; border-radius: 10px; }
+        .glass-header { backdrop-filter: blur(8px); background-color: rgba(249, 249, 255, 0.8); }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#727784",
+                        "surface": "#f9f9ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#adc7ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#f6bf22",
+                        "primary": "#00408b",
+                        "on-surface": "#111c2c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdf99",
+                        "tertiary-container": "#725600",
+                        "surface-dim": "#cfdaf1",
+                        "secondary": "#5b5f61",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#ebf1ff",
+                        "on-secondary-fixed-variant": "#44474a",
+                        "on-primary-container": "#bfd2ff",
+                        "secondary-fixed-dim": "#c4c7ca",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-container": "#626567",
+                        "on-primary-fixed": "#001a41",
+                        "background": "#f9f9ff",
+                        "outline-variant": "#c2c6d4",
+                        "inverse-primary": "#adc7ff",
+                        "secondary-container": "#e0e3e6",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "tertiary": "#553f00",
+                        "on-background": "#111c2c",
+                        "on-surface-variant": "#424752",
+                        "surface-container": "#e7eeff",
+                        "inverse-surface": "#263142",
+                        "secondary-fixed": "#e0e3e6",
+                        "surface-tint": "#0d5bbc",
+                        "surface-container-highest": "#d8e3fa",
+                        "surface-variant": "#d8e3fa",
+                        "primary-container": "#0057b8",
+                        "on-secondary-fixed": "#191c1e",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#dee8ff",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary-container": "#ffcb44"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "container-max-width": "1440px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "2xl": "48px",
+                        "sidebar-width": "260px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-x-hidden">
+<!-- SIDEBAR -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg z-50 transition-transform md:translate-x-0 -translate-x-full" id="sidebar">
+<div class="flex items-center gap-sm mb-2xl">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-on-primary">school</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="text-label-sm font-label-sm text-secondary">Excellence in Service</p>
+</div>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">volunteer_activism</span>
+<span class="font-body-md">Opportunities</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-body-md">Management</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a female university administrator in her late 40s, wearing a navy blue blazer. She has a warm, confident expression. The background is a soft-focus office environment with academic books and a small plant, lit with bright, natural daylight following a clean, corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFbNh7DuZH1C4kLhPGkbbKv_CzxVd0NQacPg_WwZdwVCKx1bSaGp8MBfEFkaTcLZd_DeFa30V9eT85mzOOtHrhtBOylbbr8RIdcy7k-mV82S8N86EDe8csuAdl49ryEBa2b5xvy6I0SkGjdkzELvvOpj5ZtOXnHw30LjSIa5iX0TGtMJe3FfHavfF7yhZRfzJv8XbwKX3H-zM8Bh40QZy1fHYaK_tAO1CoT4jdaPbvkdfBIFA2XyQBr_-LgN0l32PL78K-jxYHcKYv"/>
+</div>
+<div class="overflow-hidden">
+<p class="font-label-md text-on-surface truncate">Admin Sarah Chen</p>
+<p class="text-label-sm text-secondary truncate">Main Campus Director</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- MAIN CONTENT -->
+<main class="ml-0 md:ml-[260px] min-h-screen flex flex-col">
+<!-- TOP NAV BAR -->
+<header class="h-16 flex items-center justify-between px-lg sticky top-0 z-40 glass-header border-b border-outline-variant">
+<div class="flex items-center gap-lg flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface-container-low border-none rounded-full text-body-md focus:ring-2 focus:ring-primary/20" placeholder="Search analytics, volunteers, or reports..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-sm"></div>
+<button class="flex items-center gap-sm px-md py-sm bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Download Report
+                </button>
+</div>
+</header>
+<!-- DASHBOARD CONTENT -->
+<div class="p-lg space-y-lg max-w-[1440px] mx-auto w-full">
+<!-- HEADER & FILTERS -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Volunteer Analytics</h2>
+<p class="text-body-md text-secondary">Comprehensive performance data across all university programs.</p>
+</div>
+<div class="flex flex-wrap items-center gap-sm">
+<div class="flex flex-col gap-xs">
+<label class="text-label-sm text-outline px-1">Campus</label>
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>All 9 Campuses</option>
+<option>Lingayen (Main)</option>
+<option>Urdaneta</option>
+<option>San Carlos</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="text-label-sm text-outline px-1">Date Range</label>
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Last Semester (Aug - Dec)</option>
+<option>Current Year (2024)</option>
+<option>Custom Range</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="text-label-sm text-outline px-1">Program Type</label>
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>All Programs</option>
+<option>Community Outreach</option>
+<option>Disaster Response</option>
+<option>Literacy Support</option>
+</select>
+</div>
+</div>
+</div>
+<!-- KPI CARDS -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- Total Active Volunteers -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-primary-fixed text-on-primary-fixed rounded-lg">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">trending_up</span> +12.5%
+                        </span>
+</div>
+<div>
+<p class="text-label-md text-secondary">Total Active Volunteers</p>
+<p class="text-headline-lg font-headline-lg">2,482</p>
+</div>
+</div>
+<!-- Total Hours Logged -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-surface-container-highest text-primary rounded-lg">
+<span class="material-symbols-outlined">schedule</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">trending_up</span> +8.2%
+                        </span>
+</div>
+<div>
+<p class="text-label-md text-secondary">Total Hours Logged</p>
+<p class="text-headline-lg font-headline-lg">18,540h</p>
+</div>
+</div>
+<!-- Community Impact Value -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-tertiary-fixed text-on-tertiary-fixed rounded-lg">
+<span class="material-symbols-outlined">volunteer_activism</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">trending_up</span> +15.1%
+                        </span>
+</div>
+<div>
+<p class="text-label-md text-secondary">Community Impact Value</p>
+<p class="text-headline-lg font-headline-lg">₱4.2M</p>
+</div>
+</div>
+<!-- Growth % -->
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="flex justify-between items-start">
+<div class="p-sm bg-surface-container text-on-surface-variant rounded-lg">
+<span class="material-symbols-outlined">monitoring</span>
+</div>
+<span class="text-label-sm font-label-sm text-error flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">trending_down</span> -2.4%
+                        </span>
+</div>
+<div>
+<p class="text-label-md text-secondary">Retention Rate</p>
+<p class="text-headline-lg font-headline-lg">74%</p>
+</div>
+</div>
+</div>
+<!-- MAIN VISUALIZATIONS GRID (Bento Style) -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Participation by Campus (Bar Chart) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl flex flex-col">
+<div class="flex justify-between items-center mb-xl">
+<h3 class="font-headline-sm text-headline-sm">Participation by Campus</h3>
+<button class="text-label-md text-primary font-semibold hover:underline">View All</button>
+</div>
+<div class="flex-1 flex items-end justify-between gap-sm h-64">
+<!-- Bar Items -->
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 85%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+<span class="absolute -top-6 text-label-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">842</span>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Lingayen</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 65%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+<span class="absolute -top-6 text-label-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">612</span>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Urdaneta</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 45%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+<span class="absolute -top-6 text-label-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">420</span>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">San Carlos</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 40%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+<span class="absolute -top-6 text-label-sm font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">380</span>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Binmaley</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-tertiary-fixed/30 rounded-t-sm relative flex items-end justify-center" style="height: 55%;">
+<div class="w-4/5 bg-tertiary-container rounded-t-sm transition-all group-hover:brightness-110 h-full"></div>
+<span class="absolute -top-6 text-label-sm font-bold text-tertiary-container opacity-0 group-hover:opacity-100 transition-opacity">520</span>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Sta. Maria</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 30%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Alaminos</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 25%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Asingan</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 20%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Bayambang</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-sm group">
+<div class="w-full bg-primary/20 rounded-t-sm relative flex items-end justify-center" style="height: 15%;">
+<div class="w-4/5 bg-primary rounded-t-sm transition-all group-hover:bg-primary-container h-full"></div>
+</div>
+<span class="text-label-sm text-secondary truncate w-full text-center">Infanta</span>
+</div>
+</div>
+</div>
+<!-- Demographic Split (Pie Chart) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl flex flex-col">
+<h3 class="font-headline-sm text-headline-sm mb-xl">Demographic Split</h3>
+<div class="flex-1 flex flex-col items-center justify-center space-y-lg">
+<div class="relative w-40 h-40">
+<!-- SVG Pie representation -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#00408b" stroke-dasharray="163 251" stroke-width="20"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#5b5f61" stroke-dasharray="50 251" stroke-dashoffset="-163" stroke-width="20"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#725600" stroke-dasharray="25 251" stroke-dashoffset="-213" stroke-width="20"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#d8e3fa" stroke-dasharray="13 251" stroke-dashoffset="-238" stroke-width="20"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-headline-md font-bold text-on-surface">2.4k</span>
+<span class="text-label-sm text-secondary">Total</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-sm w-full">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-label-md text-on-surface">Students (65%)</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<span class="text-label-md text-on-surface">Faculty (20%)</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-tertiary-container"></div>
+<span class="text-label-md text-on-surface">Staff (10%)</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-surface-container-highest"></div>
+<span class="text-label-md text-on-surface">External (5%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Engagement Trends (Line Chart) -->
+<div class="col-span-12 lg:col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl">
+<div class="flex justify-between items-center mb-xl">
+<h3 class="font-headline-sm text-headline-sm">Engagement Trends (12 Months)</h3>
+<div class="flex gap-md">
+<div class="flex items-center gap-sm">
+<div class="w-3 h-[2px] bg-primary"></div>
+<span class="text-label-sm text-secondary">Active Hours</span>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-3 h-[2px] bg-tertiary-fixed-dim"></div>
+<span class="text-label-sm text-secondary">Applications</span>
+</div>
+</div>
+</div>
+<div class="h-64 w-full relative">
+<!-- Simulated Line Chart -->
+<svg class="w-full h-full preserve-aspect-ratio overflow-visible" viewbox="0 0 1000 250">
+<!-- Grid lines -->
+<path d="M0 250 H1000 M0 187 H1000 M0 125 H1000 M0 62 H1000 M0 0 H1000" stroke="#f0f3ff" stroke-width="1"></path>
+<!-- Line Path Primary -->
+<path d="M0 200 L90 180 L181 190 L272 150 L363 120 L454 130 L545 80 L636 100 L727 60 L818 40 L909 70 L1000 30" fill="none" stroke="#00408b" stroke-linecap="round" stroke-width="3"></path>
+<!-- Line Path Secondary (Gold Accent) -->
+<path d="M0 230 L90 220 L181 210 L272 200 L363 180 L454 190 L545 160 L636 170 L727 150 L818 130 L909 140 L1000 120" fill="none" stroke="#f6bf22" stroke-dasharray="4 4" stroke-width="2"></path>
+<!-- Data points -->
+<circle cx="272" cy="150" fill="#00408b" r="4"></circle>
+<circle cx="545" cy="80" fill="#00408b" r="4"></circle>
+<circle cx="818" cy="40" fill="#00408b" r="4"></circle>
+</svg>
+<div class="flex justify-between mt-sm">
+<span class="text-label-sm text-outline">Jan</span>
+<span class="text-label-sm text-outline">Mar</span>
+<span class="text-label-sm text-outline">May</span>
+<span class="text-label-sm text-outline">Jul</span>
+<span class="text-label-sm text-outline">Sep</span>
+<span class="text-label-sm text-outline">Nov</span>
+<span class="text-label-sm text-outline">Dec</span>
+</div>
+</div>
+</div>
+<!-- Peak Volunteer Hours (Heatmap) -->
+<div class="col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl overflow-x-auto custom-scrollbar">
+<div class="flex justify-between items-center mb-xl min-w-[800px]">
+<h3 class="font-headline-sm text-headline-sm">Peak Volunteer Activity</h3>
+<div class="flex items-center gap-sm">
+<span class="text-label-sm text-secondary">Low</span>
+<div class="flex h-3 w-32 rounded-full overflow-hidden">
+<div class="flex-1 bg-primary/10"></div>
+<div class="flex-1 bg-primary/40"></div>
+<div class="flex-1 bg-primary/70"></div>
+<div class="flex-1 bg-primary"></div>
+</div>
+<span class="text-label-sm text-secondary">High</span>
+</div>
+</div>
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Time Range</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Mon</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Tue</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Wed</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Thu</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Fri</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Sat</th>
+<th class="p-sm text-label-sm text-secondary uppercase font-bold">Sun</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr>
+<td class="p-sm text-label-md text-secondary">08:00 - 10:00</td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/10"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/10"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/10"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+</tr>
+<tr>
+<td class="p-sm text-label-md text-secondary">10:00 - 12:00</td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/100"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+</tr>
+<tr>
+<td class="p-sm text-label-md text-secondary">13:00 - 15:00</td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/100"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/100"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/10"></div></td>
+</tr>
+<tr>
+<td class="p-sm text-label-md text-secondary">15:00 - 17:00</td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/70"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/100"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/40"></div></td>
+<td class="p-sm"><div class="h-8 w-full rounded bg-primary/10"></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- FOOTER -->
+<footer class="mt-auto border-t border-outline-variant py-md px-lg bg-surface-container-lowest flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="flex items-center gap-md">
+<span class="font-label-sm text-label-sm font-bold text-primary">PSU Volunteer Hub</span>
+<p class="text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+</div>
+<div class="flex gap-lg">
+<a class="text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="text-label-md text-secondary hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+</main>
+<!-- FLOATING ACTION BUTTON (FOR EXPORT) -->
+<div class="fixed bottom-lg right-lg flex flex-col gap-sm">
+<button class="w-14 h-14 bg-tertiary-fixed text-on-tertiary-fixed rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform active:scale-95 group relative">
+<span class="material-symbols-outlined">sim_card_download</span>
+<span class="absolute right-16 bg-inverse-surface text-inverse-on-surface text-label-sm px-md py-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Export Excel</span>
+</button>
+<button class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform active:scale-95 group relative">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+<span class="absolute right-16 bg-inverse-surface text-inverse-on-surface text-label-sm px-md py-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Export PDF</span>
+</button>
+</div>
+<!-- MOBILE NAVIGATION (OVERLAY/HIDDEN BY DEFAULT) -->
+<div class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around p-sm z-50">
+<button class="p-sm text-on-surface-variant flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px]">Home</span>
+</button>
+<button class="p-sm text-primary flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px]">Analytics</span>
+</button>
+<button class="p-sm text-on-surface-variant flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined">volunteer_activism</span>
+<span class="text-[10px]">Ops</span>
+</button>
+<button class="p-sm text-on-surface-variant flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px]">Settings</span>
+</button>
+</div>
+<script>
+        // Simple micro-interactions for the charts
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                const bar = item.querySelector('.bg-primary, .bg-tertiary-container');
+                if (bar) bar.style.filter = 'brightness(1.1)';
+            });
+            item.addEventListener('mouseleave', () => {
+                const bar = item.querySelector('.bg-primary, .bg-tertiary-container');
+                if (bar) bar.style.filter = 'none';
+            });
+        });
+    </script>
+</body></html>

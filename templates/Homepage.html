@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PSU Volunteer Hub | Empowering Excellence through Service</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#727784",
+                        "surface": "#f9f9ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#adc7ff",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#f6bf22",
+                        "primary": "#00408b",
+                        "on-surface": "#111c2c",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdf99",
+                        "tertiary-container": "#725600",
+                        "surface-dim": "#cfdaf1",
+                        "secondary": "#5b5f61",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#ebf1ff",
+                        "on-secondary-fixed-variant": "#44474a",
+                        "on-primary-container": "#bfd2ff",
+                        "secondary-fixed-dim": "#c4c7ca",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-secondary-container": "#626567",
+                        "on-primary-fixed": "#001a41",
+                        "background": "#f9f9ff",
+                        "outline-variant": "#c2c6d4",
+                        "inverse-primary": "#adc7ff",
+                        "secondary-container": "#e0e3e6",
+                        "on-tertiary-fixed-variant": "#5a4300",
+                        "tertiary": "#553f00",
+                        "on-background": "#111c2c",
+                        "on-surface-variant": "#424752",
+                        "surface-container": "#e7eeff",
+                        "inverse-surface": "#263142",
+                        "secondary-fixed": "#e0e3e6",
+                        "surface-tint": "#0d5bbc",
+                        "surface-container-highest": "#d8e3fa",
+                        "surface-variant": "#d8e3fa",
+                        "primary-container": "#0057b8",
+                        "on-secondary-fixed": "#191c1e",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#dee8ff",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary-container": "#ffcb44"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "container-max-width": "1440px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "2xl": "48px",
+                        "sidebar-width": "260px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        .nav-link-active {
+            @apply text-primary border-b-2 border-primary;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(221, 227, 234, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar (Shared Component Reference) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-lg h-16 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-3xl">school</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</span>
+</div>
+<nav class="hidden md:flex items-center gap-xl">
+<a class="font-label-md text-label-md text-primary font-semibold border-b-2 border-primary py-2" href="#">About</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all py-2" href="#">Opportunities</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all py-2" href="#">Impact</a>
+<div class="flex items-center gap-md ml-lg">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-surface-container-low rounded-full p-2">notifications</span>
+<button class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-all">Login</button>
+</div>
+</nav>
+<button class="md:hidden material-symbols-outlined">menu</button>
+</header>
+<main class="pt-16">
+<!-- Hero Section -->
+<section class="relative h-[819px] flex items-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center" data-alt="A group of Pangasinan State University students in blue university uniforms collaborating on a community building project in a rural Philippine village. The sun is setting, casting a warm, golden glow across the scene. The overall aesthetic is professional and inspirational, highlighting community engagement and academic leadership with a clean, high-contrast light-mode UI feel." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqXOxEOjrki9XWoq0Dg0rnN_gw9Gk7AdmE6Oa_yqWuVYedJq3nr3zM7PZNJiLM8KFx21QP99DVWurOOtzzRk7dij9goUdhfG4IWOYyEuS8HhCk_8ASDtlfXawiyL7obEJemKgEZKwD4jhnXtCIBodAbDBzUwxrs14Ln0WL3D0DWMB456IHPrM08gWwscoruLih59GWn_m_l0afKOoyi_Gse_9zNJ4Puv9yPbhIE713YcDsuzv0H7MzDTM1tlusmlNFYo7lorkfMdTw')"></div>
+<div class="absolute inset-0 bg-gradient-to-r from-primary/80 to-transparent"></div>
+</div>
+<div class="relative z-10 max-w-container-max-width mx-auto px-lg w-full">
+<div class="max-w-2xl">
+<h1 class="font-display-lg text-display-lg text-white mb-md">Empowering Excellence through Service</h1>
+<p class="font-body-lg text-body-lg text-white/90 mb-xl">Join the centralized volunteer network of Pangasinan State University. Connect with meaningful projects, develop professional skills, and make a lasting impact on our community.</p>
+<div class="flex gap-md">
+<button class="bg-tertiary-fixed text-on-tertiary-fixed px-xl py-md rounded-lg font-headline-sm hover:scale-105 transition-transform flex items-center gap-sm">
+                            Join Now <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="border border-white text-white px-xl py-md rounded-lg font-headline-sm hover:bg-white/10 transition-colors">
+                            Explore Projects
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats Overview Banner -->
+<section class="bg-primary-container py-xl">
+<div class="max-w-container-max-width mx-auto px-lg">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-lg text-white text-center">
+<div>
+<div class="font-display-lg text-display-lg">5,000+</div>
+<div class="font-label-md text-label-md uppercase tracking-wider opacity-80">Active Volunteers</div>
+</div>
+<div>
+<div class="font-display-lg text-display-lg">200+</div>
+<div class="font-label-md text-label-md uppercase tracking-wider opacity-80">Projects Completed</div>
+</div>
+<div>
+<div class="font-display-lg text-display-lg">10,000+</div>
+<div class="font-label-md text-label-md uppercase tracking-wider opacity-80">Service Hours</div>
+</div>
+<div>
+<div class="font-display-lg text-display-lg">15</div>
+<div class="font-label-md text-label-md uppercase tracking-wider opacity-80">PSU Campuses</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Mission Section -->
+<section class="py-2xl bg-white">
+<div class="max-w-4xl mx-auto px-lg text-center">
+<span class="inline-block bg-primary-fixed text-on-primary-fixed px-md py-xs rounded-full font-label-sm text-label-sm mb-md uppercase tracking-widest">Our Vision</span>
+<h2 class="font-display-lg text-display-lg text-primary mb-xl">Our Volunteerism Mission</h2>
+<p class="font-body-lg text-body-lg text-secondary leading-relaxed">
+                    At PSU, we believe that academic excellence is incomplete without social responsibility. Our mission is to foster a culture of service that empowers students to lead, innovate, and contribute to the socio-economic development of Pangasinan and beyond through structured, impactful volunteer opportunities.
+                </p>
+<div class="mt-xl h-1 w-24 bg-tertiary mx-auto rounded-full"></div>
+</div>
+</section>
+<!-- Benefits Section -->
+<section class="py-2xl bg-surface-container-low">
+<div class="max-w-container-max-width mx-auto px-lg">
+<div class="grid md:grid-cols-3 gap-xl">
+<!-- Benefit 1 -->
+<div class="bg-white p-xl rounded-xl border border-outline-variant hover:border-primary transition-colors group">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Skill Development</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Gain hands-on experience in leadership, project management, and specialized technical fields that complement your academic studies.</p>
+</div>
+<!-- Benefit 2 -->
+<div class="bg-white p-xl rounded-xl border border-outline-variant hover:border-primary transition-colors group">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">public</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Community Impact</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Directly contribute to the United Nations Sustainable Development Goals through local initiatives tailored to community needs.</p>
+</div>
+<!-- Benefit 3 -->
+<div class="bg-white p-xl rounded-xl border border-outline-variant hover:border-primary transition-colors group">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-md">Official Certification</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Receive university-endorsed certificates for your portfolio, recognized by employers and academic institutions worldwide.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Opportunities (Asymmetric/Bento Style) -->
+<section class="py-2xl">
+<div class="max-w-container-max-width mx-auto px-lg">
+<div class="flex justify-between items-end mb-2xl">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary">Featured Opportunities</h2>
+<p class="font-body-md text-body-md text-secondary mt-sm">Find the perfect project that matches your passion and schedule.</p>
+</div>
+<button class="text-primary font-label-md text-label-md flex items-center gap-xs hover:underline decoration-2 underline-offset-4">
+                        View All Opportunities <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+<div class="bento-grid">
+<!-- Main Featured -->
+<div class="col-span-12 md:col-span-8 group relative rounded-xl overflow-hidden h-[400px]">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="A brightly lit classroom setting where a group of PSU students are teaching young children basic literacy and math skills. The room is filled with educational posters and cheerful decorations. High-quality corporate photography style with focus on interaction and smiling faces, primary blue and gold accents, and a clean professional atmosphere." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBuvxcglAImftYj91MLSZhzIqwBFN-I-LNN8gN27oioUMRALUCJTjjuTO3h0tFH86deRCKax7F4a2N63ILlcy9CCw1CkbnFV6LdwXd7jYA9f5vm8_4_XmpRygNSyYDhrM_XgI5kV4uIftyTeklLxgxydTXmbmM1d4e3kVcu9VQTCDSlKZhPhfmvNZGd_Ff1hVG7ideMRkcSWourM1PHykl32w2QfTXfLy63jZsXx6Ts6rW0D06Gvbk-7cCTf0sRnzEdduc-ThUACTbQ')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-xl w-full">
+<div class="flex gap-sm mb-md">
+<span class="bg-tertiary text-on-tertiary px-sm py-1 rounded text-label-sm font-label-sm">Education</span>
+<span class="bg-white/20 backdrop-blur text-white px-sm py-1 rounded text-label-sm font-label-sm">High Impact</span>
+</div>
+<h3 class="text-white font-headline-lg text-headline-lg mb-sm">Rural Literacy Program</h3>
+<p class="text-white/80 font-body-md text-body-md max-w-xl mb-lg">Help bridge the educational gap by teaching foundational reading and mathematics to children in remote communities across Pangasinan.</p>
+<button class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md">Apply Now</button>
+</div>
+</div>
+<!-- Secondary 1 -->
+<div class="col-span-12 md:col-span-4 group relative rounded-xl overflow-hidden h-[400px]">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="University students wearing protective gear and gloves collecting plastic waste along a beautiful white-sand beach in the Philippines during a coastal cleanup drive. Bright daylight, turquoise water in the background, professional documentary style photography, vibrant and clean." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBOAk9pFi8vdx5LcY3fxNosdRcYzh0XWQPO_h7M_KQUGc31hjdoktHaqh12NgqZknynYZtIDbOzqbrsiTrThvngWx9dx5yJkodSSYmWRPCgX93nBv0aT3ECAjtc8iMORNMxfBQL9TJ995cscFNtM5PcYUNPHFFylI6gf9oL6aInp2lo0tRAPxH-GUfW14o1D9lnfsRj71-W1aV6r_msJAxvVX-w2OHoBkp8h0MJrBMQchUfyrskF0hKtWmHLqMlWvgScRGIUYPduies')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-xl w-full">
+<span class="bg-secondary-container text-on-secondary-container px-sm py-1 rounded text-label-sm font-label-sm mb-md inline-block">Environment</span>
+<h3 class="text-white font-headline-md text-headline-md mb-md">Coastal Cleanup Initiative</h3>
+<button class="text-white font-label-md text-label-md border-b border-white/50 hover:border-white transition-colors">Join Team</button>
+</div>
+</div>
+<!-- Secondary 2 -->
+<div class="col-span-12 md:col-span-4 group relative rounded-xl overflow-hidden h-[300px]">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="A modern computer lab with university students assisting elderly community members with technology. Close up of hands on a keyboard and friendly interactions. Professional, clean lighting, emphasis on digital inclusion and intergenerational connection." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDz5m7WetLsAddfV1nHR16DprjVSuJtYJeF1zhTEvbIGABBZmvWrQDMTeQc-C39NFLsxx1Y8a4guhlB3iLPLlJz0N-ELX5Lbf9XRv-g0gIV8J_C0GJiucFmyJ0Cr9uX5Xz9qbiZD6bjacu7QeOid9BhS4GYhROJsWofezU0b9xeV7IllNrE_VCrKLF_CfQrAL6fCgE1qqT9D9ZBINVtvgdTCdCq17hZYlCP0UzoOtu0IAqQQgX_tP8JCvDj5OGRiiRQyEthfeBLcw2b')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-xl w-full">
+<span class="bg-primary text-on-primary px-sm py-1 rounded text-label-sm font-label-sm mb-md inline-block">Technology</span>
+<h4 class="text-white font-headline-sm text-headline-sm">Community IT Support</h4>
+</div>
+</div>
+<!-- CTA Card -->
+<div class="col-span-12 md:col-span-8 bg-primary-fixed rounded-xl p-2xl flex flex-col justify-center relative overflow-hidden">
+<div class="absolute right-0 top-0 opacity-10">
+<span class="material-symbols-outlined text-[200px]" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+</div>
+<div class="relative z-10">
+<h3 class="font-display-lg text-display-lg text-on-primary-fixed mb-md">Have a Project Idea?</h3>
+<p class="font-body-lg text-body-lg text-on-primary-fixed-variant mb-xl max-w-lg">We support student-led initiatives. Propose your own volunteer project and lead your peers in making a difference.</p>
+<button class="bg-primary text-on-primary px-xl py-md rounded-lg font-headline-sm hover:shadow-lg transition-shadow">Submit Proposal</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component Reference) -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant py-2xl mt-2xl">
+<div class="max-w-container-max-width mx-auto px-lg">
+<div class="grid md:grid-cols-4 gap-xl mb-2xl">
+<div class="col-span-2">
+<div class="flex items-center gap-md mb-lg">
+<span class="material-symbols-outlined text-primary text-3xl">school</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</span>
+</div>
+<p class="font-body-md text-body-md text-secondary max-w-sm mb-lg">
+                        Pangasinan State University is committed to holistic development, integrating academic excellence with proactive community engagement and sustainable social services.
+                    </p>
+<div class="flex gap-md">
+<a class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-secondary hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined">face_nod</span></a>
+<a class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-secondary hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-secondary hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined">mail</span></a>
+</div>
+</div>
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-widest mb-lg">Quick Links</h4>
+<ul class="space-y-sm">
+<li><a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors" href="#">About the Hub</a></li>
+<li><a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors" href="#">Open Opportunities</a></li>
+<li><a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors" href="#">Impact Reports</a></li>
+<li><a class="font-body-md text-body-md text-secondary hover:text-primary transition-colors" href="#">Volunteer Handbook</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface uppercase tracking-widest mb-lg">Contact Support</h4>
+<p class="font-body-md text-body-md text-secondary mb-sm">University Hub, Lingayen Campus</p>
+<p class="font-body-md text-body-md text-secondary mb-sm">Pangasinan, Philippines</p>
+<p class="font-body-md text-body-md text-primary font-semibold">volunteer@psu.edu.ph</p>
+</div>
+</div>
+<div class="pt-lg border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-md">
+<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<div class="flex gap-lg">
+<a class="font-label-md text-label-md text-secondary hover:underline" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-secondary hover:underline" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-secondary hover:underline" href="#">Academic Accreditation</a>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for scroll header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('shadow-md');
+                header.classList.add('bg-white');
+                header.classList.remove('bg-surface');
+            } else {
+                header.classList.remove('shadow-md');
+                header.classList.remove('bg-white');
+                header.classList.add('bg-surface');
+            }
+        });
+
+        // Simple observer for reveal animation
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('opacity-100');
+                    entry.target.classList.remove('translate-y-10');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section > div').forEach(div => {
+            div.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
+            observer.observe(div);
+        });
+    </script>
+</body></html>
