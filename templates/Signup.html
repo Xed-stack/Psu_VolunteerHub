@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Join PSU Volunteer Hub | Create Account</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <link href="{{ url_for('static', filename='styles/signup.css') }}" rel="stylesheet"/>
+</head>
+<body>
+
+    <div class="split-layout">
+        <div class="brand-panel">
+            <div class="brand-overlay"></div>
+            <div class="brand-content">
+                <div class="logo-group">
+                    <span class="material-symbols-outlined icon-white">school</span>
+                    <span class="logo-text-white">PSU Volunteer Hub</span>
+                </div>
+                <h2>Make a measurable impact across your campus network.</h2>
+                <p>A centralized space built directly for Pangasinan State University students, faculty coordinators, and executives to drive real community engagement.</p>
+            </div>
+        </div>
+
+        <div class="form-panel">
+            <div class="form-container">
+                <header class="form-header">
+                    <h1>Create your account</h1>
+                    <p>Already have an account? <a href="#">Sign in instead</a></p>
+                </header>
+
+                <form action="/signup" method="POST" class="signup-form">
+                    
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" required placeholder="Juan" />
+                        </div>
+                        <div class="input-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" required placeholder="Dela Cruz" />
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="email">Institutional Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="username@psu.edu.ph" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="account_type">Account Role Type</label>
+                        <select id="account_type" name="account_type" required onchange="toggleRoleFields(this.value)">
+                            <option value="" disabled selected>Choose your systemic access scope</option>
+                            <option value="volunteer">Volunteer (Student, Faculty, or Staff)</option>
+                            <option value="coordinator">Extension Coordinator (Campus Administrator)</option>
+                            <option value="executive">Executive-Level (University-Wide Analytics)</option>
+                        </select>
+                        <span class="field-instruction">Your access privileges will be locked strictly based on this assignment core.</span>
+                    </div>
+
+                    <div id="volunteer_meta_fields" class="conditional-fields-box">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="volunteer_type">Volunteer Category</label>
+                                <select id="volunteer_type" name="volunteer_type">
+                                    <option value="student">Enrolled Student</option>
+                                    <option value="faculty">Faculty Member</option>
+                                    <option value="staff">University Staff</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="id_number">PSU ID Number</label>
+                                <input type="text" id="id_number" name="id_number" placeholder="XX-XXXX-XX" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="campus_selection_field" class="input-group">
+                        <label for="campus">Assigned Campus Jurisdiction</label>
+                        <select id="campus" name="campus">
+                            <option value="lingayen">Lingayen (Main)</option>
+                            <option value="alaminos">Alaminos Campus</option>
+                            <option value="asingan">Asingan Campus</option>
+                            <option value="bayambang">Bayambang Campus</option>
+                            <option value="binmaley">Binmaley Campus</option>
+                            <option value="infanta">Infanta Campus</option>
+                            <option value="san_carlos">San Carlos Campus</option>
+                            <option value="sta_maria">Sta. Maria Campus</option>
+                            <option value="urdaneta">Urdaneta Campus</option>
+                        </select>
+                        <span id="campus_hint" class="field-instruction">Volunteers and Coordinators are strictly limited to actions within this boundary.</span>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Register Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleRoleFields(role) {
+            const volunteerBox = document.getElementById('volunteer_meta_fields');
+            const campusBox = document.getElementById('campus_selection_field');
+            const campusHint = document.getElementById('campus_hint');
+            
+            if (role === 'volunteer') {
+                volunteerBox.classList.add('visible');
+                campusBox.classList.add('visible');
+                campusHint.innerText = "Scope is restricted to personal engagement updates within your choice campus.";
+            } else if (role === 'coordinator') {
+                volunteerBox.classList.remove('visible');
+                campusBox.classList.add('visible');
+                campusHint.innerText = "Grant permissions to write events and review data exclusively inside this boundary.";
+            } else if (role === 'executive') {
+                // Executives view macro analytics dashboards cross-campus; they don't select one local campus boundary.
+                volunteerBox.classList.remove('visible');
+                campusBox.classList.remove('visible');
+            }
+        }
+    </script>
+</body>
+</html>

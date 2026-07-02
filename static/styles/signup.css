@@ -1,0 +1,181 @@
+:root {
+    --primary: #00408b;
+    --primary-variant: #002d62;
+    --surface-lowest: #ffffff;
+    --surface-low: #f4f6f9;
+    --on-surface: #111c2c;
+    --on-surface-variant: #5b6573;
+    --outline: #d1d5db;
+    --space-md: 16px;
+    --space-lg: 24px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--on-surface);
+    background-color: var(--surface-low);
+    height: 100vh;
+}
+
+/* Master Split Window Layout */
+.split-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Left Brand Block Panel */
+.brand-panel {
+    position: relative;
+    display: none; /* Mobile first hidden feature */
+    flex: 1;
+    color: white;
+    padding: var(--space-lg);
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.brand-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-variant) 100%);
+    z-index: 1;
+}
+
+.brand-content {
+    position: relative;
+    z-index: 2;
+    max-width: 480px;
+    margin: 0 auto var(--space-lg) auto;
+}
+
+.logo-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--space-lg);
+}
+
+.icon-white { color: white; font-size: 36px; }
+.logo-text-white { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+
+.brand-content h2 { font-size: 32px; font-weight: 700; margin-bottom: 16px; line-height: 1.3; }
+.brand-content p { font-size: 15px; color: rgba(255,255,255,0.8); line-height: 1.6; }
+
+@media (min-width: 1024px) {
+    .brand-panel { display: flex; }
+}
+
+/* Right Entry Form Box Panel */
+.form-panel {
+    flex: 1;
+    background-color: var(--surface-lowest);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+    overflow-y: auto;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 480px;
+}
+
+.form-header h1 { font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+.form-header p { font-size: 14px; color: var(--on-surface-variant); margin-bottom: var(--space-lg); }
+.form-header a { color: var(--primary); font-weight: 600; text-decoration: none; }
+.form-header a:hover { text-decoration: underline; }
+
+/* Clean Stacked Core Form Blocks */
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.input-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--on-surface);
+}
+
+.input-group input, 
+.input-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--on-surface);
+    background-color: var(--surface-lowest);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus, 
+.input-group select:focus {
+    border-color: var(--primary);
+}
+
+.field-instruction {
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* Dynamic CSS Conditional States */
+.conditional-fields-box {
+    display: none;
+    background-color: var(--surface-low);
+    padding: 14px;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary);
+}
+
+#campus_selection_field {
+    display: none;
+}
+
+/* Visibility triggers via matching DOM Javascript toggle engines */
+.conditional-fields-box.visible,
+#campus_selection_field.visible {
+    display: flex;
+}
+
+/* Primary Execution Button */
+.btn-submit {
+    margin-top: 8px;
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-submit:hover { opacity: 0.95; }
