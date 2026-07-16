@@ -198,9 +198,12 @@
 <div class="flex items-center gap-md px-md">
 <img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a university administrator in their mid-40s, wearing formal attire. The lighting is soft and even, creating an approachable yet authoritative atmosphere. The background is a slightly blurred office setting with books and academic awards, maintaining a clean, professional PSU institution look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaH_EeX9hcWAdY5eYvDnJH4lpSUmhnSnqLp-AfwqrBG-Ny032TAfSj5p0t4fedM4WUauygcmvcGMTUpwCdtuulzRbl7jJ8-18nljIfcW0JpSruVKWmcjcvDdkSHz10rnuTC_urKGnBQ5xy0znU1VxE981M7QRQv4kwIsXz-3JiK-WEy1y6m-K4GskfsnE_xIOPaRXCNlJPEQAxpXujZk0l8PE2cOVi1ao03EZtfPamLqRbSdSoFcnpXPEOiiwHb5LNYPxaP58sNpjK"/>
 <div class="overflow-hidden">
-<p class="font-label-sm text-label-sm text-on-surface font-bold truncate">Admin User</p>
-<p class="font-label-md text-label-md text-secondary truncate">admin@psu.edu.ph</p>
+<p class="font-label-sm text-label-sm text-on-surface font-bold truncate">{{ current_user.name }}</p>
+<p class="font-label-md text-label-md text-secondary truncate">{{ current_user.email }}</p>
 </div>
+<a href="{{ url_for('auth.logout') }}" class="ml-auto text-secondary hover:text-error transition-colors" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</a>
 </div>
 </div>
 </aside>
