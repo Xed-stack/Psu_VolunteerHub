@@ -251,10 +251,10 @@
 <p class="font-body-lg text-secondary">Ready to make an impact today? You have 2 events coming up this week.</p>
 </div>
 <div class="flex gap-sm">
-<button class="flex items-center gap-xs px-md py-2 border border-primary text-primary rounded-lg font-label-md hover:bg-primary-fixed transition-all">
+<a href="{{ url_for('volunteer.certificates') }}" class="flex items-center gap-xs px-md py-2 border border-primary text-primary rounded-lg font-label-md hover:bg-primary-fixed transition-all">
 <span class="material-symbols-outlined text-[18px]">download</span>
                         Download Certificate
-                    </button>
+                    </a>
 <a href="{{ url_for('events.opportunities') }}" class="flex items-center gap-xs px-md py-2 bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold rounded-lg font-label-md hover:brightness-95 transition-all">
 <span class="material-symbols-outlined">search</span>
                         Search Opportunities
@@ -318,7 +318,7 @@
 <section>
 <div class="flex items-center justify-between mb-md">
 <h3 class="font-headline-sm text-headline-sm text-on-surface">Recommended for You</h3>
-<a class="text-label-md text-primary font-bold hover:underline" href="#">View All</a>
+<a class="text-label-md text-primary font-bold hover:underline" href="{{ url_for('events.opportunities') }}">View All</a>
 </div>
             <div class="flex gap-md overflow-x-auto pb-sm snap-x">
 {% for rec in recommendations %}

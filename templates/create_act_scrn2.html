@@ -122,23 +122,23 @@
 </div>
 </div>
 <nav class="flex-grow space-y-base">
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('coordinator.coordinator_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg sidebar-active transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md rounded-lg sidebar-active transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
 <span class="font-body-md text-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md text-body-md">Analytics</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">manage_accounts</span>
 <span class="font-body-md text-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md text-body-md">Settings</span>
 </a>
@@ -182,9 +182,9 @@
 <!-- Breadcrumbs & Header -->
 <div class="mb-xl">
 <nav class="flex items-center gap-xs text-secondary font-label-md text-label-md mb-xs">
-<a class="hover:text-primary" href="#">Dashboard</a>
+<a class="hover:text-primary" href="{{ url_for('coordinator.coordinator_dash') }}">Dashboard</a>
 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-<a class="hover:text-primary" href="#">Opportunities</a>
+<a class="hover:text-primary" href="{{ url_for('events.opportunities') }}">Opportunities</a>
 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
 <span class="text-on-surface font-semibold">Create Activity</span>
 </nav>

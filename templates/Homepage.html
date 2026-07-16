@@ -19,11 +19,11 @@
         </div>
         <nav class="desktop-nav">
             <a class="nav-link active" href="#">About</a>
-            <a class="nav-link" href="#">Opportunities</a>
+            <a class="nav-link" href="{{ url_for('events.opportunities') }}">Opportunities</a>
             <a class="nav-link" href="#">Impact</a>
             <div class="nav-actions">
                 <span class="material-symbols-outlined icon-btn">notifications</span>
-                <button class="btn btn-primary">Login</button>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
             </div>
         </nav>
         <button class="menu-mobile-btn material-symbols-outlined">menu</button>
@@ -108,9 +108,9 @@
                         <h2>Featured Opportunities</h2>
                         <p class="subtitle">Find the perfect project that matches your passion and schedule.</p>
                     </div>
-                    <button class="text-link-btn">
+                    <a href="{{ url_for('events.opportunities') }}" class="text-link-btn">
                         View All Opportunities <span class="material-symbols-outlined">open_in_new</span>
-                    </button>
+                    </a>
                 </div>
                 
                 <div class="bento-grid">
@@ -124,7 +124,7 @@
                             </div>
                             <h3>Rural Literacy Program</h3>
                             <p>Help bridge the educational gap by teaching foundational reading and mathematics to children in remote communities across Pangasinan.</p>
-                            <button class="btn btn-primary fits-content">Apply Now</button>
+                            <a href="{{ url_for('events.opportunities') }}" class="btn btn-primary fits-content">Apply Now</a>
                         </div>
                     </div>
                     
@@ -134,7 +134,7 @@
                         <div class="bento-content">
                             <span class="bento-badge secondary-badge">Environment</span>
                             <h3>Coastal Cleanup Initiative</h3>
-                            <button class="text-link-white">Join Team</button>
+                            <a href="{{ url_for('events.opportunities') }}" class="text-link-white">Join Team</a>
                         </div>
                     </div>
                     
@@ -154,7 +154,7 @@
                         <div class="cta-content">
                             <h3>Have a Project Idea?</h3>
                             <p>We support student-led initiatives. Propose your own volunteer project and lead your peers in making a difference.</p>
-                            <button class="btn btn-primary">Submit Proposal</button>
+                            <a href="{{ url_for('events.opportunities') }}" class="btn btn-primary">Submit Proposal</a>
                         </div>
                     </div>
                 </div>
@@ -180,7 +180,7 @@
                 <h4>Quick Links</h4>
                 <ul class="footer-links">
                     <li><a href="#">About the Hub</a></li>
-                    <li><a href="#">Open Opportunities</a></li>
+                    <li><a href="{{ url_for('events.opportunities') }}">Open Opportunities</a></li>
                     <li><a href="#">Impact Reports</a></li>
                     <li><a href="#">Volunteer Handbook</a></li>
                 </ul>
