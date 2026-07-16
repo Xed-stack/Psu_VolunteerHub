@@ -123,10 +123,49 @@
       .bg-psu-gold { background-color: #f6bf22; }
       .text-psu-gold { color: #f6bf22; }
     </style>
+<style>
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+  .mobile-overlay.show { display: block; }
+  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
+}
+@media (max-width: 768px) {
+  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 768px) {
+  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
+  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
+  .flex-row { flex-direction: column !important; }
+  .gap-xl { gap: 1rem !important; }
+}
+@media (max-width: 768px) {
+  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
+}
+</style>
 </head>
 <body class="bg-background text-on-background">
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="fixed top-4 right-4 z-[100] space-y-2">
+      {% for category, message in messages %}
+        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
+          {% if category == 'success' %}bg-green-600
+          {% elif category == 'error' %}bg-red-600
+          {% elif category == 'warning' %}bg-yellow-600
+          {% else %}bg-blue-600{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 <!-- SideNavBar (from JSON) -->
-<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
 <div class="flex items-center gap-sm mb-2xl">
 <div class="w-10 h-10 bg-primary rounded flex items-center justify-center">
 <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1">school</span>
@@ -138,23 +177,23 @@
 </div>
 <nav class="flex-1 space-y-base">
 <!-- Active: Dashboard -->
-<a class="flex items-center gap-md p-md bg-primary-fixed text-on-primary-fixed font-semibold rounded-lg transition-colors duration-200" href="#">
+<a class="flex items-center gap-md p-md bg-primary-fixed text-on-primary-fixed font-semibold rounded-lg transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined">volunteer_activism</span>
 <span class="font-body-md text-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md text-body-md">Analytics</span>
 </a>
-<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">manage_accounts</span>
 <span class="font-body-md text-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="#">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container transition-colors duration-200 rounded-lg" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md text-body-md">Settings</span>
 </a>
@@ -172,7 +211,10 @@
 </div>
 </aside>
 <!-- TopNavBar (from JSON) -->
-<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<header class="header-fixed fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+  <span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center flex-1 max-w-xl relative">
 <span class="material-symbols-outlined absolute left-3 text-secondary">search</span>
 <input class="w-full bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-body-md font-body-md focus:ring-2 focus:ring-primary/10" placeholder="Search campuses, reports, or volunteers..." type="text"/>
@@ -193,7 +235,7 @@
 </div>
 </header>
 <!-- Main Content Canvas -->
-<main class="ml-[260px] pt-16 min-h-screen">
+<main class="ml-[260px] main-content pt-16 min-h-screen">
 <div class="max-w-[1440px] p-lg mx-auto">
 <!-- Page Header -->
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-md mb-xl">
@@ -202,16 +244,16 @@
 <p class="font-body-lg text-body-lg text-secondary">University-wide strategic oversight and impact metrics.</p>
 </div>
 <div class="flex gap-sm">
-<button class="flex items-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded hover:bg-primary/5 transition-colors">
+<a href="{{ url_for('director.export_campus_csv') }}" class="flex items-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded hover:bg-primary/5 transition-colors">
 <span class="material-symbols-outlined text-[18px]">file_download</span> Export Report
-                    </button>
+                    </a>
 <button class="flex items-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded shadow-sm hover:opacity-90 transition-opacity">
 <span class="material-symbols-outlined text-[18px]">add</span> Strategic Insight
                     </button>
 </div>
 </div>
 <!-- Bento Grid - Executive KPI Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg mb-lg">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 stats-grid-template gap-lg mb-lg">
 <!-- KPI Card 1 -->
 <div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
 <div class="flex justify-between items-start mb-md">
@@ -223,8 +265,8 @@
                         </span>
 </div>
 <p class="text-secondary font-label-md text-label-md mb-xs">Total Active Volunteers</p>
-<h3 class="font-display-lg text-display-lg">12,482</h3>
-<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Across 9 PSU Campuses</p>
+<h3 class="font-display-lg text-display-lg">{{ total_volunteers }}</h3>
+<p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Across {{ campus_stats|length }} PSU Campuses</p>
 </div>
 <!-- KPI Card 2 -->
 <div class="bg-surface-container-lowest p-lg rounded-lg border border-outline-variant hover:shadow-sm transition-all">
@@ -237,7 +279,7 @@
                         </span>
 </div>
 <p class="text-secondary font-label-md text-label-md mb-xs">Total Service Hours</p>
-<h3 class="font-display-lg text-display-lg">48,290</h3>
+<h3 class="font-display-lg text-display-lg">{{ total_hours }}</h3>
 <p class="text-on-surface-variant font-label-sm text-label-sm mt-md">Verified community hours</p>
 </div>
 <!-- KPI Card 3 -->
@@ -285,34 +327,13 @@
 </div>
 <!-- Simulated Bar Chart -->
 <div class="h-64 flex items-end justify-between gap-md pt-lg">
+{% set max_vol = campus_stats|map(attribute='volunteers')|list|max or 1 %}
+{% for campus in campus_stats[:7] %}
 <div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 85%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">Lingayen</span>
+<div class="w-full {% if loop.index == 3 %}bg-psu-gold hover:opacity-80{% else %}bg-primary-fixed hover:bg-primary{% endif %} transition-colors chart-bar rounded-t" style="height: {{ (campus.volunteers / max_vol * 100)|round|int }}%;"></div>
+<span class="text-label-sm font-label-sm {% if loop.index == 3 %}font-bold{% endif %} text-on-surface-variant">{{ campus.campus }}</span>
 </div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 60%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">Urdaneta</span>
-</div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-psu-gold hover:opacity-80 transition-colors chart-bar rounded-t" style="height: 95%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant font-bold">Bayambang</span>
-</div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 45%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">Binmaley</span>
-</div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 70%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">San Carlos</span>
-</div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 55%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">Sta Maria</span>
-</div>
-<div class="flex flex-col items-center flex-1 gap-sm">
-<div class="w-full bg-primary-fixed hover:bg-primary transition-colors chart-bar rounded-t" style="height: 30%;"></div>
-<span class="text-label-sm font-label-sm text-on-surface-variant">Asingan</span>
-</div>
+{% endfor %}
 </div>
 </div>
 <!-- Participation Trends -->
@@ -324,29 +345,29 @@
 <div class="space-y-lg">
 <div class="flex flex-col">
 <div class="flex justify-between mb-xs">
-<span class="text-label-sm font-label-sm text-on-surface">Community Service</span>
-<span class="text-label-sm font-label-sm text-primary">+24%</span>
+<span class="text-label-sm font-label-sm text-on-surface">Volunteer Growth</span>
+<span class="text-label-sm font-label-sm text-primary">+{{ trends.volunteer_growth }}%</span>
 </div>
 <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
-<div class="bg-primary h-full rounded-full" style="width: 75%;"></div>
+<div class="bg-primary h-full rounded-full" style="width: {{ trends.volunteer_growth * 3 }}%;"></div>
 </div>
 </div>
 <div class="flex flex-col">
 <div class="flex justify-between mb-xs">
-<span class="text-label-sm font-label-sm text-on-surface">Literacy Programs</span>
-<span class="text-label-sm font-label-sm text-primary">+12%</span>
+<span class="text-label-sm font-label-sm text-on-surface">Hours Growth</span>
+<span class="text-label-sm font-label-sm text-primary">+{{ trends.hours_growth }}%</span>
 </div>
 <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
-<div class="bg-primary h-full rounded-full" style="width: 45%;"></div>
+<div class="bg-primary h-full rounded-full" style="width: {{ trends.hours_growth * 3 }}%;"></div>
 </div>
 </div>
 <div class="flex flex-col">
 <div class="flex justify-between mb-xs">
-<span class="text-label-sm font-label-sm text-on-surface">Environmental Outreach</span>
-<span class="text-label-sm font-label-sm text-primary">+38%</span>
+<span class="text-label-sm font-label-sm text-on-surface">Events Growth</span>
+<span class="text-label-sm font-label-sm text-primary">+{{ trends.events_growth }}%</span>
 </div>
 <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
-<div class="bg-psu-gold h-full rounded-full" style="width: 90%;"></div>
+<div class="bg-psu-gold h-full rounded-full" style="width: {{ trends.events_growth * 3 }}%;"></div>
 </div>
 </div>
 </div>
@@ -367,7 +388,7 @@
 <div class="p-lg border-b border-outline-variant">
 <h4 class="font-headline-sm text-headline-sm text-on-surface">Top Performing Campuses</h4>
 </div>
-<table class="w-full">
+<table class="w-full table-responsive">
 <thead class="bg-surface-container-low text-left">
 <tr>
 <th class="px-lg py-md font-label-sm text-label-sm text-secondary">Campus</th>
@@ -377,30 +398,25 @@
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant">
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md font-body-md text-body-md font-semibold">Bayambang</td>
-<td class="px-lg py-md font-body-md text-body-md">2,410</td>
-<td class="px-lg py-md font-body-md text-body-md">98%</td>
-<td class="px-lg py-md">
-<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Exceeding</span>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md font-body-md text-body-md font-semibold">Lingayen</td>
-<td class="px-lg py-md font-body-md text-body-md">1,982</td>
-<td class="px-lg py-md font-body-md text-body-md">95%</td>
-<td class="px-lg py-md">
-<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Target</span>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md font-body-md text-body-md font-semibold">Urdaneta</td>
-<td class="px-lg py-md font-body-md text-body-md">1,540</td>
-<td class="px-lg py-md font-body-md text-body-md">92%</td>
-<td class="px-lg py-md">
-<span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold uppercase rounded">Target</span>
-</td>
-</tr>
+{% if top_campuses %}
+  {% for campus in top_campuses %}
+  <tr class="hover:bg-surface-container-lowest transition-colors">
+    <td class="px-lg py-md font-body-md text-body-md font-semibold">{{ campus.campus }}</td>
+    <td class="px-lg py-md font-body-md text-body-md">{{ campus.volunteers }}</td>
+    <td class="px-lg py-md font-body-md text-body-md">{{ campus.hours }}h</td>
+    <td class="px-lg py-md">
+      <span class="px-2 py-1 text-[10px] font-bold uppercase rounded
+        {% if loop.first %}bg-green-100 text-green-800{% else %}bg-green-100 text-green-800{% endif %}">
+        {{ 'Exceeding' if loop.first else 'Target' }}
+      </span>
+    </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="4" class="px-lg py-md text-center text-secondary">No campus data available.</td>
+  </tr>
+{% endif %}
 </tbody>
 </table>
 </div>
@@ -442,7 +458,7 @@
 </div>
 </main>
 <!-- Footer (from JSON) -->
-<footer class="ml-[260px] bg-surface-container-lowest border-t border-outline-variant py-md flex flex-col md:flex-row justify-between items-center px-lg">
+<footer class="ml-[260px] main-content bg-surface-container-lowest border-t border-outline-variant py-md flex flex-col md:flex-row justify-between items-center px-lg">
 <p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
 <div class="flex gap-lg mt-md md:mt-0">
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
@@ -452,6 +468,10 @@
 </footer>
 <!-- Micro-interaction script -->
 <script>
+        function toggleSidebar() {
+          document.querySelector('.sidebar').classList.toggle('open');
+          document.getElementById('mobileOverlay').classList.toggle('show');
+        }
         document.addEventListener('DOMContentLoaded', () => {
             // Animate bar heights on load
             const bars = document.querySelectorAll('.chart-bar');

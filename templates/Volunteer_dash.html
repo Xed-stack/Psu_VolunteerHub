@@ -126,10 +126,33 @@
             backdrop-filter: blur(8px);
         }
     </style>
+<style>
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+  .mobile-overlay.show { display: block; }
+  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
+}
+@media (max-width: 768px) {
+  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 768px) {
+  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
+  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
+  .flex-row { flex-direction: column !important; }
+  .gap-xl { gap: 1rem !important; }
+}
+@media (max-width: 768px) {
+  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
+}
+</style>
 </head>
 <body class="bg-background text-on-background font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 <!-- SideNavBar Anchor -->
-<aside class="fixed left-0 top-0 h-full w-[260px] border-r border-outline-variant bg-surface flex flex-col p-lg overflow-y-auto z-50">
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] border-r border-outline-variant bg-surface flex flex-col p-lg overflow-y-auto z-50">
 <div class="mb-xl">
 <div class="flex items-center gap-sm">
 <div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-white">
@@ -142,23 +165,23 @@
 </div>
 </div>
 <nav class="flex-1 space-y-1">
-<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold duration-200 ease-in-out" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold duration-200 ease-in-out" href="{{ url_for('events.volunteer_dash') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
 <span class="font-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined">volunteer_activism</span>
 <span class="font-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md">Analytics</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">manage_accounts</span>
 <span class="font-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md">Settings</span>
 </a>
@@ -167,16 +190,35 @@
 <div class="flex items-center gap-md p-sm">
 <img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a young Southeast Asian male university student with a friendly smile, wearing a blue university polo shirt. The background is a soft-focus university campus hallway with natural sunlight streaming in, creating a warm and academic atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIA0zV4xP7APeF3ps-FzI-CrsXHi99upzmiEm_PBgWuZBOmlKmEI41oziugnWSZ3vgkifKfECPNdY7uuYuhh2maGlpjBvGZi5luq_1Re0KzQKDkcMfaH_r9EGmjOQF4Pq_4u6UId6QkKx72upjOFJwTZHuF8vbSAiPtSpbVEm7gAZEmkbXjKN_NuTNKlZ2EcWx2uiYsytb8rXC8edZian4RoCbsX8c_D1TRpEg1ivsGlAqlLYiVZPw1YXmhUOUByePiFkK_PGCpcjh"/>
 <div class="overflow-hidden">
-<p class="font-label-md text-on-surface font-bold truncate">Marc Santos</p>
-<p class="font-label-sm text-secondary truncate">BS Computer Science</p>
+<p class="font-label-md text-on-surface font-bold truncate">{{ current_user.name }}</p>
+<p class="font-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
 </div>
 </div>
 </div>
 </aside>
 <!-- Main Canvas -->
-<main class="ml-[260px] min-h-screen flex flex-col">
+<main class="ml-[260px] main-content min-h-screen flex flex-col">
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="fixed top-4 right-4 z-[100] space-y-2">
+      {% for category, message in messages %}
+        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
+          {% if category == 'success' %}bg-green-600
+          {% elif category == 'error' %}bg-red-600
+          {% elif category == 'warning' %}bg-yellow-600
+          {% else %}bg-blue-600{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 <!-- TopNavBar Anchor -->
 <header class="h-16 flex justify-between items-center px-lg sticky top-0 bg-surface/80 backdrop-blur-md z-40">
+<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+  <span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center gap-md flex-1 max-w-md">
 <div class="relative w-full">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
@@ -205,7 +247,7 @@
 <!-- Welcome Section -->
 <section class="flex flex-col md:flex-row md:items-end justify-between gap-md">
 <div>
-<h2 class="font-display-lg text-display-lg text-primary">Good morning, Marc!</h2>
+<h2 class="font-display-lg text-display-lg text-primary">Hello, {{ current_user.name }}!</h2>
 <p class="font-body-lg text-secondary">Ready to make an impact today? You have 2 events coming up this week.</p>
 </div>
 <div class="flex gap-sm">
@@ -213,24 +255,24 @@
 <span class="material-symbols-outlined text-[18px]">download</span>
                         Download Certificate
                     </button>
-<button class="flex items-center gap-xs px-md py-2 bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold rounded-lg font-label-md hover:brightness-95 transition-all">
-<span class="material-symbols-outlined text-[18px]">search</span>
+<a href="{{ url_for('events.opportunities') }}" class="flex items-center gap-xs px-md py-2 bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold rounded-lg font-label-md hover:brightness-95 transition-all">
+<span class="material-symbols-outlined">search</span>
                         Search Opportunities
-                    </button>
+                     </a>
 </div>
 </section>
 <!-- KPI Cards - Bento Style -->
-<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 stats-grid-template gap-lg">
 <div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col justify-between group hover:border-primary transition-all duration-300">
 <div class="flex justify-between items-start">
 <div class="p-sm bg-primary-fixed rounded-lg text-primary">
 <span class="material-symbols-outlined">schedule</span>
 </div>
-<span class="text-label-sm text-primary font-bold">+12h this month</span>
+<span class="text-label-sm text-primary font-bold">{{ user_stats.total_hours or 0 }}h total</span>
 </div>
 <div class="mt-md">
 <p class="font-label-sm text-secondary uppercase tracking-wider">Total Hours</p>
-<h3 class="font-display-lg text-display-lg text-on-surface">158.5</h3>
+<h3 class="font-display-lg text-display-lg text-on-surface">{{ user_stats.total_hours or '0' }}</h3>
 </div>
 </div>
 <div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col justify-between hover:border-primary transition-all duration-300">
@@ -241,7 +283,7 @@
 </div>
 <div class="mt-md">
 <p class="font-label-sm text-secondary uppercase tracking-wider">Active Projects</p>
-<h3 class="font-display-lg text-display-lg text-on-surface">03</h3>
+<h3 class="font-display-lg text-display-lg text-on-surface">{{ '%02d'|format(user_stats.total_activities or 0) }}</h3>
 </div>
 </div>
 <div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col justify-between hover:border-primary transition-all duration-300">
@@ -264,8 +306,8 @@
 </div>
 <div class="mt-md">
 <p class="font-label-sm text-white/70 uppercase tracking-wider">Next Event</p>
-<h3 class="font-headline-md text-headline-md leading-tight">Coastal Cleanup Drive</h3>
-<p class="font-label-sm mt-xs">Tomorrow, 08:00 AM</p>
+<h3 class="font-headline-md text-headline-md leading-tight">{{ upcoming_schedule[0].event.title if upcoming_schedule else 'No upcoming events' }}</h3>
+<p class="font-label-sm mt-xs">{{ upcoming_schedule[0].event.date.strftime('%b %d, %Y') if upcoming_schedule else '--' }}</p>
 </div>
 </div>
 </section>
@@ -278,46 +320,40 @@
 <h3 class="font-headline-sm text-headline-sm text-on-surface">Recommended for You</h3>
 <a class="text-label-md text-primary font-bold hover:underline" href="#">View All</a>
 </div>
-<div class="flex gap-md overflow-x-auto pb-sm snap-x">
-<!-- Card 1 -->
+            <div class="flex gap-md overflow-x-auto pb-sm snap-x">
+{% for rec in recommendations %}
 <div class="min-w-[300px] flex-1 snap-start bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-all">
-<div class="h-32 bg-cover bg-center" data-alt="A group of university students teaching coding to elementary children in a modern, bright classroom. The students are patient and engaged, with laptops open showing colorful educational software. The lighting is soft and professional, emphasizing a community-focused educational environment." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDTLvwM7snWHfIYfI6bik3R8XhBLIGH25csS87_9iTBzet_YpsRuei0nKWaJ5HlgP0IJBYtIvSkS8CsLJwx8H6gHJ0WWAVfvnVtMqfmzlvGqgXyJs4Ax1nwh3QjXrJ0uKaoay_3wKGQJrKJ5Upnc-38aZo9-LVT92crAZ4kgaa0qLxdQpTSYPTgC8v_MV7skhBZKjMZv8d9uHN0DowpFfo5QTvKPz8P0MGdz--8Hp5EhIDFYO8fc0FYcx81a8Aq4I3FfgbbRZD05IIm')"></div>
+<div class="h-32 flex items-center justify-center bg-gradient-to-br from-primary to-primary-fixed text-on-primary font-bold text-lg">
+{% if rec.percentage > 0 %}
+<span class="bg-white/20 px-3 py-1 rounded-full text-sm">{{ rec.percentage }}% Match</span>
+{% else %}
+<span class="text-white/60 text-sm">New Opportunity</span>
+{% endif %}
+</div>
 <div class="p-md space-y-sm">
-<div class="flex gap-xs">
-<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] rounded uppercase font-bold">Education</span>
-<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] rounded uppercase font-bold">Skills-based</span>
+<div class="flex gap-xs flex-wrap">
+{% if rec.matched_skills %}
+{% for skill in rec.matched_skills %}
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] rounded uppercase font-bold">{{ skill }}</span>
+{% endfor %}
+{% else %}
+<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] rounded uppercase font-bold">Upcoming</span>
+{% endif %}
 </div>
-<h4 class="font-headline-sm text-on-surface leading-tight">Youth Coding Mentor</h4>
-<p class="text-label-md text-secondary line-clamp-2">Help Grade 6 students at San Carlos Central School learn basic Python and logic.</p>
-<button class="w-full mt-md py-2 border border-outline-variant text-primary font-bold text-label-md rounded hover:bg-primary hover:text-white transition-all">Learn More</button>
-</div>
-</div>
-<!-- Card 2 -->
-<div class="min-w-[300px] flex-1 snap-start bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-all">
-<div class="h-32 bg-cover bg-center" data-alt="An expansive green park area with volunteers planting native trees and saplings. The sun is shining brightly, casting realistic shadows. The volunteers are wearing orange vests and PSU branded caps. The aesthetic is clean, vibrant, and eco-friendly." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6LWHE3NTvoJ4qBqRMKjhVrCAgq2wynL_33jZ5vyuC7EbOwatG_7-gnY4vikcWRXex7jVFXIJhtC6ci9ChWVmslKhfd0ZO_V7desJEMaKA4RWwncToy2YjeRF23Dt1Y1wCOWPN5EVzcrqWoP2DkSSrvGBfDTJBoO91q-fNaMZDe85jY_N_JQLu9bkptWPG3stBAwQ7raSYiY22mv3DiSA1TF4xJbTuzd5eLazDDQ0Fe7WgOQQeEAqXqwO_uOkeZtZogD-kxyoyUP-6')"></div>
-<div class="p-md space-y-sm">
-<div class="flex gap-xs">
-<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] rounded uppercase font-bold">Environment</span>
-<span class="px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] rounded uppercase font-bold">Urgent</span>
-</div>
-<h4 class="font-headline-sm text-on-surface leading-tight">Green Campus Initiative</h4>
-<p class="text-label-md text-secondary line-clamp-2">Participate in our monthly tree planting and sustainable landscaping project.</p>
-<button class="w-full mt-md py-2 border border-outline-variant text-primary font-bold text-label-md rounded hover:bg-primary hover:text-white transition-all">Learn More</button>
+<h4 class="font-headline-sm text-on-surface leading-tight">{{ rec.event.title }}</h4>
+<p class="text-label-md text-secondary line-clamp-2">{{ rec.event.description }}</p>
+<div class="flex items-center justify-between mt-md">
+<span class="text-label-sm text-secondary">{{ rec.event.location or 'Campus event' }}</span>
+<button class="py-1.5 px-3 border border-outline-variant text-primary font-bold text-label-md rounded hover:bg-primary hover:text-white transition-all">Learn More</button>
 </div>
 </div>
-<!-- Card 3 -->
-<div class="min-w-[300px] flex-1 snap-start bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden hover:shadow-md transition-all">
-<div class="h-32 bg-cover bg-center" data-alt="A professional food bank warehouse setting with volunteers in masks and gloves organizing non-perishable goods into relief boxes. Bright fluorescent lighting, organized shelves, and a sense of efficient community service. The color palette features neutral tones with blue accents." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD-iDqVzP9upuSHOs_C7YhJqQ9O6_L5tDPHTyer2fJyvcA6UmyMwBA8scCufTSTuhLKoU_8YslUnBMvsz08DdipEkh6LE5aruC_3lAHXyJ2Dw7I8sN28Q-wOPwihpiNvFRQ2cm8lqO8114EcXdRQ5rJCMrfPXVwUXWxap_JroaSGLMX-pHoJwrGYjFK5u2KkRiKDLLhT5lWqUte5N29W4zzoK0ZVe8eXXRu5OAZcOA_a7C3JPa8MlSPHMIh8QR3W97QuJbizyRsZ9oQ')"></div>
-<div class="p-md space-y-sm">
-<div class="flex gap-xs">
-<span class="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[10px] rounded uppercase font-bold">Welfare</span>
-<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] rounded uppercase font-bold">Weekend</span>
 </div>
-<h4 class="font-headline-sm text-on-surface leading-tight">Community Food Drive</h4>
-<p class="text-label-md text-secondary line-clamp-2">Help organize and distribute relief packages to affected local barangays.</p>
-<button class="w-full mt-md py-2 border border-outline-variant text-primary font-bold text-label-md rounded hover:bg-primary hover:text-white transition-all">Learn More</button>
+{% else %}
+<div class="min-w-[300px] flex-1 snap-start bg-surface-container-lowest border border-outline-variant rounded-xl p-lg text-center">
+<span class="material-symbols-outlined text-4xl text-outline">search</span>
+<p class="text-label-md text-secondary mt-md">No recommendations yet. Update your skills in your profile to get personalized matches.</p>
 </div>
-</div>
+{% endfor %}
 </div>
 </section>
 <!-- History Table -->
@@ -330,7 +366,7 @@
                             </button>
 </div>
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-<table class="w-full text-left border-collapse">
+<table class="w-full text-left border-collapse table-responsive">
 <thead class="bg-surface-container-low border-b border-outline-variant">
 <tr>
 <th class="px-md py-sm font-label-sm text-secondary uppercase tracking-wider">Project Name</th>
@@ -340,48 +376,36 @@
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant">
-<tr class="hover:bg-surface-container-low/50 transition-all">
-<td class="px-md py-md">
-<p class="font-body-md text-on-surface font-semibold">Animal Shelter Support</p>
-<p class="text-[11px] text-secondary">Welfare Community</p>
-</td>
-<td class="px-md py-md text-body-md text-secondary">Oct 12, 2024</td>
-<td class="px-md py-md text-body-md text-on-surface">4.0h</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">
-<span class="w-1 h-1 rounded-full bg-green-700"></span>
-                                                COMPLETED
-                                            </span>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-low/50 transition-all">
-<td class="px-md py-md">
-<p class="font-body-md text-on-surface font-semibold">Tech Literacy Workshop</p>
-<p class="text-[11px] text-secondary">Education</p>
-</td>
-<td class="px-md py-md text-body-md text-secondary">Nov 01, 2024</td>
-<td class="px-md py-md text-body-md text-on-surface">--</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-[10px] font-bold">
-<span class="w-1 h-1 rounded-full bg-primary"></span>
-                                                ONGOING
-                                            </span>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-low/50 transition-all">
-<td class="px-md py-md">
-<p class="font-body-md text-on-surface font-semibold">Coastal Cleanup Drive</p>
-<p class="text-[11px] text-secondary">Environment</p>
-</td>
-<td class="px-md py-md text-body-md text-secondary">Sep 15, 2024</td>
-<td class="px-md py-md text-body-md text-on-surface">6.5h</td>
-<td class="px-md py-md">
-<span class="inline-flex items-center gap-xs px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">
-<span class="w-1 h-1 rounded-full bg-green-700"></span>
-                                                COMPLETED
-                                            </span>
-</td>
-</tr>
+{% if recent_activity %}
+  {% for reg in recent_activity %}
+  <tr class="hover:bg-surface-container-low/50 transition-all">
+    <td class="px-md py-md">
+      <p class="font-body-md text-on-surface font-semibold">{{ reg.event.title }}</p>
+      <p class="text-[11px] text-secondary">{{ reg.event.category or 'Volunteer' }}</p>
+    </td>
+    <td class="px-md py-md text-body-md text-secondary">{{ reg.event.date.strftime('%b %d, %Y') if reg.event.date else '--' }}</td>
+    <td class="px-md py-md text-body-md text-on-surface">{{ reg.event.duration or '--' }}h</td>
+    <td class="px-md py-md">
+      <span class="inline-flex items-center gap-xs px-2 py-1 rounded-full text-[10px] font-bold
+        {% if reg.status == 'completed' %}bg-green-100 text-green-700
+        {% elif reg.status == 'confirmed' %}bg-primary-fixed text-on-primary-fixed
+        {% elif reg.status == 'cancelled' %}bg-red-100 text-red-700
+        {% else %}bg-primary-fixed text-on-primary-fixed{% endif %}">
+        <span class="w-1 h-1 rounded-full
+          {% if reg.status == 'completed' %}bg-green-700
+          {% elif reg.status == 'confirmed' %}bg-primary
+          {% elif reg.status == 'cancelled' %}bg-red-700
+          {% else %}bg-primary{% endif %}"></span>
+        {{ (reg.status or 'ONGOING')|upper }}
+      </span>
+    </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="4" class="px-md py-md text-center text-secondary">No participation history yet.</td>
+  </tr>
+{% endif %}
 </tbody>
 </table>
 </div>
@@ -397,53 +421,53 @@
 </div>
 <div>
 <div class="flex justify-between text-label-md mb-xs">
-<span class="text-secondary">Silver Certification</span>
-<span class="text-primary font-bold">79%</span>
+<span class="text-secondary">{{ certification.level or 'Bronze' }} Certification</span>
+<span class="text-primary font-bold">{{ (user_stats.total_hours / 50 * 100)|round|int if user_stats.total_hours and user_stats.total_hours < 50 else 100 }}%</span>
 </div>
 <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-<div class="bg-primary h-full w-[79%] transition-all duration-1000 ease-out" id="cert-progress" style="width: 0%;"></div>
+<div class="bg-primary h-full transition-all duration-1000 ease-out" id="cert-progress" style="width: {{ (user_stats.total_hours / 50 * 100)|round|int if user_stats.total_hours and user_stats.total_hours < 50 else 100 }}%;"></div>
 </div>
-<p class="text-[11px] text-secondary mt-sm">Only 41.5 more hours to reach Gold level!</p>
+<p class="text-[11px] text-secondary mt-sm">{% set hours_to_next = (50 - user_stats.total_hours)|round(1) if user_stats.total_hours and user_stats.total_hours < 50 else 0 %}Only {{ hours_to_next }} more hours to reach {{ certification.next_level or 'Gold' }} level!</p>
 </div>
 <button class="w-full py-2 bg-surface-container-low text-on-surface font-bold text-label-md rounded-lg hover:bg-surface-container-high transition-all">View Requirements</button>
 </section>
+{% if certificates %}
+<div class="bg-white p-lg rounded-xl border border-outline-variant mt-lg">
+  <h3 class="font-headline-sm text-headline-sm font-bold text-primary mb-md">Your Certificates</h3>
+  <div class="space-y-md">
+  {% for cert in certificates %}
+    <div class="flex items-center justify-between p-md bg-surface-container-low rounded-lg">
+      <div>
+        <p class="font-body-md text-body-md font-semibold">{{ cert.event_title }}</p>
+        <p class="font-label-sm text-label-sm text-secondary">{{ cert.event_date.strftime('%b %d, %Y') if cert.event_date else '' }} · {{ cert.hours }} hours</p>
+      </div>
+      <span class="px-md py-xs bg-primary-fixed text-on-primary-fixed rounded-full font-label-sm text-label-sm font-semibold">{{ cert.status }}</span>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endif %}
 <!-- Upcoming Events Calendar Widget -->
 <section class="space-y-md">
 <h3 class="font-headline-sm text-headline-sm text-on-surface">Upcoming Schedule</h3>
 <div class="space-y-sm">
-<div class="flex gap-md bg-surface-container-lowest p-md border border-outline-variant rounded-xl group hover:border-primary transition-all">
-<div class="flex flex-col items-center justify-center min-w-[50px] h-[50px] bg-primary-fixed rounded-lg text-on-primary-fixed">
-<span class="text-[10px] font-bold uppercase leading-none">Nov</span>
-<span class="text-xl font-bold leading-none">12</span>
-</div>
-<div class="flex-1">
-<p class="font-label-md text-primary font-bold">08:00 AM - 12:00 PM</p>
-<h4 class="font-body-md text-on-surface font-semibold">Coastal Cleanup</h4>
-<p class="text-label-md text-secondary">Lingayen Beachfront</p>
-</div>
-</div>
-<div class="flex gap-md bg-surface-container-lowest p-md border border-outline-variant rounded-xl group hover:border-primary transition-all">
-<div class="flex flex-col items-center justify-center min-w-[50px] h-[50px] bg-surface-container-high rounded-lg text-secondary">
-<span class="text-[10px] font-bold uppercase leading-none">Nov</span>
-<span class="text-xl font-bold leading-none">15</span>
-</div>
-<div class="flex-1">
-<p class="font-label-md text-primary font-bold">01:30 PM - 04:30 PM</p>
-<h4 class="font-body-md text-on-surface font-semibold">Tech Workshop</h4>
-<p class="text-label-md text-secondary">CS Lab 2, Main Campus</p>
-</div>
-</div>
-<div class="flex gap-md bg-surface-container-lowest p-md border border-outline-variant rounded-xl group hover:border-primary transition-all">
-<div class="flex flex-col items-center justify-center min-w-[50px] h-[50px] bg-surface-container-high rounded-lg text-secondary">
-<span class="text-[10px] font-bold uppercase leading-none">Nov</span>
-<span class="text-xl font-bold leading-none">20</span>
-</div>
-<div class="flex-1">
-<p class="font-label-md text-primary font-bold">09:00 AM - 11:00 AM</p>
-<h4 class="font-body-md text-on-surface font-semibold">Admin Volunteer</h4>
-<p class="text-label-md text-secondary">Student Services Office</p>
-</div>
-</div>
+{% if upcoming_schedule %}
+  {% for item in upcoming_schedule %}
+  <div class="flex gap-md bg-surface-container-lowest p-md border border-outline-variant rounded-xl group hover:border-primary transition-all">
+    <div class="flex flex-col items-center justify-center min-w-[50px] h-[50px] {% if loop.first %}bg-primary-fixed text-on-primary-fixed{% else %}bg-surface-container-high text-secondary{% endif %} rounded-lg">
+      <span class="text-[10px] font-bold uppercase leading-none">{{ item.date.strftime('%b') if item.date else '--' }}</span>
+      <span class="text-xl font-bold leading-none">{{ item.date.strftime('%d') if item.date else '--' }}</span>
+    </div>
+    <div class="flex-1">
+      <p class="font-label-md text-primary font-bold">{{ item.event.time_start or '--' }} - {{ item.event.time_end or '--' }}</p>
+      <h4 class="font-body-md text-on-surface font-semibold">{{ item.event.title }}</h4>
+      <p class="text-label-md text-secondary">{{ item.event.location or 'TBD' }}</p>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="text-center p-md text-secondary font-label-md">No upcoming events scheduled.</div>
+{% endif %}
 </div>
 <button class="w-full py-2 text-primary font-bold text-label-md hover:bg-primary-fixed rounded-lg transition-all">Open Calendar</button>
 </section>
@@ -469,10 +493,14 @@
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const bar = document.getElementById('cert-progress');
-                if (bar) bar.style.width = '79%';
+                if (bar) bar.style.width = bar.style.width || '0%';
             }, 300);
         });
 
+        function toggleSidebar() {
+          document.querySelector('.sidebar').classList.toggle('open');
+          document.getElementById('mobileOverlay').classList.toggle('show');
+        }
         // Simple smooth scroll behavior for recommended horizontal list
         const scrollContainer = document.querySelector('.snap-x');
         if (scrollContainer) {

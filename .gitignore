@@ -1,3 +1,18 @@
 #ignore local virtual environment
 .venv/
+venv/
+
+# ignore opencode config
+.opencode/
+
+# ignore database
+instance/
+
+# ignore IDE
+.vscode/
+.idea/
+
+# ignore pycache
+__pycache__/
+*.pyc
 

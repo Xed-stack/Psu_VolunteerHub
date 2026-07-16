@@ -3,7 +3,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Login | PSU Volunteer Hub</title>
+<title>{% if request.endpoint == 'auth.register' %}Register{% else %}Login{% endif %} | PSU Volunteer Hub</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -140,53 +140,130 @@
 </div>
 <!-- Login Card -->
 <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl login-card-glow">
-<div class="mb-lg">
-<h2 class="font-headline-md text-headline-md text-on-surface">Sign In</h2>
-<p class="font-label-md text-label-md text-on-surface-variant">Access your university volunteer portal</p>
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="space-y-sm mb-lg">
+{% for category, message in messages %}
+<div class="px-md py-sm rounded-lg text-label-md font-bold {% if category == 'error' %}bg-error-container text-on-error-container{% elif category == 'success' %}bg-green-100 text-green-800{% else %}bg-surface-container text-on-surface-variant{% endif %}">
+{{ message }}
 </div>
-<form class="space-y-lg" onsubmit="event.preventDefault();">
-<!-- Email/ID Field -->
+{% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+<div class="mb-lg">
+<h2 class="font-headline-md text-headline-md text-on-surface">{% if request.endpoint == 'auth.register' %}Create Account{% else %}Sign In{% endif %}</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">{% if request.endpoint == 'auth.register' %}Join the PSU volunteer network{% else %}Access your university volunteer portal{% endif %}</p>
+</div>
+<form class="space-y-lg" action="{% if request.endpoint == 'auth.register' %}/auth/register{% else %}/auth/login{% endif %}" method="POST">
+{% if request.endpoint == 'auth.register' %}
+<!-- Name Field -->
 <div class="space-y-xs">
-<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="identifier">Email or ID Number</label>
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="name">Full Name</label>
 <div class="relative group">
 <div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
-<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="material-symbols-outlined text-[20px]">badge</span>
 </div>
-<input class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="identifier" name="identifier" placeholder="e.g. 21-S-0001 or name@psu.edu.ph" required="" type="text"/>
+<input class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="name" name="name" placeholder="Juan Dela Cruz" required="" type="text"/>
+</div>
+</div>
+<!-- User Type Toggle -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1">I am a...</label>
+<div class="flex gap-md px-1">
+<label class="flex items-center gap-sm cursor-pointer">
+<input type="radio" name="user_type" value="psu" {% if user_type == 'psu' or not user_type %}checked{% endif %} onchange="toggleUserType()" class="text-primary border-outline-variant">
+<span class="font-body-md text-body-md text-on-surface">PSU Student/Faculty/Staff</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input type="radio" name="user_type" value="outsider" {% if user_type == 'outsider' %}checked{% endif %} onchange="toggleUserType()" class="text-primary border-outline-variant">
+<span class="font-body-md text-body-md text-on-surface">External Volunteer</span>
+</label>
+</div>
+</div>
+<!-- ID Number (PSU only) -->
+<div class="space-y-xs" id="id-number-field">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="id_number">ID Number</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+</div>
+<input class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="id_number" name="id_number" placeholder="e.g. 21-S-0001" type="text"/>
+</div>
+</div>
+<!-- Campus Selection -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="campus_id">{% if user_type == 'outsider' %}Preferred Campus{% else %}Campus{% endif %}</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+</div>
+<select class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all" id="campus_id" name="campus_id" required>
+<option value="">Select Campus</option>
+{% for campus in campuses %}
+<option value="{{ campus.id }}" {% if selected_campus == campus.id %}selected{% endif %}>{{ campus.name }}</option>
+{% endfor %}
+</select>
+</div>
+</div>
+{% endif %}
+<!-- Email/ID Field -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="{% if request.endpoint == 'auth.register' %}email{% else %}identifier{% endif %}">{% if request.endpoint == 'auth.register' %}Email Address{% else %}Email or ID Number{% endif %}</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">{% if request.endpoint == 'auth.register' %}mail{% else %}person{% endif %}</span>
+</div>
+<input class="w-full pl-[44px] pr-md py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="{% if request.endpoint == 'auth.register' %}email{% else %}identifier{% endif %}" name="{% if request.endpoint == 'auth.register' %}email{% else %}identifier{% endif %}" placeholder="{% if request.endpoint == 'auth.register' %}name@psu.edu.ph{% else %}e.g. 21-S-0001 or name@psu.edu.ph{% endif %}" required="" type="text"/>
 </div>
 </div>
 <!-- Password Field -->
 <div class="space-y-xs">
 <div class="flex justify-between items-center px-1">
 <label class="font-label-sm text-label-sm text-on-surface-variant" for="password">Password</label>
-<a class="font-label-sm text-label-sm text-primary hover:underline transition-all" href="#">Forgot password?</a>
+{% if request.endpoint != 'auth.register' %}<a class="font-label-sm text-label-sm text-primary hover:underline transition-all" href="#">Forgot password?</a>{% endif %}
 </div>
 <div class="relative group">
 <div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
 <span class="material-symbols-outlined text-[20px]">lock</span>
 </div>
-<input class="w-full pl-[44px] pr-[44px] py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<input class="w-full pl-[44px] pr-[44px] py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="password" name="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required="" type="password"/>
 <button class="absolute inset-y-0 right-0 pr-md flex items-center text-outline hover:text-secondary transition-colors" onclick="togglePassword()" type="button">
 <span class="material-symbols-outlined text-[20px]" id="toggleIcon">visibility</span>
 </button>
 </div>
 </div>
+{% if request.endpoint == 'auth.register' %}
+<!-- Confirm Password Field -->
+<div class="space-y-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant px-1" for="confirm_password">Confirm Password</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="w-full pl-[44px] pr-[44px] py-md bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all placeholder:text-outline" id="confirm_password" name="confirm_password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" required="" type="password"/>
+</div>
+</div>
+{% endif %}
+{% if request.endpoint != 'auth.register' %}
 <!-- Remember Me -->
 <div class="flex items-center space-x-sm px-1">
 <input class="w-4 h-4 text-primary border-outline-variant rounded bg-surface focus:ring-primary/20" id="remember" name="remember" type="checkbox"/>
 <label class="font-body-md text-body-md text-on-surface-variant cursor-pointer select-none" for="remember">Remember this device</label>
 </div>
+{% endif %}
 <!-- Submit Button -->
 <button class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-md rounded-lg shadow-sm hover:bg-primary-container hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-primary/30 focus:outline-none" type="submit">
-                        Sign In
-                    </button>
+{% if request.endpoint == 'auth.register' %}Create Account{% else %}Sign In{% endif %}
+</button>
 </form>
 <div class="mt-xl pt-lg border-t border-outline-variant">
 <div class="flex flex-col space-y-md">
-<p class="font-label-md text-label-md text-on-surface-variant text-center">New to the Hub?</p>
-<button class="w-full border border-primary text-primary font-headline-sm text-headline-sm py-md rounded-lg hover:bg-primary/5 transition-all">
-                            Create Account
-                        </button>
+<p class="font-label-md text-label-md text-on-surface-variant text-center">{% if request.endpoint == 'auth.register' %}Already have an account?{% else %}New to the Hub?{% endif %}</p>
+<a href="{% if request.endpoint == 'auth.register' %}/auth/login{% else %}/auth/register{% endif %}" class="w-full block text-center border border-primary text-primary font-headline-sm text-headline-sm py-md rounded-lg hover:bg-primary/5 transition-all">
+{% if request.endpoint == 'auth.register' %}Sign In{% else %}Create Account{% endif %}
+</a>
 </div>
 </div>
 </div>
@@ -221,6 +298,16 @@
                 toggleIcon.innerText = 'visibility';
             }
         }
+
+        function toggleUserType() {
+            const isPsu = document.querySelector('input[name="user_type"][value="psu"]').checked;
+            const idField = document.getElementById('id-number-field');
+            const campusLabel = document.querySelector('label[for="campus_id"]');
+            idField.style.display = isPsu ? '' : 'none';
+            if (campusLabel) campusLabel.innerText = isPsu ? 'Campus' : 'Preferred Campus';
+        }
+
+        document.addEventListener('DOMContentLoaded', toggleUserType);
 
         // Simple subtle entrance animation
         document.addEventListener('DOMContentLoaded', () => {

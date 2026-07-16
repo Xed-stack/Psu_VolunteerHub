@@ -1,14 +1,11 @@
-from flask import Flask, render_template, request, url_for, redirect
-import pandas as pd
-from sqlalchemy import create_engine
+"""
+PSU Volunteer Hub - Entry Point
+=================================
+Application entry point that creates and runs the Flask application.
+"""
+from app import create_app
 
-app = Flask(__name__)
-
-
-@app.route('/')
-def home():
-    return render_template('Homepage.html')
-
+app = create_app()
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

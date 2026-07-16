@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings | PSU Volunteer Hub</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body class="bg-surface min-h-screen font-inter">
+<main class="max-w-2xl mx-auto p-lg pt-24">
+  <h1 class="font-headline-lg text-headline-lg text-primary mb-lg">System Settings</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="p-md mb-md rounded-lg {% if cat == 'error' %}bg-error-container text-error{% else %}bg-primary-fixed text-on-primary-fixed{% endif %}">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
+  <form method="POST" class="bg-white p-lg rounded-xl border border-outline-variant space-y-lg">
+    <div class="space-y-xs">
+      <label class="font-label-md text-label-md text-on-surface-variant">Community Value Rate ($/hr)</label>
+      <input name="community_value_rate" value="{{ settings.get('community_value_rate', '15') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+    </div>
+    <div class="space-y-xs">
+      <label class="font-label-md text-label-md text-on-surface-variant">Max Slots Per Event</label>
+      <input name="max_slots_per_event" value="{{ settings.get('max_slots_per_event', '100') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+    </div>
+    <div class="space-y-xs">
+      <label class="font-label-md text-label-md text-on-surface-variant">Default Password Length</label>
+      <input name="default_password_length" value="{{ settings.get('default_password_length', '8') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+    </div>
+    <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90">Save Settings</button>
+  </form>
+  <a href="{{ url_for('admin.admin_dash') }}" class="inline-block mt-md text-primary font-label-md hover:underline">← Back to Admin Dashboard</a>
+</main>
+</body>
+</html>

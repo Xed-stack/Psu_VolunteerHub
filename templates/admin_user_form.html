@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% if user %}Edit User{% else %}Add User{% endif %} | PSU Volunteer Hub</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --primary: #00408b; --on-primary: #ffffff; --primary-fixed: #d8e2ff; --on-primary-fixed: #001a41; --surface: #f9f9ff; --surface-container-low: #f0f3ff; --on-surface: #111c2c; --on-surface-variant: #424752; --outline-variant: #c2c6d4; --error: #ba1a1a; --error-container: #ffdad6; --secondary: #5b5f61; }
+    body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--on-surface); }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-lg">
+  <div class="w-full max-w-lg bg-white p-xl rounded-xl border border-outline-variant shadow-sm">
+    <h1 class="font-headline-md text-headline-md text-primary mb-lg">{% if user %}Edit User{% else %}Add User{% endif %}</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="p-md mb-md rounded-lg {% if cat == 'error' %}bg-error-container text-error{% else %}bg-primary-fixed text-on-primary-fixed{% endif %} font-label-md">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
+    
+    <form method="POST" class="space-y-lg">
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Full Name</label>
+        <input name="name" value="{{ user.name if user else '' }}" required class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm font-body-md">
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Email</label>
+        <input name="email" value="{{ user.email if user else '' }}" required class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm font-body-md">
+      </div>
+      {% if not user %}
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Password</label>
+        <input name="password" type="password" required class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm font-body-md">
+      </div>
+      {% endif %}
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Role</label>
+        <select name="role" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm font-body-md">
+          <option value="volunteer" {% if user and user.role == 'volunteer' %}selected{% endif %}>Volunteer</option>
+          <option value="coordinator" {% if user and user.role == 'coordinator' %}selected{% endif %}>Coordinator</option>
+          <option value="director" {% if user and user.role == 'director' %}selected{% endif %}>Director</option>
+          <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin</option>
+        </select>
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Campus</label>
+        <select name="campus_id" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm font-body-md">
+          <option value="">Select Campus</option>
+          {% for campus in campuses %}
+          <option value="{{ campus.id }}" {% if user and user.campus_id == campus.id %}selected{% endif %}>{{ campus.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex gap-md pt-md">
+        <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90">{% if user %}Save Changes{% else %}Create User{% endif %}</button>
+        <a href="{{ url_for('admin.admin_dash') }}" class="border border-outline-variant text-on-surface-variant px-lg py-sm rounded-lg font-label-md hover:bg-surface-container-low">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

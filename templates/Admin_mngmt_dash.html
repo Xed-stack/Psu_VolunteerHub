@@ -112,10 +112,49 @@
             }
         }
     </script>
+<style>
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+  .mobile-overlay.show { display: block; }
+  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
+}
+@media (max-width: 768px) {
+  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 768px) {
+  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
+  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
+  .flex-row { flex-direction: column !important; }
+  .gap-xl { gap: 1rem !important; }
+}
+@media (max-width: 768px) {
+  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
+}
+</style>
 </head>
 <body class="bg-background text-on-background min-h-screen">
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="fixed top-4 right-4 z-[100] space-y-2">
+      {% for category, message in messages %}
+        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
+          {% if category == 'success' %}bg-green-600
+          {% elif category == 'error' %}bg-red-600
+          {% elif category == 'warning' %}bg-yellow-600
+          {% else %}bg-blue-600{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 <!-- Side Navigation Bar -->
-<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
 <div class="mb-xl">
 <div class="flex items-center gap-md">
 <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
@@ -128,24 +167,24 @@
 </div>
 </div>
 <nav class="flex-1 space-y-base">
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined">volunteer_activism</span>
 <span class="font-body-md text-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md text-body-md">Analytics</span>
 </a>
 <!-- Active Navigation Item: Management -->
-<a class="flex items-center gap-md px-md py-sm rounded bg-primary-fixed text-on-primary-fixed font-semibold transition-colors" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded bg-primary-fixed text-on-primary-fixed font-semibold transition-colors" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">manage_accounts</span>
 <span class="font-body-md text-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="#">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md text-body-md">Settings</span>
 </a>
@@ -154,8 +193,8 @@
 <div class="flex items-center gap-md p-sm">
 <img class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional studio portrait of a university administrator in a modern office environment, soft daylighting, high-end commercial photography style, neutral corporate color palette with deep blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvbjnQZrfpUW33ZQ1NUgwdNFc2BuZKdHJkxWlmpFQH_LV4NF1kWvMiZRWqj34PIRvncllk2os7Em5NWjBXoTrqphGOqrHwDOGcvZj8kr3VCO0JporZuLnKppDeqcy03KbqekfPvzo4RT3tWFC4Ck9_KkbZAjhNI5Gy6hL6buatAPRC-yg-cXEvUiTWDk8cKqTkuUyjUqTIorBSI1U94h_MkdM-LmNZQZ2I1Wq4UdTrw71Rd_Q6qvYtCY4uKBmXD7uinoThSmPHo1KC"/>
 <div class="overflow-hidden">
-<p class="font-label-md text-label-md font-bold truncate">Admin Dr. Reyes</p>
-<p class="font-label-sm text-label-sm text-secondary truncate">System Administrator</p>
+<p class="font-label-md text-label-md font-bold truncate">{{ current_user.name }}</p>
+<p class="font-label-sm text-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
 </div>
 <button class="ml-auto text-secondary hover:text-primary transition-colors">
 <span class="material-symbols-outlined">logout</span>
@@ -164,9 +203,12 @@
 </div>
 </aside>
 <!-- Main Content Area -->
-<main class="ml-[260px] min-h-screen flex flex-col">
+<main class="ml-[260px] main-content min-h-screen flex flex-col">
 <!-- Top Navigation Bar -->
 <header class="sticky top-0 right-0 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+  <span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center gap-md flex-1">
 <div class="relative w-full max-w-md">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
@@ -197,7 +239,7 @@
 <!-- Page Canvas -->
 <div class="p-lg space-y-lg max-w-[1440px]">
 <!-- System Overview Grid -->
-<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 stats-grid-template gap-lg">
 <!-- Server Status -->
 <div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
@@ -214,10 +256,10 @@
 <div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
 <p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Active Users</p>
-<h3 class="font-headline-md text-headline-md text-on-surface">1,284</h3>
+<h3 class="font-headline-md text-headline-md text-on-surface">{{ active_users }}</h3>
 <div class="flex items-center gap-xs text-secondary font-label-sm">
 <span class="material-symbols-outlined text-sm">trending_up</span>
-<span>+12% from yesterday</span>
+<span>Active accounts</span>
 </div>
 </div>
 <span class="material-symbols-outlined text-primary text-3xl">group</span>
@@ -226,7 +268,7 @@
 <div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
 <p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Pending Approvals</p>
-<h3 class="font-headline-md text-headline-md text-on-surface">42</h3>
+<h3 class="font-headline-md text-headline-md text-on-surface">{{ pending_approvals }}</h3>
 <div class="flex items-center gap-xs text-tertiary font-label-sm">
 <span class="material-symbols-outlined text-sm">priority_high</span>
 <span>Needs immediate review</span>
@@ -266,14 +308,22 @@
 <option>Lingayen</option>
 <option>Urdaneta</option>
 </select>
-<button class="bg-primary text-on-primary px-md py-1 rounded font-label-md transition-all hover:brightness-110 flex items-center gap-xs">
+<a href="{{ url_for('admin.create_user') }}" class="bg-primary text-on-primary px-md py-1 rounded font-label-md transition-all hover:brightness-110 flex items-center gap-xs">
 <span class="material-symbols-outlined text-sm">person_add</span>
                                     Add User
-                                </button>
+                                </a>
 </div>
 </div>
+<form method="GET" action="{{ url_for('admin.admin_dash') }}" class="flex items-center gap-sm mb-md">
+  <select name="campus_id" onchange="this.form.submit()" class="bg-surface-container-low border border-outline-variant rounded px-sm py-xs font-body-md text-body-md">
+    <option value="">All Campuses</option>
+    {% for campus in campuses %}
+    <option value="{{ campus.id }}" {% if selected_campus|string == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
+    {% endfor %}
+  </select>
+</form>
 <div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
+<table class="w-full text-left border-collapse table-responsive">
 <thead class="bg-surface-container-low border-b border-outline-variant">
 <tr>
 <th class="px-md py-sm font-label-sm text-label-sm text-secondary uppercase">User</th>
@@ -284,80 +334,59 @@
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant">
-<tr class="hover:bg-surface-container-low transition-colors">
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs">MA</div>
-<div>
-<p class="font-body-md text-body-md font-semibold">Maria Santos</p>
-<p class="font-label-sm text-label-sm text-secondary">m.santos@psu.edu.ph</p>
-</div>
-</div>
-</td>
-<td class="px-md py-md font-label-md">Director</td>
-<td class="px-md py-md font-label-md">Lingayen</td>
-<td class="px-md py-md">
-<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed text-[10px] font-bold uppercase">Active</span>
-</td>
-<td class="px-md py-md text-right">
-<div class="flex justify-end gap-sm">
-<button class="p-1 hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></button>
-<button class="p-1 hover:text-error transition-colors" title="Suspend"><span class="material-symbols-outlined text-lg">block</span></button>
-<button class="p-1 hover:text-primary transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
-</div>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-low transition-colors">
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">JD</div>
-<div>
-<p class="font-body-md text-body-md font-semibold">Juan Dela Cruz</p>
-<p class="font-label-sm text-label-sm text-secondary">j.delacruz@psu.edu.ph</p>
-</div>
-</div>
-</td>
-<td class="px-md py-md font-label-md">Admin</td>
-<td class="px-md py-md font-label-md">Urdaneta</td>
-<td class="px-md py-md">
-<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase">Away</span>
-</td>
-<td class="px-md py-md text-right">
-<div class="flex justify-end gap-sm">
-<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
-<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg">block</span></button>
-<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
-</div>
-</td>
-</tr>
-<tr class="hover:bg-surface-container-low transition-colors">
-<td class="px-md py-md">
-<div class="flex items-center gap-sm">
-<div class="w-8 h-8 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold text-xs">EL</div>
-<div>
-<p class="font-body-md text-body-md font-semibold">Elena Luna</p>
-<p class="font-label-sm text-label-sm text-secondary">e.luna@psu.edu.ph</p>
-</div>
-</div>
-</td>
-<td class="px-md py-md font-label-md">Director</td>
-<td class="px-md py-md font-label-md">San Carlos</td>
-<td class="px-md py-md">
-<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase">Pending</span>
-</td>
-<td class="px-md py-md text-right">
-<div class="flex justify-end gap-sm">
-<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
-<button class="p-1 hover:text-error transition-colors"><span class="material-symbols-outlined text-lg">block</span></button>
-<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
-</div>
-</td>
-</tr>
+{% if users %}
+  {% for user in users %}
+  <tr class="hover:bg-surface-container-low transition-colors">
+    <td class="px-md py-md">
+      <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs">{{ user.name[:2]|upper }}</div>
+        <div>
+          <p class="font-body-md text-body-md font-semibold">{{ user.name }}</p>
+          <p class="font-label-sm text-label-sm text-secondary">{{ user.email }}</p>
+        </div>
+      </div>
+    </td>
+    <td class="px-md py-md font-label-md">
+        <form method="POST" action="{{ url_for('admin.change_role', user_id=user.id) }}" style="display:inline">
+          <select name="role" onchange="this.form.submit()" class="text-xs bg-transparent border-none cursor-pointer">
+            <option value="volunteer" {% if user.role == 'volunteer' %}selected{% endif %}>Volunteer</option>
+            <option value="coordinator" {% if user.role == 'coordinator' %}selected{% endif %}>Coordinator</option>
+            <option value="director" {% if user.role == 'director' %}selected{% endif %}>Director</option>
+            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+          </select>
+        </form>
+      </td>
+    <td class="px-md py-md font-label-md">{{ user.campus.name if user.campus else '--' }}</td>
+    <td class="px-md py-md">
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+        {% if user.is_active %}bg-primary-fixed text-on-primary-fixed{% else %}bg-error-container text-on-error-container{% endif %}">
+        {{ 'Active' if user.is_active else 'Inactive' }}
+      </span>
+    </td>
+    <td class="px-md py-md text-right">
+      <div class="flex justify-end gap-sm">
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="p-1 hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></a>
+        <form method="POST" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" style="display:inline">
+          <button type="submit" class="p-1 hover:text-error transition-colors" title="Suspend" onclick="return confirm('Toggle active status for this user?')"><span class="material-symbols-outlined text-lg">{% if user.is_active %}block{% else %}check_circle{% endif %}</span></button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}" style="display:inline" onsubmit="var p=prompt('New password (min 6 chars):'); if(p&&p.length>=6){this.querySelector('[name=new_password]').value=p;return true;}alert('Password must be 6+ chars');return false;">
+          <input type="hidden" name="new_password" value="">
+          <button type="submit" class="p-1 hover:text-primary transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+        </form>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="5" class="px-md py-md text-center text-secondary">No users found.</td>
+  </tr>
+{% endif %}
 </tbody>
 </table>
 </div>
 <div class="p-md bg-surface-container-low flex items-center justify-between">
-<p class="font-label-sm text-label-sm text-secondary">Showing 1-10 of 124 users</p>
+<p class="font-label-sm text-label-sm text-secondary">Showing {{ users|length }} user(s)</p>
 <div class="flex gap-base">
 <button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">Previous</button>
 <button class="px-3 py-1 bg-primary text-on-primary rounded font-label-sm transition-all">1</button>
@@ -382,6 +411,10 @@
 <span class="material-symbols-outlined text-3xl text-primary mb-sm">cloud_sync</span>
 <span class="font-label-md text-label-md font-bold text-on-surface">Database Backup</span>
 </button>
+<a href="{{ url_for('admin.settings') }}" class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<span class="material-symbols-outlined text-3xl text-primary mb-sm">settings</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">System Settings</span>
+</a>
 </div>
 </div>
 </section>
@@ -393,71 +426,24 @@
 <button class="text-primary font-label-md hover:underline transition-all">View All</button>
 </div>
 <div class="flex-1 overflow-y-auto p-md space-y-md">
-<!-- Log Entry -->
-<div class="flex gap-md group">
-<div class="flex flex-col items-center">
-<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">history_edu</span>
-</div>
-<div class="w-px h-full bg-outline-variant my-1"></div>
-</div>
-<div class="pb-md">
-<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Director]</span> approved <span class="font-bold">Coastal Cleanup Drive</span></p>
-<p class="font-label-sm text-label-sm text-secondary mt-1">2 minutes ago</p>
-</div>
-</div>
-<!-- Log Entry -->
-<div class="flex gap-md group">
-<div class="flex flex-col items-center">
-<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">password</span>
-</div>
-<div class="w-px h-full bg-outline-variant my-1"></div>
-</div>
-<div class="pb-md">
-<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Admin]</span> reset password for <span class="font-bold">user_8821</span></p>
-<p class="font-label-sm text-label-sm text-secondary mt-1">15 minutes ago</p>
-</div>
-</div>
-<!-- Log Entry -->
-<div class="flex gap-md group">
-<div class="flex flex-col items-center">
-<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">shield</span>
-</div>
-<div class="w-px h-full bg-outline-variant my-1"></div>
-</div>
-<div class="pb-md">
-<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[System]</span> firewall rules updated automatically</p>
-<p class="font-label-sm text-label-sm text-secondary mt-1">1 hour ago</p>
-</div>
-</div>
-<!-- Log Entry -->
-<div class="flex gap-md group">
-<div class="flex flex-col items-center">
-<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">person_add</span>
-</div>
-<div class="w-px h-full bg-outline-variant my-1"></div>
-</div>
-<div class="pb-md">
-<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-primary">[Director]</span> invited 12 new volunteers to <span class="font-bold">Project REACH</span></p>
-<p class="font-label-sm text-label-sm text-secondary mt-1">3 hours ago</p>
-</div>
-</div>
-<!-- Log Entry -->
-<div class="flex gap-md group">
-<div class="flex flex-col items-center">
-<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
-<span class="material-symbols-outlined text-sm">warning</span>
-</div>
-<div></div>
-</div>
-<div>
-<p class="font-body-md text-body-md leading-tight"><span class="font-bold text-error">[Security]</span> Multiple failed login attempts from IP: 192.168.1.1</p>
-<p class="font-label-sm text-label-sm text-secondary mt-1">5 hours ago</p>
-</div>
-</div>
+{% if audit_logs %}
+  {% for log in audit_logs %}
+  <div class="flex gap-md group">
+    <div class="flex flex-col items-center">
+      <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-sm">{{ log.icon or 'history_edu' }}</span>
+      </div>
+      <div class="w-px h-full bg-outline-variant my-1"></div>
+    </div>
+    <div class="pb-md">
+      <p class="font-body-md text-body-md leading-tight">{{ log.description|safe }}</p>
+      <p class="font-label-sm text-label-sm text-secondary mt-1">{{ log.timestamp }}</p>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="text-center text-secondary font-label-md py-lg">No audit logs available.</div>
+{% endif %}
 </div>
 </section>
 <!-- Server Health Visualization -->
@@ -496,6 +482,10 @@
 </footer>
 </main>
 <script>
+        function toggleSidebar() {
+          document.querySelector('.sidebar').classList.toggle('open');
+          document.getElementById('mobileOverlay').classList.toggle('show');
+        }
         // Simple Micro-interaction for the Traffic Load simulation
         function updateTraffic() {
             const bars = document.querySelectorAll('.bg-primary, .bg-primary-container');

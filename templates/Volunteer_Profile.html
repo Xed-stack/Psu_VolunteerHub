@@ -117,10 +117,49 @@
             .main-content { margin-left: 0; max-width: 100%; }
         }
     </style>
+<style>
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+  .mobile-overlay.show { display: block; }
+  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
+}
+@media (max-width: 768px) {
+  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 768px) {
+  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
+  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
+  .flex-row { flex-direction: column !important; }
+  .gap-xl { gap: 1rem !important; }
+}
+@media (max-width: 768px) {
+  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
+}
+</style>
 </head>
 <body class="text-on-background">
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="fixed top-4 right-4 z-[100] space-y-2">
+      {% for category, message in messages %}
+        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
+          {% if category == 'success' %}bg-green-600
+          {% elif category == 'error' %}bg-red-600
+          {% elif category == 'warning' %}bg-yellow-600
+          {% else %}bg-blue-600{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 <!-- Sidebar Navigation -->
-<aside class="sidebar-fixed fixed left-0 top-0 h-full flex flex-col bg-surface border-r border-outline-variant z-50">
+<aside class="sidebar sidebar-fixed fixed left-0 top-0 h-full flex flex-col bg-surface border-r border-outline-variant z-50">
 <div class="p-lg flex items-center gap-sm">
 <div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-on-primary">
 <span class="material-symbols-outlined">school</span>
@@ -131,20 +170,20 @@
 </div>
 </div>
 <nav class="flex-1 px-md space-y-xs mt-lg">
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('events.volunteer_dash') }}">
 <span class="material-symbols-outlined">dashboard</span> Dashboard
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined">volunteer_activism</span> Opportunities
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span> Analytics
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="#">
+<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">manage_accounts</span> Management
             </a>
 <!-- Active State: Settings/Profile -->
-<a class="flex items-center gap-md p-md rounded-lg font-semibold bg-primary-fixed text-on-primary-fixed transition-colors" href="#">
+<a class="flex items-center gap-md p-md rounded-lg font-semibold bg-primary-fixed text-on-primary-fixed transition-colors" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span> Settings
             </a>
 </nav>
@@ -152,8 +191,8 @@
 <div class="flex items-center gap-sm">
 <img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional studio portrait of a university student with a friendly smile, set against a clean, softly lit academic library background. The lighting is bright and high-key, reflecting a corporate and modern PSU Volunteer Hub aesthetic. The student is wearing a neat, neutral-colored sweater, conveying a sense of approachability and dedication to community service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMg5dk8ytqG2zZFexX5l47Ekn4IquWPSd9kOEJy6iJlLc3mvqRrWJvQNib_4H1spt-9DSsvMUjRoyiL_sdOPQtHgIUH98sjs3biYUkWkLXj0PQ1w1Qwh3l5lNzbUpUkuZbHXCzIwI1nkHPxvIj7bnQlqtAvgouaEUcsa2QVnuCdpJFuE0bI5VaK9lIoMAj6YTMNrrTe8tZGOSiEhQI_NNeRIbq345_KLym-Gne9aU42GFlU2eF5Xy6XkW7s2U_J1lTxWfJrHhvVH88"/>
 <div class="overflow-hidden">
-<p class="font-label-sm text-label-sm font-bold truncate">Alex Rivera</p>
-<p class="font-label-sm text-label-sm text-secondary truncate">Student Volunteer</p>
+<p class="font-label-sm text-label-sm font-bold truncate">{{ current_user.name }}</p>
+<p class="font-label-sm text-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
 </div>
 </div>
 </div>
@@ -162,6 +201,9 @@
 <main class="main-content min-h-screen">
 <!-- Top Navigation Bar -->
 <header class="h-16 sticky top-0 bg-surface/80 backdrop-blur-md flex items-center justify-between px-lg z-40 border-b border-outline-variant">
+<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+  <span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center bg-surface-container-low px-md py-xs rounded-full border border-outline-variant w-96">
 <span class="material-symbols-outlined text-secondary mr-sm">search</span>
 <input class="bg-transparent border-none focus:ring-0 text-body-md w-full" placeholder="Search opportunities..." type="text"/>
@@ -193,7 +235,7 @@
 </button>
 </div>
 <div class="pb-2">
-<h2 class="font-display-lg text-white mb-xs">Alex Rivera</h2>
+<h2 class="font-display-lg text-white mb-xs">{{ current_user.name }}</h2>
 <div class="flex items-center gap-md text-white/90 font-label-md">
 <span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">school</span> PSU Lingayen Campus</span>
 <span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">verified</span> Verified Volunteer</span>
@@ -213,11 +255,11 @@
 <div class="grid grid-cols-2 gap-md">
 <div class="bg-surface-container-low p-md rounded-lg">
 <p class="text-secondary font-label-md mb-xs">Total Hours</p>
-<p class="font-headline-lg text-primary">158.5</p>
+<p class="font-headline-lg text-primary">{{ user_stats.total_hours or '--' }}</p>
 </div>
 <div class="bg-surface-container-low p-md rounded-lg">
 <p class="text-secondary font-label-md mb-xs">Activities</p>
-<p class="font-headline-lg text-primary">24</p>
+<p class="font-headline-lg text-primary">{{ user_stats.total_activities or '--' }}</p>
 </div>
 </div>
 <div class="mt-lg p-md border border-primary/20 bg-primary/5 rounded-lg">
@@ -248,11 +290,13 @@
 <div class="bg-white p-lg rounded-xl border border-outline-variant">
 <h3 class="font-headline-sm text-headline-sm mb-md">Skills</h3>
 <div class="flex flex-wrap gap-sm">
-<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Web Development</span>
-<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Teaching</span>
-<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Graphic Design</span>
-<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Event Planning</span>
-<span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">Translation</span>
+{% if profile and profile.skill_list %}
+  {% for skill in profile.skill_list %}
+    <span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">{{ skill }}</span>
+  {% endfor %}
+{% else %}
+  <span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">No skills added yet</span>
+{% endif %}
 </div>
 </div>
 </div>
@@ -300,65 +344,45 @@
 </div>
 </div>
 <div class="overflow-x-auto">
-<table class="w-full text-left font-body-md text-body-md">
+<table class="w-full text-left font-body-md text-body-md table-responsive">
 <thead class="bg-surface-container-low text-label-sm border-b border-outline-variant">
 <tr>
 <th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Opportunity</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Category</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Date</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider text-right">Hours</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Status</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Registered</th>
+<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider text-right">Event Date</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant">
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md">
-<p class="font-semibold text-on-surface">Coastal Cleanup 2024</p>
-<p class="text-xs text-secondary">PSU Environmental Society</p>
-</td>
-<td class="px-lg py-md">
-<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[11px] font-bold">Environment</span>
-</td>
-<td class="px-lg py-md text-secondary">Oct 12, 2024</td>
-<td class="px-lg py-md text-right font-semibold">4.0</td>
-</tr>
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md">
-<p class="font-semibold text-on-surface">Coding for Kids Workshop</p>
-<p class="text-xs text-secondary">IT Student Council</p>
-</td>
-<td class="px-lg py-md">
-<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[11px] font-bold">Education</span>
-</td>
-<td class="px-lg py-md text-secondary">Sep 28, 2024</td>
-<td class="px-lg py-md text-right font-semibold">6.0</td>
-</tr>
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md">
-<p class="font-semibold text-on-surface">Blood Donation Drive</p>
-<p class="text-xs text-secondary">PSU Health Services</p>
-</td>
-<td class="px-lg py-md">
-<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[11px] font-bold">Health</span>
-</td>
-<td class="px-lg py-md text-secondary">Sep 05, 2024</td>
-<td class="px-lg py-md text-right font-semibold">2.5</td>
-</tr>
-<tr class="hover:bg-surface-container-lowest transition-colors">
-<td class="px-lg py-md">
-<p class="font-semibold text-on-surface">Food Bank Logistics</p>
-<p class="text-xs text-secondary">Community Welfare Office</p>
-</td>
-<td class="px-lg py-md">
-<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold">Social</span>
-</td>
-<td class="px-lg py-md text-secondary">Aug 21, 2024</td>
-<td class="px-lg py-md text-right font-semibold">5.0</td>
-</tr>
+{% if registrations %}
+  {% for reg in registrations %}
+    <tr class="hover:bg-surface-container-lowest transition-colors">
+      <td class="px-lg py-md">
+        <p class="font-semibold text-on-surface">{{ reg.event.title }}</p>
+        <p class="text-xs text-secondary">{{ reg.event.date.strftime('%b %d, %Y') }}</p>
+      </td>
+      <td class="px-lg py-md">
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold
+          {% if reg.status == 'confirmed' %}bg-green-100 text-green-700
+          {% elif reg.status == 'pending' %}bg-yellow-100 text-yellow-700
+          {% elif reg.status == 'completed' %}bg-blue-100 text-blue-700
+          {% elif reg.status == 'cancelled' %}bg-red-100 text-red-700
+          {% else %}bg-gray-100 text-gray-700{% endif %}">{{ reg.status }}</span>
+      </td>
+      <td class="px-lg py-md text-secondary">{{ reg.registered_at.strftime('%b %d, %Y') }}</td>
+      <td class="px-lg py-md text-right font-semibold">{{ reg.event.date.strftime('%b %d, %Y') }}</td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="4" class="px-lg py-md text-center text-secondary">No participation history yet.</td>
+  </tr>
+{% endif %}
 </tbody>
 </table>
 </div>
 <div class="p-md bg-surface-container-low text-center">
-<button class="text-primary font-label-md hover:underline">View Full History</button>
+<a href="{{ url_for('volunteer.history') }}" class="text-primary font-label-md hover:underline">View Full History</a>
 </div>
 </div>
 <!-- Preferred Categories & Interests -->
@@ -383,11 +407,29 @@
 <div class="bg-white p-lg rounded-xl border border-outline-variant">
 <h3 class="font-headline-sm text-headline-sm mb-md">Interests</h3>
 <div class="flex flex-wrap gap-sm">
-<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Sustainability</span>
-<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Child Mentoring</span>
-<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Open Source</span>
-<span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">Disaster Response</span>
+{% if profile and profile.interest_list %}
+  {% for interest in profile.interest_list %}
+    <span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">{{ interest }}</span>
+  {% endfor %}
+{% else %}
+  <span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">No interests added yet</span>
+{% endif %}
 </div>
+</div>
+<!-- Edit Profile Form -->
+<div class="bg-white p-lg rounded-xl border border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm mb-md">Edit Skills &amp; Interests</h3>
+<form method="POST" action="{{ url_for('volunteer.profile_page') }}" class="space-y-md">
+  <div>
+    <label class="font-label-md text-secondary block mb-xs" for="skills">Skills (comma-separated)</label>
+    <textarea id="skills" name="skills" rows="3" class="w-full border border-outline-variant rounded-lg p-md font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary bg-surface-container-lowest">{{ profile.skills if profile else '' }}</textarea>
+  </div>
+  <div>
+    <label class="font-label-md text-secondary block mb-xs" for="interests">Interests (comma-separated)</label>
+    <textarea id="interests" name="interests" rows="3" class="w-full border border-outline-variant rounded-lg p-md font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary bg-surface-container-lowest">{{ profile.interests if profile else '' }}</textarea>
+  </div>
+  <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90 transition-opacity">Save Changes</button>
+</form>
 </div>
 </div>
 </div>
@@ -419,6 +461,10 @@
             });
         });
 
+        function toggleSidebar() {
+          document.querySelector('.sidebar').classList.toggle('open');
+          document.getElementById('mobileOverlay').classList.toggle('show');
+        }
         // Search Bar Focus Effect
         const searchInput = document.querySelector('input[type="text"]');
         searchInput.addEventListener('focus', () => {
