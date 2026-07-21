@@ -199,6 +199,9 @@
 <p class="font-label-md text-on-surface truncate">{{ current_user.name }}</p>
 <p class="text-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
 </div>
+<a href="{{ url_for('auth.logout') }}" class="ml-auto text-secondary hover:text-error transition-colors" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</a>
 </div>
 </div>
 </aside>

@@ -204,9 +204,12 @@
 <img class="w-full h-full object-cover" data-alt="A professional headshot of a female university executive with a friendly yet authoritative expression, wearing business attire in a modern, brightly lit office environment. The lighting is soft and corporate, aligning with the PSU Volunteer Hub branding of trust and excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH85rMSFItWRTg5ZZwQ0_0p0fk1RaSx7WOGMxFgDP-TzSo3LigU95PyZi6paDNmJeQvc-MvWMwEFGtbk8awbs1nnhO7grw7VPThQqZkyPdGvGGoMpnMnLfVSidrg4ArX5Q9mbyIXQpZGZDO__XwpKL7_Hj8NXCLW2Kpp8vhpP10ZwCEnHfa5qtqygFhbZBAsouXKfKCIAz1h9XYc0dCidJ1DhElAlIeIvMPdFbsPB_CSQufnsFHEJ7ubvf8EyaepbvACcgeO88oiHC"/>
 </div>
 <div>
-<p class="font-label-md text-label-md text-on-surface font-bold">Dr. Elena Santos</p>
-<p class="text-label-sm font-label-sm text-secondary">Extension Director</p>
+<p class="font-label-md text-label-md text-on-surface font-bold">{{ current_user.name }}</p>
+<p class="text-label-sm font-label-sm text-secondary">{{ current_user.role_display_name }}</p>
 </div>
+<a href="{{ url_for('auth.logout') }}" class="ml-auto text-secondary hover:text-error transition-colors" title="Logout">
+<span class="material-symbols-outlined">logout</span>
+</a>
 </div>
 </div>
 </aside>

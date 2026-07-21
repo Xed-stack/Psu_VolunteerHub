@@ -27,11 +27,145 @@
         <div class="brand-logo" style="width: 36px; height: 36px; background: var(--color-primary); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
           <span class="material-symbols-outlined">school</span>
         </div>
+<<<<<<< HEAD
       </a>
       
       <div>
         <h1 class="brand-title">PSU Volunteer Hub</h1>
         <p class="brand-subtitle">Excellence in Service</p>
+=======
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!-- Side Navigation Bar -->
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col h-full p-lg overflow-y-auto z-50">
+<div class="mb-xl">
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Excellence in Service</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<!-- Dashboard -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('events.volunteer_dash') }}">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<!-- Opportunities (ACTIVE) -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold active-pill transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
+<span class="material-symbols-outlined">volunteer_activism</span>
+<span class="font-body-md text-body-md">Opportunities</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.analytics') }}">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<!-- Management -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('admin.admin_dash') }}">
+<span class="material-symbols-outlined">manage_accounts</span>
+<span class="font-body-md text-body-md">Management</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors duration-200 mt-auto" href="{{ url_for('auth.logout') }}">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md text-body-md">Logout</span>
+</a>
+</nav>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="header-fixed fixed top-0 right-0 w-[calc(100%-260px)] h-16 flex justify-between items-center px-lg z-40 bg-surface border-b border-outline-variant">
+<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+  <span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center bg-surface-container-low rounded-full px-md py-xs w-96 border border-outline-variant">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md w-full ml-sm" placeholder="Search activities, locations..." type="text"/>
+</div>
+<div class="flex items-center gap-lg">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-sm rounded-full cursor-pointer transition-all">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-sm rounded-full cursor-pointer transition-all">location_on</button>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-sm">
+<div class="text-right">
+<p class="font-label-md text-label-md font-bold">Juan Dela Cruz</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Administrator</p>
+</div>
+<img class="h-10 w-10 rounded-full border border-primary object-cover" data-alt="A professional headshot of a Filipino male administrator in a clean office setting, featuring high-key natural lighting and a soft-focus background of Pangasinan State University campus. The image maintains a clean, corporate aesthetic with a professional and friendly demeanor, aligned with a modern university brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtxGt5vRAAKxWCoboFXPsCeQMvbjk1Ajpr-VeDFCGG-WZNg336U5jw4DLI7WnRm2q0WlzW5eqXSiFuyh5-cAUeghLiuK5fQ-JTUTgYcrDarX75BamRlTEpeaDLOFdqYLigFPgLmANQ-XTswFLORyU8sBVjSH-EHBRmtw8wsb24Wun3A2CUoo12SFq8LCsOTdZQqE8kTY13DRUaIZSkqLkXpzvapUxtpoM5D523hh2ezHFMJfAzihlgQfePfolyPloTjN2GyH9qmrTM"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] main-content pt-16 min-h-screen">
+<div class="max-w-[1440px] mx-auto p-lg">
+<!-- Page Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-md">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary">Explore Volunteer Opportunities</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Find the perfect service opportunity across PSU's nine campuses.</p>
+</div>
+<div class="flex gap-sm">
+<a href="{{ url_for('coordinator.create_activity') }}" class="flex items-center gap-sm bg-primary text-white px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span> Create Opportunity
+                     </a>
+</div>
+</div>
+<!-- Advanced Filter Bar -->
+<section class="bg-white border border-outline-variant rounded-xl p-lg mb-xl shadow-sm">
+<form method="GET" action="{{ url_for('events.opportunities') }}">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-md items-end">
+<!-- Campus Filter -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-secondary">Campus</label>
+<select name="campus" onchange="this.form.submit()" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
+<option value="">All Campuses</option>
+{% for campus in campuses %}
+<option value="{{ campus.id }}" {% if selected_campus == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
+{% endfor %}
+</select>
+</div>
+<!-- Category Filter -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-secondary">Category</label>
+<select name="category" onchange="this.form.submit()" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
+<option value="">All Categories</option>
+<option value="Environment" {% if selected_category == 'Environment' %}selected{% endif %}>Environment</option>
+<option value="Literacy &amp; Education" {% if selected_category == 'Literacy &amp; Education' %}selected{% endif %}>Literacy &amp; Education</option>
+<option value="Community Health" {% if selected_category == 'Community Health' %}selected{% endif %}>Community Health</option>
+<option value="Agricultural Service" {% if selected_category == 'Agricultural Service' %}selected{% endif %}>Agricultural Service</option>
+<option value="IT &amp; Digital Support" {% if selected_category == 'IT &amp; Digital Support' %}selected{% endif %}>IT &amp; Digital Support</option>
+</select>
+</div>
+<!-- Skills Filter -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-secondary">Required Skills</label>
+<input name="search" value="{{ search_query or '' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10" placeholder="Teaching, Coding, etc." type="text"/>
+</div>
+<!-- Duration Filter -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-secondary">Duration</label>
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
+<option>Any Duration</option>
+<option>Short-term (1 day)</option>
+<option>Mid-term (1 week)</option>
+<option>Long-term (Ongoing)</option>
+</select>
+</div>
+</div>
+</form>
+</section>
+<!-- Opportunities Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-xl">
+{% if events %}
+  {% for event in events %}
+  <div class="bg-white border border-outline-variant rounded-xl overflow-hidden flex flex-col group hover:shadow-md transition-shadow duration-300">
+    <div class="relative h-48">
+      <div class="bg-gradient-to-br from-primary to-primary-fixed w-full h-full flex items-center justify-center text-white font-bold text-lg">
+        {{ event.category or 'Volunteer' }}
+>>>>>>> 6146a3df6799053c8eba427caf150d40e944c7e1
       </div>
     </div>
 

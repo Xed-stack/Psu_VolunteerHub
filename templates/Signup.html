@@ -29,7 +29,7 @@
             <div class="form-container">
                 <header class="form-header">
                     <h1>Create your account</h1>
-                    <p>Already have an account? <a href="#">Sign in instead</a></p>
+                    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in instead</a></p>
                 </header>
 
                 <form action="/register" method="POST" class="signup-form">
