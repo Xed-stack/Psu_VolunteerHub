@@ -8,6 +8,7 @@ from flask_login import LoginManager
 from app.models import db
 from app.models.user import User, SystemSetting
 from app.models.event import Event, Registration, Attendance, Milestone, Campus
+from config import config
 
 
 def create_app(config_name='development'):
@@ -20,11 +21,13 @@ def create_app(config_name='development'):
     )
 
     # App configuration
-    app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///psu_volunteer_hub.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['UPLOAD_FOLDER'] = 'static/uploads'
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    app.config.from_object(config[config_name])
+
+    # app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///psu_volunteer_hub.db'
+    # app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # app.config['UPLOAD_FOLDER'] = 'static/uploads'
+    # app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
     # Initialize extensions
     db.init_app(app)
@@ -176,23 +179,52 @@ def _seed_events(app):
 
 def _seed_users(app):
     """Seed example users for all roles."""
-    from app.models.user import User, VolunteerProfile
+    from app.models.user import User, VolunteerProfile, Skill, Interest
     from app.models import db
+
     if User.query.count() == 0:
         seed_users_data = [
-            dict(name='Student Volunteer', email='student@psu.edu', role='volunteer', campus_id=1),
-            dict(name='Faculty Volunteer', email='faculty@psu.edu', role='volunteer', campus_id=2),
-            dict(name='Staff Volunteer', email='staff@psu.edu', role='volunteer', campus_id=3),
-            dict(name='Coordinator User', email='coordinator@psu.edu', role='coordinator', campus_id=1),
-            dict(name='Director User', email='director@psu.edu', role='director', campus_id=1),
-            dict(name='Admin User', email='admin@psu.edu', role='admin', campus_id=1),
+            dict(name='Student Volunteer', email='student@psu.edu',
+                 role='volunteer', campus_id=1),
+            dict(name='Faculty Volunteer', email='faculty@psu.edu',
+                 role='volunteer', campus_id=2),
+            dict(name='Staff Volunteer', email='staff@psu.edu',
+                 role='volunteer', campus_id=3),
+            dict(name='Coordinator User', email='coordinator@psu.edu',
+                 role='coordinator', campus_id=1),
+            dict(name='Director User', email='director@psu.edu',
+                 role='director', campus_id=1),
+            dict(name='Admin User', email='admin@psu.edu',
+                 role='admin', campus_id=1),
         ]
         for data in seed_users_data:
-            u = User(name=data['name'], email=data['email'], role=data['role'], campus_id=data['campus_id'])
+            u = User(name=data['name'], email=data['email'],
+                     role=data['role'], campus_id=data['campus_id'])
             u.set_password('password')
             db.session.add(u)
             db.session.flush()
+
             if u.role == 'volunteer':
-                profile = VolunteerProfile(user_id=u.id, skills='Teaching, Communication, Python', interests='Education, Technology, Environment')
+                # Instantiate VolunteerProfile without skills/interests kwargs
+                profile = VolunteerProfile(user_id=u.id)
                 db.session.add(profile)
+
+                # Attach skills/interests directly to the user
+                default_skills = ['Teaching', 'Communication', 'Python']
+                default_interests = ['Education', 'Technology', 'Environment']
+
+                for sk_name in default_skills:
+                    sk = Skill.query.filter_by(name=sk_name).first()
+                    if not sk:
+                        sk = Skill(name=sk_name)
+                        db.session.add(sk)
+                    u.skills.append(sk)
+
+                for int_name in default_interests:
+                    it = Interest.query.filter_by(name=int_name).first()
+                    if not it:
+                        it = Interest(name=int_name)
+                        db.session.add(it)
+                    u.interests.append(it)
+
         db.session.commit()

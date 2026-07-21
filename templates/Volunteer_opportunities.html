@@ -1,374 +1,263 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>PSU Volunteer Hub | Explore Opportunities</title>
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>PSU Volunteer Hub | Explore Opportunities</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "outline": "#727784",
-                        "surface": "#f9f9ff",
-                        "error": "#ba1a1a",
-                        "primary-fixed-dim": "#adc7ff",
-                        "on-primary": "#ffffff",
-                        "tertiary-fixed-dim": "#f6bf22",
-                        "primary": "#00408b",
-                        "on-surface": "#111c2c",
-                        "on-error": "#ffffff",
-                        "on-secondary": "#ffffff",
-                        "on-tertiary": "#ffffff",
-                        "tertiary-fixed": "#ffdf99",
-                        "tertiary-container": "#725600",
-                        "surface-dim": "#cfdaf1",
-                        "secondary": "#5b5f61",
-                        "primary-fixed": "#d8e2ff",
-                        "inverse-on-surface": "#ebf1ff",
-                        "on-secondary-fixed-variant": "#44474a",
-                        "on-primary-container": "#bfd2ff",
-                        "secondary-fixed-dim": "#c4c7ca",
-                        "error-container": "#ffdad6",
-                        "surface-container-lowest": "#ffffff",
-                        "on-tertiary-fixed": "#251a00",
-                        "on-secondary-container": "#626567",
-                        "on-primary-fixed": "#001a41",
-                        "background": "#f9f9ff",
-                        "outline-variant": "#c2c6d4",
-                        "inverse-primary": "#adc7ff",
-                        "secondary-container": "#e0e3e6",
-                        "on-tertiary-fixed-variant": "#5a4300",
-                        "tertiary": "#553f00",
-                        "on-background": "#111c2c",
-                        "on-surface-variant": "#424752",
-                        "surface-container": "#e7eeff",
-                        "inverse-surface": "#263142",
-                        "secondary-fixed": "#e0e3e6",
-                        "surface-tint": "#0d5bbc",
-                        "surface-container-highest": "#d8e3fa",
-                        "surface-variant": "#d8e3fa",
-                        "primary-container": "#0057b8",
-                        "on-secondary-fixed": "#191c1e",
-                        "surface-container-low": "#f0f3ff",
-                        "on-primary-fixed-variant": "#004493",
-                        "on-error-container": "#93000a",
-                        "surface-container-high": "#dee8ff",
-                        "surface-bright": "#f9f9ff",
-                        "on-tertiary-container": "#ffcb44"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
-                    },
-                    "spacing": {
-                        "sm": "8px",
-                        "container-max-width": "1440px",
-                        "lg": "24px",
-                        "xl": "32px",
-                        "base": "4px",
-                        "gutter": "24px",
-                        "xs": "4px",
-                        "2xl": "48px",
-                        "sidebar-width": "260px",
-                        "md": "16px"
-                    },
-                    "fontFamily": {
-                        "headline-lg": ["Inter"],
-                        "display-lg-mobile": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "body-md": ["Inter"],
-                        "label-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "display-lg": ["Inter"],
-                        "headline-sm": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
-                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
-                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
-                    }
-                }
-            }
-        }
-    </script>
-<style>
-        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .active-pill {
-            position: relative;
-        }
-        .active-pill::before {
-            content: '';
-            position: absolute;
-            left: -12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 24px;
-            background-color: #00408b;
-            border-radius: 0 4px 4px 0;
-        }
-    </style>
-<style>
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
-  .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0 !important; }
-  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
-  .mobile-overlay.show { display: block; }
-  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
-}
-@media (max-width: 768px) {
-  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
-@media (max-width: 768px) {
-  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
-  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
-  .flex-row { flex-direction: column !important; }
-  .gap-xl { gap: 1rem !important; }
-}
-@media (max-width: 768px) {
-  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
-}
-</style>
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"/>
+
+  <!-- Standalone Mobile-First Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/opportunity_SRC.css') }}"/>
 </head>
-<body class="text-on-surface">
-<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
-<!-- Flash Messages -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="fixed top-4 right-4 z-[100] space-y-2">
-      {% for category, message in messages %}
-        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
-          {% if category == 'success' %}bg-green-600
-          {% elif category == 'error' %}bg-red-600
-          {% elif category == 'warning' %}bg-yellow-600
-          {% else %}bg-blue-600{% endif %}">
-          {{ message }}
+<body>
+
+<div class="overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-container">
+
+  <!-- ========================================== -->
+  <!-- DRAWER NAVIGATION                         -->
+  <!-- ========================================== -->
+  <aside class="sidebar" id="appSidebar">
+    <div class="brand-header">
+      <a href="{{ url_for('events.volunteer_dash') }}">
+        <div class="brand-logo" style="width: 36px; height: 36px; background: var(--color-primary); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <span class="material-symbols-outlined">school</span>
         </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-<!-- Side Navigation Bar -->
-<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col h-full p-lg overflow-y-auto z-50">
-<div class="mb-xl">
-<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
-<p class="font-label-sm text-label-sm text-on-surface-variant">Excellence in Service</p>
-</div>
-<nav class="flex-1 flex flex-col gap-xs">
-<!-- Dashboard -->
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('events.volunteer_dash') }}">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="font-body-md text-body-md">Dashboard</span>
-</a>
-<!-- Opportunities (ACTIVE) -->
-<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold active-pill transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
-<span class="material-symbols-outlined">volunteer_activism</span>
-<span class="font-body-md text-body-md">Opportunities</span>
-</a>
-<!-- Analytics -->
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.analytics') }}">
-<span class="material-symbols-outlined">analytics</span>
-<span class="font-body-md text-body-md">Analytics</span>
-</a>
-<!-- Management -->
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('admin.admin_dash') }}">
-<span class="material-symbols-outlined">manage_accounts</span>
-<span class="font-body-md text-body-md">Management</span>
-</a>
-<!-- Settings -->
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200 mt-auto" href="{{ url_for('volunteer.profile_page') }}">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-body-md text-body-md">Settings</span>
-</a>
-</nav>
-</aside>
-<!-- Top Navigation Bar -->
-<header class="header-fixed fixed top-0 right-0 w-[calc(100%-260px)] h-16 flex justify-between items-center px-lg z-40 bg-surface border-b border-outline-variant">
-<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
-  <span class="material-symbols-outlined">menu</span>
-</button>
-<div class="flex items-center bg-surface-container-low rounded-full px-md py-xs w-96 border border-outline-variant">
-<span class="material-symbols-outlined text-outline">search</span>
-<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md w-full ml-sm" placeholder="Search activities, locations..." type="text"/>
-</div>
-<div class="flex items-center gap-lg">
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-sm rounded-full cursor-pointer transition-all">notifications</button>
-<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-sm rounded-full cursor-pointer transition-all">location_on</button>
-<div class="h-8 w-px bg-outline-variant"></div>
-<div class="flex items-center gap-sm">
-<div class="text-right">
-<p class="font-label-md text-label-md font-bold">Juan Dela Cruz</p>
-<p class="font-label-sm text-label-sm text-on-surface-variant">Administrator</p>
-</div>
-<img class="h-10 w-10 rounded-full border border-primary object-cover" data-alt="A professional headshot of a Filipino male administrator in a clean office setting, featuring high-key natural lighting and a soft-focus background of Pangasinan State University campus. The image maintains a clean, corporate aesthetic with a professional and friendly demeanor, aligned with a modern university brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtxGt5vRAAKxWCoboFXPsCeQMvbjk1Ajpr-VeDFCGG-WZNg336U5jw4DLI7WnRm2q0WlzW5eqXSiFuyh5-cAUeghLiuK5fQ-JTUTgYcrDarX75BamRlTEpeaDLOFdqYLigFPgLmANQ-XTswFLORyU8sBVjSH-EHBRmtw8wsb24Wun3A2CUoo12SFq8LCsOTdZQqE8kTY13DRUaIZSkqLkXpzvapUxtpoM5D523hh2ezHFMJfAzihlgQfePfolyPloTjN2GyH9qmrTM"/>
-</div>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="ml-[260px] main-content pt-16 min-h-screen">
-<div class="max-w-[1440px] mx-auto p-lg">
-<!-- Page Header Section -->
-<div class="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-md">
-<div>
-<h2 class="font-display-lg text-display-lg text-primary">Explore Volunteer Opportunities</h2>
-<p class="font-body-lg text-body-lg text-on-surface-variant">Find the perfect service opportunity across PSU's nine campuses.</p>
-</div>
-<div class="flex gap-sm">
-<a href="{{ url_for('coordinator.create_activity') }}" class="flex items-center gap-sm bg-primary text-white px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">
-<span class="material-symbols-outlined">add</span> Create Opportunity
-                     </a>
-</div>
-</div>
-<!-- Advanced Filter Bar -->
-<section class="bg-white border border-outline-variant rounded-xl p-lg mb-xl shadow-sm">
-<form method="GET" action="{{ url_for('events.opportunities') }}">
-<div class="grid grid-cols-1 md:grid-cols-4 gap-md items-end">
-<!-- Campus Filter -->
-<div class="space-y-xs">
-<label class="font-label-md text-label-md text-secondary">Campus</label>
-<select name="campus" onchange="this.form.submit()" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
-<option value="">All Campuses</option>
-{% for campus in campuses %}
-<option value="{{ campus.id }}" {% if selected_campus == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
-{% endfor %}
-</select>
-</div>
-<!-- Category Filter -->
-<div class="space-y-xs">
-<label class="font-label-md text-label-md text-secondary">Category</label>
-<select name="category" onchange="this.form.submit()" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
-<option value="">All Categories</option>
-<option value="Environment" {% if selected_category == 'Environment' %}selected{% endif %}>Environment</option>
-<option value="Literacy &amp; Education" {% if selected_category == 'Literacy &amp; Education' %}selected{% endif %}>Literacy &amp; Education</option>
-<option value="Community Health" {% if selected_category == 'Community Health' %}selected{% endif %}>Community Health</option>
-<option value="Agricultural Service" {% if selected_category == 'Agricultural Service' %}selected{% endif %}>Agricultural Service</option>
-<option value="IT &amp; Digital Support" {% if selected_category == 'IT &amp; Digital Support' %}selected{% endif %}>IT &amp; Digital Support</option>
-</select>
-</div>
-<!-- Skills Filter -->
-<div class="space-y-xs">
-<label class="font-label-md text-label-md text-secondary">Required Skills</label>
-<input name="search" value="{{ search_query or '' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10" placeholder="Teaching, Coding, etc." type="text"/>
-</div>
-<!-- Duration Filter -->
-<div class="space-y-xs">
-<label class="font-label-md text-label-md text-secondary">Duration</label>
-<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary/10">
-<option>Any Duration</option>
-<option>Short-term (1 day)</option>
-<option>Mid-term (1 week)</option>
-<option>Long-term (Ongoing)</option>
-</select>
-</div>
-</div>
-</form>
-</section>
-<!-- Opportunities Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-xl">
-{% if events %}
-  {% for event in events %}
-  <div class="bg-white border border-outline-variant rounded-xl overflow-hidden flex flex-col group hover:shadow-md transition-shadow duration-300">
-    <div class="relative h-48">
-      <div class="bg-gradient-to-br from-primary to-primary-fixed w-full h-full flex items-center justify-center text-white font-bold text-lg">
-        {{ event.category or 'Volunteer' }}
+      </a>
+      
+      <div>
+        <h1 class="brand-title">PSU Volunteer Hub</h1>
+        <p class="brand-subtitle">Excellence in Service</p>
       </div>
-      {% if event.required_skills %}
-      <span class="absolute top-md right-md bg-tertiary text-on-tertiary-container px-sm py-xs rounded-lg font-label-sm text-label-sm shadow-sm flex items-center gap-xs">
-        <span class="material-symbols-outlined text-[14px]">star</span> Matches your skills
-      </span>
-      {% endif %}
     </div>
-    <div class="p-lg flex flex-col flex-1">
-      <div class="flex justify-between items-start mb-sm">
-        <span class="bg-tertiary-fixed text-on-tertiary-fixed px-sm py-[2px] rounded-full font-label-sm text-label-sm">{{ event.category or 'General' }}</span>
-        <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs">
-          <span class="material-symbols-outlined text-[16px]">location_on</span> {{ event.location or event.campus.name or 'TBD' }}
-        </span>
+
+    <nav class="nav-menu">
+      <a href="{{ url_for('events.volunteer_dash') }}" class="nav-link">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('events.opportunities') }}" class="nav-link active">
+        <span class="material-symbols-outlined">volunteer_activism</span>
+        <span>Opportunities</span>
+      </a>
+      <a href="{{ url_for('director.analytics') }}" class="nav-link">
+        <span class="material-symbols-outlined">analytics</span>
+        <span>Analytics</span>
+      </a>
+      <a href="{{ url_for('admin.admin_dash') }}" class="nav-link">
+        <span class="material-symbols-outlined">manage_accounts</span>
+        <span>Management</span>
+      </a>
+      <a href="{{ url_for('volunteer.profile_page') }}" class="nav-link" style="margin-top: auto;">
+        <span class="material-symbols-outlined">settings</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- MAIN WORKSPACE                             -->
+  <!-- ========================================== -->
+  <div class="main-wrapper">
+
+    <!-- Top Navigation Header -->
+    <header class="top-header">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <div class="search-box">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Search activities, locations..."/>
       </div>
-      <h3 class="font-headline-sm text-headline-sm text-primary mb-xs">{{ event.title }}</h3>
-      <p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-md">{{ event.description }}</p>
-      <div class="mt-auto flex items-center justify-between">
-        <div class="flex items-center gap-xs">
-          <span class="material-symbols-outlined text-secondary text-[18px]">group</span>
-          <span class="font-label-md text-label-md text-secondary">{{ event.slots_remaining() if event.slots_remaining is defined else event.slots }} slots</span>
+
+      <div class="header-actions">
+        <button class="icon-btn">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <div class="desktop-only" style="align-items: center; gap: 8px;">
+          <div style="text-align: right;">
+            <p style="font-size: 12px; font-weight: 700;">{{ current_user.name if current_user else 'Juan Dela Cruz' }}</p>
+            <p style="font-size: 11px; color: var(--color-text-muted);">{{ current_user.role_display_name if current_user else 'Volunteer' }}</p>
+          </div>
         </div>
-        <a href="{{ url_for('events.register_for_event', event_id=event.id) }}" class="text-primary font-label-md text-label-md hover:underline decoration-2 underline-offset-4 transition-all">View Details</a>
       </div>
-    </div>
+    </header>
+
+    <!-- Main Content Canvas -->
+    <main class="content-container">
+
+      <!-- Flash Feedback Alerts -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="margin-bottom: 16px;">
+            {% for category, message in messages %}
+              <div class="flash-alert alert-{{ category }}" style="padding: 12px; border-radius: 8px; font-size: 12px; background: var(--color-primary-light); color: var(--color-primary);">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Page Title & Actions -->
+      <section class="page-header">
+        <div>
+          <h2 class="page-title">Explore Opportunities</h2>
+          <p class="page-subtitle">Find service opportunities across PSU's campuses.</p>
+        </div>
+        <div>
+          <a href="{{ url_for('coordinator.create_activity') }}" class="primary-btn">
+            <span class="material-symbols-outlined">add</span> Create Opportunity
+          </a>
+        </div>
+      </section>
+
+      <!-- Advanced Filter Form -->
+      <section class="filter-card">
+        <form method="GET" action="{{ url_for('events.opportunities') }}">
+          <div class="filter-grid">
+            
+            <div class="form-group">
+              <label class="form-label">Campus</label>
+              <select name="campus" onchange="this.form.submit()" class="form-select">
+                <option value="">All Campuses</option>
+                {% for campus in campuses %}
+                  <option value="{{ campus.id }}" {% if selected_campus == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select name="category" onchange="this.form.submit()" class="form-select">
+                <option value="">All Categories</option>
+                <option value="Environment" {% if selected_category == 'Environment' %}selected{% endif %}>Environment</option>
+                <option value="Literacy & Education" {% if selected_category == 'Literacy & Education' %}selected{% endif %}>Literacy & Education</option>
+                <option value="Community Health" {% if selected_category == 'Community Health' %}selected{% endif %}>Community Health</option>
+                <option value="Agricultural Service" {% if selected_category == 'Agricultural Service' %}selected{% endif %}>Agricultural Service</option>
+                <option value="IT & Digital Support" {% if selected_category == 'IT & Digital Support' %}selected{% endif %}>IT & Digital Support</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Search Skills</label>
+              <input type="text" name="search" value="{{ search_query or '' }}" class="form-input" placeholder="Teaching, Coding, etc."/>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Duration</label>
+              <select class="form-select">
+                <option>Any Duration</option>
+                <option>Short-term (1 day)</option>
+                <option>Mid-term (1 week)</option>
+                <option>Long-term (Ongoing)</option>
+              </select>
+            </div>
+
+          </div>
+        </form>
+      </section>
+
+      <!-- Opportunities Cards Stream -->
+      <div class="opportunities-grid">
+        {% if events %}
+          {% for event in events %}
+            <article class="event-card">
+              <div class="card-banner">
+                <span>{{ event.category or 'Volunteer' }}</span>
+                {% if event.required_skills %}
+                  <div class="skill-match-badge">
+                    <span class="material-symbols-outlined" style="font-size: 12px;">star</span> Skill Match
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="card-content">
+                <div class="card-meta-row">
+                  <span class="category-tag">{{ event.category or 'General' }}</span>
+                  <span class="location-tag">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">location_on</span>
+                    {{ event.location or (event.campus.name if event.campus else 'TBD') }}
+                  </span>
+                </div>
+
+                <h3 class="card-title">{{ event.title }}</h3>
+                <p class="card-description">{{ event.description }}</p>
+
+                <div class="card-footer">
+                  <div class="slots-count">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">group</span>
+                    <span>{{ event.slots_remaining() if event.slots_remaining is defined else event.slots }} slots left</span>
+                  </div>
+                  <a href="{{ url_for('events.register_for_event', event_id=event.id) }}" class="card-action-link">View Details</a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <span class="material-symbols-outlined" style="font-size: 36px;">search_off</span>
+            <p style="margin-top: 8px;">No volunteer opportunities found matching your criteria.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Pagination Footer -->
+      <section class="pagination-wrapper">
+        <p style="font-size: 12px; color: var(--color-text-muted);">Showing {{ events|length }} active opportunities</p>
+
+        {% if total_pages and total_pages > 1 %}
+          <div class="pagination-nav">
+            {% if current_page > 1 %}
+              <a href="{{ url_for('events.opportunities', page=current_page-1, campus=selected_campus, category=selected_category, search=search_query) }}" class="page-btn">
+                <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span>
+              </a>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+              <a href="{{ url_for('events.opportunities', page=p, campus=selected_campus, category=selected_category, search=search_query) }}" class="page-btn {% if p == current_page %}active{% endif %}">
+                {{ p }}
+              </a>
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+              <a href="{{ url_for('events.opportunities', page=current_page+1, campus=selected_campus, category=selected_category, search=search_query) }}" class="page-btn">
+                <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
+
+    </main>
+
+    <!-- Application Footer -->
+    <footer class="footer">
+      <div>
+        <strong>PSU Volunteer Hub</strong> | © 2026 Pangasinan State University. All rights reserved.
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact Support</a>
+      </div>
+    </footer>
+
   </div>
-  {% endfor %}
-{% else %}
-  <div class="col-span-full text-center py-xl text-secondary">
-    <span class="material-symbols-outlined text-4xl">search</span>
-    <p class="font-body-md mt-md">No volunteer opportunities available at this time.</p>
-  </div>
-{% endif %}
+
 </div>
-<!-- Pagination/Footer Area -->
-<div class="mt-2xl flex items-center justify-between border-t border-outline-variant pt-lg">
-<p class="font-label-md text-label-md text-secondary">Showing {{ events|length }} active opportunities</p>
-<div class="flex items-center gap-sm">
-{% if total_pages > 1 %}
-  {% if current_page > 1 %}
-  <a href="{{ url_for('events.opportunities', page=current_page-1, campus=selected_campus, category=selected_category, search=search_query) }}" class="h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors">
-    <span class="material-symbols-outlined">chevron_left</span>
-  </a>
-  {% endif %}
-  {% for p in range(1, total_pages + 1) %}
-  <a href="{{ url_for('events.opportunities', page=p, campus=selected_campus, category=selected_category, search=search_query) }}" class="h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors font-label-md text-label-md {% if p == current_page %}bg-primary text-white{% endif %}">{{ p }}</a>
-  {% endfor %}
-  {% if current_page < total_pages %}
-  <a href="{{ url_for('events.opportunities', page=current_page+1, campus=selected_campus, category=selected_category, search=search_query) }}" class="h-10 w-10 flex items-center justify-center rounded-lg border border-outline-variant hover:bg-surface-container transition-colors">
-    <span class="material-symbols-outlined">chevron_right</span>
-  </a>
-  {% endif %}
-{% endif %}
-</div>
-</div>
-</div>
-<!-- Footer -->
-<footer class="bg-surface-container-lowest border-t border-outline-variant py-md mt-xl">
-<div class="flex flex-col md:flex-row justify-between items-center px-lg max-w-[1440px] mx-auto">
-<p class="font-label-sm text-label-sm font-bold text-primary">© 2024 Pangasinan State University. All rights reserved.</p>
-<div class="flex gap-lg mt-md md:mt-0">
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Privacy Policy</a>
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Terms of Service</a>
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Contact Support</a>
-</div>
-</div>
-</footer>
-</main>
+
 <script>
-        function toggleSidebar() {
-          document.querySelector('.sidebar').classList.toggle('open');
-          document.getElementById('mobileOverlay').classList.toggle('show');
-        }
-        // Micro-interaction for filter transitions
-        const filterSelects = document.querySelectorAll('select');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', () => {
-                select.classList.add('ring-2', 'ring-primary/20');
-                setTimeout(() => select.classList.remove('ring-2', 'ring-primary/20'), 1000);
-            });
-        });
-    </script>
-</body></html>
+  function toggleSidebar() {
+    document.getElementById('appSidebar').classList.toggle('open');
+    document.getElementById('mobileOverlay').classList.toggle('show');
+  }
+</script>
+
+</body>
+</html>
