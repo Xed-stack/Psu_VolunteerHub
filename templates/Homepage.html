@@ -21,19 +21,12 @@
             <a class="nav-link active" href="#">About</a>
             <a class="nav-link" href="{{ url_for('events.opportunities') }}">Opportunities</a>
             <a class="nav-link" href="#">Impact</a>
-<<<<<<< HEAD
             <a href="{{ url_for('auth.login') }}">
                 <div class="nav-actions">
                     <span class="material-symbols-outlined icon-btn">notifications</span>
                     <button class="btn btn-primary">Login</button>
                 </div>
             </a>
-=======
-            <div class="nav-actions">
-                <span class="material-symbols-outlined icon-btn">notifications</span>
-                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
-            </div>
->>>>>>> 6146a3df6799053c8eba427caf150d40e944c7e1
         </nav>
         <button class="menu-mobile-btn material-symbols-outlined">menu</button>
     </header>
@@ -46,7 +39,7 @@
                     <h1>Empowering Excellence through Service</h1>
                     <p>Join the centralized volunteer network of Pangasinan State University. Connect with meaningful projects, develop professional skills, and make a lasting impact on our community.</p>
                     <div class="btn-group">
-                        <a href="{{ url_for('auth.register') }}" class="btn btn-tertiary flex-btn" style="text-decoration: none; display: inline-flex;">
+                        <a href="{{ url_for('auth.interests') }}" class="btn btn-tertiary flex-btn" style="text-decoration: none; display: inline-flex;">
                             Join Now <span class="material-symbols-outlined">arrow_forward</span>
                         </a>
                     </div>

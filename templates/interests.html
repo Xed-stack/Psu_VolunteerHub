@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Interests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/interests.css') }}">
+</head>
+<body>
+    <section class="form-container">
+        <h2>What are your Interests?</h2>
+
+        <!-- Submit to the interests endpoint -->
+        <form action="{{ url_for('auth.interests') }}" method="POST">
+            <div class="card-grid">
+                {% for interest in interests %}
+                    <div class="card-item">
+                        <input 
+                            type="checkbox" 
+                            name="interests" 
+                            id="interest-{{ interest.id }}" 
+                            value="{{ interest.id }}" 
+                            class="card-input"
+                        >
+                        <label for="interest-{{ interest.id }}" class="card-label">
+                            <div class="card-content">
+                                <h3>{{ interest.name }}</h3>
+                            </div>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn-submit">Next</button>
+        </form>
+    </section>
+</body>
+</html>

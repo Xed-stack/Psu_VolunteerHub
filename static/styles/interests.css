@@ -1,0 +1,93 @@
+:root {
+    --color-primary: #00408b;
+    --color-primary-hover: #386eb1;
+    --color-primary-light: #d8e2ff;
+    --color-text-main: #111c2c;
+    --color-text-muted: #5b5f61;
+    --color-bg-main: #f9f9ff;
+    --color-bg-card: #ffffff;
+    --color-border: #c2c6d4;
+    --border-radius: 12px;
+}
+
+body {
+    background-color: var(--color-bg-main);
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--color-text-main);
+}
+
+.form-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+/* Flexible & Responsive Grid */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.card-item {
+    position: relative;
+}
+
+/* Visually hide checkbox while keeping accessible */
+.card-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Default state of card */
+.card-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    padding: 16px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-bg-card);
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.card-label:hover {
+    border-color: var(--color-primary-hover);
+    transform: translateY(-2px);
+}
+
+/* Checked state styling using sibling selector (+) */
+.card-input:checked + .card-label {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 64, 139, 0.15);
+}
+
+/* Submit Button */
+.btn-submit {
+    display: block;
+    width: 100%;
+    max-width: 200px;
+    padding: 12px 24px;
+    margin: 0 auto;
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-submit:hover {
+    background-color: var(--color-primary-hover);
+}

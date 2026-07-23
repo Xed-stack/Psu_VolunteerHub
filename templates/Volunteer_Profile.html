@@ -1,480 +1,377 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Volunteer Profile | PSU Volunteer Hub</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "surface-dim": "#cfdaf1",
-                    "inverse-primary": "#adc7ff",
-                    "surface-container": "#e7eeff",
-                    "on-secondary-container": "#626567",
-                    "surface-container-lowest": "#ffffff",
-                    "on-tertiary-container": "#ffcb44",
-                    "error-container": "#ffdad6",
-                    "on-primary-fixed": "#001a41",
-                    "primary": "#00408b",
-                    "on-secondary-fixed-variant": "#44474a",
-                    "outline-variant": "#c2c6d4",
-                    "surface-tint": "#0d5bbc",
-                    "secondary-container": "#e0e3e6",
-                    "on-surface-variant": "#424752",
-                    "on-background": "#111c2c",
-                    "on-error-container": "#93000a",
-                    "inverse-on-surface": "#ebf1ff",
-                    "tertiary-container": "#725600",
-                    "primary-container": "#0057b8",
-                    "on-tertiary": "#ffffff",
-                    "on-primary-container": "#bfd2ff",
-                    "inverse-surface": "#263142",
-                    "secondary": "#5b5f61",
-                    "secondary-fixed-dim": "#c4c7ca",
-                    "tertiary-fixed": "#ffdf99",
-                    "on-primary": "#ffffff",
-                    "surface-container-low": "#f0f3ff",
-                    "on-surface": "#111c2c",
-                    "on-primary-fixed-variant": "#004493",
-                    "surface-variant": "#d8e3fa",
-                    "on-secondary": "#ffffff",
-                    "tertiary-fixed-dim": "#f6bf22",
-                    "surface-container-high": "#dee8ff",
-                    "on-error": "#ffffff",
-                    "surface-bright": "#f9f9ff",
-                    "primary-fixed-dim": "#adc7ff",
-                    "outline": "#727784",
-                    "surface": "#f9f9ff",
-                    "on-tertiary-fixed-variant": "#5a4300",
-                    "on-secondary-fixed": "#191c1e",
-                    "background": "#f9f9ff",
-                    "secondary-fixed": "#e0e3e6",
-                    "surface-container-highest": "#d8e3fa",
-                    "primary-fixed": "#d8e2ff",
-                    "on-tertiary-fixed": "#251a00",
-                    "tertiary": "#553f00",
-                    "error": "#ba1a1a"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.125rem",
-                    "lg": "0.25rem",
-                    "xl": "0.5rem",
-                    "full": "0.75rem"
-            },
-            "spacing": {
-                    "xs": "4px",
-                    "lg": "24px",
-                    "base": "4px",
-                    "gutter": "24px",
-                    "sm": "8px",
-                    "2xl": "48px",
-                    "sidebar-width": "260px",
-                    "md": "16px",
-                    "container-max-width": "1440px",
-                    "xl": "32px"
-            },
-            "fontFamily": {
-                    "label-sm": ["Inter"],
-                    "headline-md": ["Inter"],
-                    "body-md": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "display-lg-mobile": ["Inter"],
-                    "display-lg": ["Inter"],
-                    "label-md": ["Inter"],
-                    "headline-sm": ["Inter"],
-                    "headline-lg": ["Inter"]
-            },
-            "fontSize": {
-                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
-                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
-                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
-                    "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
-                    "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
-            }
-          }
-        }
-      }
-    </script>
-<style>
-        body { font-family: 'Inter', sans-serif; background-color: #F5F7FA; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .sidebar-fixed { width: 260px; }
-        .main-content { margin-left: 260px; max-width: calc(1440px - 260px); }
-        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); }
-        @media (max-width: 1024px) {
-            .sidebar-fixed { display: none; }
-            .main-content { margin-left: 0; max-width: 100%; }
-        }
-    </style>
-<style>
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
-  .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0 !important; }
-  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
-  .mobile-overlay.show { display: block; }
-  .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
-}
-@media (max-width: 768px) {
-  .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
-@media (max-width: 768px) {
-  .grid-cols-3, .grid-cols-4, .grid-cols-2 { grid-template-columns: 1fr !important; }
-  .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
-  .flex-row { flex-direction: column !important; }
-  .gap-xl { gap: 1rem !important; }
-}
-@media (max-width: 768px) {
-  .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
-}
-</style>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Volunteer Profile | PSU Volunteer Hub</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/profile.css') }}">
 </head>
-<body class="text-on-background">
-<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
-<!-- Flash Messages -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="fixed top-4 right-4 z-[100] space-y-2">
-      {% for category, message in messages %}
-        <div class="px-lg py-md rounded-lg shadow-lg text-white font-label-md
-          {% if category == 'success' %}bg-green-600
-          {% elif category == 'error' %}bg-red-600
-          {% elif category == 'warning' %}bg-yellow-600
-          {% else %}bg-blue-600{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-<!-- Sidebar Navigation -->
-<aside class="sidebar sidebar-fixed fixed left-0 top-0 h-full flex flex-col bg-surface border-r border-outline-variant z-50">
-<div class="p-lg flex items-center gap-sm">
-<div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-on-primary">
-<span class="material-symbols-outlined">school</span>
-</div>
-<div>
-<h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
-<p class="font-label-md text-label-md text-secondary">Excellence in Service</p>
-</div>
-</div>
-<nav class="flex-1 px-md space-y-xs mt-lg">
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('events.volunteer_dash') }}">
-<span class="material-symbols-outlined">dashboard</span> Dashboard
+<body class="app-body">
+
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- System Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="flash-toast-container" aria-label="Notifications">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    <!-- =================================================================== -->
+    <!-- PRIMARY SIDEBAR NAVIGATION                                          -->
+    <!-- =================================================================== -->
+    <aside class="sidebar">
+        <header class="sidebar-header">
+            <figure class="brand-logo">
+                <span class="material-symbols-outlined">school</span>
+            </figure>
+            <hgroup>
+                <h1 class="brand-title">PSU Volunteer Hub</h1>
+                <p class="brand-subtitle">Excellence in Service</p>
+            </hgroup>
+        </header>
+
+        <nav class="nav-menu" aria-label="Main Navigation">
+            <a class="nav-item" href="{{ url_for('events.volunteer_dash') }}">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>Dashboard</span>
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('events.opportunities') }}">
-<span class="material-symbols-outlined">volunteer_activism</span> Opportunities
+            <a class="nav-item" href="{{ url_for('events.opportunities') }}">
+                <span class="material-symbols-outlined">volunteer_activism</span>
+                <span>Opportunities</span>
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('director.analytics') }}">
-<span class="material-symbols-outlined">analytics</span> Analytics
+            <a class="nav-item" href="{{ url_for('director.analytics') }}">
+                <span class="material-symbols-outlined">analytics</span>
+                <span>Analytics</span>
             </a>
-<a class="flex items-center gap-md p-md rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container transition-colors" href="{{ url_for('admin.admin_dash') }}">
-<span class="material-symbols-outlined">manage_accounts</span> Management
+            <a class="nav-item" href="{{ url_for('admin.admin_dash') }}">
+                <span class="material-symbols-outlined">manage_accounts</span>
+                <span>Management</span>
             </a>
-<!-- Active State: Settings/Profile -->
-<a class="flex items-center gap-md p-md rounded-lg font-semibold bg-primary-fixed text-on-primary-fixed transition-colors" href="{{ url_for('volunteer.profile_page') }}">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span> Settings
+            <a class="nav-item active" href="{{ url_for('volunteer.profile_page') }}" aria-current="page">
+                <span class="material-symbols-outlined filled-icon">settings</span>
+                <span>Settings</span>
             </a>
-</nav>
-<div class="p-lg border-t border-outline-variant">
-<div class="flex items-center gap-sm">
-<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A professional studio portrait of a university student with a friendly smile, set against a clean, softly lit academic library background. The lighting is bright and high-key, reflecting a corporate and modern PSU Volunteer Hub aesthetic. The student is wearing a neat, neutral-colored sweater, conveying a sense of approachability and dedication to community service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMg5dk8ytqG2zZFexX5l47Ekn4IquWPSd9kOEJy6iJlLc3mvqRrWJvQNib_4H1spt-9DSsvMUjRoyiL_sdOPQtHgIUH98sjs3biYUkWkLXj0PQ1w1Qwh3l5lNzbUpUkuZbHXCzIwI1nkHPxvIj7bnQlqtAvgouaEUcsa2QVnuCdpJFuE0bI5VaK9lIoMAj6YTMNrrTe8tZGOSiEhQI_NNeRIbq345_KLym-Gne9aU42GFlU2eF5Xy6XkW7s2U_J1lTxWfJrHhvVH88"/>
-<div class="overflow-hidden">
-<p class="font-label-sm text-label-sm font-bold truncate">{{ current_user.name }}</p>
-<p class="font-label-sm text-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
-</div>
-<a href="{{ url_for('auth.logout') }}" class="ml-auto text-secondary hover:text-error transition-colors" title="Logout">
-<span class="material-symbols-outlined">logout</span>
-</a>
-</div>
-</div>
-</aside>
-<!-- Main Content Area -->
-<main class="main-content min-h-screen">
-<!-- Top Navigation Bar -->
-<header class="h-16 sticky top-0 bg-surface/80 backdrop-blur-md flex items-center justify-between px-lg z-40 border-b border-outline-variant">
-<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
-  <span class="material-symbols-outlined">menu</span>
-</button>
-<div class="flex items-center bg-surface-container-low px-md py-xs rounded-full border border-outline-variant w-96">
-<span class="material-symbols-outlined text-secondary mr-sm">search</span>
-<input class="bg-transparent border-none focus:ring-0 text-body-md w-full" placeholder="Search opportunities..." type="text"/>
-</div>
-<div class="flex items-center gap-md">
-<button class="p-sm hover:bg-surface-container-high rounded-full transition-all">
-<span class="material-symbols-outlined">notifications</span>
-</button>
-<button class="p-sm hover:bg-surface-container-high rounded-full transition-all">
-<span class="material-symbols-outlined">location_on</span>
-</button>
-<div class="h-8 w-[1px] bg-outline-variant mx-xs"></div>
-<button class="bg-primary text-on-primary px-md py-xs rounded font-label-md hover:opacity-90 transition-opacity">
-                    Edit Profile
+        </nav>
+
+        <footer class="sidebar-footer">
+            <address class="user-brief">
+                <img class="avatar-sm" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Profile avatar"/>
+                <hgroup class="user-info">
+                    <p class="user-name">{{ current_user.name }}</p>
+                    <p class="user-role">{{ current_user.role_display_name }}</p>
+                </hgroup>
+                <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Logout">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+            </address>
+        </footer>
+    </aside>
+
+    <!-- =================================================================== -->
+    <!-- MAIN CONTENT WRAPPER                                                -->
+    <!-- =================================================================== -->
+    <main class="main-content">
+        
+        <!-- Top Application Header -->
+        <header class="top-header">
+            <button class="btn-menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            
+            <form class="search-bar" role="search">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="search" class="search-input" placeholder="Search opportunities..."/>
+            </form>
+
+            <section class="top-actions">
+                <button class="icon-btn" aria-label="Notifications">
+                    <span class="material-symbols-outlined">notifications</span>
                 </button>
-</div>
-</header>
-<div class="p-lg">
-<!-- Profile Hero Section -->
-<div class="relative mb-lg">
-<div class="h-48 w-full bg-primary-container rounded-xl overflow-hidden relative">
+                <button class="icon-btn" aria-label="Locations">
+                    <span class="material-symbols-outlined">location_on</span>
+                </button>
+                <hr class="v-divider"/>
+                <button class="btn-primary">Edit Profile</button>
+            </section>
+        </header>
 
-<div class="absolute bottom-0 left-0 w-full p-lg bg-gradient-to-t from-black/50 to-transparent">
-<div class="flex items-end gap-lg">
-<div class="relative group">
-<img class="w-32 h-32 rounded-xl border-4 border-white shadow-lg object-cover" data-alt="Close-up professional portrait of Alex Rivera, a student volunteer with a warm and confident expression. The lighting is cinematic yet professional, with soft highlights on the face and a blurred background featuring University blue and yellow tones. The image style is polished, high-resolution, and perfectly aligns with an enterprise dashboard user profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzMmdZvLrbvaWASBc0OZFQyV2EYKSS1bDQh1TyuuQiWknFWwcvp59BH3sw2biNqO8q7XqlW_QkaZhZR17czmbitpqtfsACUChCXkn6kVkZ6SpMOEoLHigrnjO_vk1Hpxt2AuHQiLZDqN9G3eWsWWq3R5edfpi6uugZUHcxOmLM7vMXMqwf5AzLlWMCRtS3kiG4XBWRk2ze3braVyG7QRvE2Wf_cEptxKETkw9mqEt1NTc9Bzvkg5gpSNP9vn1CGa_1Uvove8y3MmQk"/>
-<button class="absolute bottom-2 right-2 bg-white/90 p-1 rounded shadow-sm hover:bg-white transition-colors">
-<span class="material-symbols-outlined text-primary text-[20px]">photo_camera</span>
-</button>
-</div>
-<div class="pb-2">
-<h2 class="font-display-lg text-white mb-xs">{{ current_user.name }}</h2>
-<div class="flex items-center gap-md text-white/90 font-label-md">
-<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">school</span> PSU Lingayen Campus</span>
-<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-sm">verified</span> Verified Volunteer</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Bento Grid Layout -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
-<!-- Stats Overview (Left Column) -->
-<div class="md:col-span-4 space-y-lg">
-<!-- Impact Stats Card -->
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-lg">Overall Impact</h3>
-<div class="grid grid-cols-2 gap-md">
-<div class="bg-surface-container-low p-md rounded-lg">
-<p class="text-secondary font-label-md mb-xs">Total Hours</p>
-<p class="font-headline-lg text-primary">{{ user_stats.total_hours or '--' }}</p>
-</div>
-<div class="bg-surface-container-low p-md rounded-lg">
-<p class="text-secondary font-label-md mb-xs">Activities</p>
-<p class="font-headline-lg text-primary">{{ user_stats.total_activities or '--' }}</p>
-</div>
-</div>
-<div class="mt-lg p-md border border-primary/20 bg-primary/5 rounded-lg">
-<div class="flex justify-between items-center mb-sm">
-<span class="font-label-md text-primary">Level 4: Community Leader</span>
-<span class="font-label-md text-secondary">85%</span>
-</div>
-<div class="w-full h-2 bg-outline-variant rounded-full overflow-hidden">
-<div class="h-full bg-primary" style="width: 85%"></div>
-</div>
-<p class="font-label-sm text-secondary mt-xs">11.5 hours to next level</p>
-</div>
-</div>
-<!-- Affiliation Card -->
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-md">Affiliation</h3>
-<div class="flex items-center gap-md">
-<div class="w-12 h-12 bg-surface-variant rounded-lg flex items-center justify-center">
-<span class="material-symbols-outlined text-primary">apartment</span>
-</div>
-<div>
-<p class="font-label-md font-bold">College of Computing</p>
-<p class="font-label-sm text-secondary text-sm">BS Information Technology</p>
-</div>
-</div>
-</div>
-<!-- Skills Card -->
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-md">Skills</h3>
-<div class="flex flex-wrap gap-sm">
-{% if profile and profile.skill_list %}
-  {% for skill in profile.skill_list %}
-    <span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">{{ skill }}</span>
-  {% endfor %}
-{% else %}
-  <span class="px-sm py-1 bg-surface-container rounded font-label-sm text-on-surface-variant">No skills added yet</span>
-{% endif %}
-</div>
-</div>
-</div>
-<!-- Participation & Achievement (Right Column) -->
-<div class="md:col-span-8 space-y-lg">
-<!-- Achievements Grid -->
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<div class="flex justify-between items-center mb-lg">
-<h3 class="font-headline-sm text-headline-sm">Achievement Badges</h3>
-<a class="text-primary font-label-md hover:underline" href="#">View All</a>
-</div>
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-lg text-center">
-<div class="group cursor-pointer">
-<div class="w-16 h-16 mx-auto mb-sm bg-tertiary-fixed rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-on-tertiary-fixed" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
-</div>
-<p class="font-label-sm text-on-surface">Top Recruiter</p>
-</div>
-<div class="group cursor-pointer">
-<div class="w-16 h-16 mx-auto mb-sm bg-primary-fixed rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
-</div>
-<p class="font-label-sm text-on-surface">Helping Hand</p>
-</div>
-<div class="group cursor-pointer">
-<div class="w-16 h-16 mx-auto mb-sm bg-surface-variant rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">timer</span>
-</div>
-<p class="font-label-sm text-on-surface">100+ Hours</p>
-</div>
-<div class="group cursor-pointer opacity-50 grayscale">
-<div class="w-16 h-16 mx-auto mb-sm bg-outline-variant rounded-full flex items-center justify-center shadow-sm">
-<span class="material-symbols-outlined text-secondary">star</span>
-</div>
-<p class="font-label-sm text-secondary">Legendary</p>
-</div>
-</div>
-</div>
-<!-- History / Activity Table -->
-<div class="bg-white rounded-xl border border-outline-variant overflow-hidden">
-<div class="p-lg border-b border-outline-variant flex justify-between items-center">
-<h3 class="font-headline-sm text-headline-sm">Recent Participation</h3>
-<div class="flex gap-sm">
-<button class="px-sm py-1 border border-outline-variant rounded font-label-md hover:bg-surface-container-low transition-colors">Download Report</button>
-</div>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left font-body-md text-body-md table-responsive">
-<thead class="bg-surface-container-low text-label-sm border-b border-outline-variant">
-<tr>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Opportunity</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Status</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider">Registered</th>
-<th class="px-lg py-md font-semibold text-secondary uppercase tracking-wider text-right">Event Date</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant">
-{% if registrations %}
-  {% for reg in registrations %}
-    <tr class="hover:bg-surface-container-lowest transition-colors">
-      <td class="px-lg py-md">
-        <p class="font-semibold text-on-surface">{{ reg.event.title }}</p>
-        <p class="text-xs text-secondary">{{ reg.event.date.strftime('%b %d, %Y') }}</p>
-      </td>
-      <td class="px-lg py-md">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold
-          {% if reg.status == 'confirmed' %}bg-green-100 text-green-700
-          {% elif reg.status == 'pending' %}bg-yellow-100 text-yellow-700
-          {% elif reg.status == 'completed' %}bg-blue-100 text-blue-700
-          {% elif reg.status == 'cancelled' %}bg-red-100 text-red-700
-          {% else %}bg-gray-100 text-gray-700{% endif %}">{{ reg.status }}</span>
-      </td>
-      <td class="px-lg py-md text-secondary">{{ reg.registered_at.strftime('%b %d, %Y') }}</td>
-      <td class="px-lg py-md text-right font-semibold">{{ reg.event.date.strftime('%b %d, %Y') }}</td>
-    </tr>
-  {% endfor %}
-{% else %}
-  <tr>
-    <td colspan="4" class="px-lg py-md text-center text-secondary">No participation history yet.</td>
-  </tr>
-{% endif %}
-</tbody>
-</table>
-</div>
-<div class="p-md bg-surface-container-low text-center">
-<a href="{{ url_for('volunteer.history') }}" class="text-primary font-label-md hover:underline">View Full History</a>
-</div>
-</div>
-<!-- Preferred Categories & Interests -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-md">Preferred Categories</h3>
-<div class="space-y-sm">
-<div class="flex items-center justify-between">
-<span class="font-body-md">Technology &amp; IT</span>
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-</div>
-<div class="flex items-center justify-between">
-<span class="font-body-md">Education</span>
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-</div>
-<div class="flex items-center justify-between">
-<span class="font-body-md">Environment</span>
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-</div>
-</div>
-</div>
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-md">Interests</h3>
-<div class="flex flex-wrap gap-sm">
-{% if profile and profile.interest_list %}
-  {% for interest in profile.interest_list %}
-    <span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">{{ interest }}</span>
-  {% endfor %}
-{% else %}
-  <span class="px-sm py-1 border border-outline-variant rounded-full text-xs font-medium">No interests added yet</span>
-{% endif %}
-</div>
-</div>
-<!-- Edit Profile Form -->
-<div class="bg-white p-lg rounded-xl border border-outline-variant">
-<h3 class="font-headline-sm text-headline-sm mb-md">Edit Skills &amp; Interests</h3>
-<form method="POST" action="{{ url_for('volunteer.profile_page') }}" class="space-y-md">
-  <div>
-    <label class="font-label-md text-secondary block mb-xs" for="skills">Skills (comma-separated)</label>
-    <textarea id="skills" name="skills" rows="3" class="w-full border border-outline-variant rounded-lg p-md font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary bg-surface-container-lowest">{{ profile.skills if profile else '' }}</textarea>
-  </div>
-  <div>
-    <label class="font-label-md text-secondary block mb-xs" for="interests">Interests (comma-separated)</label>
-    <textarea id="interests" name="interests" rows="3" class="w-full border border-outline-variant rounded-lg p-md font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary bg-surface-container-lowest">{{ profile.interests if profile else '' }}</textarea>
-  </div>
-  <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90 transition-opacity">Save Changes</button>
-</form>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Footer Section -->
-<footer class="mt-2xl border-t border-outline-variant bg-surface-container-lowest">
-<div class="max-w-[1440px] px-lg py-lg flex flex-col md:flex-row justify-between items-center gap-md">
-<div class="flex items-center gap-sm">
-<span class="font-label-sm text-label-sm font-bold text-primary">PSU VOLUNTEER HUB</span>
-<span class="text-secondary text-xs">|</span>
-<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
-</div>
-<div class="flex gap-lg">
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Privacy Policy</a>
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Terms of Service</a>
-<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Contact Support</a>
-</div>
-</div>
-</footer>
-</main>
-<!-- Contextual FAB - Suppression on Profile/Settings as per rules, but included if needed for mobile navigation -->
-<!-- Not rendered as this is a high-level detail profile page -->
-<script>
-        // Micro-interactions and subtle effects
-        document.querySelectorAll('.group').forEach(item => {
-            item.addEventListener('mouseenter', () => {
-                // Subtle lift or active state logic
-            });
-        });
+        <!-- Main Workspace Area -->
+        <div class="page-body">
+            
+            <!-- SECTION 1: Profile Banner Hero -->
+            <section class="hero-section">
+                <div class="hero-banner">
+                    <div class="hero-overlay">
+                        <header class="profile-header-meta">
+                            <figure class="profile-avatar-wrapper">
+                                <img class="avatar-lg" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="User Profile Picture"/>
+                                <button class="btn-upload-photo" title="Update Profile Picture">
+                                    <span class="material-symbols-outlined">photo_camera</span>
+                                </button>
+                            </figure>
+                            <hgroup class="profile-identity">
+                                <h2 class="user-display-name">{{ current_user.name }}</h2>
+                                <p class="identity-tags">
+                                    <span class="meta-tag"><span class="material-symbols-outlined icon-sm">school</span> PSU Campus</span>
+                                    <span class="meta-tag"><span class="material-symbols-outlined icon-sm">verified</span> Verified Volunteer</span>
+                                </p>
+                            </hgroup>
+                        </header>
+                    </div>
+                </div>
+            </section>
 
+            <!-- SECTION 2: Profile Bento Grid -->
+            <section class="profile-grid">
+                
+                <!-- COLUMN A: Sidebar Highlights -->
+                <aside class="col-side">
+                    
+                    <!-- Impact Statistics Card -->
+                    <article class="card">
+                        <h3 class="card-title">Overall Impact</h3>
+                        <section class="stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-label">Total Hours</span>
+                                <span class="stat-value">{{ user_stats.total_hours or '--' }}</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Activities</span>
+                                <span class="stat-value">{{ user_stats.total_activities or '--' }}</span>
+                            </div>
+                        </section>
+                        <section class="level-box">
+                            <header class="level-header">
+                                <span class="level-title">Level 4: Community Leader</span>
+                                <span class="level-percentage">85%</span>
+                            </header>
+                            <div class="progress-bar" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+                            <p class="level-footnote">11.5 hours to next level</p>
+                        </section>
+                    </article>
+
+                    <!-- Academic Affiliation Card -->
+                    <article class="card">
+                        <h3 class="card-title">Affiliation</h3>
+                        <figure class="affiliation-item">
+                            <figcaption class="icon-wrapper">
+                                <span class="material-symbols-outlined">apartment</span>
+                            </figcaption>
+                            <hgroup class="affiliation-details">
+                                <p class="affiliation-main">College of Computing</p>
+                                <p class="affiliation-sub">BS Information Technology</p>
+                            </hgroup>
+                        </figure>
+                    </article>
+
+                    <!-- Skills Overview Card -->
+                    <article class="card">
+                        <h3 class="card-title">Skills</h3>
+                        <ul class="tag-cloud">
+                            {% if profile and profile.skill_list %}
+                                {% for skill in profile.skill_list %}
+                                    <li class="badge badge-surface">{{ skill }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="badge badge-surface">No skills added yet</li>
+                            {% endif %}
+                        </ul>
+                    </article>
+                </aside>
+
+                <!-- COLUMN B: Primary Activities & History -->
+                <section class="col-main">
+                    
+                    <!-- Badges Showcase -->
+                    <article class="card">
+                        <header class="card-header-row">
+                            <h3 class="card-title">Achievement Badges</h3>
+                            <a class="link-primary" href="#">View All</a>
+                        </header>
+                        <ul class="badges-grid">
+                            <li class="badge-item">
+                                <figure class="badge-icon icon-bg-tertiary">
+                                    <span class="material-symbols-outlined filled-icon">workspace_premium</span>
+                                </figure>
+                                <figcaption class="badge-name">Top Recruiter</figcaption>
+                            </li>
+                            <li class="badge-item">
+                                <figure class="badge-icon icon-bg-primary">
+                                    <span class="material-symbols-outlined filled-icon">volunteer_activism</span>
+                                </figure>
+                                <figcaption class="badge-name">Helping Hand</figcaption>
+                            </li>
+                            <li class="badge-item">
+                                <figure class="badge-icon icon-bg-surface">
+                                    <span class="material-symbols-outlined filled-icon">timer</span>
+                                </figure>
+                                <figcaption class="badge-name">100+ Hours</figcaption>
+                            </li>
+                            <li class="badge-item locked">
+                                <figure class="badge-icon icon-bg-disabled">
+                                    <span class="material-symbols-outlined">star</span>
+                                </figure>
+                                <figcaption class="badge-name">Legendary</figcaption>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <!-- Activity History Table -->
+                    <article class="card card-flush">
+                        <header class="card-header-row p-card">
+                            <h3 class="card-title">Recent Participation</h3>
+                            <button class="btn-outline-sm">Download Report</button>
+                        </header>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Opportunity</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Registered</th>
+                                        <th scope="col" class="text-right">Event Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if registrations %}
+                                        {% for reg in registrations %}
+                                            <tr>
+                                                <td>
+                                                    <p class="table-primary-text">{{ reg.event.title }}</p>
+                                                    <time class="table-secondary-text" datetime="{{ reg.event.date.strftime('%Y-%m-%d') }}">{{ reg.event.date.strftime('%b %d, %Y') }}</time>
+                                                </td>
+                                                <td>
+                                                    <span class="status-pill status-{{ reg.status }}">
+                                                        {{ reg.status }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-muted">
+                                                    <time datetime="{{ reg.registered_at.strftime('%Y-%m-%d') }}">{{ reg.registered_at.strftime('%b %d, %Y') }}</time>
+                                                </td>
+                                                <td class="text-right font-bold">
+                                                    <time datetime="{{ reg.event.date.strftime('%Y-%m-%d') }}">{{ reg.event.date.strftime('%b %d, %Y') }}</time>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No participation history yet.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <footer class="card-footer-action">
+                            <a href="{{ url_for('volunteer.history') }}" class="link-primary">View Full History</a>
+                        </footer>
+                    </article>
+
+                    <!-- Preferences Sub-Grid -->
+                    <section class="sub-grid">
+                        
+                        <!-- Preferred Categories -->
+                        <article class="card">
+                            <h3 class="card-title">Preferred Categories</h3>
+                            <ul class="category-list">
+                                <li class="category-item">
+                                    <span>Technology &amp; IT</span>
+                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
+                                </li>
+                                <li class="category-item">
+                                    <span>Education</span>
+                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
+                                </li>
+                                <li class="category-item">
+                                    <span>Environment</span>
+                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
+                                </li>
+                            </ul>
+                        </article>
+
+                        <!-- Interests Tags -->
+                        <article class="card">
+                            <h3 class="card-title">Interests</h3>
+                            <ul class="tag-cloud">
+                                {% if profile and profile.interest_list %}
+                                    {% for interest in profile.interest_list %}
+                                        <li class="badge badge-pill">{{ interest }}</li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="badge badge-pill">No interests added yet</li>
+                                {% endif %}
+                            </ul>
+                        </article>
+
+                        <!-- Edit Profile Form -->
+                        <article class="card col-span-full">
+                            <h3 class="card-title">Edit Skills &amp; Interests</h3>
+                            <form method="POST" action="{{ url_for('volunteer.profile_page') }}" class="form-stack">
+                                <div class="form-group">
+                                    <label class="form-label" for="skills">Skills (comma-separated)</label>
+                                    <textarea id="skills" name="skills" rows="3" class="form-textarea">{{ profile.skills if profile else '' }}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="interests">Interests (comma-separated)</label>
+                                    <textarea id="interests" name="interests" rows="3" class="form-textarea">{{ profile.interests if profile else '' }}</textarea>
+                                </div>
+                                <button type="submit" class="btn-primary align-self-start">Save Changes</button>
+                            </form>
+                        </article>
+
+                    </section>
+                </section>
+            </section>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- APPLICATION FOOTER                                                  -->
+        <!-- =================================================================== -->
+        <footer class="app-footer">
+            <div class="footer-container">
+                <p class="footer-brand">
+                    <strong class="brand-name">PSU VOLUNTEER HUB</strong>
+                    <span class="divider">|</span>
+                    <span class="copyright">© 2026 Pangasinan State University. All rights reserved.</span>
+                </p>
+                <nav class="footer-links" aria-label="Legal & Support">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Contact Support</a>
+                </nav>
+            </div>
+        </footer>
+    </main>
+
+    <script>
         function toggleSidebar() {
-          document.querySelector('.sidebar').classList.toggle('open');
-          document.getElementById('mobileOverlay').classList.toggle('show');
+            document.querySelector('.sidebar').classList.toggle('open');
+            document.getElementById('mobileOverlay').classList.toggle('show');
         }
-        // Search Bar Focus Effect
-        const searchInput = document.querySelector('input[type="text"]');
-        searchInput.addEventListener('focus', () => {
-            searchInput.parentElement.classList.add('ring-2', 'ring-primary/20', 'border-primary');
-        });
-        searchInput.addEventListener('blur', () => {
-            searchInput.parentElement.classList.remove('ring-2', 'ring-primary/20', 'border-primary');
-        });
+
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) {
+            searchInput.addEventListener('focus', () => {
+                searchInput.parentElement.classList.add('focused');
+            });
+            searchInput.addEventListener('blur', () => {
+                searchInput.parentElement.classList.remove('focused');
+            });
+        }
     </script>
-</body></html>
+</body>
+</html>
