@@ -33,7 +33,7 @@ body {
 /* Left Brand Block Panel */
 .brand-panel {
     position: relative;
-    display: none; /* Mobile first hidden feature */
+    display: none; 
     flex: 1;
     color: white;
     padding: var(--space-lg);
