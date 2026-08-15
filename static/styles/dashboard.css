@@ -9,6 +9,7 @@
   --color-border: #c2c6d4;
   --color-accent: #f6bf22;
   --color-accent-dark: #553f00;
+  --color-warning: #e00f00;
   --sidebar-width: 280px;
   --border-radius: 12px;
   --header-height: 60px;
@@ -109,10 +110,16 @@ button {
   height: 38px;
   background-color: var(--color-primary);
   color: #ffffff;
-  border-radius: var(--border-radius);
+  border-radius: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.brand-logo img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-title {
@@ -157,6 +164,58 @@ button {
   align-items: center;
   gap: 12px;
 }
+.user-profile-widget .log-out-btn{
+  margin-left: 5.5rem;
+  color: var(--color-text-muted);
+}
+
+/* logout_hover */
+.log-out-btn:hover{
+  color: var(--color-warning);
+}
+
+.log-out-btn{
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.log-out-btn .tooltip_txt{
+  visibility: hidden;;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  z-index: 100;
+
+  background-color: rgba(128, 128, 128, 0.6);
+  color: #fff;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: nowrap; 
+  font-size: 14px;
+}
+
+.log-out-btn .tooltip_txt::after{
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+}
+
+.log-out-btn:hover .tooltip_txt{
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* logout hover */
 
 .user-avatar {
   width: 40px;
@@ -180,6 +239,12 @@ button {
   top: 0;
   z-index: 40;
   border-bottom: 1px solid var(--color-border);
+}
+
+.left-actions{
+  display: flex;
+  padding: 0 10px;
+  gap: 10px;
 }
 
 .mobile-menu-btn {
@@ -463,7 +528,7 @@ button {
 
 /* Mobile Footer */
 .footer {
-  margin-top: 32px;
+  margin-top: 10rem;
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-card);
   padding: 16px;

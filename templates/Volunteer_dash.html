@@ -25,7 +25,7 @@
     <div class="brand-header">
       <a href="{{ url_for('home') }}">
       <div class="brand-logo">
-        <span class="material-symbols-outlined">school</span>
+        <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU_logo">
       </div>
       </a>
 
@@ -64,6 +64,14 @@
         <p style="font-size: 12px; font-weight: 700;">{{ current_user.name }}</p>
         <p style="font-size: 11px; color: var(--color-text-muted);">{{ current_user.role_display_name }}</p>
       </div>
+
+      <div class="log-out-btn">
+        <a href="{{ url_for('auth.logout') }}">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="tooltip_txt">log out</span>
+        </a>
+      </div>
+
     </div>
   </aside>
 
@@ -74,24 +82,26 @@
 
     <!-- Top Navigation Header -->
     <header class="top-header">
-      <button class="mobile-menu-btn" onclick="toggleSidebar()">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
+      <div class="left-actions">
+        <div class="mobile-menu-btn" >
+        <img class="brand-logo" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU_logo">
+        </div>
 
-      <div class="search-box">
-        <span class="material-symbols-outlined search-icon">search</span>
-        <input type="text" class="search-input" placeholder="Search..."/>
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
       </div>
+      
 
       <div class="header-actions">
         <button class="icon-btn">
           <span class="material-symbols-outlined">notifications</span>
         </button>
-        <button class="primary-btn desktop-only">
-          <span class="material-symbols-outlined">add</span>
-          Log Hours
-        </button>
       </div>
+
+      <!-- <div class="user-profile-widget">
+        <img src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Profile" class="user-avatar"/>
+      </div> -->
     </header>
 
     <!-- Main Content Canvas -->
@@ -114,12 +124,11 @@
       <section class="welcome-banner">
         <div>
           <h2 class="page-title">Hello, {{ current_user.name }}!</h2>
-          <p style="color: var(--color-text-muted); font-size: 13px;">You have 2 events coming up this week.</p>
         </div>
         <div class="banner-actions">
           <a href="{{ url_for('events.opportunities') }}" class="accent-btn">
             <span class="material-symbols-outlined">search</span>
-            Search
+            Search for Events
           </a>
         </div>
       </section>
