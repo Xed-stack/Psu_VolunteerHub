@@ -1,19 +1,10 @@
 """
 Recommendation Engine for PSU Volunteer Hub
 ============================================
-Multi-factor scoring: matches volunteers to events using keyword overlap,
-category match, past participation, availability, and recency.
+Content-based recommendation using Jaccard similarity between a
+volunteer's skill/interest terms and each event's skill/category terms.
 
-Scoring weights:
-  - Keyword overlap:  30%
-  - Category match:   25%
-  - Past participation: 20%
-  - Availability:     15%
-  - Recency:          10%
-
-Formula:
-  total = 0.30 * keyword_norm + 0.25 * category_match + 0.20 * participation
-          + 0.15 * availability + 0.10 * recency
+Jaccard similarity = |shared terms| / |all terms combined|
 """
 from datetime import datetime
 from app.models.event import Event, RecommendationLog
@@ -21,9 +12,20 @@ from app.models.user import User
 from app.models import db
 
 
+def _jaccard_similarity(user_terms: set, event_terms: set) -> float:
+    """Return |intersection| / |union| of two term sets, 0.0 if both empty."""
+    if not user_terms and not event_terms:
+        return 0.0
+    union = len(user_terms | event_terms)
+    if union == 0:
+        return 0.0
+    return len(user_terms & event_terms) / union
+
+
 def get_recommendations(volunteer_profile, events=None, top_n=5):
     """
-    Score events for a volunteer based on five weighted factors.
+    Score events for a volunteer using Jaccard similarity over
+    combined skill + interest/category terms.
 
     Parameters:
       volunteer_profile : VolunteerProfile (or None for cold-start)
@@ -32,21 +34,20 @@ def get_recommendations(volunteer_profile, events=None, top_n=5):
 
     Returns list of dicts: [{event, score, matched_skills, matched_interests, percentage}]
     """
-    if volunteer_profile is None or (not volunteer_profile.skills and not volunteer_profile.interests):
+    if volunteer_profile is None or (not volunteer_profile.skill_list and not volunteer_profile.interest_list):
         return _cold_start_recommendations(events, top_n)
-
-    user_skills = set(s.strip().lower() for s in volunteer_profile.skills.split(',') if s.strip())
-    user_interests = set(s.strip().lower() for s in volunteer_profile.interests.split(',') if s.strip())
 
     user = User.query.get(volunteer_profile.user_id)
     if user is None:
         return _cold_start_recommendations(events, top_n)
 
-    registered_ids = {r.event_id for r in user.registrations if r.status not in ('cancelled', 'rejected')}
-    attended_ids = {a.event_id for a in user.attendance_records if a.status == 'present'}
-    confirmed_ids = {r.event_id for r in user.registrations if r.status == 'confirmed'}
+    user_skills = set(s.lower() for s in volunteer_profile.skill_list)
+    user_interests = set(s.lower() for s in volunteer_profile.interest_list)
+    user_terms = user_skills | user_interests
 
-    # Candidate events
+    registered_ids = {r.event_id for r in user.registrations if r.status not in (
+        'cancelled', 'rejected')}
+
     if events is not None:
         candidates = [e for e in events if e.id not in registered_ids]
     else:
@@ -54,59 +55,22 @@ def get_recommendations(volunteer_profile, events=None, top_n=5):
             db.not_(Event.id.in_(registered_ids))
         ).filter(Event.date >= datetime.now()).order_by(Event.date.asc()).limit(50).all()
 
-    now = datetime.now()
     scored = []
-
     for event in candidates:
-        event_skills = set()
-        if event.required_skills:
-            event_skills = set(s.strip().lower() for s in event.required_skills.split(',') if s.strip())
+        event_skills = set(s.name.lower() for s in event.required_skills_rel)
+        event_terms = set(event_skills)
+        if event.category:
+            event_terms.add(event.category.strip().lower())
 
-        # 1. Keyword overlap (30%) — Jaccard-like over skill+interest union
-        skill_overlap = user_skills & event_skills
-        interest_overlap = user_interests & event_skills
-        total_keywords = len(user_skills | event_skills)
-        keyword_score = (len(skill_overlap) + len(interest_overlap)) / total_keywords if total_keywords else 0
-
-        # 2. Category match (25%) — fraction of user interests present in event
-        category_score = len(interest_overlap) / len(user_interests) if user_interests else 0
-
-        # 3. Past participation (20%)
-        if event.id in attended_ids:
-            participation_score = 1.0
-        elif event.id in confirmed_ids:
-            participation_score = 0.5
-        else:
-            participation_score = 0.0
-
-        # 4. Availability (15%)
-        if event.slots <= 0:
-            availability_score = 0.5
-        else:
-            rem = event.slots_remaining()
-            availability_score = min(rem / event.slots, 1.0) if rem > 0 else 0.1
-
-        # 5. Recency (10%)
-        if event.date >= now:
-            days_until = (event.date - now).days
-            recency_score = max(0.0, 1.0 - (days_until / 365.0))
-        else:
-            recency_score = 0.0
-
-        total_score = (
-            0.30 * keyword_score +
-            0.25 * category_score +
-            0.20 * participation_score +
-            0.15 * availability_score +
-            0.10 * recency_score
-        )
+        score = _jaccard_similarity(user_terms, event_terms)
+        matched = user_terms & event_terms
 
         scored.append({
             'event': event,
-            'score': round(total_score, 4),
-            'matched_skills': skill_overlap,
-            'matched_interests': interest_overlap,
-            'percentage': min(round(total_score * 100), 100),
+            'score': round(score, 4),
+            'matched_skills': matched & user_skills,
+            'matched_interests': matched & user_interests,
+            'percentage': min(round(score * 100), 100),
         })
 
     scored.sort(key=lambda x: x['score'], reverse=True)
@@ -116,9 +80,10 @@ def get_recommendations(volunteer_profile, events=None, top_n=5):
 
 
 def _cold_start_recommendations(events=None, limit=5):
-    """Fallback when no profile or skills exist — return upcoming events."""
+    """Fallback when no profile or skills/interests exist — return upcoming events."""
     if events is None:
-        events = Event.query.filter(Event.date >= datetime.now()).order_by(Event.date.asc()).limit(limit).all()
+        events = Event.query.filter(Event.date >= datetime.now()).order_by(
+            Event.date.asc()).limit(limit).all()
     return [{
         'event': e,
         'score': 0,

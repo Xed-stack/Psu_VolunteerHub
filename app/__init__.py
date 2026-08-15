@@ -60,7 +60,8 @@ def create_app(config_name='development'):
         db.create_all()
         _seed_campuses(app)
         _seed_events(app)
-        _seed_users(app)
+        if config_name == 'development':
+            _seed_users(app)
 
     # Register root routes
     @app.route('/')

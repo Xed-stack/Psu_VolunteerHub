@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 10:33 AM
+-- Generation Time: Aug 15, 2026 at 10:34 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -177,6 +177,7 @@ CREATE TABLE `interests` (
 --
 
 INSERT INTO `interests` (`id`, `name`) VALUES
+(4, 'Art'),
 (1, 'Education'),
 (3, 'Environment'),
 (2, 'Technology');
@@ -298,7 +299,10 @@ INSERT INTO `users` (`id`, `name`, `email`, `id_number`, `password_hash`, `role`
 (4, 'Coordinator User', 'coordinator@psu.edu', '', 'scrypt:32768:8:1$uapRf1SW4E9RwgtV$baf6aec867ae6e84e356590567faa399daa59b95af5685df44e73228a62d07e464c2d1afc8f265fce67b4586d2e76bf4aec426fce6a18ace320bc2da10f86689', 'coordinator', 1, 1, '2026-07-21 07:49:33'),
 (5, 'Director User', 'director@psu.edu', '', 'scrypt:32768:8:1$xD4xRUfh10dy4TvF$4f1861a616c53d6487fc222935141a6810bf259f8f2a758fa583035429ff99b8ee6c7132c3032f2cc21b59000a19237153da3d7692ace95ae516e1995ec05a4c', 'director', 1, 1, '2026-07-21 07:49:33'),
 (6, 'Admin User', 'admin@psu.edu', '', 'scrypt:32768:8:1$CzqPmuso6nh1sUUM$e15544c5f1cc47c7fad02974f11934032054e6e6d4aefd41ab3a9316d42a2b9f02218829a2156ce0806b50667b0b91f9bb5ab329bf77b5aed82e1b61306c0bf2', 'admin', 1, 1, '2026-07-21 07:49:33'),
-(7, 'Anon', 'juliolalax@gmail.com', '23-UR-0667', 'scrypt:32768:8:1$CPp8IMjzwu12oO8t$d76cacdb5187178ae922745be971a71114b76b65da9c536a55f3c13f191ab3845feffcaf1d6edf60e14f5b3c936b34f20fc02d70ad376887e981b03b82423947', 'volunteer', 2, 1, '2026-07-21 07:50:31');
+(7, 'Anon', 'juliolalax@gmail.com', '23-UR-0667', 'scrypt:32768:8:1$CPp8IMjzwu12oO8t$d76cacdb5187178ae922745be971a71114b76b65da9c536a55f3c13f191ab3845feffcaf1d6edf60e14f5b3c936b34f20fc02d70ad376887e981b03b82423947', 'volunteer', 2, 1, '2026-07-21 07:50:31'),
+(8, 'testificate mako', 'hehe@gmail.com', '23-ur-0676', 'scrypt:32768:8:1$yoX7QomRzvldBEQ9$6f734cac7eb6a40ee2de039ee644ee669d394b70136009a7a003e7cca5ab17e58d9a250100953b198f37b488a080940d8a634e1cf5a4e1a6fbdb44640318a316', 'volunteer', 9, 1, '2026-07-23 06:59:50'),
+(9, 'Sakurai Sakamoto', 'Tamaya@gmail.com', '23-ur-6767', 'scrypt:32768:8:1$5pu3fPqT1hVxcoZb$0596c1cdaf2bb07fbaf672421deb0369bd185cc6d5b6949ea6d38d7148e251f3a86256a013bdb4692eb3181f3f1ec9ff23b7c6e8a60f8c05b93e2e97dc7504a4', 'volunteer', 1, 1, '2026-07-23 07:19:51'),
+(10, 'bob builder', 'bab@gmail.com', '24-ur-0002', 'scrypt:32768:8:1$pHNz6aCjyCsGWo7q$4195a7efb06f096bc86becba320b116bbe47bbfbec827b9fb4513770c914a684a0c2b3016bf2c1b2bc6a0a961f70345765184a44fd76898e1974b5c99aa87d40', 'volunteer', 2, 1, '2026-08-15 08:31:15');
 
 -- --------------------------------------------------------
 
@@ -324,7 +328,12 @@ INSERT INTO `user_interests` (`user_id`, `interest_id`) VALUES
 (2, 3),
 (3, 1),
 (3, 2),
-(3, 3);
+(3, 3),
+(8, 2),
+(8, 4),
+(9, 3),
+(9, 4),
+(10, 1);
 
 -- --------------------------------------------------------
 
@@ -519,7 +528,7 @@ ALTER TABLE `events`
 -- AUTO_INCREMENT for table `interests`
 --
 ALTER TABLE `interests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `milestones`
@@ -555,7 +564,7 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `volunteer_profiles`
