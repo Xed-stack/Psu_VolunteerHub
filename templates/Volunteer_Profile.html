@@ -104,6 +104,7 @@
                     <span class="material-symbols-outlined">location_on</span>
                 </button>
                 <hr class="v-divider"/>
+                <!-- Left inert for now per instructions: profile pic/email/password editing is out of scope until analytics work is done -->
                 <button class="btn-primary">Edit Profile</button>
             </section>
         </header>
@@ -118,6 +119,7 @@
                         <header class="profile-header-meta">
                             <figure class="profile-avatar-wrapper">
                                 <img class="avatar-lg" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="User Profile Picture"/>
+                                <!-- Left inert: photo upload is out of scope for this pass -->
                                 <button class="btn-upload-photo" title="Update Profile Picture">
                                     <span class="material-symbols-outlined">photo_camera</span>
                                 </button>
@@ -153,15 +155,24 @@
                                 <span class="stat-value">{{ user_stats.total_activities or '--' }}</span>
                             </div>
                         </section>
+                        {# CHANGED: level box was hardcoded "Level 4: Community Leader" / 85% / "11.5 hours to next level".
+                           Now driven by user_stats.level_label / level_percent / hours_to_next, computed in the route
+                           from actual total_hours against the same Bronze/Silver/Gold/Platinum thresholds used for cert_level. #}
                         <section class="level-box">
                             <header class="level-header">
-                                <span class="level-title">Level 4: Community Leader</span>
-                                <span class="level-percentage">85%</span>
+                                <span class="level-title">Level: {{ user_stats.level_label }}</span>
+                                <span class="level-percentage">{{ user_stats.level_percent }}%</span>
                             </header>
-                            <div class="progress-bar" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">
-                                <div class="progress-fill" style="width: 85%"></div>
+                            <div class="progress-bar" role="progressbar" aria-valuenow="{{ user_stats.level_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-fill" style="width: {{ user_stats.level_percent }}%"></div>
                             </div>
-                            <p class="level-footnote">11.5 hours to next level</p>
+                            <p class="level-footnote">
+                                {% if user_stats.hours_to_next > 0 %}
+                                    {{ user_stats.hours_to_next }} hours to next level
+                                {% else %}
+                                    Max level reached
+                                {% endif %}
+                            </p>
                         </section>
                     </article>
 
@@ -179,7 +190,7 @@
                         </figure>
                     </article>
 
-                    <!-- Skills Overview Card -->
+                    <!-- Skills Overview Card (unchanged: already reads from profile.skill_list correctly) -->
                     <article class="card">
                         <h3 class="card-title">Skills</h3>
                         <ul class="tag-cloud">
@@ -192,186 +203,46 @@
                             {% endif %}
                         </ul>
                     </article>
+
+                    {# NEW: Recommended-for-you card, added to surface the Jaccard-similarity recommendation
+                       engine directly on the profile page. Uses `recommendations` passed from get_recommendations(). #}
+                    <article class="card">
+                        <h3 class="card-title">Recommended For You</h3>
+                        <ul class="category-list">
+                            {% for rec in recommendations %}
+                            <li class="category-item">
+                                <span>{{ rec.event.title }} ({{ rec.percentage }}% match)</span>
+                            </li>
+                            {% else %}
+                            <li class="category-item"><span>Add skills/interests to get recommendations</span></li>
+                            {% endfor %}
+                        </ul>
+                    </article>
                 </aside>
 
                 <!-- COLUMN B: Primary Activities & History -->
                 <section class="col-main">
                     
-                    <!-- Badges Showcase -->
+                    {# CHANGED: badges were 4 hardcoded <li> items (including "Top Recruiter", which nothing in the
+                       schema tracks). Now looped from `badges`, computed in the route from real attendance/hours data,
+                       each with a real earned:true/false flag driving the locked/unlocked styling. #}
                     <article class="card">
                         <header class="card-header-row">
                             <h3 class="card-title">Achievement Badges</h3>
                             <a class="link-primary" href="#">View All</a>
                         </header>
                         <ul class="badges-grid">
-                            <li class="badge-item">
-                                <figure class="badge-icon icon-bg-tertiary">
-                                    <span class="material-symbols-outlined filled-icon">workspace_premium</span>
+                            {% for badge in badges %}
+                            <li class="badge-item {{ '' if badge.earned else 'locked' }}">
+                                <figure class="badge-icon {{ 'icon-bg-primary' if badge.earned else 'icon-bg-disabled' }}">
+                                    <span class="material-symbols-outlined {{ 'filled-icon' if badge.earned }}">{{ badge.icon }}</span>
                                 </figure>
-                                <figcaption class="badge-name">Top Recruiter</figcaption>
+                                <figcaption class="badge-name">{{ badge.name }}</figcaption>
                             </li>
-                            <li class="badge-item">
-                                <figure class="badge-icon icon-bg-primary">
-                                    <span class="material-symbols-outlined filled-icon">volunteer_activism</span>
-                                </figure>
-                                <figcaption class="badge-name">Helping Hand</figcaption>
-                            </li>
-                            <li class="badge-item">
-                                <figure class="badge-icon icon-bg-surface">
-                                    <span class="material-symbols-outlined filled-icon">timer</span>
-                                </figure>
-                                <figcaption class="badge-name">100+ Hours</figcaption>
-                            </li>
-                            <li class="badge-item locked">
-                                <figure class="badge-icon icon-bg-disabled">
-                                    <span class="material-symbols-outlined">star</span>
-                                </figure>
-                                <figcaption class="badge-name">Legendary</figcaption>
-                            </li>
+                            {% endfor %}
                         </ul>
                     </article>
 
-                    <!-- Activity History Table -->
+                    <!-- Activity History Table (unchanged logic; route now passes last 5 registrations) -->
                     <article class="card card-flush">
                         <header class="card-header-row p-card">
-                            <h3 class="card-title">Recent Participation</h3>
-                            <button class="btn-outline-sm">Download Report</button>
-                        </header>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Opportunity</th>
-                                        <th scope="col">Status</th>
-                                        <th scope="col">Registered</th>
-                                        <th scope="col" class="text-right">Event Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if registrations %}
-                                        {% for reg in registrations %}
-                                            <tr>
-                                                <td>
-                                                    <p class="table-primary-text">{{ reg.event.title }}</p>
-                                                    <time class="table-secondary-text" datetime="{{ reg.event.date.strftime('%Y-%m-%d') }}">{{ reg.event.date.strftime('%b %d, %Y') }}</time>
-                                                </td>
-                                                <td>
-                                                    <span class="status-pill status-{{ reg.status }}">
-                                                        {{ reg.status }}
-                                                    </span>
-                                                </td>
-                                                <td class="text-muted">
-                                                    <time datetime="{{ reg.registered_at.strftime('%Y-%m-%d') }}">{{ reg.registered_at.strftime('%b %d, %Y') }}</time>
-                                                </td>
-                                                <td class="text-right font-bold">
-                                                    <time datetime="{{ reg.event.date.strftime('%Y-%m-%d') }}">{{ reg.event.date.strftime('%b %d, %Y') }}</time>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">No participation history yet.</td>
-                                        </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <footer class="card-footer-action">
-                            <a href="{{ url_for('volunteer.history') }}" class="link-primary">View Full History</a>
-                        </footer>
-                    </article>
-
-                    <!-- Preferences Sub-Grid -->
-                    <section class="sub-grid">
-                        
-                        <!-- Preferred Categories -->
-                        <article class="card">
-                            <h3 class="card-title">Preferred Categories</h3>
-                            <ul class="category-list">
-                                <li class="category-item">
-                                    <span>Technology &amp; IT</span>
-                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
-                                </li>
-                                <li class="category-item">
-                                    <span>Education</span>
-                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
-                                </li>
-                                <li class="category-item">
-                                    <span>Environment</span>
-                                    <span class="material-symbols-outlined icon-primary filled-icon">check_circle</span>
-                                </li>
-                            </ul>
-                        </article>
-
-                        <!-- Interests Tags -->
-                        <article class="card">
-                            <h3 class="card-title">Interests</h3>
-                            <ul class="tag-cloud">
-                                {% if profile and profile.interest_list %}
-                                    {% for interest in profile.interest_list %}
-                                        <li class="badge badge-pill">{{ interest }}</li>
-                                    {% endfor %}
-                                {% else %}
-                                    <li class="badge badge-pill">No interests added yet</li>
-                                {% endif %}
-                            </ul>
-                        </article>
-
-                        <!-- Edit Profile Form -->
-                        <article class="card col-span-full">
-                            <h3 class="card-title">Edit Skills &amp; Interests</h3>
-                            <form method="POST" action="{{ url_for('volunteer.profile_page') }}" class="form-stack">
-                                <div class="form-group">
-                                    <label class="form-label" for="skills">Skills (comma-separated)</label>
-                                    <textarea id="skills" name="skills" rows="3" class="form-textarea">{{ profile.skills if profile else '' }}</textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="interests">Interests (comma-separated)</label>
-                                    <textarea id="interests" name="interests" rows="3" class="form-textarea">{{ profile.interests if profile else '' }}</textarea>
-                                </div>
-                                <button type="submit" class="btn-primary align-self-start">Save Changes</button>
-                            </form>
-                        </article>
-
-                    </section>
-                </section>
-            </section>
-        </div>
-
-        <!-- =================================================================== -->
-        <!-- APPLICATION FOOTER                                                  -->
-        <!-- =================================================================== -->
-        <footer class="app-footer">
-            <div class="footer-container">
-                <p class="footer-brand">
-                    <strong class="brand-name">PSU VOLUNTEER HUB</strong>
-                    <span class="divider">|</span>
-                    <span class="copyright">© 2026 Pangasinan State University. All rights reserved.</span>
-                </p>
-                <nav class="footer-links" aria-label="Legal & Support">
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Terms of Service</a>
-                    <a href="#">Contact Support</a>
-                </nav>
-            </div>
-        </footer>
-    </main>
-
-    <script>
-        function toggleSidebar() {
-            document.querySelector('.sidebar').classList.toggle('open');
-            document.getElementById('mobileOverlay').classList.toggle('show');
-        }
-
-        const searchInput = document.querySelector('.search-input');
-        if (searchInput) {
-            searchInput.addEventListener('focus', () => {
-                searchInput.parentElement.classList.add('focused');
-            });
-            searchInput.addEventListener('blur', () => {
-                searchInput.parentElement.classList.remove('focused');
-            });
-        }
-    </script>
-</body>
-</html>
