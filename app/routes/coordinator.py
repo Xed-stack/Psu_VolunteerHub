@@ -67,12 +67,12 @@ def create_activity():
             'campus_id', current_user.campus_id, type=int)
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
-            return render_template('create_act_scrn1.html', campuses=campuses)
+            return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
         try:
             date = datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
             flash('Invalid date format. Use YYYY-MM-DD.', 'error')
-            return render_template('create_act_scrn1.html', campuses=campuses)
+            return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
         event = Event(title=title, description=description, date=date, category=category,
                       location=location, required_skills=required_skills, slots=slots, campus_id=campus_id)
         db.session.add(event)
@@ -143,7 +143,7 @@ def upload_milestone(event_id):
     db.session.add(milestone)
     db.session.commit()
     flash('Milestone uploaded successfully!', 'success')
-    return redirect(url_for('coordinator/coordinator.coordinator_dash'))
+    return redirect(url_for('coordinator.coordinator_dash'))
 
 
 @coordinator_bp.route('/reports/events.csv')
@@ -163,7 +163,7 @@ def export_events_csv():
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=events.csv'})
 
 
-@coordinator_bp.route('/analytics')
+@coordinator_bp.route('/coordinator_analytics')
 @login_required
 @role_required('coordinator')
 def analytics():

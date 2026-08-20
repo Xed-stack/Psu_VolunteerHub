@@ -1,9 +1,9 @@
 import pytest
 from app import create_app
 from app.models import db
-from app.models.user import User, VolunteerProfile, SystemSetting
+from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
 from app.models.event import Event, Registration, Attendance, Campus
-from app.recommendation.engine import get_recommendations
+from app.recommendation.engine import get_recommendations, bootstrap_from_event
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, event
 
@@ -140,9 +140,11 @@ class TestAuth:
 
     def test_register_creates_user(self, client, app):
         resp = client.post('/auth/register', data={
-            'name': 'Alice', 'email': 'alice@test.com',
-            'password': 'secret123', 'confirm_password': 'secret123',
-            'user_type': 'psu', 'id_number': '21-0001', 'campus_id': 1,
+            'first_name': 'Alice', 'last_name': 'Test',
+            'email': 'alice@test.com',
+            'password': 'secret123',
+            'account_type': 'volunteer', 'id_number': '21-0001',
+            'campus': 'Lingayen',
         }, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
@@ -153,9 +155,11 @@ class TestAuth:
     def test_register_duplicate_email(self, client, app):
         _create_user(app, email='dup@test.com')
         resp = client.post('/auth/register', data={
-            'name': 'Dup', 'email': 'dup@test.com',
-            'password': 'secret123', 'confirm_password': 'secret123',
-            'user_type': 'psu', 'id_number': '21-0002', 'campus_id': 1,
+            'first_name': 'Dup', 'last_name': 'User',
+            'email': 'dup@test.com',
+            'password': 'secret123',
+            'account_type': 'volunteer', 'id_number': '21-0002',
+            'campus': 'Lingayen',
         }, follow_redirects=True)
         assert resp.status_code == 200
 
@@ -277,15 +281,15 @@ class TestVolunteerFeatures:
         }, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
-            p = VolunteerProfile.query.filter_by(user_id=User.query.filter_by(email='profup@test.com').first().id).first()
-            assert p is not None
-            assert p.skills == 'Python, Teaching'
-            assert p.interests == 'Education, Technology'
+            u = User.query.filter_by(email='profup@test.com').first()
+            assert u is not None
+            assert {s.name for s in u.skills} == {'Python', 'Teaching'}
+            assert {i.name for i in u.interests} == {'Education', 'Technology'}
 
     def test_history_shows(self, client, app):
         uid = _create_user(app, email='hist@test.com')
         _login_as(client, uid)
-        resp = client.get('/history')
+        resp = client.get('/profile')
         assert resp.status_code == 200
 
 
@@ -393,15 +397,29 @@ class TestAdminFeatures:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestRecommendationEngine:
+    def _make_user_with_terms(self, email, skills, interests):
+        """Create a volunteer user with skills/interests attached (3NF)."""
+        user = User(name=email.split('@')[0], email=email)
+        user.set_password('pw')
+        db.session.add(user)
+        db.session.flush()
+        for name in skills:
+            sk = Skill.query.filter_by(name=name).first() or Skill(name=name)
+            db.session.add(sk)
+            user.skills.append(sk)
+        for name in interests:
+            it = Interest.query.filter_by(name=name).first() or Interest(name=name)
+            db.session.add(it)
+            user.interests.append(it)
+        profile = VolunteerProfile(user_id=user.id)
+        db.session.add(profile)
+        db.session.commit()
+        return profile
+
     def test_returns_recommendations_for_profile(self, app):
         with app.app_context():
-            user = User(name='RecTest', email='rec@test.com')
-            user.set_password('pw')
-            db.session.add(user)
-            db.session.commit()
-            profile = VolunteerProfile(user_id=user.id, skills='Teaching, Python, Communication', interests='Education')
-            db.session.add(profile)
-            db.session.commit()
+            profile = self._make_user_with_terms(
+                'rec@test.com', ['Teaching', 'Python', 'Communication'], ['Education'])
             events = Event.query.all()
             recs = get_recommendations(profile, events)
             assert len(recs) > 0
@@ -411,13 +429,8 @@ class TestRecommendationEngine:
 
     def test_scores_between_zero_and_one(self, app):
         with app.app_context():
-            user = User(name='ScoreTest', email='score@test.com')
-            user.set_password('pw')
-            db.session.add(user)
-            db.session.commit()
-            profile = VolunteerProfile(user_id=user.id, skills='Teaching, Communication', interests='Education')
-            db.session.add(profile)
-            db.session.commit()
+            profile = self._make_user_with_terms(
+                'score@test.com', ['Teaching', 'Communication'], ['Education'])
             events = Event.query.all()
             recs = get_recommendations(profile, events, top_n=len(events))
             assert len(recs) > 0
@@ -434,13 +447,8 @@ class TestRecommendationEngine:
                                 required_skills='Teaching', slots=20, campus_id=1)
             db.session.add_all([full_event, avail_event])
             db.session.commit()
-            user = User(name='SlotTest', email='slot@test.com')
-            user.set_password('pw')
-            db.session.add(user)
-            db.session.commit()
-            profile = VolunteerProfile(user_id=user.id, skills='Teaching', interests='Education')
-            db.session.add(profile)
-            db.session.commit()
+            profile = self._make_user_with_terms(
+                'slot@test.com', ['Teaching'], ['Education'])
             all_events = [full_event, avail_event]
             recs = get_recommendations(profile, all_events, top_n=2)
             scores = {r['event'].title: r['score'] for r in recs}
@@ -459,18 +467,99 @@ class TestRecommendationEngine:
                                slots=20, campus_id=1)
             db.session.add_all([future_event, past_event])
             db.session.commit()
-            user = User(name='TimeTest', email='time@test.com')
-            user.set_password('pw')
-            db.session.add(user)
-            db.session.commit()
-            profile = VolunteerProfile(user_id=user.id, skills='Teaching', interests='Education')
-            db.session.add(profile)
-            db.session.commit()
+            profile = self._make_user_with_terms(
+                'time@test.com', ['Teaching'], ['Education'])
             all_events = [future_event, past_event]
             recs = get_recommendations(profile, all_events, top_n=2)
             scores = {r['event'].title: r['score'] for r in recs}
             assert scores.get('Future Event', 0) >= scores.get('Past Event', 1), \
                 'Future event should score higher than past event'
+
+    def test_cold_start_returns_upcoming_events(self, app):
+        with app.app_context():
+            past = Event(title='Past CS', description='past',
+                         date=datetime.now() - timedelta(days=1),
+                         required_skills='Teaching', slots=10, campus_id=1)
+            future = Event(title='Future CS', description='future',
+                           date=datetime.now() + timedelta(days=2),
+                           required_skills='Teaching', slots=10, campus_id=1)
+            db.session.add_all([past, future])
+            db.session.commit()
+            recs = get_recommendations(None, top_n=5)
+            titles = [r['event'].title for r in recs]
+            assert 'Future CS' in titles
+            assert 'Past CS' not in titles
+            assert all(r['score'] == 0 for r in recs)
+
+    def test_cold_start_prefers_popular_event(self, app):
+        with app.app_context():
+            popular = Event(title='Popular Event', description='many regs',
+                            date=datetime.now() + timedelta(days=5),
+                            required_skills='Teaching', slots=10, campus_id=1)
+            quiet = Event(title='Quiet Event', description='no regs',
+                          date=datetime.now() + timedelta(days=1),
+                          required_skills='Teaching', slots=10, campus_id=1)
+            db.session.add_all([popular, quiet])
+            db.session.flush()
+            from app.models.event import Registration
+            for i in range(3):
+                u = User(name=f'Registrant{i}', email=f'regpop{i}@test.com')
+                u.set_password('pw')
+                db.session.add(u)
+                db.session.flush()
+                db.session.add(Registration(user_id=u.id, event_id=popular.id,
+                                            status='confirmed'))
+            db.session.commit()
+            recs = get_recommendations(None, top_n=2)
+            titles = [r['event'].title for r in recs]
+            assert titles.index('Popular Event') < titles.index('Quiet Event'), \
+                'Popular event should rank above quiet event'
+
+    def test_cold_start_prefers_user_campus(self, app):
+        with app.app_context():
+            campus2 = Event(title='Campus Two Event', description='campus 2',
+                            date=datetime.now() + timedelta(days=5),
+                            required_skills='Teaching', slots=10, campus_id=2)
+            campus1 = Event(title='Campus One Event', description='campus 1',
+                            date=datetime.now() + timedelta(days=3),
+                            required_skills='Teaching', slots=10, campus_id=1)
+            db.session.add_all([campus2, campus1])
+            db.session.commit()
+            recs = get_recommendations(None, top_n=5, campus_id=1)
+            titles = [r['event'].title for r in recs]
+            assert 'Campus One Event' in titles
+            assert 'Campus Two Event' not in titles
+
+    def test_bootstrap_seeds_skills_and_interests(self, app):
+        with app.app_context():
+            event = Event(title='Bootstrap Event', description='seed me',
+                          date=datetime.now() + timedelta(days=5),
+                          required_skills='Teaching, Python', slots=10,
+                          campus_id=1, category='Education')
+            db.session.add(event)
+            db.session.commit()
+            user = User(name='Boot', email='boot@test.com')
+            user.set_password('pw')
+            db.session.add(user)
+            db.session.commit()
+            bootstrap_from_event(user, event)
+            assert {s.name for s in user.skills} == {'Teaching', 'Python'}
+            assert {i.name for i in user.interests} == {'Education'}
+
+    def test_bootstrap_noop_when_user_has_terms(self, app):
+        with app.app_context():
+            event = Event(title='Bootstrap Noop', description='no change',
+                          date=datetime.now() + timedelta(days=5),
+                          required_skills='Teaching', slots=10,
+                          campus_id=1, category='Education')
+            db.session.add(event)
+            db.session.commit()
+            profile = self._make_user_with_terms(
+                'bootnoop@test.com', ['Communication'], ['Health'])
+            u = User.query.get(profile.user_id)
+            bootstrap_from_event(u, event)
+            assert {s.name for s in u.skills} == {'Communication'}
+            assert {i.name for i in u.interests} == {'Health'}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -546,12 +635,6 @@ class TestSearchFilterPagination:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestMissingFeatures:
-
-    def test_certificates_route(self, client, app):
-        uid = _create_user(app, email='certs@test.com')
-        _login_as(client, uid)
-        resp = client.get('/certificates')
-        assert resp.status_code == 200
 
     def test_export_events_csv(self, client, app):
         uid = _create_user(app, email='evtcsv@test.com',

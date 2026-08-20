@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from app.models import db
 from app.models.user import VolunteerProfile
 from app.models.event import Event, Registration, Attendance, Campus
-from app.recommendation.engine import get_recommendations
+from app.recommendation.engine import get_recommendations, bootstrap_from_event
 from datetime import datetime
 
 events_bp = Blueprint('events', __name__, url_prefix='')
@@ -61,6 +61,7 @@ def register_for_event(event_id):
         user_id=current_user.id, event_id=event_id, status='confirmed')
     db.session.add(registration)
     db.session.commit()
+    bootstrap_from_event(current_user, event)
     flash('Successfully registered for the event!', 'success')
     return redirect(url_for('events.opportunities'))
 
@@ -71,7 +72,8 @@ def volunteer_dash():
     profile = VolunteerProfile.query.filter_by(user_id=current_user.id).first()
     upcoming_events = Event.query.filter(
         Event.date >= datetime.now()).order_by(Event.date.asc()).all()
-    recommendations = get_recommendations(profile, upcoming_events)
+    recommendations = get_recommendations(
+        profile, upcoming_events, campus_id=current_user.campus_id)
     total_hours = db.session.query(db.func.sum(Attendance.hours_completed)).filter_by(
         user_id=current_user.id).scalar() or 0.0
     total_activities = Registration.query.filter_by(

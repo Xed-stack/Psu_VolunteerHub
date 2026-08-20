@@ -155,6 +155,14 @@ def register():
 
         # 5. Commit to MySQL
         db.session.add(user)
+        db.session.flush()
+
+        # Create a VolunteerProfile for volunteers so the recommendation
+        # engine can cold-start instead of showing nothing.
+        if assigned_role == 'volunteer':
+            from app.models.user import VolunteerProfile
+            db.session.add(VolunteerProfile(user_id=user.id))
+
         db.session.commit()
 
         # Clear session key after successful registration

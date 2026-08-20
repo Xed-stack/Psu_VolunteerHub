@@ -29,7 +29,7 @@ def admin_dash():
                      'cache': 'Healthy', 'storage': 'OK', 'uptime': '99.9%'}
     audit_logs = []
     campuses = Campus.query.all()
-    return render_template('Admin_mngmt_dash.html',
+    return render_template('admin/Admin_mngmt_dash.html',
                            users=users,
                            server_status=server_status,
                            active_users=active_users,
@@ -48,7 +48,7 @@ def deactivate_user(user_id):
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
     flash(f'User {user.name} has been {status}.', 'success')
-    return redirect(url_for('admin/admin.admin_dash'))
+    return redirect(url_for('admin.admin_dash'))
 
 
 @admin_bp.route('/admin/users/role/<int:user_id>', methods=['POST'])
@@ -64,7 +64,7 @@ def change_role(user_id):
     user.role = new_role
     db.session.commit()
     flash(f'User {user.name} role changed to {new_role}.', 'success')
-    return redirect(url_for('admin/admin.admin_dash'))
+    return redirect(url_for('admin.admin_dash'))
 
 
 @admin_bp.route('/admin/users/create', methods=['GET', 'POST'])
@@ -90,10 +90,16 @@ def create_user():
         if errors:
             for e in errors:
                 flash(e, 'error')
-            return render_template('admin_user_form.html', user=None, campuses=campuses)
+            return render_template('admin/admin_user_form.html', user=None, campuses=campuses)
         user = User(name=name, email=email, role=role, campus_id=campus_id)
         user.set_password(password)
         db.session.add(user)
+        db.session.flush()
+
+        if role == 'volunteer':
+            from app.models.user import VolunteerProfile
+            db.session.add(VolunteerProfile(user_id=user.id))
+
         db.session.commit()
         flash(f'User {name} created successfully.', 'success')
         return redirect(url_for('admin.admin_dash'))
@@ -130,7 +136,7 @@ def reset_password(user_id):
     user.set_password(new_password)
     db.session.commit()
     flash(f'Password reset for {user.name}.', 'success')
-    return redirect(url_for('admin/admin.admin_dash'))
+    return redirect(url_for('admin.admin_dash'))
 
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
