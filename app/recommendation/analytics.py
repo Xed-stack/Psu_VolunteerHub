@@ -43,18 +43,33 @@ class AnalyticsAggregator:
         return results
 
     @staticmethod
-    def kpi_summary():
-        """Return dict of top-level KPIs for the director dashboard."""
-        total_active = User.query.filter(
-            User.role == 'volunteer', User._is_active == True).count()
-        total_hours = db.session.query(db.func.sum(
-            Attendance.hours_completed)).scalar() or 0.0
-        total_regs = Registration.query.count()
-        completed_regs = Registration.query.filter(
-            Registration.status.in_(['confirmed', 'completed'])
-        ).count()
+    def kpi_summary(campus_id=None):
+        """Return dict of top-level KPIs, optionally scoped to one campus."""
+        user_query = User.query.filter(
+            User.role == 'volunteer', User._is_active == True)
+        if campus_id:
+            user_query = user_query.filter(User.campus_id == campus_id)
+        total_active = user_query.count()
+
+        if campus_id:
+            event_ids = [e.id for e in Event.query.filter_by(
+                campus_id=campus_id).all()]
+            hours_q = db.session.query(db.func.sum(Attendance.hours_completed))
+            total_hours = hours_q.filter(Attendance.event_id.in_(
+                event_ids)).scalar() or 0.0 if event_ids else 0.0
+            reg_q = Registration.query.filter(Registration.event_id.in_(
+                event_ids)) if event_ids else Registration.query.filter(False)
+        else:
+            total_hours = db.session.query(db.func.sum(
+                Attendance.hours_completed)).scalar() or 0.0
+            reg_q = Registration.query
+
+        total_regs = reg_q.count()
+        completed_regs = reg_q.filter(
+            Registration.status.in_(['confirmed', 'completed'])).count()
         retention_rate = round(
             (completed_regs / total_regs * 100), 1) if total_regs > 0 else 0
+
         return {
             'total_active_volunteers': total_active,
             'total_hours': round(total_hours, 1),
@@ -63,33 +78,59 @@ class AnalyticsAggregator:
         }
 
     @staticmethod
-    def trend_data(months=6):
-        """Return dict {months, hours, registrations} with monthly breakdown."""
+    def trend_data(months=6, campus_id=None):
+        """Return dict {months, hours, registrations}, optionally scoped to one campus."""
         cutoff = datetime.now() - timedelta(days=30 * months)
 
-        hours_q = db.session.query(
-            db.func.strftime('%Y-%m', Event.date).label('month'),
-            db.func.sum(Attendance.hours_completed).label('total_hours'),
-        ).join(Attendance, Attendance.event_id == Event.id)\
-         .filter(Event.date >= cutoff)\
-         .group_by('month').order_by('month').all()
+        hours_query = db.session.query(Event.date, Attendance.hours_completed)\
+            .join(Attendance, Attendance.event_id == Event.id)\
+            .filter(Event.date >= cutoff)
+        reg_query = db.session.query(Event.date)\
+            .join(Registration, Registration.event_id == Event.id)\
+            .filter(Event.date >= cutoff)
 
-        regs_q = db.session.query(
-            db.func.strftime('%Y-%m', Event.date).label('month'),
-            db.func.count(Registration.id).label('total_regs'),
-        ).join(Registration, Registration.event_id == Event.id)\
-         .filter(Event.date >= cutoff)\
-         .group_by('month').order_by('month').all()
+        if campus_id:
+            hours_query = hours_query.filter(Event.campus_id == campus_id)
+            reg_query = reg_query.filter(Event.campus_id == campus_id)
 
-        reg_map = {r.month: r.total_regs for r in regs_q}
-        hours_map = {h.month: h.total_hours for h in hours_q}
+        hours_rows = hours_query.all()
+        reg_rows = reg_query.all()
+
+        hours_map = {}
+        for event_date, hours in hours_rows:
+            key = event_date.strftime('%Y-%m')
+            hours_map[key] = hours_map.get(key, 0.0) + (hours or 0.0)
+
+        reg_map = {}
+        for (event_date,) in reg_rows:
+            key = event_date.strftime('%Y-%m')
+            reg_map[key] = reg_map.get(key, 0) + 1
+
         all_months = sorted(set(list(reg_map.keys()) + list(hours_map.keys())))
-
         return {
             'months': all_months,
             'hours': [round(float(hours_map.get(m, 0)), 1) for m in all_months],
             'registrations': [int(reg_map.get(m, 0)) for m in all_months],
         }
+
+    @staticmethod
+    def attendance_summary(campus_id=None, limit=10):
+        """Return [{event, registered, attended, rate}] for completed/upcoming events."""
+        event_query = Event.query
+        if campus_id:
+            event_query = event_query.filter_by(campus_id=campus_id)
+        events = event_query.order_by(Event.date.desc()).limit(limit).all()
+
+        results = []
+        for e in events:
+            registered = Registration.query.filter_by(event_id=e.id).count()
+            attended = Attendance.query.filter_by(
+                event_id=e.id, status='present').count()
+            rate = round((attended / registered * 100),
+                         1) if registered > 0 else 0
+            results.append({'event': e, 'registered': registered,
+                           'attended': attended, 'rate': rate})
+        return results
 
     @staticmethod
     def role_demographics():
@@ -136,7 +177,7 @@ class AnalyticsAggregator:
                 X_train.append([e.slots])
                 y_train.append(attended / total_regs)
 
-        # Need at least a handful of past events to fit a meaningful line
+        # Need at least a handful of past events to fit a meaningful line (Ang Problem natin***)
         if len(X_train) < 3:
             return []
 

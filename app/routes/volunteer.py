@@ -11,7 +11,9 @@ from flask_login import login_required, current_user
 from app.models import db
 from app.models.user import VolunteerProfile, Skill, Interest
 from app.models.event import Registration, Event, Attendance
+from app.recommendation.analytics import AnalyticsAggregator
 from app.recommendation.engine import get_recommendations
+from app.utils.decorators import role_required
 
 volunteer_bp = Blueprint('volunteer', __name__, url_prefix='')
 
@@ -79,6 +81,7 @@ def _preferred_categories(user_id, top_n=3):
 
 @volunteer_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
+@role_required('volunteer')
 def profile_page():
     profile = VolunteerProfile.query.filter_by(user_id=current_user.id).first()
 
@@ -133,7 +136,7 @@ def profile_page():
     recommendations = get_recommendations(profile, top_n=3) if profile else []
 
     return render_template(
-        'Volunteer_Profile.html',
+        'volunteer/Volunteer_Profile.html',
         profile=profile,
         user_stats=user_stats,
         badges=badges,
@@ -141,3 +144,20 @@ def profile_page():
         registrations=registrations,
         recommendations=recommendations,
     )
+
+
+@volunteer_bp.route('/volunteer_analytics')
+@login_required
+@role_required('volunteer')
+def analytics():
+    kpi_cards = AnalyticsAggregator.kpi_summary()
+    campus_data = AnalyticsAggregator.campus_stats()
+    demographics = AnalyticsAggregator.role_demographics()
+    trend_data = AnalyticsAggregator.trend_data()
+    heatmap_data = AnalyticsAggregator.heatmap_data()
+    return render_template('volunteer/Volunteer_analytics.html',
+                           kpi_cards=kpi_cards,
+                           campus_data=campus_data,
+                           demographics=demographics,
+                           trend_data=trend_data,
+                           heatmap_data=heatmap_data)

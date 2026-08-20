@@ -22,8 +22,9 @@ def director_dash():
     total_volunteers = sum(c['volunteers'] for c in campus_stats)
     total_hours = sum(c['hours'] for c in campus_stats)
     top_campuses = campus_stats[:3]
-    trends = {'volunteer_growth': 12.5, 'hours_growth': 8.3, 'events_growth': 15.0}
-    return render_template('Director_Dash.html',
+    trends = {'volunteer_growth': 12.5,
+              'hours_growth': 8.3, 'events_growth': 15.0}
+    return render_template('director/Director_Dash.html',
                            campus_stats=campus_stats,
                            total_volunteers=total_volunteers,
                            total_hours=round(total_hours, 1),
@@ -40,7 +41,7 @@ def analytics():
     demographics = AnalyticsAggregator.role_demographics()
     trend_data = AnalyticsAggregator.trend_data()
     heatmap_data = AnalyticsAggregator.heatmap_data()
-    return render_template('Director_impact_anlaytics_dash.html',
+    return render_template('director/Director_impact_anlaytics_dash.html',
                            kpi_cards=kpi_cards,
                            campus_data=campus_data,
                            demographics=demographics,

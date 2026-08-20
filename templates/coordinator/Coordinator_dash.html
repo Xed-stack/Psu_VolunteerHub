@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Extension Coordinator Dashboard | PSU Volunteer Hub</title>
+
+  <!-- CHANGED: swapped Inter-only stack for Inter + Space Grotesk + JetBrains Mono,
+       matching the coordinator_analytics.css token system so this page and the
+       Analytics page read as one console rather than two unrelated designs -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"/>
+
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/coordinator_dashboard.css') }}"/>
+</head>
+<body>
+
+<div class="cd-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+<div class="cd-app">
+
+  <!-- ========================================== -->
+  <!-- DRAWER NAVIGATION                         -->
+  <!-- ========================================== -->
+  <aside class="cd-sidebar" id="appSidebar">
+    <header class="cd-brand">
+      <span class="cd-brand-icon">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+      </span>
+      <hgroup>
+        <h1 class="cd-brand-title">PSU Volunteer Hub</h1>
+        <p class="cd-brand-subtitle">Coordinator Console</p>
+      </hgroup>
+    </header>
+
+    <nav class="cd-nav" aria-label="Coordinator navigation">
+      <a class="cd-nav-link active" href="{{ url_for('coordinator.coordinator_dash') }}" aria-current="page">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+      <a class="cd-nav-link" href="{{ url_for('coordinator.create_activity') }}">
+        <span class="material-symbols-outlined">volunteer_activism</span>
+        <span>Opportunities</span>
+      </a>
+      <a class="cd-nav-link" href="{{ url_for('coordinator.attendance') }}">
+        <span class="material-symbols-outlined">fact_check</span>
+        <span>Attendance</span>
+      </a>
+      <a class="cd-nav-link" href="{{ url_for('coordinator.analytics') }}">
+        <span class="material-symbols-outlined">analytics</span>
+        <span>Analytics</span>
+      </a>
+    </nav>
+
+
+    <footer class="cd-profile">
+      <img class="cd-avatar" src="{{ url_for('static', filename='assets/coordinator_pfp.png') }}" alt="Coordinator profile photo"/>
+      <hgroup>
+        <p class="cd-profile-name">{{ current_user.name }}</p>
+        <p class="cd-profile-role">{{ current_user.role_display_name }}</p>
+      </hgroup>
+      <a href="{{ url_for('auth.logout') }}" class="cd-logout" title="Logout">
+        <span class="material-symbols-outlined">logout</span>
+      </a>
+    </footer>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- MAIN WORKSPACE                             -->
+  <!-- ========================================== -->
+  <div class="cd-main">
+
+    <header class="cd-topbar">
+      <button class="cd-menu-btn" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <form class="cd-search" role="search">
+        <span class="material-symbols-outlined cd-search-icon">search</span>
+        <input type="search" class="cd-search-input" placeholder="Search activities or volunteers..."/>
+      </form>
+
+      <div class="cd-header-actions">
+        <button class="cd-icon-btn" aria-label="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <span class="cd-campus-tag">{{ campus_name }}</span>
+      </div>
+    </header>
+
+    <main class="cd-content">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <section aria-label="Notifications">
+            {% for category, message in messages %}
+              <p class="cd-alert cd-alert-{{ category }}">{{ message }}</p>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% endwith %}
+
+      <section class="cd-page-head">
+        <hgroup>
+          <h2>Extension Dashboard</h2>
+          <p>Welcome back, {{ current_user.name.split(' ')[0] }}. Here's what's happening at {{ campus_name }}.</p>
+        </hgroup>
+        <div class="cd-actions">
+          <a href="{{ url_for('coordinator.create_activity') }}" class="cd-btn-primary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add</span> Create Activity
+          </a>
+          <a href="{{ url_for('coordinator.export_events_csv') }}" class="cd-btn-secondary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">file_download</span> Export Report
+          </a>
+        </div>
+      </section>
+
+      <section class="cd-kpi-grid" aria-label="Key metrics">
+        <article class="cd-kpi-card">
+          <span class="material-symbols-outlined cd-kpi-icon">groups</span>
+          <p class="cd-kpi-label">Active Volunteers</p>
+          <p class="cd-kpi-value cd-mono">{{ total_volunteers or 0 }}</p>
+        </article>
+        <article class="cd-kpi-card">
+          <span class="material-symbols-outlined cd-kpi-icon">calendar_today</span>
+          <p class="cd-kpi-label">Upcoming Activities</p>
+          <p class="cd-kpi-value cd-mono">{{ upcoming_count or 0 }}</p>
+        </article>
+        <article class="cd-kpi-card">
+          <span class="material-symbols-outlined cd-kpi-icon">check_circle</span>
+          <p class="cd-kpi-label">Attendance Rate</p>
+          <p class="cd-kpi-value cd-mono">{{ attendance_rate or 0 }}%</p>
+        </article>
+        <article class="cd-kpi-card">
+          <span class="material-symbols-outlined cd-kpi-icon">timer</span>
+          <p class="cd-kpi-label">Service Hours (Campus)</p>
+          <p class="cd-kpi-value cd-mono">{{ campus_total_hours or 0 }}h</p>
+        </article>
+      </section>
+
+      <nav class="cd-tabs" aria-label="Activity status filter">
+        <a href="{{ url_for('coordinator.coordinator_dash', status='upcoming') }}" class="cd-tab {% if selected_status == 'upcoming' or not selected_status %}active{% endif %}">Upcoming</a>
+        <a href="{{ url_for('coordinator.coordinator_dash', status='past') }}" class="cd-tab {% if selected_status == 'past' %}active{% endif %}">Past</a>
+      </nav>
+
+      <section class="cd-grid-2col">
+
+        <!-- Recent Activities table -->
+        <section class="cd-card" aria-label="Recent activities">
+          <header class="cd-card-head">
+            <h4>Recent Activities</h4>
+            <a href="{{ url_for('events.opportunities') }}" class="cd-card-link">View All</a>
+          </header>
+          <div class="cd-table-wrapper">
+            <table class="cd-table">
+              <thead>
+                <tr><th>Activity</th><th>Date</th><th>Slots Left</th><th>Status</th><th>Milestone</th></tr>
+              </thead>
+              <tbody>
+                {% if recent_activities %}
+                  {% for reg in recent_activities %}
+                    <tr>
+                      <td>{{ reg.event.title }}</td>
+                      <td>{{ reg.event.date.strftime('%b %d, %Y') if reg.event.date else '--' }}</td>
+                      <td class="cd-mono">{{ reg.event.slots_remaining() if reg.event.slots_remaining is defined else '--' }}</td>
+                      <td><span class="cd-status-badge">{{ (reg.status or 'Completed')|capitalize }}</span></td>
+                      <td>
+                        <form action="{{ url_for('coordinator.upload_milestone', event_id=reg.event.id) }}" method="POST" enctype="multipart/form-data" class="cd-milestone-form">
+                          <input type="file" name="file" class="cd-file-input" required/>
+                          <input type="hidden" name="category" value="photo"/>
+                          <button type="submit" class="cd-btn-upload">Upload</button>
+                        </form>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="5" style="text-align:center; color: var(--cd-text-muted);">No recent activities found.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CHANGED: removed the fake Mon–Fri bar chart with hardcoded heights and
+             fake "64% / 28%" legend — none of it was computed. Replaced with a
+             pointer to the real trend chart that already lives on the Analytics
+             page (built from AnalyticsAggregator.trend_data()), so there's one
+             source of truth for engagement trends instead of two disagreeing ones. -->
+        <section class="cd-card" aria-label="Engagement trends">
+          <header class="cd-card-head">
+            <h4>Engagement Trends</h4>
+          </header>
+          <p class="cd-trend-pointer">
+            Full engagement trend charts, readiness forecasts, and attendance
+            breakdowns are on the
+            <a href="{{ url_for('coordinator.analytics') }}">Analytics page</a>.
+          </p>
+        </section>
+
+      </section>
+
+      <!-- CHANGED: removed the "Campus Outreach Map" card entirely — "Active
+           Operations: 4 Sites" wasn't backed by any table (no Site/Location model
+           exists), and a static map image doesn't reflect real data. Quick Actions
+           kept, since those link to real routes. -->
+      <section class="cd-quick-actions" aria-label="Quick actions">
+        <h4>Quick Actions</h4>
+        <div class="cd-tile-grid">
+          <a href="{{ url_for('coordinator.attendance') }}" class="cd-tile">
+            <span class="material-symbols-outlined cd-tile-icon">fact_check</span>
+            <span>Track Attendance</span>
+          </a>
+          <a href="{{ url_for('coordinator.create_activity') }}" class="cd-tile">
+            <span class="material-symbols-outlined cd-tile-icon">add_circle</span>
+            <span>Create Activity</span>
+          </a>
+          <a href="{{ url_for('coordinator.export_events_csv') }}" class="cd-tile">
+            <span class="material-symbols-outlined cd-tile-icon">file_download</span>
+            <span>Export Report</span>
+          </a>
+          <a href="{{ url_for('coordinator.analytics') }}" class="cd-tile">
+            <span class="material-symbols-outlined cd-tile-icon">analytics</span>
+            <span>View Analytics</span>
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="cd-footer">
+      <p><strong>PSU Volunteer Hub</strong> — Coordinator Console · © 2026 Pangasinan State University</p>
+      <nav class="cd-footer-links" aria-label="Legal & Support">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact Support</a>
+      </nav>
+    </footer>
+  </div>
+</div>
+
+<script>
+  function toggleSidebar() {
+    document.getElementById('appSidebar').classList.toggle('open');
+    document.getElementById('mobileOverlay').classList.toggle('show');
+  }
+</script>
+
+</body>
+</html>

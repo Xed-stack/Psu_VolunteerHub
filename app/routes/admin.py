@@ -23,8 +23,10 @@ def admin_dash():
         query = query.filter(User.campus_id == campus_id)
     users = query.order_by(User.created_at.desc()).all()
     active_users = User.query.filter_by(_is_active=True).count()
-    pending_approvals = User.query.filter_by(role='volunteer', _is_active=True).count()
-    server_status = {'database': 'Connected', 'cache': 'Healthy', 'storage': 'OK', 'uptime': '99.9%'}
+    pending_approvals = User.query.filter_by(
+        role='volunteer', _is_active=True).count()
+    server_status = {'database': 'Connected',
+                     'cache': 'Healthy', 'storage': 'OK', 'uptime': '99.9%'}
     audit_logs = []
     campuses = Campus.query.all()
     return render_template('Admin_mngmt_dash.html',
@@ -46,7 +48,7 @@ def deactivate_user(user_id):
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
     flash(f'User {user.name} has been {status}.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+    return redirect(url_for('admin/admin.admin_dash'))
 
 
 @admin_bp.route('/admin/users/role/<int:user_id>', methods=['POST'])
@@ -62,7 +64,7 @@ def change_role(user_id):
     user.role = new_role
     db.session.commit()
     flash(f'User {user.name} role changed to {new_role}.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+    return redirect(url_for('admin/admin.admin_dash'))
 
 
 @admin_bp.route('/admin/users/create', methods=['GET', 'POST'])
@@ -77,12 +79,17 @@ def create_user():
         role = request.form.get('role', 'volunteer')
         campus_id = request.form.get('campus_id', type=int)
         errors = []
-        if not name: errors.append('Name is required.')
-        if not email: errors.append('Email is required.')
-        if not password or len(password) < 6: errors.append('Password must be at least 6 characters.')
-        if User.query.filter_by(email=email).first(): errors.append('Email already exists.')
+        if not name:
+            errors.append('Name is required.')
+        if not email:
+            errors.append('Email is required.')
+        if not password or len(password) < 6:
+            errors.append('Password must be at least 6 characters.')
+        if User.query.filter_by(email=email).first():
+            errors.append('Email already exists.')
         if errors:
-            for e in errors: flash(e, 'error')
+            for e in errors:
+                flash(e, 'error')
             return render_template('admin_user_form.html', user=None, campuses=campuses)
         user = User(name=name, email=email, role=role, campus_id=campus_id)
         user.set_password(password)
@@ -90,7 +97,7 @@ def create_user():
         db.session.commit()
         flash(f'User {name} created successfully.', 'success')
         return redirect(url_for('admin.admin_dash'))
-    return render_template('admin_user_form.html', user=None, campuses=campuses)
+    return render_template('admin/admin_user_form.html', user=None, campuses=campuses)
 
 
 @admin_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -103,11 +110,12 @@ def edit_user(user_id):
         user.name = request.form.get('name', user.name).strip()
         user.email = request.form.get('email', user.email).strip()
         user.role = request.form.get('role', user.role)
-        user.campus_id = request.form.get('campus_id', user.campus_id, type=int)
+        user.campus_id = request.form.get(
+            'campus_id', user.campus_id, type=int)
         db.session.commit()
         flash(f'User {user.name} updated.', 'success')
         return redirect(url_for('admin.admin_dash'))
-    return render_template('admin_user_form.html', user=user, campuses=campuses)
+    return render_template('admin/admin_user_form.html', user=user, campuses=campuses)
 
 
 @admin_bp.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
@@ -122,7 +130,7 @@ def reset_password(user_id):
     user.set_password(new_password)
     db.session.commit()
     flash(f'Password reset for {user.name}.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+    return redirect(url_for('admin/admin.admin_dash'))
 
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
@@ -140,4 +148,4 @@ def settings():
         db.session.commit()
         flash('Settings saved.', 'success')
     settings = {s.key: s.value for s in SystemSetting.query.all()}
-    return render_template('settings.html', settings=settings)
+    return render_template('admin/settings.html', settings=settings)
