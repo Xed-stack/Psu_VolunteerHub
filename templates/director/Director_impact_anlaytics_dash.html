@@ -19,6 +19,14 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d8e3fa; border-radius: 10px; }
         .glass-header { backdrop-filter: blur(8px); background-color: rgba(249, 249, 255, 0.8); }
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid #00408b;
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+        .surface-accent {
+            background-image: radial-gradient(1200px 400px at 100% 0%, rgba(0,87,184,0.05), transparent 60%);
+        }
     </style>
 <script id="tailwind-config">
         tailwind.config = {
@@ -27,38 +35,38 @@
                 extend: {
                     "colors": {
                         "outline": "#727784",
-                        "surface": "#f9f9ff",
-                        "error": "#ba1a1a",
+                        "surface": "var(--surface)",
+                        "error": "var(--error)",
                         "primary-fixed-dim": "#adc7ff",
-                        "on-primary": "#ffffff",
-                        "tertiary-fixed-dim": "#f6bf22",
-                        "primary": "#00408b",
-                        "on-surface": "#111c2c",
+                        "on-primary": "var(--on-primary)",
+                        "tertiary-fixed-dim": "var(--tertiary-fixed-dim)",
+                        "primary": "var(--primary)",
+                        "on-surface": "var(--on-surface)",
                         "on-error": "#ffffff",
                         "on-secondary": "#ffffff",
                         "on-tertiary": "#ffffff",
                         "tertiary-fixed": "#ffdf99",
                         "tertiary-container": "#725600",
                         "surface-dim": "#cfdaf1",
-                        "secondary": "#5b5f61",
-                        "primary-fixed": "#d8e2ff",
+                        "secondary": "var(--secondary)",
+                        "primary-fixed": "var(--primary-fixed)",
                         "inverse-on-surface": "#ebf1ff",
                         "on-secondary-fixed-variant": "#44474a",
                         "on-primary-container": "#bfd2ff",
                         "secondary-fixed-dim": "#c4c7ca",
-                        "error-container": "#ffdad6",
+                        "error-container": "var(--error-container)",
                         "surface-container-lowest": "#ffffff",
                         "on-tertiary-fixed": "#251a00",
                         "on-secondary-container": "#626567",
-                        "on-primary-fixed": "#001a41",
+                        "on-primary-fixed": "var(--on-primary-fixed)",
                         "background": "#f9f9ff",
-                        "outline-variant": "#c2c6d4",
+                        "outline-variant": "var(--outline-variant)",
                         "inverse-primary": "#adc7ff",
                         "secondary-container": "#e0e3e6",
                         "on-tertiary-fixed-variant": "#5a4300",
                         "tertiary": "#553f00",
                         "on-background": "#111c2c",
-                        "on-surface-variant": "#424752",
+                        "on-surface-variant": "var(--on-surface-variant)",
                         "surface-container": "#e7eeff",
                         "inverse-surface": "#263142",
                         "secondary-fixed": "#e0e3e6",
@@ -67,7 +75,7 @@
                         "surface-variant": "#d8e3fa",
                         "primary-container": "#0057b8",
                         "on-secondary-fixed": "#191c1e",
-                        "surface-container-low": "#f0f3ff",
+                        "surface-container-low": "var(--surface-container-low)",
                         "on-primary-fixed-variant": "#004493",
                         "on-error-container": "#93000a",
                         "surface-container-high": "#dee8ff",
@@ -76,9 +84,15 @@
                     },
                     "borderRadius": {
                         "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
+                        "sm": "0.25rem",
+                        "md": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "boxShadow": {
+                        "card": "0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,64,139,.06)",
+                        "card-hover": "0 2px 6px rgba(0,0,0,.08), 0 8px 24px rgba(0,64,139,.10)"
                     },
                     "spacing": {
                         "sm": "8px",
@@ -138,7 +152,8 @@
   .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
 }
 </style>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="bg-background text-on-surface font-body-md overflow-x-hidden">
 <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 <!-- Flash Messages -->
@@ -169,23 +184,23 @@
 </div>
 </div>
 <nav class="flex-1 space-y-xs">
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
+<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
+<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined">volunteer_activism</span>
 <span class="font-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold" href="{{ url_for('director.analytics') }}">
+<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold" href="{{ url_for('director.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md">Analytics</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('admin.admin_dash') }}">
+<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
 <span class="material-symbols-outlined">manage_accounts</span>
 <span class="font-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
+<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md">Settings</span>
 </a>
@@ -206,10 +221,10 @@
 </div>
 </aside>
 <!-- MAIN CONTENT -->
-<main class="ml-0 md:ml-[260px] main-content min-h-screen flex flex-col">
+    <main class="ml-0 md:ml-[260px] main-content min-h-screen flex flex-col pb-20">
 <!-- TOP NAV BAR -->
 <header class="h-16 flex items-center justify-between px-lg sticky top-0 z-40 glass-header border-b border-outline-variant">
-<button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
+<button class="md:hidden p-2 min-h-[44px] min-w-[44px] text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
   <span class="material-symbols-outlined">menu</span>
 </button>
 <div class="flex items-center gap-lg flex-1">
@@ -219,21 +234,21 @@
 </div>
 </div>
 <div class="flex items-center gap-md">
-<button class="p-sm text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<button class="p-sm min-h-[44px] min-w-[44px] text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
 <span class="material-symbols-outlined">notifications</span>
 </button>
-<button class="p-sm text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<button class="p-sm min-h-[44px] min-w-[44px] text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
 <span class="material-symbols-outlined">location_on</span>
 </button>
 <div class="h-8 w-px bg-outline-variant mx-sm"></div>
-<a href="{{ url_for('director.export_campus_csv') }}" class="flex items-center gap-sm px-md py-sm bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary-container transition-colors">
+<a href="{{ url_for('director.export_campus_csv') }}" class="flex items-center gap-sm px-md py-sm min-h-[44px] bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary-container transition-colors">
 <span class="material-symbols-outlined text-[18px]">download</span>
                     Download Report
                 </a>
 </div>
 </header>
 <!-- DASHBOARD CONTENT -->
-<div class="p-lg space-y-lg max-w-[1440px] mx-auto w-full">
+<div class="p-lg space-y-lg max-w-[1440px] mx-auto w-full surface-accent">
 <!-- HEADER & FILTERS -->
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
 <div>
@@ -243,7 +258,7 @@
 <div class="flex flex-wrap items-center gap-sm">
 <div class="flex flex-col gap-xs">
 <label class="text-label-sm text-outline px-1">Campus</label>
-<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
 <option>All 9 Campuses</option>
 <option>Lingayen (Main)</option>
 <option>Urdaneta</option>
@@ -252,7 +267,7 @@
 </div>
 <div class="flex flex-col gap-xs">
 <label class="text-label-sm text-outline px-1">Date Range</label>
-<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
 <option>Last Semester (Aug - Dec)</option>
 <option>Current Year (2024)</option>
 <option>Custom Range</option>
@@ -260,7 +275,7 @@
 </div>
 <div class="flex flex-col gap-xs">
 <label class="text-label-sm text-outline px-1">Program Type</label>
-<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm min-h-[44px] text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none">
 <option>All Programs</option>
 <option>Community Outreach</option>
 <option>Disaster Response</option>
@@ -272,7 +287,7 @@
 <!-- KPI CARDS -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 stats-grid-template gap-lg">
 <!-- Total Active Volunteers -->
-<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-card hover:shadow-card-hover space-y-sm">
 <div class="flex justify-between items-start">
 <div class="p-sm bg-primary-fixed text-on-primary-fixed rounded-lg">
 <span class="material-symbols-outlined">groups</span>
@@ -287,7 +302,7 @@
 </div>
 </div>
 <!-- Total Hours Logged -->
-<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-card hover:shadow-card-hover space-y-sm">
 <div class="flex justify-between items-start">
 <div class="p-sm bg-surface-container-highest text-primary rounded-lg">
 <span class="material-symbols-outlined">schedule</span>
@@ -302,7 +317,7 @@
 </div>
 </div>
 <!-- Community Impact Value -->
-<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-card hover:shadow-card-hover space-y-sm">
 <div class="flex justify-between items-start">
 <div class="p-sm bg-tertiary-fixed text-on-tertiary-fixed rounded-lg">
 <span class="material-symbols-outlined">volunteer_activism</span>
@@ -317,7 +332,7 @@
 </div>
 </div>
 <!-- Growth % -->
-<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl space-y-sm">
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-xl shadow-card hover:shadow-card-hover space-y-sm">
 <div class="flex justify-between items-start">
 <div class="p-sm bg-surface-container text-on-surface-variant rounded-lg">
 <span class="material-symbols-outlined">monitoring</span>
@@ -335,7 +350,7 @@
 <!-- MAIN VISUALIZATIONS GRID (Bento Style) -->
 <div class="grid grid-cols-12 gap-lg">
 <!-- Participation by Campus (Bar Chart) -->
-<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl flex flex-col">
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-card hover:shadow-card-hover flex flex-col">
 <div class="flex justify-between items-center mb-xl">
 <h3 class="font-headline-sm text-headline-sm">Participation by Campus</h3>
 <button class="text-label-md text-primary font-semibold hover:underline">View All</button>
@@ -354,10 +369,18 @@
 </div>
 </div>
 <!-- Demographic Split (Pie Chart) -->
-<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl flex flex-col">
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-card hover:shadow-card-hover flex flex-col">
 <h3 class="font-headline-sm text-headline-sm mb-xl">Demographic Split</h3>
 <div class="flex-1 flex flex-col items-center justify-center space-y-lg">
-<div class="relative w-40 h-40">
+        {% set role_colors_hex = {'volunteer': '#00408b', 'coordinator': '#5b5f61', 'director': '#725600', 'admin': '#d8e3fa'} %}
+        {% set demo_total = demographics.values()|sum if demographics else 0 %}
+        {% set ns = namespace(cum=0, grad='') %}
+        {% for role, count in demographics.items() %}
+          {% set start = ns.cum %}
+          {% set ns.cum = ns.cum + (count / demo_total * 100 if demo_total else 0) %}
+          {% set ns.grad = ns.grad + role_colors_hex.get(role, '#999999') + ' ' + start|round(1)|string + '% ' + ns.cum|round(1)|string + '%' + (', ' if not loop.last else '') %}
+        {% endfor %}
+        <div class="relative w-40 h-40 rounded-full" style="background: {% if demo_total > 0 %}conic-gradient({{ ns.grad }}){% else %}var(--outline-variant){% endif %};">
 <div class="absolute inset-0 flex items-center justify-center flex-col">
 <span class="text-headline-md font-bold text-on-surface">{{ demographics|length }}</span>
 <span class="text-label-sm text-secondary">Roles</span>
@@ -375,7 +398,7 @@
 </div>
 </div>
 <!-- Engagement Trends (Line Chart) -->
-<div class="col-span-12 lg:col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl">
+<div class="col-span-12 lg:col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-card hover:shadow-card-hover">
 <div class="flex justify-between items-center mb-xl">
 <h3 class="font-headline-sm text-headline-sm">Engagement Trends (12 Months)</h3>
 <div class="flex gap-md">
@@ -411,7 +434,7 @@
 </div>
 </div>
 <!-- Peak Volunteer Hours (Heatmap) -->
-<div class="col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl overflow-x-auto custom-scrollbar">
+<div class="col-span-12 bg-surface-container-lowest border border-outline-variant p-lg rounded-xl shadow-card hover:shadow-card-hover overflow-x-auto custom-scrollbar">
 <div class="flex justify-between items-center mb-xl min-w-[800px]">
 <h3 class="font-headline-sm text-headline-sm">Peak Volunteer Activity</h3>
 <div class="flex items-center gap-sm">
@@ -488,7 +511,7 @@
 <footer class="mt-auto border-t border-outline-variant py-md px-lg bg-surface-container-lowest flex flex-col md:flex-row justify-between items-center gap-md">
 <div class="flex items-center gap-md">
 <span class="font-label-sm text-label-sm font-bold text-primary">PSU Volunteer Hub</span>
-<p class="text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<p class="text-label-md text-secondary">© 2026 Pangasinan State University. All rights reserved.</p>
 </div>
 <div class="flex gap-lg">
 <a class="text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>

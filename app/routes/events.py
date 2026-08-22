@@ -34,8 +34,13 @@ def opportunities():
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     events = pagination.items
     campuses = Campus.query.all()
+    # Data-driven category filter: distinct categories actually in use,
+    # so the dropdown never offers options that return zero results.
+    categories = [row[0] for row in db.session.query(
+        Event.category).distinct().order_by(Event.category).all() if row[0]]
     return render_template('volunteer/Volunteer_opportunities.html',
                            events=events, campuses=campuses,
+                           categories=categories,
                            current_page=pagination.page,
                            total_pages=pagination.pages,
                            total_count=pagination.total,

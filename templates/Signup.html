@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
     
     <link href="{{ url_for('static', filename='styles/signup.css') }}" rel="stylesheet"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body>
 
     <div class="split-layout">
@@ -28,6 +29,7 @@
         <div class="form-panel">
             <div class="form-container">
                 <header class="form-header">
+                    <span class="step-hint-auth">Step 2 of 2 · Create your account</span>
                     <h1>Create your account</h1>
                     <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in instead</a></p>
                 </header>
@@ -99,7 +101,7 @@
                         <span id="campus_hint" class="field-instruction">Volunteers and Coordinators are strictly limited to actions within this boundary.</span>
                     </div>
 
-                    <button type="submit" class="btn-submit">Register Account</button>
+                    <button type="submit" class="btn-submit">Create Account</button>
                 </form>
             </div>
         </div>

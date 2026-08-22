@@ -5,7 +5,7 @@ Handles login, registration, and logout.
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models.user import User, Interest
+from app.models.user import User, Interest, Skill
 from app.models import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -56,17 +56,38 @@ def login():
 
 @auth_bp.route('/interests', methods=['GET', 'POST'])
 def interests():
+    """Onboarding step 1: pick interests; connected skills reveal inline."""
     if request.method == 'POST':
-        selected_interests = request.form.getlist('interests')
-
-        # Store in session to carry over to the signup step
-        session['selected_interests'] = selected_interests
-
-        # Redirect to signup page
+        # Capture both interests and the skills revealed for them, then go
+        # straight to account creation (the skills step is now inline).
+        session['selected_interests'] = request.form.getlist('interests')
+        session['selected_skills'] = request.form.getlist('skills')
         return redirect(url_for('auth.register'))
 
+    from config import Config
+    interest_skill_map = getattr(Config, 'INTEREST_SKILL_MAP', {})
     all_interests = Interest.query.all()
-    return render_template('interests.html', interests=all_interests)
+    interests_data = []
+    for interest in all_interests:
+        skill_names = interest_skill_map.get(interest.name, [])
+        connected = (
+            Skill.query.filter(Skill.name.in_(skill_names)).all()
+            if skill_names else []
+        )
+        interests_data.append({'interest': interest, 'skills': connected})
+
+    return render_template('interests.html', interests_data=interests_data)
+
+
+@auth_bp.route('/skills', methods=['GET', 'POST'])
+def skills():
+    """Kept for backwards compatibility — the wizard now reveals skills inline."""
+    if request.method == 'POST':
+        session['selected_skills'] = request.form.getlist('skills')
+        return redirect(url_for('auth.register'))
+
+    all_skills = Skill.query.all()
+    return render_template('skills.html', skills=all_skills)
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -74,9 +95,14 @@ def register():
     """Handle new user registration."""
     from app.models.event import Campus
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        # Allow starting a new registration even when a session is active
+        # (e.g. an admin/director testing the signup flow): sign out first
+        # instead of bouncing the visitor to their own dashboard.
+        logout_user()
 
     campuses = Campus.query.all()
+    interests = Interest.query.all()
+    skills = Skill.query.all()
 
     if request.method == 'POST':
         # 1. Grab inputs from Signup.html
@@ -121,7 +147,8 @@ def register():
         if errors:
             for error in errors:
                 flash(error, 'error')
-            return render_template('Signup.html', campuses=campuses)
+            return render_template('Signup.html', campuses=campuses,
+                                    interests=interests, skills=skills)
 
         # 2. Map role choices
         # Supported user roles: 'volunteer', 'coordinator', 'director', 'admin'
@@ -141,9 +168,12 @@ def register():
             campus_id=campus_obj.id if campus_obj else None
         )
         user.set_password(password)
+        db.session.add(user)
 
-        # 4. Attach Interest records stored from step 1 (Interests page)
-        selected_interest_ids = session.get('selected_interests', [])
+        # 4. Attach Interest records carried over from the onboarding wizard
+        #    (steps 1 & 2 stored them in the session).
+        selected_interest_ids = request.form.getlist('interests') or session.get(
+            'selected_interests', [])
         if selected_interest_ids:
             interest_ids = [
                 int(i_id) for i_id in selected_interest_ids if str(i_id).isdigit()]
@@ -153,8 +183,17 @@ def register():
             # Populates user_interests pivot table automatically
             user.interests.extend(chosen_interests)
 
+        # 4b. Attach Skill records carried over from the onboarding wizard
+        selected_skill_ids = request.form.getlist('skills') or session.get(
+            'selected_skills', [])
+        if selected_skill_ids:
+            skill_ids = [
+                int(s_id) for s_id in selected_skill_ids if str(s_id).isdigit()]
+            chosen_skills = Skill.query.filter(
+                Skill.id.in_(skill_ids)).all()
+            user.skills.extend(chosen_skills)
+
         # 5. Commit to MySQL
-        db.session.add(user)
         db.session.flush()
 
         # Create a VolunteerProfile for volunteers so the recommendation
@@ -165,13 +204,15 @@ def register():
 
         db.session.commit()
 
-        # Clear session key after successful registration
+        # Clear session keys after successful registration
         session.pop('selected_interests', None)
+        session.pop('selected_skills', None)
 
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('auth.login'))
 
-    return render_template('Signup.html', campuses=campuses)
+    return render_template('Signup.html', campuses=campuses,
+                            interests=interests, skills=skills)
 
 
 @auth_bp.route('/logout')

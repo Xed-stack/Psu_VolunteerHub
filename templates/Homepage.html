@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
     <link href="{{ url_for('static', filename='styles/home.css') }}" rel="stylesheet"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    <noscript><style>.reveal-ready{opacity:1 !important; transform:none !important;}</style></noscript>
+    </head>
 <body>
 
     <header class="main-header">
@@ -23,15 +25,23 @@
             <a class="nav-link active" href="#">About</a>
             <a class="nav-link" href="{{ url_for('events.opportunities') }}">Opportunities</a>
             <a class="nav-link" href="#">Impact</a>
-            <a href="{{ url_for('auth.login') }}">
-                <div class="nav-actions">
-                    <span class="material-symbols-outlined icon-btn">notifications</span>
-                    <button class="btn btn-primary">Login</button>
-                </div>
+            <a href="{{ url_for('auth.login') }}" class="icon-btn" aria-label="Sign in">
+                <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
             </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary nav-signin">Sign In</a>
         </nav>
-        <button class="menu-mobile-btn material-symbols-outlined">menu</button>
+        <button class="menu-mobile-btn material-symbols-outlined" id="menuMobileBtn" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">menu</button>
     </header>
+
+    <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
+        <a class="mobile-link" href="#">About</a>
+        <a class="mobile-link" href="{{ url_for('events.opportunities') }}">Opportunities</a>
+        <a class="mobile-link" href="#">Impact</a>
+        <div class="mobile-actions">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline mobile-btn">Sign In</a>
+            <a href="{{ url_for('auth.interests') }}" class="btn btn-primary mobile-btn">Get Started</a>
+        </div>
+    </nav>
 
     <main>
         <section class="hero-section">
@@ -41,34 +51,41 @@
                     <h1>Empowering Excellence through Service</h1>
                     <p>Join the centralized volunteer network of Pangasinan State University. Connect with meaningful projects, develop professional skills, and make a lasting impact on our community.</p>
                     <div class="btn-group">
-                        <a href="{{ url_for('auth.interests') }}" class="btn btn-tertiary flex-btn" style="text-decoration: none; display: inline-flex;">
-                            Join Now <span class="material-symbols-outlined">arrow_forward</span>
+                        <a href="{{ url_for('auth.interests') }}" class="btn btn-tertiary flex-btn">
+                            Get Started <span class="material-symbols-outlined">arrow_forward</span>
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline flex-btn">
+                            Sign In
                         </a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- <section class="stats-section">
+        <section class="stats-section">
             <div class="container stats-grid">
                 <div class="stat-item">
+                    <span class="material-symbols-outlined stat-icon">groups</span>
                     <div class="stat-number">5,000+</div>
                     <div class="stat-label">Active Volunteers</div>
                 </div>
                 <div class="stat-item">
+                    <span class="material-symbols-outlined stat-icon">task_alt</span>
                     <div class="stat-number">200+</div>
                     <div class="stat-label">Projects Completed</div>
                 </div>
                 <div class="stat-item">
+                    <span class="material-symbols-outlined stat-icon">hourglass_bottom</span>
                     <div class="stat-number">10,000+</div>
                     <div class="stat-label">Service Hours</div>
                 </div>
                 <div class="stat-item">
+                    <span class="material-symbols-outlined stat-icon">location_city</span>
                     <div class="stat-number">15</div>
                     <div class="stat-label">PSU Campuses</div>
                 </div>
             </div>
-        </section> -->
+        </section>
 
         <section class="mission-section">
             <div class="mission-container">
@@ -207,6 +224,29 @@
     </footer>
 
     <script>
+        const menuBtn = document.getElementById('menuMobileBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        function closeMenu() {
+            mobileMenu.classList.remove('open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            menuBtn.textContent = 'menu';
+        }
+
+        menuBtn.addEventListener('click', () => {
+            const isOpen = mobileMenu.classList.toggle('open');
+            menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            menuBtn.textContent = isOpen ? 'close' : 'menu';
+        });
+
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMenu();
+        });
+
         window.addEventListener('scroll', () => {
             const header = document.querySelector('.main-header');
             if (window.scrollY > 50) {

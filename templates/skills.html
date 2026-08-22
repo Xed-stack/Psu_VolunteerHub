@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Select Skills | PSU Volunteer Hub</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/interests.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
+<body>
+
+    <div class="bg-glow top-glow"></div>
+    <div class="bg-glow bottom-glow"></div>
+
+    <main class="interests-wrapper">
+        <section class="interests-card">
+
+            <header class="interests-header">
+                <div class="brand-group">
+                    <img class="brand-logo" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="Pangasinan State University logo"/>
+                    <span class="brand-wordmark">PSU Volunteer Hub</span>
+                </div>
+                <span class="step-hint">
+                    <span class="material-symbols-outlined step-hint-icon">route</span>
+                    Step 2 of 3 · Tell us about you
+                </span>
+                <h1>What skills do you have?</h1>
+                <p class="helper-copy">Select the skills you can bring to a project — this helps coordinators match you to the right opportunities.</p>
+            </header>
+
+            <form action="{{ url_for('auth.skills') }}" method="POST">
+                {% set tile_icons = ['build', 'code', 'campaign', 'health_and_safety', 'school', 'volunteer_activism', 'eco', 'draw', 'sports_basketball', 'record_voice_over', 'language', 'agriculture'] %}
+                <div class="card-grid">
+                    {% for skill in skills %}
+                        <div class="card-item">
+                            <input
+                                type="checkbox"
+                                name="skills"
+                                id="skill-{{ skill.id }}"
+                                value="{{ skill.id }}"
+                                class="card-input"
+                            >
+                            <label for="skill-{{ skill.id }}" class="card-label">
+                                <span class="card-content">
+                                    <span class="material-symbols-outlined card-icon">{{ tile_icons[loop.index0 % (tile_icons | length)] }}</span>
+                                    <h3>{{ skill.name }}</h3>
+                                    <span class="card-check material-symbols-outlined">check_circle</span>
+                                </span>
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="btn-row">
+                    <a href="{{ url_for('auth.interests') }}" class="btn-secondary">Back</a>
+                    <button type="submit" class="btn-submit">Continue</button>
+                </div>
+            </form>
+
+        </section>
+    </main>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Extension Coordinator Dashboard | PSU Volunteer Hub</title>
 
   <!-- CHANGED: swapped Inter-only stack for Inter + Space Grotesk + JetBrains Mono,
@@ -13,7 +13,8 @@
 
 
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/coordinator_dashboard.css') }}"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body>
 
 <div class="cd-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
@@ -55,7 +56,7 @@
 
 
     <footer class="cd-profile">
-      <img class="cd-avatar" src="{{ url_for('static', filename='assets/coordinator_pfp.png') }}" alt="Coordinator profile photo"/>
+      <img class="cd-avatar" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Coordinator profile photo"/>
       <hgroup>
         <p class="cd-profile-name">{{ current_user.name }}</p>
         <p class="cd-profile-role">{{ current_user.role_display_name }}</p>

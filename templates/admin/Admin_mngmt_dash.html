@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <style>
         body { font-family: 'Inter', sans-serif; }
         .material-symbols-outlined {
@@ -19,6 +18,17 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d8e3fa; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #c2c6d4; }
+        /* Accessibility & visual polish */
+        :focus-visible { outline: 2px solid #00408b; outline-offset: 2px; border-radius: 4px; }
+        input, select, button { min-height: 44px; }
+        .admin-card {
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,64,139,.06);
+        }
+        .transition-colors, .transition-all, .group { transition-duration: 180ms; }
+        @media (max-width: 360px) {
+            header, .header-fixed { padding-left: 12px !important; padding-right: 12px !important; }
+        }
     </style>
 <script id="tailwind-config">
         tailwind.config = {
@@ -27,38 +37,38 @@
                 extend: {
                     "colors": {
                         "outline": "#727784",
-                        "surface": "#f9f9ff",
-                        "error": "#ba1a1a",
+                        "surface": "var(--surface)",
+                        "error": "var(--error)",
                         "primary-fixed-dim": "#adc7ff",
-                        "on-primary": "#ffffff",
-                        "tertiary-fixed-dim": "#f6bf22",
-                        "primary": "#00408b",
-                        "on-surface": "#111c2c",
+                        "on-primary": "var(--on-primary)",
+                        "tertiary-fixed-dim": "var(--tertiary-fixed-dim)",
+                        "primary": "var(--primary)",
+                        "on-surface": "var(--on-surface)",
                         "on-error": "#ffffff",
                         "on-secondary": "#ffffff",
                         "on-tertiary": "#ffffff",
                         "tertiary-fixed": "#ffdf99",
                         "tertiary-container": "#725600",
                         "surface-dim": "#cfdaf1",
-                        "secondary": "#5b5f61",
-                        "primary-fixed": "#d8e2ff",
+                        "secondary": "var(--secondary)",
+                        "primary-fixed": "var(--primary-fixed)",
                         "inverse-on-surface": "#ebf1ff",
                         "on-secondary-fixed-variant": "#44474a",
                         "on-primary-container": "#bfd2ff",
                         "secondary-fixed-dim": "#c4c7ca",
-                        "error-container": "#ffdad6",
+                        "error-container": "var(--error-container)",
                         "surface-container-lowest": "#ffffff",
                         "on-tertiary-fixed": "#251a00",
                         "on-secondary-container": "#626567",
-                        "on-primary-fixed": "#001a41",
+                        "on-primary-fixed": "var(--on-primary-fixed)",
                         "background": "#f9f9ff",
-                        "outline-variant": "#c2c6d4",
+                        "outline-variant": "var(--outline-variant)",
                         "inverse-primary": "#adc7ff",
                         "secondary-container": "#e0e3e6",
                         "on-tertiary-fixed-variant": "#5a4300",
                         "tertiary": "#553f00",
                         "on-background": "#111c2c",
-                        "on-surface-variant": "#424752",
+                        "on-surface-variant": "var(--on-surface-variant)",
                         "surface-container": "#e7eeff",
                         "inverse-surface": "#263142",
                         "secondary-fixed": "#e0e3e6",
@@ -67,7 +77,7 @@
                         "surface-variant": "#d8e3fa",
                         "primary-container": "#0057b8",
                         "on-secondary-fixed": "#191c1e",
-                        "surface-container-low": "#f0f3ff",
+                        "surface-container-low": "var(--surface-container-low)",
                         "on-primary-fixed-variant": "#004493",
                         "on-error-container": "#93000a",
                         "on-tertiary-container": "#ffcb44"
@@ -134,7 +144,8 @@
   .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
 }
 </style>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="bg-background text-on-background min-h-screen">
 <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 <!-- Flash Messages -->
@@ -154,7 +165,7 @@
   {% endif %}
 {% endwith %}
 <!-- Side Navigation Bar -->
-<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-[100]">
 <div class="mb-xl">
 <div class="flex items-center gap-md">
 <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
@@ -167,7 +178,7 @@
 </div>
 </div>
 <nav class="flex-1 space-y-base">
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('admin.admin_dash') }}">
+<a class="flex items-center gap-md px-md py-sm rounded bg-primary-fixed text-on-primary-fixed font-semibold transition-colors" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
@@ -180,11 +191,11 @@
 <span class="font-body-md text-body-md">Analytics</span>
 </a>
 <!-- Active Navigation Item: Management -->
-<a class="flex items-center gap-md px-md py-sm rounded bg-primary-fixed text-on-primary-fixed font-semibold transition-colors" href="{{ url_for('admin.admin_dash') }}">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('admin.admin_dash') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">manage_accounts</span>
 <span class="font-body-md text-body-md">Management</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('volunteer.profile_page') }}">
+<a class="flex items-center gap-md px-md py-sm rounded transition-colors text-on-surface-variant hover:bg-surface-container" href="{{ url_for('admin.settings') }}">
 <span class="material-symbols-outlined">settings</span>
 <span class="font-body-md text-body-md">Settings</span>
 </a>
@@ -205,7 +216,7 @@
 <!-- Main Content Area -->
 <main class="ml-[260px] main-content min-h-screen flex flex-col">
 <!-- Top Navigation Bar -->
-<header class="sticky top-0 right-0 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<header class="sticky top-0 right-0 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-md sm:px-lg z-40">
 <button class="md:hidden p-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()">
   <span class="material-symbols-outlined">menu</span>
 </button>
@@ -221,19 +232,20 @@
 <span class="material-symbols-outlined">notifications</span>
 <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
 </button>
-<button class="p-2 hover:bg-surface-container-low rounded-full transition-all">
+<button class="hidden sm:block p-2 hover:bg-surface-container-low rounded-full transition-all">
 <span class="material-symbols-outlined">location_on</span>
 </button>
 </div>
-<div class="h-8 w-px bg-outline-variant"></div>
-<div class="flex items-center gap-sm">
-<span class="font-label-md text-label-md text-secondary">Campus:</span>
-<select class="bg-transparent border-none font-label-md text-label-md font-bold text-primary focus:ring-0 cursor-pointer">
-<option>Lingayen (Main)</option>
-<option>Urdaneta</option>
-<option>San Carlos</option>
+<div class="hidden sm:block h-8 w-px bg-outline-variant"></div>
+<form method="GET" action="{{ url_for('admin.admin_dash') }}" class="flex items-center gap-sm">
+<span class="hidden sm:inline font-label-md text-label-md text-secondary">Campus:</span>
+<select name="campus_id" onchange="this.form.submit()" class="max-w-[130px] bg-transparent border-none font-label-md text-label-md font-bold text-primary focus:ring-0 cursor-pointer">
+<option value="">All Campuses</option>
+{% for campus in campuses %}
+<option value="{{ campus.id }}" {% if selected_campus|string == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
+{% endfor %}
 </select>
-</div>
+</form>
 </div>
 </header>
 <!-- Page Canvas -->
@@ -241,19 +253,19 @@
 <!-- System Overview Grid -->
 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 stats-grid-template gap-lg">
 <!-- Server Status -->
-<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="bg-surface border border-outline-variant admin-card p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
 <p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Server Status</p>
-<h3 class="font-headline-md text-headline-md text-on-surface">Optimal</h3>
+<h3 class="font-headline-md text-headline-md text-on-surface">{{ server_status.database }}</h3>
 <div class="flex items-center gap-xs text-primary font-label-sm">
 <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-<span>Uptime: 99.9%</span>
+<span>Uptime: {{ server_status.uptime }}</span>
 </div>
 </div>
 <span class="material-symbols-outlined text-primary text-3xl">dns</span>
 </div>
 <!-- Active Users -->
-<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="bg-surface border border-outline-variant admin-card p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
 <p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Active Users</p>
 <h3 class="font-headline-md text-headline-md text-on-surface">{{ active_users }}</h3>
@@ -265,7 +277,7 @@
 <span class="material-symbols-outlined text-primary text-3xl">group</span>
 </div>
 <!-- Pending Approvals -->
-<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<div class="bg-surface border border-outline-variant admin-card p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
 <p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Pending Approvals</p>
 <h3 class="font-headline-md text-headline-md text-on-surface">{{ pending_approvals }}</h3>
@@ -276,52 +288,33 @@
 </div>
 <span class="material-symbols-outlined text-tertiary text-3xl">approval_delegation</span>
 </div>
-<!-- Security Alerts -->
-<div class="bg-surface border border-outline-variant p-md rounded-xl flex items-start justify-between">
+<!-- Total Users -->
+<div class="bg-surface border border-outline-variant admin-card p-md rounded-xl flex items-start justify-between">
 <div class="space-y-sm">
-<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Security Alerts</p>
-<h3 class="font-headline-md text-headline-md text-on-surface">0</h3>
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider">Total Users</p>
+<h3 class="font-headline-md text-headline-md text-on-surface">{{ users|length }}</h3>
 <div class="flex items-center gap-xs text-secondary font-label-sm">
-<span class="material-symbols-outlined text-sm">check_circle</span>
-<span>System is secure</span>
+<span class="material-symbols-outlined text-sm">people</span>
+<span>All registered accounts</span>
 </div>
 </div>
-<span class="material-symbols-outlined text-secondary text-3xl">security</span>
+<span class="material-symbols-outlined text-secondary text-3xl">people</span>
 </div>
 </section>
 <!-- Main Dashboard Layout: Table and Side Panels -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
 <!-- User Management Table -->
 <section class="lg:col-span-2 space-y-md">
-<div class="bg-surface border border-outline-variant rounded-xl overflow-hidden">
+<div class="bg-surface border border-outline-variant admin-card rounded-xl overflow-hidden">
 <div class="p-md border-b border-outline-variant flex flex-wrap justify-between items-center gap-md">
 <h2 class="font-headline-sm text-headline-sm text-on-surface">User Management</h2>
 <div class="flex gap-sm">
-<select class="bg-surface-container-low border border-outline-variant rounded px-sm py-1 font-label-md text-label-md">
-<option>Role: All</option>
-<option>Admin</option>
-<option>Director</option>
-<option>Student</option>
-</select>
-<select class="bg-surface-container-low border border-outline-variant rounded px-sm py-1 font-label-md text-label-md">
-<option>Campus: All</option>
-<option>Lingayen</option>
-<option>Urdaneta</option>
-</select>
-<a href="{{ url_for('admin.create_user') }}" class="bg-primary text-on-primary px-md py-1 rounded font-label-md transition-all hover:brightness-110 flex items-center gap-xs">
+<a href="{{ url_for('admin.create_user') }}" class="bg-primary text-on-primary px-md min-h-[44px] rounded-lg font-label-md transition-all hover:bg-[#003370] hover:shadow-[0_4px_12px_rgba(0,64,139,0.2)] flex items-center gap-xs">
 <span class="material-symbols-outlined text-sm">person_add</span>
                                     Add User
                                 </a>
 </div>
 </div>
-<form method="GET" action="{{ url_for('admin.admin_dash') }}" class="flex items-center gap-sm mb-md">
-  <select name="campus_id" onchange="this.form.submit()" class="bg-surface-container-low border border-outline-variant rounded px-sm py-xs font-body-md text-body-md">
-    <option value="">All Campuses</option>
-    {% for campus in campuses %}
-    <option value="{{ campus.id }}" {% if selected_campus|string == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
-    {% endfor %}
-  </select>
-</form>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse table-responsive">
 <thead class="bg-surface-container-low border-b border-outline-variant">
@@ -365,13 +358,13 @@
     </td>
     <td class="px-md py-md text-right">
       <div class="flex justify-end gap-sm">
-        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="p-1 hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></a>
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors" title="Edit"><span class="material-symbols-outlined text-lg">edit</span></a>
         <form method="POST" action="{{ url_for('admin.deactivate_user', user_id=user.id) }}" style="display:inline">
-          <button type="submit" class="p-1 hover:text-error transition-colors" title="Suspend" onclick="return confirm('Toggle active status for this user?')"><span class="material-symbols-outlined text-lg">{% if user.is_active %}block{% else %}check_circle{% endif %}</span></button>
+          <button type="submit" class="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container-low hover:text-error transition-colors" title="Suspend" onclick="return confirm('Toggle active status for this user?')"><span class="material-symbols-outlined text-lg">{% if user.is_active %}block{% else %}check_circle{% endif %}</span></button>
         </form>
         <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}" style="display:inline" onsubmit="var p=prompt('New password (min 6 chars):'); if(p&&p.length>=6){this.querySelector('[name=new_password]').value=p;return true;}alert('Password must be 6+ chars');return false;">
           <input type="hidden" name="new_password" value="">
-          <button type="submit" class="p-1 hover:text-primary transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+          <button type="submit" class="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
         </form>
       </div>
     </td>
@@ -387,16 +380,10 @@
 </div>
 <div class="p-md bg-surface-container-low flex items-center justify-between">
 <p class="font-label-sm text-label-sm text-secondary">Showing {{ users|length }} user(s)</p>
-<div class="flex gap-base">
-<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">Previous</button>
-<button class="px-3 py-1 bg-primary text-on-primary rounded font-label-sm transition-all">1</button>
-<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">2</button>
-<button class="px-3 py-1 border border-outline-variant rounded font-label-sm hover:bg-surface-container transition-all">Next</button>
-</div>
 </div>
 </div>
 <!-- Administrative Controls Section -->
-<div class="bg-surface border border-outline-variant rounded-xl p-md">
+<div class="bg-surface border border-outline-variant admin-card rounded-xl p-md">
 <h2 class="font-headline-sm text-headline-sm text-on-surface mb-md">Administrative Controls</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-md">
 <button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
@@ -420,7 +407,7 @@
 </section>
 <!-- Sidebar Panels: Audit Logs -->
 <aside class="space-y-lg">
-<section class="bg-surface border border-outline-variant rounded-xl flex flex-col h-[600px]">
+<section class="bg-surface border border-outline-variant admin-card rounded-xl flex flex-col h-[600px]">
 <div class="p-md border-b border-outline-variant flex justify-between items-center">
 <h2 class="font-headline-sm text-headline-sm text-on-surface">Audit Logs</h2>
 <button class="text-primary font-label-md hover:underline transition-all">View All</button>
@@ -446,34 +433,12 @@
 {% endif %}
 </div>
 </section>
-<!-- Server Health Visualization -->
-<div class="bg-surface border border-outline-variant rounded-xl p-md overflow-hidden relative">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Traffic Load</h3>
-<div class="h-32 w-full flex items-end gap-1">
-<!-- Simple Animated Bar Chart -->
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 40%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 60%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 45%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 80%"></div>
-<div class="bg-primary-container flex-1 transition-all duration-1000" style="height: 95%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 70%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 55%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 85%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 40%"></div>
-<div class="bg-primary flex-1 transition-all duration-1000" style="height: 30%"></div>
-</div>
-<div class="flex justify-between mt-sm">
-<span class="font-label-sm text-label-sm text-secondary">00:00</span>
-<span class="font-label-sm text-label-sm text-secondary">12:00</span>
-<span class="font-label-sm text-label-sm text-secondary">23:59</span>
-</div>
-</div>
 </aside>
 </div>
 </div>
 <!-- Footer -->
 <footer class="mt-auto py-md px-lg bg-surface-container-lowest border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-md">
-<p class="font-label-sm text-label-sm font-bold text-primary">© 2024 Pangasinan State University. All rights reserved.</p>
+<p class="font-label-sm text-label-sm font-bold text-primary">© 2026 Pangasinan State University. All rights reserved.</p>
 <div class="flex gap-lg">
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
@@ -486,14 +451,5 @@
           document.querySelector('.sidebar').classList.toggle('open');
           document.getElementById('mobileOverlay').classList.toggle('show');
         }
-        // Simple Micro-interaction for the Traffic Load simulation
-        function updateTraffic() {
-            const bars = document.querySelectorAll('.bg-primary, .bg-primary-container');
-            bars.forEach(bar => {
-                const randomHeight = Math.floor(Math.random() * 70) + 20;
-                bar.style.height = randomHeight + '%';
-            });
-        }
-        setInterval(updateTraffic, 3000);
     </script>
 </body></html>

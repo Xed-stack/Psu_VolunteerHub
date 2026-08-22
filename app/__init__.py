@@ -23,6 +23,9 @@ def create_app(config_name='development'):
     # App configuration
     app.config.from_object(config[config_name])
 
+    if config_name == 'production' and not app.config.get('SQLALCHEMY_DATABASE_URI'):
+        raise ValueError('DATABASE_URL must be set in production')
+
     # app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///psu_volunteer_hub.db'
     # app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -59,9 +62,9 @@ def create_app(config_name='development'):
     with app.app_context():
         db.create_all()
         _seed_campuses(app)
+        _seed_interests_skills(app)
         _seed_events(app)
-        if config_name == 'development':
-            _seed_users(app)
+        _seed_users(app)
 
     # Register root routes
     @app.route('/')
@@ -88,6 +91,19 @@ def create_app(config_name='development'):
         return redirect(url_for(route))
 
     return app
+
+
+def _seed_interests_skills(app):
+    """Seed interest and skill lookup tables from config category lists."""
+    from app.models.user import Interest, Skill
+    from config import Config
+    for name in getattr(Config, 'EVENT_CATEGORIES', []):
+        if name and not Interest.query.filter_by(name=name).first():
+            db.session.add(Interest(name=name))
+    for name in getattr(Config, 'SKILL_CATEGORIES', []):
+        if name and not Skill.query.filter_by(name=name).first():
+            db.session.add(Skill(name=name))
+    db.session.commit()
 
 
 def _seed_campuses(app):

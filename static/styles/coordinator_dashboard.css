@@ -1,23 +1,23 @@
 /* ==========================================================================
    Extension Coordinator Dashboard — Design System Tokens
-   Aligned strictly with coordinator_analytics.css (teal/amber theme,
-   6px corners, JetBrains Mono data representation).
+   Aligned strictly with coordinator_analytics.css and the product's shared
+   PSU-blue / gold system (see base.css).
    ========================================================================== */
 
 :root {
-  --ca-primary: #1f6f5c;
-  --ca-primary-dark: #14503f;
-  --ca-primary-light: #dcece7;
-  --ca-text-main: #142420;
-  --ca-text-muted: #5c6f68;
-  --ca-bg-main: #f5f8f7;
+  --ca-primary: #00408b;
+  --ca-primary-dark: #003370;
+  --ca-primary-light: #d8e2ff;
+  --ca-text-main: #111c2c;
+  --ca-text-muted: #424752;
+  --ca-bg-main: #f9f9ff;
   --ca-bg-card: #ffffff;
-  --ca-border: #cfdeda;
-  --ca-accent: #e0a83e;
-  --ca-accent-dark: #7a5a15;
-  --ca-danger: #c23616;
+  --ca-border: #c2c6d4;
+  --ca-accent: #f6bf22;
+  --ca-accent-dark: #553f00;
+  --ca-danger: #ba1a1a;
   --ca-success: #2f8f5b;
-  --ca-radius: 6px;
+  --ca-radius: 8px;
   --ca-sidebar-width: 260px;
   --ca-header-height: 60px;
 }
@@ -629,4 +629,13 @@ button, input, select {
   .cd-grid-2col {
     grid-template-columns: 2fr 1fr;
   }
+}
+
+/* Accessibility: visible keyboard focus */
+.cd-app a:focus-visible,
+.cd-app button:focus-visible,
+.cd-app input:focus-visible,
+.cd-app select:focus-visible {
+  outline: 2px solid var(--ca-primary);
+  outline-offset: 2px;
 }

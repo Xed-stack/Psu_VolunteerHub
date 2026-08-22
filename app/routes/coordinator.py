@@ -41,13 +41,21 @@ def coordinator_dash():
         (confirmed_regs / total_regs * 100), 1) if total_regs > 0 else 0
     recent_activities = Registration.query.filter(Registration.event_id.in_(event_ids)).order_by(
         Registration.registered_at.desc()).limit(5).all() if event_ids else []
+
+    # Context the template needs but the route was not passing
+    campus_name = current_user.campus.name if current_user.campus else 'Campus'
+    campus_total_hours = db.session.query(db.func.sum(Attendance.hours_completed)).filter(
+        Attendance.event_id.in_(event_ids)).scalar() or 0.0 if event_ids else 0.0
+
     return render_template('coordinator/Coordinator_dash.html',
                            events=events,
                            upcoming_count=upcoming_count,
                            total_volunteers=total_volunteers,
                            attendance_rate=attendance_rate,
                            recent_activities=recent_activities,
-                           selected_status=status)
+                           selected_status=status,
+                           campus_name=campus_name,
+                           campus_total_hours=round(campus_total_hours, 1))
 
 
 @coordinator_bp.route('/create_activity', methods=['GET', 'POST'])
@@ -167,14 +175,24 @@ def export_events_csv():
 @login_required
 @role_required('coordinator')
 def analytics():
-    kpi_cards = AnalyticsAggregator.kpi_summary()
+    # All aggregations scoped to the coordinator's own campus so the page
+    # reflects the coordinator's reality, not the whole university.
+    campus_name = current_user.campus.name if current_user.campus else 'Campus'
+    kpi_cards = AnalyticsAggregator.kpi_summary(campus_id=current_user.campus_id)
     campus_data = AnalyticsAggregator.campus_stats()
     demographics = AnalyticsAggregator.role_demographics()
-    trend_data = AnalyticsAggregator.trend_data()
+    trend_data = AnalyticsAggregator.trend_data(campus_id=current_user.campus_id)
     heatmap_data = AnalyticsAggregator.heatmap_data()
+    forecast_data = AnalyticsAggregator.forecast_turnout(
+        campus_id=current_user.campus_id)
+    attendance_summary = AnalyticsAggregator.attendance_summary(
+        campus_id=current_user.campus_id)
     return render_template('coordinator/coordinator_analytics.html',
+                           campus_name=campus_name,
                            kpi_cards=kpi_cards,
                            campus_data=campus_data,
                            demographics=demographics,
                            trend_data=trend_data,
-                           heatmap_data=heatmap_data)
+                           heatmap_data=heatmap_data,
+                           forecast_data=forecast_data,
+                           attendance_summary=attendance_summary)

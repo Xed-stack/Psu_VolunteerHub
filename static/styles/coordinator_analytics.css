@@ -1,23 +1,23 @@
 /* ==========================================================================
    Coordinator Analytics Dashboard — bare CSS, mobile-first
-   Distinct token system from dashboard.css (volunteer): teal/amber instead
-   of navy/gold, sharper corners, monospace figures for data readability.
+   Uses the product's shared PSU-blue / gold token system (see base.css) so
+   the coordinator console matches the rest of the app.
    ========================================================================== */
 
 :root {
-  --ca-primary: #1f6f5c;
-  --ca-primary-dark: #14503f;
-  --ca-primary-light: #dcece7;
-  --ca-text-main: #142420;
-  --ca-text-muted: #5c6f68;
-  --ca-bg-main: #f5f8f7;
+  --ca-primary: #00408b;
+  --ca-primary-dark: #003370;
+  --ca-primary-light: #d8e2ff;
+  --ca-text-main: #111c2c;
+  --ca-text-muted: #424752;
+  --ca-bg-main: #f9f9ff;
   --ca-bg-card: #ffffff;
-  --ca-border: #cfdeda;
-  --ca-accent: #e0a83e;
-  --ca-accent-dark: #7a5a15;
-  --ca-danger: #c23616;
+  --ca-border: #c2c6d4;
+  --ca-accent: #f6bf22;
+  --ca-accent-dark: #553f00;
+  --ca-danger: #ba1a1a;
   --ca-success: #2f8f5b;
-  --ca-radius: 6px;
+  --ca-radius: 8px;
   --ca-sidebar-width: 260px;
   --ca-header-height: 60px;
 }
@@ -396,4 +396,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .ca-kpi-grid { grid-template-columns: repeat(4, 1fr); }
   .ca-intro h2 { font-size: 26px; }
   .ca-footer { flex-direction: row; justify-content: space-between; text-align: left; }
+}
+
+/* Accessibility: visible keyboard focus */
+.ca-app a:focus-visible,
+.ca-app button:focus-visible,
+.ca-app input:focus-visible,
+.ca-app select:focus-visible {
+  outline: 2px solid var(--ca-primary);
+  outline-offset: 2px;
 }

@@ -51,6 +51,34 @@ class Config:
         'Languages/Translation'
     ]
 
+    # Maps each volunteer interest (EVENT_CATEGORIES) to the skills that are
+    # most relevant, so the onboarding wizard can reveal connected skills
+    # directly when an interest is selected.
+    INTEREST_SKILL_MAP = {
+        'Environment': ['Environmental Conservation', 'Agriculture/Farming'],
+        'Education & Literacy': [
+            'Teaching/Tutoring', 'Communication/Public Speaking',
+            'Languages/Translation'
+        ],
+        'Health & Wellness': ['Medical/First Aid', 'Counseling/Psychology'],
+        'Community Development': [
+            'Organizational/Management', 'Communication/Public Speaking',
+            'Creative Arts/Design'
+        ],
+        'Disaster Response': [
+            'Disaster Response', 'Medical/First Aid', 'Engineering/Construction'
+        ],
+        'Technology & Digital': [
+            'IT/Computer Skills', 'Engineering/Construction', 'Creative Arts/Design'
+        ],
+        'Arts & Culture': [
+            'Creative Arts/Design', 'Communication/Public Speaking'
+        ],
+        'Sports & Recreation': [
+            'Organizational/Management', 'Communication/Public Speaking'
+        ],
+    }
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -62,10 +90,10 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    # NOTE: Must never raise at import time — that would break test/CLI
+    # collection whenever DATABASE_URL is unset. Enforcement happens in
+    # create_app() when the production config is actually selected.
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-
-    if not SQLALCHEMY_DATABASE_URI:
-        raise ValueError('DATABASE_URL must be set in production')
 
 
 class TestingConfig(Config):

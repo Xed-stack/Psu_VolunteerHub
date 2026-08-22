@@ -70,6 +70,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
+    campus = db.relationship(
+        'Campus', backref='users', lazy=True)
     registrations = db.relationship(
         'Registration', backref='user', lazy=True, cascade='all, delete-orphan')
     attendance_records = db.relationship(

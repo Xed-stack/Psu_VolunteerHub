@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PSU Volunteer Hub | Explore Opportunities</title>
 
   <!-- Google Fonts & Material Symbols -->
@@ -11,7 +11,8 @@
 
   <!-- Standalone Mobile-First Stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/opportunity_SRC.css') }}"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body>
 
 <div class="overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
@@ -44,13 +45,9 @@
         <span class="material-symbols-outlined">volunteer_activism</span>
         <span>Opportunities</span>
       </a>
-      <a href="{{ url_for('director.analytics') }}" class="nav-link">
+      <a href="{{ url_for('volunteer.analytics') }}" class="nav-link">
         <span class="material-symbols-outlined">analytics</span>
-        <span>Analytics</span>
-      </a>
-      <a href="{{ url_for('admin.admin_dash') }}" class="nav-link">
-        <span class="material-symbols-outlined">manage_accounts</span>
-        <span>Management</span>
+        <span>My Impact</span>
       </a>
       <a href="{{ url_for('volunteer.profile_page') }}" class="nav-link" style="margin-top: auto;">
         <span class="material-symbols-outlined">settings</span>
@@ -70,10 +67,10 @@
         <span class="material-symbols-outlined">menu</span>
       </button>
 
-      <div class="search-box">
+      <form class="search-box" method="GET" action="{{ url_for('events.opportunities') }}">
         <span class="material-symbols-outlined search-icon">search</span>
-        <input type="text" class="search-input" placeholder="Search activities, locations..."/>
-      </div>
+        <input type="search" name="search" class="search-input" placeholder="Search activities, locations..." value="{{ search_query or '' }}" aria-label="Search activities and locations"/>
+      </form>
 
       <div class="header-actions">
         <button class="icon-btn">
@@ -123,8 +120,8 @@
           <div class="filter-grid">
             
             <div class="form-group">
-              <label class="form-label">Campus</label>
-              <select name="campus" onchange="this.form.submit()" class="form-select">
+              <label class="form-label" for="f-campus">Campus</label>
+              <select name="campus" id="f-campus" onchange="this.form.submit()" class="form-select">
                 <option value="">All Campuses</option>
                 {% for campus in campuses %}
                   <option value="{{ campus.id }}" {% if selected_campus == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>
@@ -133,30 +130,18 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Category</label>
-              <select name="category" onchange="this.form.submit()" class="form-select">
+              <label class="form-label" for="f-category">Category</label>
+              <select name="category" id="f-category" onchange="this.form.submit()" class="form-select">
                 <option value="">All Categories</option>
-                <option value="Environment" {% if selected_category == 'Environment' %}selected{% endif %}>Environment</option>
-                <option value="Literacy & Education" {% if selected_category == 'Literacy & Education' %}selected{% endif %}>Literacy & Education</option>
-                <option value="Community Health" {% if selected_category == 'Community Health' %}selected{% endif %}>Community Health</option>
-                <option value="Agricultural Service" {% if selected_category == 'Agricultural Service' %}selected{% endif %}>Agricultural Service</option>
-                <option value="IT & Digital Support" {% if selected_category == 'IT & Digital Support' %}selected{% endif %}>IT & Digital Support</option>
+                {% for cat in categories %}
+                  <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Search Skills</label>
-              <input type="text" name="search" value="{{ search_query or '' }}" class="form-input" placeholder="Teaching, Coding, etc."/>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Duration</label>
-              <select class="form-select">
-                <option>Any Duration</option>
-                <option>Short-term (1 day)</option>
-                <option>Mid-term (1 week)</option>
-                <option>Long-term (Ongoing)</option>
-              </select>
+              <label class="form-label" for="f-skill">Search Skills</label>
+              <input type="text" name="search" id="f-skill" value="{{ search_query or '' }}" class="form-input" placeholder="Teaching, Coding, etc."/>
             </div>
 
           </div>
@@ -170,11 +155,6 @@
             <article class="event-card">
               <div class="card-banner">
                 <span>{{ event.category or 'Volunteer' }}</span>
-                {% if event.required_skills %}
-                  <div class="skill-match-badge">
-                    <span class="material-symbols-outlined" style="font-size: 12px;">star</span> Skill Match
-                  </div>
-                {% endif %}
               </div>
 
               <div class="card-content">
@@ -194,7 +174,9 @@
                     <span class="material-symbols-outlined" style="font-size: 16px;">group</span>
                     <span>{{ event.slots_remaining() if event.slots_remaining is defined else event.slots }} slots left</span>
                   </div>
-                  <a href="{{ url_for('events.register_for_event', event_id=event.id) }}" class="card-action-link">View Details</a>
+                  <form method="POST" action="{{ url_for('events.register_for_event', event_id=event.id) }}" style="display:inline;">
+                    <button type="submit" class="card-action-link">Register</button>
+                  </form>
                 </div>
               </div>
             </article>

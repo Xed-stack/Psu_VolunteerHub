@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"/>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/coordinator_analytics.css') }}"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body>
 
 <div class="ca-overlay" id="caOverlay" onclick="toggleCaSidebar()"></div>
@@ -50,7 +51,7 @@
     </nav>
 
     <footer class="ca-profile">
-      <img class="ca-avatar" src="{{ url_for('static', filename='assets/coordinator_pfp.png') }}" alt="Coordinator profile photo"/>
+      <img class="ca-avatar" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Coordinator profile photo"/>
       <hgroup>
         <p class="ca-profile-name">{{ current_user.name }}</p>
         <p class="ca-profile-role">{{ current_user.role_display_name }}</p>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PSU Volunteer Hub | Mobile Dashboard</title>
 
   <!-- Google Fonts & Material Symbols -->
@@ -11,7 +11,8 @@
 
   <!-- Mobile-First Stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/dashboard.css') }}"/>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body>
 
 <div class="overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
@@ -79,10 +80,6 @@
     <!-- Top Navigation Header -->
     <header class="top-header">
       <div class="left-actions">
-        <div class="mobile-menu-btn" >
-        <img class="brand-logo" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU_logo">
-        </div>
-
         <button class="mobile-menu-btn" onclick="toggleSidebar()">
           <span class="material-symbols-outlined">menu</span>
         </button>
@@ -177,7 +174,7 @@
           <section>
             <div class="section-title">
               <h3>Recommended for You</h3>
-              <a href="#" style="font-size: 12px; color: var(--color-primary);">View All</a>
+              <a href="{{ url_for('events.opportunities') }}" style="font-size: 12px; color: var(--color-primary);">View All</a>
             </div>
 
             <div class="scroll-row">
@@ -195,7 +192,7 @@
                     <p style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">{{ rec.event.description }}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                       <span style="font-size: 10px; color: var(--color-text-muted);">{{ rec.event.location or 'Campus event' }}</span>
-                      <button class="secondary-btn" style="padding: 4px 8px; font-size: 11px;">Learn More</button>
+                      <a class="secondary-btn" href="{{ url_for('events.opportunities') }}" style="padding: 4px 8px; font-size: 11px;">Learn More</a>
                     </div>
                   </div>
                 </div>

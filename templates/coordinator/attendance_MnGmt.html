@@ -20,14 +20,14 @@
                         "on-secondary-container": "#626567",
                         "surface-container-lowest": "#ffffff",
                         "on-tertiary-container": "#ffcb44",
-                        "error-container": "#ffdad6",
-                        "on-primary-fixed": "#001a41",
-                        "primary": "#00408b",
+                        "error-container": "var(--error-container)",
+                        "on-primary-fixed": "var(--on-primary-fixed)",
+                        "primary": "var(--primary)",
                         "on-secondary-fixed-variant": "#44474a",
-                        "outline-variant": "#c2c6d4",
+                        "outline-variant": "var(--outline-variant)",
                         "surface-tint": "#0d5bbc",
                         "secondary-container": "#e0e3e6",
-                        "on-surface-variant": "#424752",
+                        "on-surface-variant": "var(--on-surface-variant)",
                         "on-background": "#111c2c",
                         "on-error-container": "#93000a",
                         "inverse-on-surface": "#ebf1ff",
@@ -36,31 +36,31 @@
                         "on-tertiary": "#ffffff",
                         "on-primary-container": "#bfd2ff",
                         "inverse-surface": "#263142",
-                        "secondary": "#5b5f61",
+                        "secondary": "var(--secondary)",
                         "secondary-fixed-dim": "#c4c7ca",
                         "tertiary-fixed": "#ffdf99",
-                        "on-primary": "#ffffff",
-                        "surface-container-low": "#f0f3ff",
-                        "on-surface": "#111c2c",
+                        "on-primary": "var(--on-primary)",
+                        "surface-container-low": "var(--surface-container-low)",
+                        "on-surface": "var(--on-surface)",
                         "on-primary-fixed-variant": "#004493",
                         "surface-variant": "#d8e3fa",
                         "on-secondary": "#ffffff",
-                        "tertiary-fixed-dim": "#f6bf22",
+                        "tertiary-fixed-dim": "var(--tertiary-fixed-dim)",
                         "surface-container-high": "#dee8ff",
                         "on-error": "#ffffff",
                         "surface-bright": "#f9f9ff",
                         "primary-fixed-dim": "#adc7ff",
                         "outline": "#727784",
-                        "surface": "#f9f9ff",
+                        "surface": "var(--surface)",
                         "on-tertiary-fixed-variant": "#5a4300",
                         "on-secondary-fixed": "#191c1e",
                         "background": "#f9f9ff",
                         "secondary-fixed": "#e0e3e6",
                         "surface-container-highest": "#d8e3fa",
-                        "primary-fixed": "#d8e2ff",
+                        "primary-fixed": "var(--primary-fixed)",
                         "on-tertiary-fixed": "#251a00",
                         "tertiary": "#553f00",
-                        "error": "#ba1a1a"
+                        "error": "var(--error)"
                     },
                     "borderRadius": {
                         "DEFAULT": "0.125rem",
@@ -109,7 +109,7 @@
 <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #F5F7FA;
+            background-color: var(--surface);
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -132,6 +132,7 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #727784;
         }
+        *:focus-visible { outline: 2px solid #00408b; outline-offset: 2px; }
     </style>
 <style>
 @media (max-width: 768px) {
@@ -155,7 +156,8 @@
   .stats-grid-template { grid-template-columns: repeat(2, 1fr) !important; }
 }
 </style>
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="bg-background text-on-background">
 <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 <!-- Flash Messages -->
@@ -195,16 +197,12 @@
 <span class="font-body-md text-body-md">Opportunities</span>
 </a>
 <a class="flex items-center gap-md px-md py-sm rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold" href="{{ url_for('coordinator.attendance') }}">
-<span class="material-symbols-outlined" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="material-symbols-outlined" data-icon="fact_check" style="font-variation-settings: 'FILL' 1;">fact_check</span>
 <span class="font-body-md text-body-md">Attendance</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg transition-colors text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('admin.admin_dash') }}">
-<span class="material-symbols-outlined" data-icon="manage_accounts">manage_accounts</span>
-<span class="font-body-md text-body-md">Management</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded-lg transition-colors text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('volunteer.profile_page') }}">
-<span class="material-symbols-outlined" data-icon="settings">settings</span>
-<span class="font-body-md text-body-md">Settings</span>
+<a class="flex items-center gap-md px-md py-sm rounded-lg transition-colors text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('coordinator.analytics') }}">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-body-md text-body-md">Analytics</span>
 </a>
 </nav>
 <div class="mt-auto pt-lg border-t border-outline-variant">
@@ -416,7 +414,7 @@
 </main>
 <!-- Footer -->
 <footer class="ml-[260px] main-content py-md bg-surface-container-lowest border-t border-outline-variant flex flex-col md:flex-row justify-between items-center px-lg">
-<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<p class="font-label-md text-label-md text-secondary">© 2026 Pangasinan State University. All rights reserved.</p>
 <div class="flex gap-lg mt-xs md:mt-0">
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Privacy Policy</a>
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors underline-offset-4" href="#">Terms of Service</a>

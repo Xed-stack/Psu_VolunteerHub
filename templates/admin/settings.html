@@ -5,29 +5,70 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Settings | PSU Volunteer Hub</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary": "var(--primary)",
+            "on-primary": "var(--on-primary)",
+            "primary-fixed": "var(--primary-fixed)",
+            "on-primary-fixed": "var(--on-primary-fixed)",
+            "surface": "var(--surface)",
+            "surface-container-low": "var(--surface-container-low)",
+            "on-surface": "var(--on-surface)",
+            "on-surface-variant": "var(--on-surface-variant)",
+            "outline-variant": "var(--outline-variant)",
+            "error": "var(--error)",
+            "error-container": "var(--error-container)",
+            "secondary": "var(--secondary)",
+            "tertiary-fixed-dim": "var(--tertiary-fixed-dim)"
+          },
+          spacing: {
+            "xs": "4px", "sm": "8px", "base": "4px", "md": "16px", "lg": "24px", "xl": "32px", "2xl": "48px"
+          },
+          fontSize: {
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+          }
+        }
+      }
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-</head>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    :focus-visible { outline: 2px solid #00408b; outline-offset: 2px; border-radius: 4px; }
+    input, select, button { min-height: 44px; }
+    .transition, .transition-colors { transition-duration: 180ms; }
+  </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="bg-surface min-h-screen font-inter">
-<main class="max-w-2xl mx-auto p-lg pt-24">
+<main class="max-w-2xl mx-auto p-md sm:p-lg pt-20 sm:pt-24">
   <h1 class="font-headline-lg text-headline-lg text-primary mb-lg">System Settings</h1>
   {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="p-md mb-md rounded-lg {% if cat == 'error' %}bg-error-container text-error{% else %}bg-primary-fixed text-on-primary-fixed{% endif %}">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
-  <form method="POST" class="bg-white p-lg rounded-xl border border-outline-variant space-y-lg">
+  <form method="POST" class="bg-white p-md sm:p-lg rounded-xl border border-outline-variant space-y-lg shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,64,139,0.06)]">
     <div class="space-y-xs">
-      <label class="font-label-md text-label-md text-on-surface-variant">Community Value Rate ($/hr)</label>
-      <input name="community_value_rate" value="{{ settings.get('community_value_rate', '15') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+      <label class="font-label-md text-label-md text-on-surface-variant" for="community_value_rate">Community Value Rate ($/hr)</label>
+      <input id="community_value_rate" name="community_value_rate" value="{{ settings.get('community_value_rate', '15') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition">
     </div>
     <div class="space-y-xs">
-      <label class="font-label-md text-label-md text-on-surface-variant">Max Slots Per Event</label>
-      <input name="max_slots_per_event" value="{{ settings.get('max_slots_per_event', '100') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+      <label class="font-label-md text-label-md text-on-surface-variant" for="max_slots_per_event">Max Slots Per Event</label>
+      <input id="max_slots_per_event" name="max_slots_per_event" value="{{ settings.get('max_slots_per_event', '100') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition">
     </div>
     <div class="space-y-xs">
-      <label class="font-label-md text-label-md text-on-surface-variant">Default Password Length</label>
-      <input name="default_password_length" value="{{ settings.get('default_password_length', '8') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm">
+      <label class="font-label-md text-label-md text-on-surface-variant" for="default_password_length">Default Password Length</label>
+      <input id="default_password_length" name="default_password_length" value="{{ settings.get('default_password_length', '8') }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition">
     </div>
-    <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:opacity-90">Save Settings</button>
+    <button type="submit" class="min-h-[44px] w-full sm:w-auto bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md hover:bg-[#003370] hover:shadow-[0_4px_12px_rgba(0,64,139,0.2)] active:opacity-90 transition">Save Settings</button>
   </form>
-  <a href="{{ url_for('admin.admin_dash') }}" class="inline-block mt-md text-primary font-label-md hover:underline">← Back to Admin Dashboard</a>
+  <a href="{{ url_for('admin.admin_dash') }}" class="inline-flex items-center min-h-[44px] mt-md text-primary font-label-md hover:underline transition-colors">← Back to Admin Dashboard</a>
 </main>
 </body>
 </html>

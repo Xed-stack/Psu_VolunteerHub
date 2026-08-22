@@ -1,37 +1,271 @@
 :root {
     --color-primary: #00408b;
-    --color-primary-hover: #386eb1;
+    --color-primary-hover: #003370;
+    --color-container: #0057b8;
+    --color-gold: #f6bf22;
     --color-primary-light: #d8e2ff;
-    --color-text-main: #111c2c;
-    --color-text-muted: #5b5f61;
     --color-bg-main: #f9f9ff;
     --color-bg-card: #ffffff;
+    --color-text-main: #111c2c;
+    --color-text-muted: #424752;
     --color-border: #c2c6d4;
-    --border-radius: 12px;
+
+    --border-radius-sm: 8px;
+    --border-radius-lg: 12px;
+    --transition-speed: 0.2s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
     background-color: var(--color-bg-main);
-    font-family: system-ui, -apple-system, sans-serif;
     color: var(--color-text-main);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
 }
 
-.form-container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
+/* Material Icons Setup */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Flexible & Responsive Grid */
+/* Decorative Background Glows (matches login) */
+.bg-glow {
+    position: absolute;
+    border-radius: 50%;
+    z-index: 0;
+    opacity: 0.4;
+}
+.top-glow {
+    top: -10%;
+    left: -5%;
+    width: 40%;
+    height: 60%;
+    background-color: var(--color-primary-light);
+    filter: blur(120px);
+}
+.bottom-glow {
+    bottom: -10%;
+    right: -5%;
+    width: 30%;
+    height: 50%;
+    background-color: #cfdaf1;
+    filter: blur(100px);
+}
+
+/* Centered Card Layout */
+.interests-wrapper {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+}
+
+.interests-card {
+    width: 100%;
+    max-width: 760px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    padding: 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 64, 139, 0.06);
+}
+
+/* Header & Branding */
+.interests-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.brand-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.brand-logo {
+    height: 48px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+}
+
+.brand-wordmark {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--color-primary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.step-hint {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-container);
+    background-color: var(--color-primary-light);
+    padding: 7px 16px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+}
+
+.step-hint-icon {
+    font-size: 16px;
+}
+
+.interests-header h1 {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+}
+
+.helper-copy {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* Interest Tile Grid */
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 16px;
+    align-items: start;
     margin-bottom: 24px;
 }
 
 .card-item {
     position: relative;
+}
+
+/* Full-width reveal of related skills, below the tile grid */
+.skills-reveal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.skill-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-sm);
+    transition: grid-template-rows 0.3s ease, opacity 0.25s ease, padding 0.3s ease,
+                margin-top 0.3s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.skill-panel-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.skill-panel.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-top: 4px;
+    padding: 16px;
+    background-color: var(--color-bg-main);
+    border-color: var(--color-border);
+}
+
+.skill-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.skill-panel-icon {
+    font-size: 18px;
+}
+
+.skill-panel-muted {
+    font-weight: 400;
+    font-style: italic;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.skill-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.skill-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-main);
+    background-color: var(--color-bg-card);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.skill-chip:hover {
+    border-color: var(--color-container);
+}
+
+.skill-chip input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.skill-chip-check {
+    font-size: 16px;
+    color: transparent;
+    transition: color 0.15s ease;
+}
+
+.skill-chip:has(input:checked) {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.skill-chip:has(input:checked) .skill-chip-check {
+    color: var(--color-gold);
+}
+
+.skill-chip:has(input:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 /* Visually hide checkbox while keeping accessible */
@@ -42,52 +276,197 @@ body {
     height: 0;
 }
 
-/* Default state of card */
 .card-label {
     display: flex;
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--transition-speed);
+}
+
+.card-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100px;
+    gap: 8px;
+    width: 100%;
+    max-width: 170px;
+    margin: 0 auto;
+    min-height: 104px;
     padding: 16px;
-    border: 2px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background-color: var(--color-bg-card);
-    cursor: pointer;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-bg-main);
     text-align: center;
-    user-select: none;
-    transition: all 0.2s ease-in-out;
+    transition: inherit;
 }
 
-.card-label:hover {
-    border-color: var(--color-primary-hover);
+.card-icon {
+    font-size: 28px;
+    color: var(--color-text-muted);
+    transition: color var(--transition-speed);
+}
+
+.card-content h3 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-text-main);
+    transition: color var(--transition-speed);
+}
+
+/* Selection check badge (hidden until checked) */
+.card-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 20px;
+    color: transparent;
+    transform: scale(0.6);
+    transition: all var(--transition-speed);
+}
+
+.card-label:hover .card-content {
+    border-color: var(--color-container);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 64, 139, 0.1);
 }
 
-/* Checked state styling using sibling selector (+) */
-.card-input:checked + .card-label {
+/* Checked state via sibling selector */
+.card-input:checked + .card-label .card-content {
     border-color: var(--color-primary);
     background-color: var(--color-primary-light);
-    color: var(--color-primary);
-    box-shadow: 0 4px 12px rgba(0, 64, 139, 0.15);
+    box-shadow: 0 0 0 1px var(--color-primary), 0 4px 12px rgba(0, 64, 139, 0.15);
 }
 
-/* Submit Button */
+.card-input:checked + .card-label .card-icon,
+.card-input:checked + .card-label h3 {
+    color: var(--color-primary);
+}
+
+.card-input:checked + .card-label .card-check {
+    color: var(--color-gold);
+    transform: scale(1);
+}
+
+/* Keyboard focus ring */
+.card-input:focus-visible + .card-label .card-content {
+    border-color: var(--color-container);
+    box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.25);
+}
+
+/* Primary CTA — mirrors signup button */
 .btn-submit {
     display: block;
     width: 100%;
-    max-width: 200px;
-    padding: 12px 24px;
+    max-width: 320px;
     margin: 0 auto;
+    padding: 12px;
     background-color: var(--color-primary);
     color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
+    font-family: inherit;
+    font-size: 15px;
     font-weight: 600;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all var(--transition-speed);
 }
 
 .btn-submit:hover {
     background-color: var(--color-primary-hover);
+    box-shadow: 0 4px 12px rgba(0, 64, 139, 0.15);
+}
+
+.btn-submit:active {
+    transform: translateY(1px);
+}
+
+.btn-submit:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Back / Continue row used on the skills step */
+.btn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.btn-row .btn-submit {
+    flex: 1;
+    margin: 0;
+    max-width: none;
+}
+
+.btn-secondary {
+    flex: 0 0 auto;
+    padding: 12px 20px;
+    background-color: var(--color-bg-main);
+    color: var(--color-primary);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+}
+
+.btn-secondary:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary-light);
+}
+
+.btn-secondary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .interests-wrapper {
+        padding: 24px 16px;
+        align-items: flex-start;
+    }
+    .interests-card {
+        padding: 24px 20px;
+    }
+    .interests-header h1 {
+        font-size: 26px;
+    }
+    .brand-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    .btn-submit {
+        max-width: none;
+    }
+}
+
+@media (max-width: 400px) {
+    .card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

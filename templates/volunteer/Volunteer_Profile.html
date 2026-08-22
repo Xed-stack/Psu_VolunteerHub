@@ -10,7 +10,8 @@
     
     <!-- Link to external CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/profile.css') }}">
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="app-body">
 
     <!-- Mobile Navigation Overlay -->
@@ -52,13 +53,9 @@
                 <span class="material-symbols-outlined">volunteer_activism</span>
                 <span>Opportunities</span>
             </a>
-            <a class="nav-item" href="{{ url_for('director.analytics') }}">
+            <a class="nav-item" href="{{ url_for('volunteer.analytics') }}">
                 <span class="material-symbols-outlined">analytics</span>
-                <span>Analytics</span>
-            </a>
-            <a class="nav-item" href="{{ url_for('admin.admin_dash') }}">
-                <span class="material-symbols-outlined">manage_accounts</span>
-                <span>Management</span>
+                <span>My Impact</span>
             </a>
             <a class="nav-item active" href="{{ url_for('volunteer.profile_page') }}" aria-current="page">
                 <span class="material-symbols-outlined filled-icon">settings</span>
@@ -246,3 +243,40 @@
                     <!-- Activity History Table (unchanged logic; route now passes last 5 registrations) -->
                     <article class="card card-flush">
                         <header class="card-header-row p-card">
+                            <h3 class="card-title">Activity History</h3>
+                            <a class="link-primary" href="{{ url_for('events.opportunities') }}">Browse Opportunities</a>
+                        </header>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Activity</th>
+                                        <th scope="col">Date Registered</th>
+                                        <th scope="col">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reg in registrations %}
+                                    <tr>
+                                        <td>{{ reg.event.title if reg.event else '—' }}</td>
+                                        <td>{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else '—' }}</td>
+                                        <td><span class="status-pill status-{{ reg.status }}">{{ reg.status.title() }}</span></td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="3" class="empty-cell">No activities yet — explore opportunities to get started.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+            </section>
+        </div>
+    </main>
+    <footer class="app-footer">
+        <p>&copy; Pangasinan State University &mdash; PSU Volunteer Hub</p>
+    </footer>
+</body>
+</html>

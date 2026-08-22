@@ -2,9 +2,11 @@
 :root {
   --color-primary: #00408b;
   --color-primary-hover: #003370;
+  --color-secondary: #0057b8;
   --color-primary-light: #d8e2ff;
+  --color-surface-low: #f1f4fb;
   --color-text-main: #111c2c;
-  --color-text-muted: #5b5f61;
+  --color-text-muted: #424752;
   --color-bg-main: #f9f9ff;
   --color-bg-card: #ffffff;
   --color-border: #c2c6d4;
@@ -13,6 +15,9 @@
   --color-warning: #e00f00;
   --sidebar-width: 280px;
   --border-radius: 12px;
+  --control-radius: 8px;
+  --shadow-sm: 0 1px 3px rgba(17, 28, 44, 0.06), 0 1px 2px rgba(17, 28, 44, 0.04);
+  --shadow-md: 0 4px 14px rgba(17, 28, 44, 0.08);
   --header-height: 60px;
 }
 
@@ -26,7 +31,7 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--color-bg-main);
   color: var(--color-text-main);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
 }
@@ -41,6 +46,28 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+}
+
+/* Focus visibility for keyboard users */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(0, 64, 139, 0.45);
+  outline-offset: 2px;
+  border-radius: var(--control-radius);
+}
+
+/* Comfortable tap targets */
+input,
+select,
+button,
+.btn-primary,
+.primary-btn,
+.secondary-btn,
+.accent-btn {
+  min-height: 44px;
 }
 
 /* ==========================================================================
@@ -149,6 +176,12 @@ button {
   border-radius: var(--border-radius);
   color: var(--color-text-muted);
   font-weight: 500;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.nav-link:hover {
+  background-color: var(--color-surface-low);
+  color: var(--color-primary);
 }
 
 .nav-link.active {
@@ -166,7 +199,7 @@ button {
   gap: 12px;
 }
 .user-profile-widget .log-out-btn{
-  margin-left: 5.5rem;
+  margin-left: auto;
   color: var(--color-text-muted);
 }
 
@@ -275,9 +308,15 @@ button {
   width: 100%;
   background-color: #ffffff;
   border: 1px solid var(--color-border);
-  border-radius: 20px;
-  padding: 6px 12px 6px 34px;
-  font-size: 13px;
+  border-radius: var(--control-radius);
+  padding: 8px 12px 8px 34px;
+  font-size: 14px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .header-actions {
@@ -332,15 +371,19 @@ button {
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
-  border-radius: var(--border-radius);
+  border-radius: var(--control-radius);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   text-align: center;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .primary-btn { background-color: var(--color-primary); color: #ffffff; }
+.primary-btn:hover { background-color: var(--color-primary-hover); }
 .secondary-btn { border: 1px solid var(--color-primary); color: var(--color-primary); }
+.secondary-btn:hover { background-color: var(--color-primary-light); }
 .accent-btn { background-color: var(--color-accent); color: var(--color-accent-dark); font-weight: 700; }
+.accent-btn:hover { background-color: #e9b41f; }
 
 /* Mobile Stats: 2-Column Grid Default */
 .stats-grid {
@@ -354,16 +397,24 @@ button {
   background-color: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
-  padding: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card.featured {
-  grid-column: span 2; /* Spans full width on mobile grid */
-  background-color: var(--color-primary);
+  grid-column: 1 / -1; /* Spans full width on mobile grid */
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: #ffffff;
+  border-color: transparent;
 }
 
 .stat-header {
@@ -373,7 +424,7 @@ button {
 }
 
 .stat-icon {
-  padding: 6px;
+  padding: 8px;
   border-radius: var(--border-radius);
   background-color: var(--color-primary-light);
   color: var(--color-primary);
@@ -426,6 +477,13 @@ button {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.opportunity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .card-badge-container {
@@ -447,6 +505,8 @@ button {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
@@ -487,6 +547,7 @@ button {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   padding: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .progress-track {
@@ -500,7 +561,9 @@ button {
 
 .progress-fill {
   height: 100%;
-  background-color: var(--color-primary);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  border-radius: 4px;
+  transition: width 0.5s ease;
 }
 
 /* Schedule List */
@@ -512,6 +575,12 @@ button {
   border-radius: var(--border-radius);
   padding: 12px;
   margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.18s ease;
+}
+
+.schedule-item:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .date-box {
@@ -519,8 +588,8 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
-  height: 46px;
+  min-width: 48px;
+  height: 48px;
   background-color: var(--color-primary-light);
   color: var(--color-primary);
   border-radius: var(--border-radius);

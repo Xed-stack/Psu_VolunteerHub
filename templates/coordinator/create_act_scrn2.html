@@ -20,14 +20,14 @@
                         "on-secondary-container": "#626567",
                         "surface-container-lowest": "#ffffff",
                         "on-tertiary-container": "#ffcb44",
-                        "error-container": "#ffdad6",
-                        "on-primary-fixed": "#001a41",
-                        "primary": "#00408b",
+                        "error-container": "var(--error-container)",
+                        "on-primary-fixed": "var(--on-primary-fixed)",
+                        "primary": "var(--primary)",
                         "on-secondary-fixed-variant": "#44474a",
-                        "outline-variant": "#c2c6d4",
+                        "outline-variant": "var(--outline-variant)",
                         "surface-tint": "#0d5bbc",
                         "secondary-container": "#e0e3e6",
-                        "on-surface-variant": "#424752",
+                        "on-surface-variant": "var(--on-surface-variant)",
                         "on-background": "#111c2c",
                         "on-error-container": "#93000a",
                         "inverse-on-surface": "#ebf1ff",
@@ -36,31 +36,31 @@
                         "on-tertiary": "#ffffff",
                         "on-primary-container": "#bfd2ff",
                         "inverse-surface": "#263142",
-                        "secondary": "#5b5f61",
+                        "secondary": "var(--secondary)",
                         "secondary-fixed-dim": "#c4c7ca",
                         "tertiary-fixed": "#ffdf99",
-                        "on-primary": "#ffffff",
-                        "surface-container-low": "#f0f3ff",
-                        "on-surface": "#111c2c",
+                        "on-primary": "var(--on-primary)",
+                        "surface-container-low": "var(--surface-container-low)",
+                        "on-surface": "var(--on-surface)",
                         "on-primary-fixed-variant": "#004493",
                         "surface-variant": "#d8e3fa",
                         "on-secondary": "#ffffff",
-                        "tertiary-fixed-dim": "#f6bf22",
+                        "tertiary-fixed-dim": "var(--tertiary-fixed-dim)",
                         "surface-container-high": "#dee8ff",
                         "on-error": "#ffffff",
                         "surface-bright": "#f9f9ff",
                         "primary-fixed-dim": "#adc7ff",
                         "outline": "#727784",
-                        "surface": "#f9f9ff",
+                        "surface": "var(--surface)",
                         "on-tertiary-fixed-variant": "#5a4300",
                         "on-secondary-fixed": "#191c1e",
                         "background": "#f9f9ff",
                         "secondary-fixed": "#e0e3e6",
                         "surface-container-highest": "#d8e3fa",
-                        "primary-fixed": "#d8e2ff",
+                        "primary-fixed": "var(--primary-fixed)",
                         "on-tertiary-fixed": "#251a00",
                         "tertiary": "#553f00",
-                        "error": "#ba1a1a"
+                        "error": "var(--error)"
                     },
                     "borderRadius": {
                         "DEFAULT": "0.125rem",
@@ -95,7 +95,7 @@
         }
     </script>
 <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f5f7fa; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--surface); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .form-input-focus:focus {
             outline: none;
@@ -108,10 +108,25 @@
         ::-webkit-scrollbar-thumb { background: #c2c6d4; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #727784; }
     </style>
-</head>
+<style>
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; transition: transform 0.3s ease; }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0 !important; }
+    .coordinator-footer { margin-left: 0 !important; }
+    .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99; }
+    .mobile-overlay.show { display: block; }
+    .header-fixed { width: 100% !important; left: 0 !important; right: auto !important; }
+  }
+  *:focus-visible { outline: 2px solid #00408b; outline-offset: 2px; }
+</style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+    </head>
 <body class="text-on-surface">
+<!-- Mobile sidebar overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
 <!-- Side Navigation Bar -->
-<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
+<aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-50">
 <div class="flex items-center gap-sm mb-2xl">
 <div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
 <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">school</span>
@@ -126,21 +141,17 @@
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg sidebar-active transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
+                <a class="flex items-center gap-md p-md rounded-lg transition-colors duration-200" href="{{ url_for('events.opportunities') }}">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
 <span class="font-body-md text-body-md">Opportunities</span>
 </a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.analytics') }}">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('coordinator.attendance') }}">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-body-md text-body-md">Attendance</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('coordinator.analytics') }}">
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md text-body-md">Analytics</span>
-</a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('admin.admin_dash') }}">
-<span class="material-symbols-outlined">manage_accounts</span>
-<span class="font-body-md text-body-md">Management</span>
-</a>
-<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-body-md text-body-md">Settings</span>
 </a>
 </nav>
 <div class="mt-auto pt-lg border-t border-outline-variant">
@@ -159,7 +170,10 @@
 </div>
 </aside>
 <!-- Top Utility Bar -->
-<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<header class="header-fixed fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-lg z-40">
+<button class="md:hidden p-2 -ml-2 text-primary hover:bg-surface-container-low rounded-lg transition-colors" onclick="toggleSidebar()" aria-label="Toggle navigation">
+<span class="material-symbols-outlined">menu</span>
+</button>
 <div class="flex items-center bg-surface-container-low rounded-full px-md py-xs w-96 border border-outline-variant focus-within:border-primary transition-all">
 <span class="material-symbols-outlined text-on-surface-variant mr-sm">search</span>
 <input class="bg-transparent border-none focus:ring-0 text-body-md w-full" placeholder="Search activities, volunteers..." type="text"/>
@@ -181,7 +195,7 @@
 </div>
 </header>
 <!-- Main Content Canvas -->
-<main class="ml-[260px] mt-16 p-lg max-w-[1440px]">
+<main class="ml-[260px] main-content mt-16 p-lg max-w-[1440px]">
 <!-- Breadcrumbs & Header -->
 <div class="mb-xl">
 <nav class="flex items-center gap-xs text-secondary font-label-md text-label-md mb-xs">
@@ -197,16 +211,17 @@
 <p class="font-body-md text-body-md text-on-surface-variant">Establish a new volunteer engagement program for the university community.</p>
 </div>
 <div class="flex gap-md">
-<button class="px-xl py-md rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary-fixed-dim transition-all">
+                <button type="submit" form="createActivityForm" name="action" value="draft" class="px-xl py-md rounded-lg border border-primary text-primary font-label-sm text-label-sm hover:bg-primary-fixed-dim transition-all">
                         Save Draft
                     </button>
-<button class="px-xl py-md rounded-lg bg-primary text-white font-label-sm text-label-sm shadow-sm hover:bg-primary-container transition-all">
+                <button type="submit" form="createActivityForm" name="action" value="publish" class="px-xl py-md rounded-lg bg-primary text-white font-label-sm text-label-sm shadow-sm hover:bg-primary-container transition-all">
                         Publish Activity
                     </button>
 </div>
 </div>
 </div>
-<div class="grid grid-cols-12 gap-xl">
+        <form id="createActivityForm" action="{{ url_for('coordinator.create_activity') }}" method="POST">
+        <div class="grid grid-cols-12 gap-xl">
 <!-- Left Column: Form Sections -->
 <div class="col-span-12 lg:col-span-8 space-y-xl">
 <!-- Section 1: Basic Information -->
@@ -365,12 +380,13 @@
 </div>
 </div>
 </div>
-</div>
+        </div>
+        </form>
 </main>
 <!-- Footer -->
-<footer class="ml-[260px] border-t border-outline-variant mt-2xl bg-surface-container-lowest">
+<footer class="ml-[260px] coordinator-footer border-t border-outline-variant mt-2xl bg-surface-container-lowest">
 <div class="max-w-[1440px] px-lg py-md flex flex-col md:flex-row justify-between items-center">
-<p class="font-label-md text-label-md text-secondary">© 2024 Pangasinan State University. All rights reserved.</p>
+<p class="font-label-md text-label-md text-secondary">© 2026 Pangasinan State University. All rights reserved.</p>
 <div class="flex items-center gap-lg mt-md md:mt-0">
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Privacy Policy</a>
 <a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Terms of Service</a>
@@ -379,6 +395,10 @@
 </div>
 </footer>
 <script>
+        function toggleSidebar() {
+          document.querySelector('.sidebar').classList.toggle('open');
+          document.getElementById('mobileOverlay').classList.toggle('show');
+        }
         // Simple toggle simulation
         document.querySelectorAll('.cursor-pointer').forEach(toggle => {
             toggle.addEventListener('click', function() {
