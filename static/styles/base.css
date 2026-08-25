@@ -197,7 +197,16 @@
     border-radius: var(--radius-card);
     box-shadow: var(--card-shadow);
     padding: 20px;
+    min-width: 0;
 }
+
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .card__title,
 .panel-title {
     font-size: 18px;
@@ -263,4 +272,11 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* Prevent horizontal scroll from off-canvas sidebars / decorative elements.
+   Tables and scroll-rows already manage their own internal overflow. */
+html,
+body {
+    overflow-x: hidden;
 }
