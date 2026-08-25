@@ -82,12 +82,13 @@ input, select, button, .btn-primary { min-height: 44px; }
 
 .nav-menu { flex: 1; padding: 0 12px; display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
-    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-    border-radius: var(--radius); color: var(--text); text-decoration: none;
-    font-size: 14px; transition: background 0.18s ease, color 0.18s ease;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; color: var(--on-surface-variant); text-decoration: none;
+  font-size: 15px; font-weight: 500;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
 }
-.nav-item:hover { background: var(--primary-light); }
-.nav-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+.nav-item:hover { background: var(--surface-container-low); color: var(--on-surface); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
 
 .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
 .user-brief { display: flex; align-items: center; gap: 12px; font-style: normal; }
@@ -158,9 +159,9 @@ input, select, button, .btn-primary { min-height: 44px; }
 
 /* Cards & Generic Elements */
 .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-card); padding: 20px;
-    box-shadow: var(--shadow-sm);
+  background: var(--surface-lowest); border: 1px solid var(--outline-variant);
+  border-radius: 12px; padding: 20px;
+  box-shadow: var(--card-shadow);
 }
 .card-flush { padding: 0; }
 .card-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
@@ -252,21 +253,39 @@ input, select, button, .btn-primary { min-height: 44px; }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 .form-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 .form-textarea {
-    width: 100%; border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px; font-size: 13px; font-family: inherit; outline: none;
+  width: 100%; border: 1px solid var(--outline-variant); border-radius: 8px;
+  padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff;
+  color: var(--on-surface); outline: none;
+  transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
-.form-textarea:focus { border-color: var(--primary); }
+.form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 64, 139, .15); }
 
 .btn-primary {
-    background: var(--primary); color: #fff; border: none; padding: 8px 16px;
-    border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid transparent;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
 }
 .btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:active { transform: translateY(1px); }
 .btn-outline-sm {
-    padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px;
-    background: transparent; font-size: 11px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 4px 8px; border: 1px solid var(--primary); border-radius: 8px;
+  background: transparent; color: var(--primary); font-size: 11px; cursor: pointer;
+  transition: background-color var(--transition-speed) ease;
 }
-.btn-outline-sm:hover { background: var(--surface-low); }
+.btn-outline-sm:hover { background: var(--primary-light); }
 
 .link-primary { color: var(--primary); font-size: 12px; text-decoration: none; font-weight: 500; }
 .link-primary:hover { text-decoration: underline; }

@@ -171,22 +171,25 @@ button,
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px; /* Larger touch target for mobile */
-  border-radius: var(--border-radius);
-  color: var(--color-text-muted);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  font-size: 15px;
   font-weight: 500;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition: background-color var(--transition-speed) ease,
+              color var(--transition-speed) ease;
 }
 
 .nav-link:hover {
-  background-color: var(--color-surface-low);
-  color: var(--color-primary);
+  background-color: var(--surface-container-low);
+  color: var(--on-surface);
 }
 
 .nav-link.active {
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
+  background-color: var(--primary-light);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -315,8 +318,8 @@ button,
 }
 
 .search-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 64, 139, .15);
 }
 
 .header-actions {
@@ -365,23 +368,35 @@ button,
   justify-content: center;
 }
 
-/* Buttons */
+/* Buttons — unified to shared .btn spec (base.css) */
 .primary-btn, .secondary-btn, .accent-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: var(--control-radius);
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
   font-weight: 600;
-  font-size: 14px;
-  text-align: center;
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease,
+              border-color var(--transition-speed) ease,
+              box-shadow var(--transition-speed) ease,
+              transform var(--transition-speed) ease;
 }
+.primary-btn:active, .secondary-btn:active, .accent-btn:active { transform: translateY(1px); }
 
-.primary-btn { background-color: var(--color-primary); color: #ffffff; }
-.primary-btn:hover { background-color: var(--color-primary-hover); }
-.secondary-btn { border: 1px solid var(--color-primary); color: var(--color-primary); }
-.secondary-btn:hover { background-color: var(--color-primary-light); }
+.primary-btn { background-color: var(--primary); color: #ffffff; }
+.primary-btn:hover { background-color: var(--primary-hover); }
+
+.secondary-btn { background-color: transparent; border-color: var(--primary); color: var(--primary); }
+.secondary-btn:hover { background-color: var(--primary-light); }
+
 .accent-btn { background-color: var(--color-accent); color: var(--color-accent-dark); font-weight: 700; }
 .accent-btn:hover { background-color: #e9b41f; }
 
@@ -401,7 +416,7 @@ button,
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -477,7 +492,7 @@ button,
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -505,7 +520,7 @@ button,
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   overflow-x: auto;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -547,7 +562,7 @@ button,
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   padding: 16px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
 }
 
 .progress-track {
@@ -575,7 +590,7 @@ button,
   border-radius: var(--border-radius);
   padding: 12px;
   margin-bottom: 8px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
   transition: box-shadow 0.18s ease;
 }
 

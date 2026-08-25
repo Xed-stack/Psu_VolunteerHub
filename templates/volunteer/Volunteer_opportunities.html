@@ -45,7 +45,17 @@
         <span class="material-symbols-outlined">volunteer_activism</span>
         <span>Opportunities</span>
       </a>
-      <a href="{{ url_for('volunteer.analytics') }}" class="nav-link">
+      {% set my_impact_url = url_for('volunteer.analytics') %}
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'director' %}
+          {% set my_impact_url = url_for('director.analytics') %}
+        {% elif current_user.role == 'coordinator' %}
+          {% set my_impact_url = url_for('coordinator.analytics') %}
+        {% elif current_user.role == 'admin' %}
+          {% set my_impact_url = url_for('admin.admin_dash') %}
+        {% endif %}
+      {% endif %}
+      <a href="{{ my_impact_url }}" class="nav-link">
         <span class="material-symbols-outlined">analytics</span>
         <span>My Impact</span>
       </a>

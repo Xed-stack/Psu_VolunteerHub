@@ -97,6 +97,162 @@
     --border: #c2c6d4;
 }
 
+/* ===========================================================================
+ * Shared component primitives
+ * ---------------------------------------------------------------------------
+ * One visual language for the whole product. Both the hand-written CSS pages
+ * and the Tailwind pages should resolve their buttons, inputs, cards and nav
+ * links to these rules so every screen looks like the same app.
+ * =========================================================================== */
+
+/* Buttons ----------------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;                 /* touch target (a11y) */
+    padding: 10px 20px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--transition-speed) ease,
+                border-color var(--transition-speed) ease,
+                box-shadow var(--transition-speed) ease,
+                transform var(--transition-speed) ease;
+}
+.btn:focus-visible {
+    outline: 3px solid rgba(0, 64, 139, .35);
+    outline-offset: 2px;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn--primary { background: var(--primary); color: var(--on-primary); }
+.btn--primary:hover { background: var(--primary-hover); }
+
+.btn--secondary { background: var(--secondary); color: #fff; }
+.btn--secondary:hover { background: #4a4e50; }
+
+.btn--outline {
+    background: transparent;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn--outline:hover { background: var(--primary-light); }
+
+.btn--ghost {
+    background: transparent;
+    color: var(--on-surface-variant);
+}
+.btn--ghost:hover { background: var(--surface-container-low); }
+
+.btn--block { display: flex; width: 100%; }
+.btn--sm { min-height: 36px; padding: 7px 14px; font-size: 14px; border-radius: 8px; }
+.btn--lg { min-height: 52px; padding: 13px 26px; font-size: 16px; }
+
+/* Form fields ------------------------------------------------------------- */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field__label,
+.field-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+}
+.input,
+.select,
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 16px;                /* >=16px avoids iOS zoom */
+    color: var(--on-surface);
+    background: #fff;
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+    transition: border-color var(--transition-speed) ease,
+                box-shadow var(--transition-speed) ease;
+}
+.input:focus,
+.select:focus,
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 64, 139, .15);
+}
+.input--invalid,
+.form-input.is-invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px var(--error-container);
+}
+
+/* Surfaces / cards -------------------------------------------------------- */
+.card {
+    background: var(--surface-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    padding: 20px;
+}
+.card__title,
+.panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--on-surface);
+    margin-bottom: 12px;
+}
+
+/* Page header ------------------------------------------------------------- */
+.page-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--on-surface);
+    letter-spacing: -0.01em;
+}
+.page-subtitle {
+    font-size: 15px;
+    color: var(--on-surface-variant);
+    margin-top: 4px;
+}
+
+/* Navigation links (sidebar / topbar) ------------------------------------ */
+.navlink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--on-surface-variant);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: background-color var(--transition-speed) ease,
+                color var(--transition-speed) ease;
+}
+.navlink:hover { background: var(--surface-container-low); color: var(--on-surface); }
+.navlink--active {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Badges ------------------------------------------------------------------ */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge--primary { background: var(--primary-light); color: var(--primary); }
+.badge--neutral { background: var(--surface-container-low); color: var(--on-surface-variant); }
+
 /* Respect users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
     *,

@@ -117,7 +117,7 @@
 <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f9f9ff;
+        background-color: var(--surface);
         font-size: 16px;
         line-height: 1.5;
       }
@@ -128,11 +128,11 @@
         transition: height 1s ease-in-out;
       }
       /* Custom PSU Yellow/Gold implementation from tertiary */
-      .bg-psu-gold { background-color: #f6bf22; }
-      .text-psu-gold { color: #f6bf22; }
+      .bg-psu-gold { background-color: var(--gold); }
+      .text-psu-gold { color: var(--gold); }
       /* Accessible focus states */
       a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
-        outline: 2px solid #00408b;
+        outline: 2px solid var(--primary);
         outline-offset: 2px;
         border-radius: 6px;
       }
@@ -196,7 +196,7 @@
 </div>
 <nav class="flex-1 space-y-base">
 <!-- Active: Dashboard -->
-<a class="flex items-center gap-md p-md min-h-[44px] bg-primary-fixed text-on-primary-fixed font-semibold rounded-lg transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
+<a class="flex items-center gap-md p-md min-h-[44px] bg-primary-fixed text-primary font-semibold rounded-lg transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md text-body-md">Dashboard</span>
 </a>
