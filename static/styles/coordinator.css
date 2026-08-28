@@ -1,0 +1,7 @@
+@import url("role-shell.css");
+.role-page--coordinator { --role-accent: #00408b; --role-soft: #d8e2ff; }
+.role-page--coordinator .role-brand small { color:var(--primary); }
+.readiness-list { display:grid; gap:12px; }
+.readiness-item { padding:16px; border:1px solid var(--outline-variant); border-radius:12px; background:#fff; }
+.meter { height:8px; overflow:hidden; border-radius:999px; background:var(--primary-light); }
+.meter > span { display:block; height:100%; background:var(--primary); }

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PSU Volunteer Hub{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='assets/PSU-logo.png') }}" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/' ~ current_user.role ~ '.css') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body class="role-page role-page--{{ current_user.role }}">
+  <div class="shell-overlay" id="shellOverlay" data-sidebar-close></div>
+  {% include 'partials/sidebar.html' %}
+  <div class="role-shell">
+    <header class="role-topbar">
+      <button class="icon-button role-menu-button" type="button" data-sidebar-toggle aria-label="Open navigation" aria-controls="roleSidebar" aria-expanded="false"><span class="material-symbols-outlined">menu</span></button>
+      <div class="role-topbar__title"><strong>{% block header_title %}PSU Volunteer Hub{% endblock %}</strong><span>{% block header_subtitle %}{% endblock %}</span></div>
+      <div class="role-topbar__actions">{% block header_actions %}{% endblock %}</div>
+    </header>
+    {% include 'partials/flash_messages.html' %}
+    <main class="role-content">{% block content %}{% endblock %}</main>
+    <footer class="role-footer"><span><strong>PSU Volunteer Hub</strong> · © 2026 Pangasinan State University</span><span>Excellence in Service</span></footer>
+  </div>
+  <script>
+    (() => {
+      const sidebar = document.getElementById('roleSidebar');
+      const overlay = document.getElementById('shellOverlay');
+      const toggle = document.querySelector('[data-sidebar-toggle]');
+      const close = () => { sidebar?.classList.remove('is-open'); overlay?.classList.remove('is-visible'); toggle?.setAttribute('aria-expanded', 'false'); };
+      toggle?.addEventListener('click', () => { const open = sidebar.classList.toggle('is-open'); overlay.classList.toggle('is-visible', open); toggle.setAttribute('aria-expanded', String(open)); });
+      document.querySelectorAll('[data-sidebar-close]').forEach(el => el.addEventListener('click', close));
+      window.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
