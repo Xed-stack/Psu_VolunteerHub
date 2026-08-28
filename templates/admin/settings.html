@@ -49,8 +49,32 @@
   </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
     </head>
-<body class="bg-surface min-h-screen font-inter">
-<main class="max-w-2xl mx-auto p-md sm:p-lg pt-20 sm:pt-24">
+<body class="bg-surface min-h-screen font-inter text-on-surface">
+<div class="fixed inset-0 bg-black/30 z-40 hidden" id="settingsOverlay" onclick="toggleSettingsSidebar()"></div>
+<aside id="settingsSidebar" class="fixed left-0 top-0 h-full w-[260px] bg-white border-r border-outline-variant flex flex-col p-lg z-50 -translate-x-full md:translate-x-0 transition-transform">
+  <div class="flex items-center gap-md mb-xl">
+    <img class="w-10 h-10 object-contain" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"/>
+    <div><h1 class="font-headline-sm font-bold text-primary">PSU Volunteer Hub</h1><p class="font-label-sm text-secondary">Excellence in Service</p></div>
+  </div>
+  <nav class="flex-1 space-y-sm">
+    <a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('admin.admin_dash') }}"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+    <a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('events.opportunities') }}"><span class="material-symbols-outlined">volunteer_activism</span><span>Opportunities</span></a>
+    <a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="{{ url_for('director.analytics') }}"><span class="material-symbols-outlined">analytics</span><span>Analytics</span></a>
+    <a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg bg-primary-fixed text-on-primary-fixed font-semibold" href="{{ url_for('admin.settings') }}" aria-current="page"><span class="material-symbols-outlined">settings</span><span>Settings</span></a>
+  </nav>
+  <div class="pt-lg border-t border-outline-variant flex items-center gap-sm">
+    <img class="w-10 h-10 rounded-full object-cover" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="{{ current_user.name }}"/>
+    <div class="min-w-0"><p class="font-label-md font-bold truncate">{{ current_user.name }}</p><p class="font-label-sm text-secondary">{{ current_user.role_display_name }}</p></div>
+    <a class="ml-auto text-secondary hover:text-error" href="{{ url_for('auth.logout') }}" title="Logout"><span class="material-symbols-outlined">logout</span></a>
+  </div>
+</aside>
+<div class="md:ml-[260px] min-h-screen flex flex-col">
+<header class="h-16 bg-white border-b border-outline-variant flex items-center px-md sm:px-lg sticky top-0 z-30">
+  <button class="md:hidden p-sm text-primary" type="button" onclick="toggleSettingsSidebar()" aria-label="Toggle navigation"><span class="material-symbols-outlined">menu</span></button>
+  <div class="ml-auto flex items-center gap-sm text-secondary"><span class="material-symbols-outlined">admin_panel_settings</span><span class="hidden sm:inline font-label-md">Administrator</span></div>
+</header>
+<main class="w-full max-w-3xl mx-auto p-md sm:p-lg py-xl">
+  <p class="font-label-md text-secondary mb-xs">Administration</p>
   <h1 class="font-headline-lg text-headline-lg text-primary mb-lg">System Settings</h1>
   {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}<div class="p-md mb-md rounded-lg {% if cat == 'error' %}bg-error-container text-error{% else %}bg-primary-fixed text-on-primary-fixed{% endif %}">{{ msg }}</div>{% endfor %}{% endif %}{% endwith %}
   <form method="POST" class="bg-white p-md sm:p-lg rounded-xl border border-outline-variant space-y-lg shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,64,139,0.06)]">
@@ -70,5 +94,12 @@
   </form>
   <a href="{{ url_for('admin.admin_dash') }}" class="inline-flex items-center min-h-[44px] mt-md text-primary font-label-md hover:underline transition-colors">← Back to Admin Dashboard</a>
 </main>
+</div>
+<script>
+function toggleSettingsSidebar(){
+  document.getElementById('settingsSidebar').classList.toggle('-translate-x-full');
+  document.getElementById('settingsOverlay').classList.toggle('hidden');
+}
+</script>
 </body>
 </html>

@@ -72,6 +72,16 @@ def create_app(config_name='development'):
         from flask import render_template
         return render_template('Homepage.html')
 
+    @app.route('/favicon.ico')
+    def favicon():
+        """Use the bundled PSU mark for the browser tab icon."""
+        from flask import send_from_directory
+        return send_from_directory(
+            app.static_folder,
+            'assets/PSU-logo.png',
+            mimetype='image/png',
+        )
+
     @app.route('/dashboard')
     def dashboard():
         """Central dashboard router based on user role."""

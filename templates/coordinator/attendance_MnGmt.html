@@ -179,8 +179,8 @@
 <!-- SideNavBar -->
 <aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg z-50 overflow-y-auto">
 <div class="mb-xl flex items-center gap-sm">
-<div class="w-10 h-10 bg-primary flex items-center justify-center rounded">
-<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">school</span>
+<div class="w-10 h-10 flex items-center justify-center rounded">
+<img class="w-10 h-10 object-contain" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"/>
 </div>
 <div>
 <h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
@@ -208,7 +208,7 @@
 <div class="mt-auto pt-lg border-t border-outline-variant">
 <div class="flex items-center gap-sm">
 <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
-<img class="w-full h-full object-cover" data-alt="Close-up portrait of a professional university administrator in a clean office setting, featuring natural window light and a soft-focus bookshelf in the background. The style is professional corporate photography with a neutral color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArgl_eY0L_Ka99VqSVSXDtC21VdUu4kNfFKeseK1EHCAO6ZOtCjrqCSU6Hal-gZ3Ke8vy_fK_PFIaLTeuwKuP0qsjQUo-OIsops67WMlvbMND0R7_YUxuRdJVtzBLX4gebdCd769yNyPGlLy_MgzxcZkL0X5miSs4ISLhjOHetcCTNU2JFM95tLzWdaPRMrt6tZT4AaZfHtXxfRS19QmrJviE0swCL4dPO_kb12xVbMXtdPafTQKwgf_jq0acsvHb3m58pJwUCixWW"/>
+<img class="w-full h-full object-cover" alt="{{ current_user.name }}" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"/>
 </div>
 <div class="overflow-hidden">
 <p class="font-label-sm text-label-sm font-bold truncate">{{ current_user.name }}</p>

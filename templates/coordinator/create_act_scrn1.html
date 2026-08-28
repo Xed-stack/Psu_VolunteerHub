@@ -165,8 +165,8 @@
 <aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flex flex-col h-full p-lg overflow-y-auto z-50">
 <div class="mb-2xl">
 <div class="flex items-center gap-md">
-<div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-on-primary">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+<div class="w-10 h-10 rounded flex items-center justify-center">
+<img class="w-10 h-10 object-contain" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"/>
 </div>
 <div>
 <h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-inverse-primary leading-none">PSU Volunteer Hub</h1>
@@ -194,7 +194,7 @@
 </nav>
 <div class="mt-auto pt-lg border-t border-outline-variant">
 <div class="flex items-center gap-md px-md">
-<img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a university administrator in their mid-40s, wearing formal attire. The lighting is soft and even, creating an approachable yet authoritative atmosphere. The background is a slightly blurred office setting with books and academic awards, maintaining a clean, professional PSU institution look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaH_EeX9hcWAdY5eYvDnJH4lpSUmhnSnqLp-AfwqrBG-Ny032TAfSj5p0t4fedM4WUauygcmvcGMTUpwCdtuulzRbl7jJ8-18nljIfcW0JpSruVKWmcjcvDdkSHz10rnuTC_urKGnBQ5xy0znU1VxE981M7QRQv4kwIsXz-3JiK-WEy1y6m-K4GskfsnE_xIOPaRXCNlJPEQAxpXujZk0l8PE2cOVi1ao03EZtfPamLqRbSdSoFcnpXPEOiiwHb5LNYPxaP58sNpjK"/>
+<img class="w-10 h-10 rounded-full object-cover" alt="{{ current_user.name }}" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"/>
 <div class="overflow-hidden">
 <p class="font-label-sm text-label-sm text-on-surface font-bold truncate">{{ current_user.name }}</p>
 <p class="font-label-md text-label-md text-secondary truncate">{{ current_user.email }}</p>

@@ -132,7 +132,7 @@ def profile_page():
     registrations = Registration.query.filter_by(user_id=current_user.id)\
         .order_by(Registration.registered_at.desc()).limit(5).all()
 
-    # ── Analytics: Jaccard-based recommendations ────────────────────────
+    # ── Analytics: cosine-similarity recommendations ────────────────────
     recommendations = get_recommendations(
         profile, top_n=3, campus_id=current_user.campus_id)
 

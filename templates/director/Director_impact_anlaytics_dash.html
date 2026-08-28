@@ -175,8 +175,8 @@
 <!-- SIDEBAR -->
 <aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg z-50 transition-transform md:translate-x-0 -translate-x-full" id="sidebar">
 <div class="flex items-center gap-sm mb-2xl">
-<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg">
-<span class="material-symbols-outlined text-on-primary">school</span>
+<div class="w-10 h-10 flex items-center justify-center rounded-lg">
+<img class="w-10 h-10 object-contain" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"/>
 </div>
 <div>
 <h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
@@ -196,19 +196,11 @@
 <span class="material-symbols-outlined">analytics</span>
 <span class="font-body-md">Analytics</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('director.director_dash') }}">
-<span class="material-symbols-outlined">manage_accounts</span>
-<span class="font-body-md">Management</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm min-h-[44px] rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors duration-200" href="{{ url_for('volunteer.profile_page') }}">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-body-md">Settings</span>
-</a>
 </nav>
 <div class="mt-auto pt-lg border-t border-outline-variant">
 <div class="flex items-center gap-md">
 <div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container">
-<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a female university administrator in her late 40s, wearing a navy blue blazer. She has a warm, confident expression. The background is a soft-focus office environment with academic books and a small plant, lit with bright, natural daylight following a clean, corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFbNh7DuZH1C4kLhPGkbbKv_CzxVd0NQacPg_WwZdwVCKx1bSaGp8MBfEFkaTcLZd_DeFa30V9eT85mzOOtHrhtBOylbbr8RIdcy7k-mV82S8N86EDe8csuAdl49ryEBa2b5xvy6I0SkGjdkzELvvOpj5ZtOXnHw30LjSIa5iX0TGtMJe3FfHavfF7yhZRfzJv8XbwKX3H-zM8Bh40QZy1fHYaK_tAO1CoT4jdaPbvkdfBIFA2XyQBr_-LgN0l32PL78K-jxYHcKYv"/>
+<img class="w-full h-full object-cover" alt="{{ current_user.name }}" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"/>
 </div>
 <div class="overflow-hidden">
 <p class="font-label-md text-on-surface truncate">{{ current_user.name }}</p>
@@ -544,10 +536,6 @@
 <button class="p-sm text-on-surface-variant flex flex-col items-center gap-xs">
 <span class="material-symbols-outlined">volunteer_activism</span>
 <span class="text-[10px]">Ops</span>
-</button>
-<button class="p-sm text-on-surface-variant flex flex-col items-center gap-xs">
-<span class="material-symbols-outlined">settings</span>
-<span class="text-[10px]">Settings</span>
 </button>
 </div>
 <script>

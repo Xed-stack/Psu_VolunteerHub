@@ -1,10 +1,11 @@
 """
 Recommendation Engine for PSU Volunteer Hub
 ============================================
-Content-based recommendation using Jaccard similarity between a
+Content-based recommendation using cosine similarity between a
 volunteer's skill/interest terms and each event's skill/category terms.
 
-Jaccard similarity = |shared terms| / |all terms combined|
+Terms are represented as binary vectors over their combined vocabulary.
+Cosine similarity = |shared terms| / sqrt(|user terms| * |event terms|)
 """
 from datetime import datetime
 from app.models.event import Event, RecommendationLog, Registration
@@ -12,19 +13,17 @@ from app.models.user import User, Skill, Interest
 from app.models import db
 
 
-def _jaccard_similarity(user_terms: set, event_terms: set) -> float:
-    """Return |intersection| / |union| of two term sets, 0.0 if both empty."""
-    if not user_terms and not event_terms:
+def _cosine_similarity(user_terms: set, event_terms: set) -> float:
+    """Return cosine similarity for two binary term vectors."""
+    if not user_terms or not event_terms:
         return 0.0
-    union = len(user_terms | event_terms)
-    if union == 0:
-        return 0.0
-    return len(user_terms & event_terms) / union
+    magnitude = (len(user_terms) * len(event_terms)) ** 0.5
+    return len(user_terms & event_terms) / magnitude
 
 
 def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None):
     """
-    Score events for a volunteer using Jaccard similarity over
+    Score events for a volunteer using cosine similarity over
     combined skill + interest/category terms.
 
     Parameters:
@@ -63,7 +62,7 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None)
         if event.category:
             event_terms.add(event.category.strip().lower())
 
-        score = _jaccard_similarity(user_terms, event_terms)
+        score = _cosine_similarity(user_terms, event_terms)
         matched = user_terms & event_terms
 
         scored.append({

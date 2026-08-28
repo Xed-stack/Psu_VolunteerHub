@@ -168,8 +168,8 @@
 <aside class="sidebar fixed left-0 top-0 h-full w-[260px] bg-surface border-r border-outline-variant flex flex-col p-lg overflow-y-auto z-[100]">
 <div class="mb-xl">
 <div class="flex items-center gap-md">
-<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<div class="w-10 h-10 rounded-lg flex items-center justify-center">
+<img class="w-10 h-10 object-contain" src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"/>
 </div>
 <div>
 <h1 class="font-headline-sm text-headline-sm font-bold text-primary">PSU Volunteer Hub</h1>
@@ -202,7 +202,7 @@
 </nav>
 <div class="mt-auto pt-lg border-t border-outline-variant">
 <div class="flex items-center gap-md p-sm">
-<img class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional studio portrait of a university administrator in a modern office environment, soft daylighting, high-end commercial photography style, neutral corporate color palette with deep blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvbjnQZrfpUW33ZQ1NUgwdNFc2BuZKdHJkxWlmpFQH_LV4NF1kWvMiZRWqj34PIRvncllk2os7Em5NWjBXoTrqphGOqrHwDOGcvZj8kr3VCO0JporZuLnKppDeqcy03KbqekfPvzo4RT3tWFC4Ck9_KkbZAjhNI5Gy6hL6buatAPRC-yg-cXEvUiTWDk8cKqTkuUyjUqTIorBSI1U94h_MkdM-LmNZQZ2I1Wq4UdTrw71Rd_Q6qvYtCY4uKBmXD7uinoThSmPHo1KC"/>
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" alt="{{ current_user.name }}" src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"/>
 <div class="overflow-hidden">
 <p class="font-label-md text-label-md font-bold truncate">{{ current_user.name }}</p>
 <p class="font-label-sm text-label-sm text-secondary truncate">{{ current_user.role_display_name }}</p>
@@ -228,11 +228,11 @@
 </div>
 <div class="flex items-center gap-lg ml-lg">
 <div class="flex items-center gap-sm">
-<button class="p-2 hover:bg-surface-container-low rounded-full transition-all relative">
+<button type="button" disabled aria-disabled="true" title="Notifications are not available yet" class="p-2 rounded-full relative opacity-50 cursor-not-allowed">
 <span class="material-symbols-outlined">notifications</span>
 <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
 </button>
-<button class="hidden sm:block p-2 hover:bg-surface-container-low rounded-full transition-all">
+<button type="button" disabled aria-disabled="true" title="Location switching is not available yet" class="hidden sm:block p-2 rounded-full opacity-50 cursor-not-allowed">
 <span class="material-symbols-outlined">location_on</span>
 </button>
 </div>
@@ -386,15 +386,15 @@
 <div class="bg-surface border border-outline-variant admin-card rounded-xl p-md">
 <h2 class="font-headline-sm text-headline-sm text-on-surface mb-md">Administrative Controls</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-md">
-<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<button type="button" disabled aria-disabled="true" title="Campus management is not available yet" class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg opacity-60 cursor-not-allowed group">
 <span class="material-symbols-outlined text-3xl text-primary mb-sm">domain_add</span>
 <span class="font-label-md text-label-md font-bold text-on-surface">Add New Campus</span>
 </button>
-<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<button type="button" disabled aria-disabled="true" title="Global notifications are not available yet" class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg opacity-60 cursor-not-allowed group">
 <span class="material-symbols-outlined text-3xl text-primary mb-sm">campaign</span>
 <span class="font-label-md text-label-md font-bold text-on-surface">Global Notifications</span>
 </button>
-<button class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg hover:bg-primary-fixed hover:border-primary transition-all group">
+<button type="button" disabled aria-disabled="true" title="Database backup is not available yet" class="flex flex-col items-center justify-center p-lg border border-outline-variant rounded-lg opacity-60 cursor-not-allowed group">
 <span class="material-symbols-outlined text-3xl text-primary mb-sm">cloud_sync</span>
 <span class="font-label-md text-label-md font-bold text-on-surface">Database Backup</span>
 </button>
@@ -410,7 +410,7 @@
 <section class="bg-surface border border-outline-variant admin-card rounded-xl flex flex-col h-[600px]">
 <div class="p-md border-b border-outline-variant flex justify-between items-center">
 <h2 class="font-headline-sm text-headline-sm text-on-surface">Audit Logs</h2>
-<button class="text-primary font-label-md hover:underline transition-all">View All</button>
+<span class="text-secondary font-label-md">Recent</span>
 </div>
 <div class="flex-1 overflow-y-auto p-md space-y-md">
 {% if audit_logs %}

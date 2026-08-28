@@ -3,7 +3,11 @@ from app import create_app
 from app.models import db
 from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
 from app.models.event import Event, Registration, Attendance, Campus
-from app.recommendation.engine import get_recommendations, bootstrap_from_event
+from app.recommendation.engine import (
+    _cosine_similarity,
+    bootstrap_from_event,
+    get_recommendations,
+)
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, event
 
@@ -12,10 +16,7 @@ from sqlalchemy import create_engine, event
 
 @pytest.fixture
 def app():
-    app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['WTF_CSRF_ENABLED'] = False
+    app = create_app('testing')
     app.config['SERVER_NAME'] = 'localhost'
 
     with app.app_context():
@@ -397,6 +398,15 @@ class TestAdminFeatures:
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TestRecommendationEngine:
+    def test_cosine_similarity_for_binary_terms(self):
+        assert _cosine_similarity({'python', 'teaching'},
+                                  {'python', 'teaching'}) == pytest.approx(1.0)
+        assert _cosine_similarity({'python', 'teaching'},
+                                  {'python', 'health'}) == pytest.approx(0.5)
+        assert _cosine_similarity({'python'}, {'health'}) == 0.0
+        assert _cosine_similarity(set(), {'python'}) == 0.0
+        assert _cosine_similarity(set(), set()) == 0.0
+
     def _make_user_with_terms(self, email, skills, interests):
         """Create a volunteer user with skills/interests attached (3NF)."""
         user = User(name=email.split('@')[0], email=email)

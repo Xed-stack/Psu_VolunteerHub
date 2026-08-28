@@ -466,6 +466,8 @@ button,
   min-width: 0;
 }
 
+.dashboard-main { overflow: hidden; }
+
 .section-title {
   font-size: 16px;
   font-weight: 600;
@@ -483,6 +485,8 @@ button,
   padding-bottom: 8px;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
 }
 
 .opportunity-card {
@@ -686,7 +690,7 @@ button,
 
   .dashboard-layout {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
     gap: 32px;
   }
 

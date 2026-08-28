@@ -36,7 +36,7 @@
     <aside class="sidebar">
         <header class="sidebar-header">
             <figure class="brand-logo">
-                <span class="material-symbols-outlined">school</span>
+                <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo" style="width:40px;height:40px;object-fit:contain;">
             </figure>
             <hgroup>
                 <h1 class="brand-title">PSU Volunteer Hub</h1>
@@ -201,7 +201,7 @@
                         </ul>
                     </article>
 
-                    {# NEW: Recommended-for-you card, added to surface the Jaccard-similarity recommendation
+                    {# NEW: Recommended-for-you card, added to surface the cosine-similarity recommendation
                        engine directly on the profile page. Uses `recommendations` passed from get_recommendations(). #}
                     <article class="card">
                         <h3 class="card-title">Recommended For You</h3>

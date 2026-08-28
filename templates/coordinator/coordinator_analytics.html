@@ -31,20 +31,20 @@
       </hgroup>
     </header>
 
-    <nav class="cd-nav" aria-label="Coordinator navigation">
-      <a class="cd-nav-link active" href="{{ url_for('coordinator.coordinator_dash') }}" aria-current="page">
+    <nav class="ca-nav" aria-label="Coordinator navigation">
+      <a href="{{ url_for('coordinator.coordinator_dash') }}">
         <span class="material-symbols-outlined">dashboard</span>
         <span>Dashboard</span>
       </a>
-      <a class="cd-nav-link" href="{{ url_for('coordinator.create_activity') }}">
+      <a href="{{ url_for('coordinator.create_activity') }}">
         <span class="material-symbols-outlined">volunteer_activism</span>
         <span>Create Activity</span>
       </a>
-      <a class="cd-nav-link" href="{{ url_for('coordinator.attendance') }}">
+      <a href="{{ url_for('coordinator.attendance') }}">
         <span class="material-symbols-outlined">fact_check</span>
         <span>Attendance</span>
       </a>
-      <a class="cd-nav-link" href="{{ url_for('coordinator.analytics') }}">
+      <a class="active" href="{{ url_for('coordinator.analytics') }}" aria-current="page">
         <span class="material-symbols-outlined">analytics</span>
         <span>Analytics</span>
       </a>
