@@ -11,11 +11,57 @@ from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
 from app.models import db
 from app.models.user import User
-from app.models.event import Event, Registration, Attendance, Campus
+from app.models.event import (Event, Registration, Attendance, Campus,
+                              HistoricalActivity)
 
 
 class AnalyticsAggregator:
     """Produces pre-aggregated data for director analytics views."""
+
+    @staticmethod
+    def historical_summary(campus_id=None):
+        """Return aggregate counts imported from audited legacy reports."""
+        query = HistoricalActivity.query
+        volunteer_query = db.session.query(
+            db.func.sum(HistoricalActivity.volunteer_count))
+        if campus_id:
+            query = query.filter_by(campus_id=campus_id)
+            volunteer_query = volunteer_query.filter(
+                HistoricalActivity.campus_id == campus_id)
+        return {
+            'activities': query.count(),
+            'volunteer_participations': int(volunteer_query.scalar() or 0),
+            'years_covered': query.with_entities(
+                HistoricalActivity.year_conducted)
+                .filter(HistoricalActivity.year_conducted.isnot(None))
+                .distinct().count(),
+            'incomplete_records': query.filter(db.or_(
+                HistoricalActivity.year_conducted.is_(None),
+                HistoricalActivity.volunteer_count.is_(None))).count(),
+        }
+
+    @staticmethod
+    def historical_campus_stats(campus_id=None):
+        """Return aggregate activity and participation totals by reporting unit."""
+        query = db.session.query(
+            HistoricalActivity.unit_name,
+            db.func.count(HistoricalActivity.id),
+            db.func.sum(HistoricalActivity.volunteer_count),
+            db.func.sum(db.case((db.or_(
+                HistoricalActivity.year_conducted.is_(None),
+                HistoricalActivity.volunteer_count.is_(None)), 1), else_=0)),
+        )
+        if campus_id:
+            query = query.filter(HistoricalActivity.campus_id == campus_id)
+        rows = query.group_by(HistoricalActivity.unit_name).all()
+        results = [{
+            'campus': unit,
+            'activities': int(activities),
+            'participations': int(participations or 0),
+            'incomplete_records': int(incomplete or 0),
+        } for unit, activities, participations, incomplete in rows]
+        results.sort(key=lambda row: row['participations'], reverse=True)
+        return results
 
     @staticmethod
     def campus_stats():
@@ -73,7 +119,6 @@ class AnalyticsAggregator:
         return {
             'total_active_volunteers': total_active,
             'total_hours': round(total_hours, 1),
-            'community_value': round(total_hours * 15, 2),
             'retention_rate': retention_rate,
         }
 

@@ -186,3 +186,40 @@ class AnalyticsSummary(db.Model):
     metric_type = db.Column(db.String(100), nullable=False)
     value = db.Column(db.Float, nullable=False)
     period = db.Column(db.String(50), nullable=False)
+
+
+class HistoricalActivity(db.Model):
+    """Aggregate activity imported from legacy institutional reports.
+
+    Historical reports contain aggregate volunteer totals rather than user-level
+    registrations and attendance. Keeping them separate prevents fabricated
+    users, dates, capacities, and service hours from contaminating live data.
+    """
+    __tablename__ = 'historical_activities'
+
+    id = db.Column(db.Integer, primary_key=True)
+    source_key = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    source_document = db.Column(db.String(255), nullable=False)
+    source_page = db.Column(db.Integer, nullable=False)
+    source_row = db.Column(db.Integer, nullable=False)
+    unit_name = db.Column(db.String(120), nullable=False, index=True)
+    campus_id = db.Column(db.Integer, db.ForeignKey(
+        'campuses.id', ondelete='SET NULL'), nullable=True)
+    title = db.Column(db.String(500), nullable=False)
+    activity_type = db.Column(db.String(30), nullable=True)
+    partners = db.Column(db.Text, nullable=True)
+    participant_categories = db.Column(db.Text, nullable=True)
+    volunteer_count = db.Column(db.Integer, nullable=True)
+    year_conducted = db.Column(db.Integer, nullable=True, index=True)
+    imported_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    campus = db.relationship('Campus')
+
+    __table_args__ = (
+        db.CheckConstraint(
+            'year_conducted IS NULL OR year_conducted BETWEEN 1900 AND 2100',
+            name='ck_historical_activity_year'),
+        db.CheckConstraint(
+            'volunteer_count IS NULL OR volunteer_count >= 0',
+            name='ck_historical_activity_volunteers'),
+    )

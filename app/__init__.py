@@ -58,6 +58,9 @@ def create_app(config_name='development'):
     from app.routes.events import events_bp
     app.register_blueprint(events_bp)
 
+    from app.commands import register_commands
+    register_commands(app)
+
     # Create tables and seed data on first run
     with app.app_context():
         db.create_all()

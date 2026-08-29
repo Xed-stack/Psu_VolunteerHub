@@ -81,6 +81,32 @@ New users can register at `/auth/register`. The form asks:
 python -m pytest tests/ -v
 ```
 
+## Historical Activity Import
+
+The audited 2020–2025 institutional report is stored separately from live
+events and attendance because it contains aggregate volunteer participations,
+not individual registrations, exact dates, or service hours.
+
+The reviewed seed file is `data/historical_activities_2020_2025.csv`. Import it
+into the configured MySQL database with:
+
+```powershell
+python -m flask --app "app:create_app" import-historical-activities `
+  data/historical_activities_2020_2025.csv
+```
+
+Validate without saving changes:
+
+```powershell
+python -m flask --app "app:create_app" import-historical-activities `
+  data/historical_activities_2020_2025.csv --dry-run
+```
+
+The command is idempotent: rerunning it updates changed source rows and does
+not create duplicates. The application factory creates the table automatically;
+`migrations/20260828_add_historical_activities.sql` is provided for managed
+MySQL deployments that apply schema changes explicitly.
+
 ## Tech Stack
 
 - **Backend:** Flask, MySQL, Flask-Login

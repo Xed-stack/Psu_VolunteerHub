@@ -358,7 +358,7 @@ class TestDirectorFeatures:
         from app.recommendation.analytics import AnalyticsAggregator
         with app.app_context():
             kpis = AnalyticsAggregator.kpi_summary()
-            for key in ('total_active_volunteers', 'total_hours', 'community_value', 'retention_rate'):
+            for key in ('total_active_volunteers', 'total_hours', 'retention_rate'):
                 assert key in kpis, f'KPI key {key} missing'
 
 
@@ -660,6 +660,15 @@ class TestMissingFeatures:
         resp = client.get('/reports/campus.csv')
         assert resp.status_code == 200
         assert resp.mimetype == 'text/csv'
+        assert b'Volunteer Participations' in resp.data
+
+    def test_export_campus_pdf(self, client, app):
+        uid = _create_user(app, email='campdf@test.com', role='director')
+        _login_as(client, uid)
+        resp = client.get('/reports/campus.pdf')
+        assert resp.status_code == 200
+        assert resp.mimetype == 'application/pdf'
+        assert resp.data.startswith(b'%PDF-')
 
     def test_admin_campus_filter(self, client, app):
         uid = _create_user(app, email='admfil@test.com', role='admin')
@@ -676,13 +685,13 @@ class TestMissingFeatures:
     def test_admin_settings_post(self, client, app):
         uid = _create_user(app, email='admstp@test.com', role='admin')
         _login_as(client, uid)
-        resp = client.post('/settings', data={'community_value_rate': '20'},
+        resp = client.post('/settings', data={'max_slots_per_event': '120'},
                            follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
-            s = SystemSetting.query.filter_by(key='community_value_rate').first()
+            s = SystemSetting.query.filter_by(key='max_slots_per_event').first()
             assert s is not None
-            assert s.value == '20'
+            assert s.value == '120'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
