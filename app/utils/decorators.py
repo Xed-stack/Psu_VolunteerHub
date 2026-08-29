@@ -26,6 +26,26 @@ def role_required(role: str, abort_403: bool = True):
     return decorator
 
 
+def roles_required(*roles: str, abort_403: bool = True):
+    """Restrict a route to any one of the explicitly listed roles."""
+    allowed_roles = set(roles)
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            user_role = getattr(current_user, 'role', None)
+            if user_role not in allowed_roles:
+                if abort_403:
+                    flash("Access denied for your account role.", "error")
+                return redirect(url_for('dashboard'))
+            g.user_role = user_role
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def admin_only(abort_403: bool = True):
     """Convenience wrapper for @role_required('admin')"""
     return role_required('admin', abort_403=abort_403)

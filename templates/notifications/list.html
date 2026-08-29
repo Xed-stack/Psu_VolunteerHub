@@ -1,0 +1,35 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Notifications | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Notifications{% endblock %}
+{% block header_subtitle %}Your recent activity updates{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><h1>Notifications</h1><p>Updates about your volunteer activity.</p></div>
+  {% if unread %}
+  <form method="post" action="{{ url_for('notifications.mark_all_read') }}" class="inline-form">
+    <button class="btn btn--sm btn--ghost" type="submit">Mark all as read</button>
+  </form>
+  {% endif %}
+</div>
+
+<section class="panel">
+  <div class="stack">
+    {% for note in notifications %}
+    <article class="panel notification-item {{ 'is-unread' if not note.is_read else '' }}">
+      <div class="notification-item__body">
+        <h3>{{ note.title }}</h3>
+        <p>{{ note.message }}</p>
+        <small>{{ note.created_at.strftime('%b %d, %Y %I:%M %p') if note.created_at else '' }}</small>
+      </div>
+      {% if not note.is_read %}
+      <form method="post" action="{{ url_for('notifications.mark_read', notification_id=note.id) }}" class="inline-form">
+        <button class="btn btn--sm btn--ghost" type="submit">Mark read</button>
+      </form>
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="empty-state">You have no notifications yet.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

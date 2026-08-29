@@ -1,0 +1,43 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Edit Activity | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Coordinator Console{% endblock %}
+{% block header_subtitle %}Edit volunteer opportunity{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Edit Activity</h1><p>Update a volunteer opportunity for {{ current_user.campus.name if current_user.campus else 'your campus' }}.</p></div></div>
+<form class="panel" method="POST">
+  <div class="form-grid">
+    <div class="field field--wide">
+      <label class="field__label" for="title">Activity title</label>
+      <input class="input" id="title" name="title" required value="{{ event.title or '' }}">
+    </div>
+    <div class="field field--wide">
+      <label class="field__label" for="description">Description</label>
+      <textarea class="input" id="description" name="description" required>{{ event.description or '' }}</textarea>
+    </div>
+    <div class="field">
+      <label class="field__label" for="date">Date</label>
+      <input class="input" id="date" name="date" type="date" required value="{{ event.date.strftime('%Y-%m-%d') if event.date else '' }}">
+    </div>
+    <div class="field">
+      <label class="field__label" for="location">Location</label>
+      <input class="input" id="location" name="location" value="{{ event.location or '' }}">
+    </div>
+    <div class="field">
+      <label class="field__label" for="category">Category</label>
+      <input class="input" id="category" name="category" value="{{ event.category or 'General' }}">
+    </div>
+    <div class="field">
+      <label class="field__label" for="slots">Volunteer slots</label>
+      <input class="input" id="slots" name="slots" type="number" min="1" value="{{ event.slots or 0 }}">
+    </div>
+    <div class="field">
+      <label class="field__label" for="required_skills">Required skills</label>
+      <input class="input" id="required_skills" name="required_skills" value="{{ event.required_skills or '' }}">
+    </div>
+  </div>
+  <div class="form-actions">
+    <a class="btn btn--ghost" href="{{ url_for('coordinator.coordinator_dash') }}">Cancel</a>
+    <button class="btn btn--primary" type="submit">Save Changes</button>
+  </div>
+</form>
+{% endblock %}

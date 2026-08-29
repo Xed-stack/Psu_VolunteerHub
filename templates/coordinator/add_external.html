@@ -1,0 +1,23 @@
+{% extends 'layouts/role_base.html' %}
+{% set active_page = 'attendance' %}
+{% block title %}Add External Volunteer · PSU Volunteer Hub{% endblock %}
+{% block header_title %}Coordinator Console{% endblock %}
+{% block header_subtitle %}Manual outsider encoding{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Add External Volunteer</h1><p>Activity: {{ event.title }}</p></div></div>
+{% include 'partials/flash_messages.html' %}
+<section class="panel">
+  <form method="post" action="{{ url_for('coordinator.add_external_participant', event_id=event.id) }}">
+    {% include 'partials/csrf_field.html' %}
+    <label class="field">ID Number (required)<input class="input" type="text" name="id_number" required></label>
+    <label class="field">Name (optional)<input class="input" type="text" name="name"></label>
+    <label class="field">Contact Number (optional)<input class="input" type="text" name="contact_number"></label>
+    <label class="field">Address (optional)<input class="input" type="text" name="address"></label>
+    <label class="field">Email Address (optional)<input class="input" type="email" name="email"></label>
+    <div class="form-actions">
+      <button class="button button--primary" type="submit">Add external volunteer</button>
+      <a class="button button--ghost" href="{{ url_for('coordinator.attendance', event_id=event.id) }}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

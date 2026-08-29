@@ -113,8 +113,6 @@ def register():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        # Maps to the account_type dropdown in Signup.html
-        account_type = request.form.get('account_type', 'volunteer')
         id_number = request.form.get('id_number', '').strip()
 
         # Campus string key from dropdown (e.g., 'lingayen', 'urdaneta')
@@ -131,7 +129,7 @@ def register():
         elif len(password) < 6:
             errors.append('Password must be at least 6 characters.')
 
-        if account_type == 'volunteer' and not id_number:
+        if not id_number:
             errors.append('PSU ID Number is required for volunteers.')
 
         # Check duplicate email
@@ -150,14 +148,9 @@ def register():
             return render_template('Signup.html', campuses=campuses,
                                     interests=interests, skills=skills)
 
-        # 2. Map role choices
-        # Supported user roles: 'volunteer', 'coordinator', 'director', 'admin'
-        role_mapping = {
-            'volunteer': 'volunteer',
-            'coordinator': 'coordinator',
-            'executive': 'director'
-        }
-        assigned_role = role_mapping.get(account_type, 'volunteer')
+        # Public registration always creates a volunteer. Privileged roles
+        # can only be assigned through the protected Admin interface.
+        assigned_role = 'volunteer'
 
         # 3. Create User record
         user = User(

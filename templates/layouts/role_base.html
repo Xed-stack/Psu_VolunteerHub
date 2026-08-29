@@ -18,7 +18,13 @@
     <header class="role-topbar">
       <button class="icon-button role-menu-button" type="button" data-sidebar-toggle aria-label="Open navigation" aria-controls="roleSidebar" aria-expanded="false"><span class="material-symbols-outlined">menu</span></button>
       <div class="role-topbar__title"><strong>{% block header_title %}PSU Volunteer Hub{% endblock %}</strong><span>{% block header_subtitle %}{% endblock %}</span></div>
-      <div class="role-topbar__actions">{% block header_actions %}{% endblock %}</div>
+      <div class="role-topbar__actions">
+        <a class="icon-button notification-bell" href="{{ url_for('notifications.list_notifications') }}" aria-label="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+          {% if unread_notifications %}<span class="notification-badge" aria-hidden="true">{{ unread_notifications }}</span>{% endif %}
+        </a>
+        {% block header_actions %}{% endblock %}
+      </div>
     </header>
     {% include 'partials/flash_messages.html' %}
     <main class="role-content">{% block content %}{% endblock %}</main>
@@ -35,6 +41,7 @@
       window.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
     })();
   </script>
+  {% include 'partials/csrf_forms_script.html' %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

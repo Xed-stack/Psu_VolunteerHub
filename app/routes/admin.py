@@ -3,7 +3,7 @@ Admin Routes for PSU Volunteer Hub
 ====================================
 Manages user administration and system management.
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.user import User, SystemSetting
@@ -43,7 +43,9 @@ def admin_dash():
 @login_required
 @role_required('admin')
 def deactivate_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
     user.is_active = not user.is_active
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
@@ -55,7 +57,9 @@ def deactivate_user(user_id):
 @login_required
 @role_required('admin')
 def change_role(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
     new_role = request.form.get('role', '').strip()
     valid_roles = ['volunteer', 'coordinator', 'director', 'admin']
     if new_role not in valid_roles:
@@ -110,7 +114,9 @@ def create_user():
 @login_required
 @role_required('admin')
 def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
     campuses = Campus.query.all()
     if request.method == 'POST':
         user.name = request.form.get('name', user.name).strip()
@@ -128,7 +134,9 @@ def edit_user(user_id):
 @login_required
 @role_required('admin')
 def reset_password(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
     new_password = request.form.get('new_password', '')
     if len(new_password) < 6:
         flash('Password must be at least 6 characters.', 'error')

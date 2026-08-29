@@ -5,9 +5,12 @@ Creates and configures the Flask application instance.
 """
 from flask import Flask
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from app.models import db
 from app.models.user import User, SystemSetting
-from app.models.event import Event, Registration, Attendance, Milestone, Campus
+from app.models.event import (Event, Registration, Attendance, Milestone,
+                              Campus, ExternalParticipant)
+from app.models.notification import Notification
 from config import config
 
 
@@ -34,6 +37,7 @@ def create_app(config_name='development'):
 
     # Initialize extensions
     db.init_app(app)
+    CSRFProtect(app)
 
     # Setup Flask-Login
     login_manager = LoginManager()
@@ -42,7 +46,7 @@ def create_app(config_name='development'):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     # Register blueprints
     from app.routes.auth import auth_bp
@@ -57,6 +61,20 @@ def create_app(config_name='development'):
     app.register_blueprint(admin_bp)
     from app.routes.events import events_bp
     app.register_blueprint(events_bp)
+    from app.routes.notifications import notifications_bp
+    app.register_blueprint(notifications_bp)
+
+    @app.context_processor
+    def inject_notifications():
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            try:
+                unread = Notification.query.filter_by(
+                    user_id=current_user.id, is_read=False).count()
+            except Exception:
+                unread = 0
+            return {'unread_notifications': unread}
+        return {'unread_notifications': 0}
 
     from app.commands import register_commands
     register_commands(app)

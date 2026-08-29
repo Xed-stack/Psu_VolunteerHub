@@ -17,3 +17,5 @@ __pycache__/
 *.pyc
 
 .env
+# ignore runtime server logs
+*.log

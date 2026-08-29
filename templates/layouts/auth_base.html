@@ -9,5 +9,5 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/auth.css') }}">
 </head>
-<body class="auth-page">{% include 'partials/flash_messages.html' %}{% block body %}{% endblock %}{% block scripts %}{% endblock %}</body>
+<body class="auth-page">{% include 'partials/flash_messages.html' %}{% block body %}{% endblock %}{% include 'partials/csrf_forms_script.html' %}{% block scripts %}{% endblock %}</body>
 </html>

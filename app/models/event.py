@@ -86,6 +86,30 @@ class Event(db.Model):
         return max(0, self.slots - confirmed)
 
 
+class ExternalParticipant(db.Model):
+    """
+    A non-PSU (outsider) volunteer who joins specific activities.
+
+    The manuscript treats outsiders as event participants, not system users:
+    they are linked to event registrations via a separate record rather than
+    being given a privileged (or even login) User account. Only the ID number
+    is mandatory; personal details are optional.
+    """
+    __tablename__ = 'external_participants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    id_number = db.Column(db.String(50), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=True)
+    contact_number = db.Column(db.String(50), nullable=True)
+    address = db.Column(db.Text, nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    registrations = db.relationship(
+        'Registration', backref='external_participant', lazy=True,
+        cascade='all, delete-orphan')
+
+
 class Registration(db.Model):
     """
     Tracks volunteer registration for a specific event.
@@ -94,7 +118,10 @@ class Registration(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(
-        'users.id', ondelete='CASCADE'), nullable=False)
+        'users.id', ondelete='CASCADE'), nullable=True)
+    external_participant_id = db.Column(
+        db.Integer, db.ForeignKey(
+            'external_participants.id', ondelete='SET NULL'), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey(
         'events.id', ondelete='CASCADE'), nullable=False)
     status = db.Column(
@@ -103,13 +130,42 @@ class Registration(db.Model):
         default='pending'
     )
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    attendance_record = db.relationship(
+        'Attendance', back_populates='registration', uselist=False,
+        passive_deletes=True)
 
-    __table_args__ = (db.UniqueConstraint(
-        'user_id', 'event_id', name='uk_user_event'),)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'event_id', name='uk_user_event'),
+        db.UniqueConstraint(
+            'external_participant_id', 'event_id', name='uk_external_event'),
+        db.CheckConstraint(
+            '(user_id IS NOT NULL) OR (external_participant_id IS NOT NULL)',
+            name='ck_registration_participant'),
+    )
+
+    @property
+    def participant(self):
+        """Return the linked User (PSU) or ExternalParticipant (outsider)."""
+        return self.user or self.external_participant
+
+    @property
+    def is_external(self):
+        return self.external_participant_id is not None
 
     @property
     def is_confirmed(self) -> bool:
         return self.status in ('confirmed', 'completed')
+
+    @property
+    def certificate_eligible(self) -> bool:
+        """Eligibility requires a completed registration and recorded service."""
+        attendance = self.attendance_record
+        return bool(
+            self.status == 'completed'
+            and attendance
+            and attendance.status == 'present'
+            and (attendance.hours_completed or 0) > 0
+        )
 
 
 class Attendance(db.Model):
@@ -120,9 +176,11 @@ class Attendance(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     registration_id = db.Column(db.Integer, db.ForeignKey(
-        'registrations.id', ondelete='SET NULL'))
+        'registrations.id', ondelete='CASCADE'), nullable=False, unique=True)
+    registration = db.relationship(
+        'Registration', back_populates='attendance_record')
     user_id = db.Column(db.Integer, db.ForeignKey(
-        'users.id', ondelete='CASCADE'), nullable=False)
+        'users.id', ondelete='CASCADE'), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey(
         'events.id', ondelete='CASCADE'), nullable=False)
     status = db.Column(db.Enum('present', 'absent', 'excused',
