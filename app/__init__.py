@@ -258,8 +258,12 @@ def _seed_users(app):
                 db.session.add(profile)
 
                 # Attach skills/interests directly to the user
-                default_skills = ['Teaching', 'Communication', 'Python']
-                default_interests = ['Education', 'Technology', 'Environment']
+                default_skills = [
+                    'Teaching/Tutoring', 'Communication/Public Speaking',
+                    'IT/Computer Skills']
+                default_interests = [
+                    'Education & Literacy', 'Technology & Digital',
+                    'Environment']
 
                 for sk_name in default_skills:
                     sk = Skill.query.filter_by(name=sk_name).first()

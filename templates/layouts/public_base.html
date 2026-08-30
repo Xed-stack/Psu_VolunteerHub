@@ -10,5 +10,5 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/public.css') }}">
   {% block styles %}{% endblock %}
 </head>
-<body class="public-page">{% block body %}{% endblock %}{% block scripts %}{% endblock %}</body>
+<body class="public-page">{% block body %}{% block content %}{% endblock %}{% endblock %}{% block scripts %}{% endblock %}</body>
 </html>

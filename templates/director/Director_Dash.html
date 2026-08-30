@@ -1,11 +1,20 @@
 {% extends 'layouts/role_base.html' %}
-{% set active_page = 'dashboard' %}
 {% block title %}Director Dashboard · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Director Console{% endblock %}
 {% block header_subtitle %}University-wide oversight{% endblock %}
-{% block header_actions %}<a class="btn btn--outline" href="{{ url_for('director.export_campus_pdf') }}">Export PDF</a><a class="btn btn--primary" href="{{ url_for('director.export_campus_csv') }}">Export CSV</a>{% endblock %}
 {% block content %}
 <header class="page-heading"><div><h1>Extension Director Dashboard</h1><p>Historical participation across PSU campuses and reporting units.</p></div></header>
-<section class="metric-grid"><article class="metric-card"><small>Volunteer Participations</small><strong>{{ '{:,}'.format(total_volunteers) }}</strong></article><article class="metric-card"><small>Historical Activities</small><strong>{{ total_activities }}</strong></article><article class="metric-card"><small>Reporting Units</small><strong>{{ campus_stats|length }}</strong></article><article class="metric-card"><small>Years Covered</small><strong>2020–2025</strong></article></section>
-<div class="content-grid"><section class="panel"><header class="panel__header"><div><h2>Participation by Campus</h2><small>Aggregate participations, not unique accounts</small></div><a class="btn btn--sm btn--outline" href="{{ url_for('director.analytics') }}">Full Analytics</a></header><div class="campus-bars">{% set maximum = campus_stats|map(attribute='participations')|max if campus_stats else 1 %}{% for campus in campus_stats %}<div class="campus-bar"><span>{{ campus.campus }}</span><div class="campus-bar__track"><div class="campus-bar__fill" style="width:{{ (campus.participations/(maximum or 1)*100)|round }}%"></div></div><strong>{{ '{:,}'.format(campus.participations) }}</strong></div>{% else %}<div class="empty-state">No historical participation data is available.</div>{% endfor %}</div></section><aside class="panel"><h2>Leading Campuses</h2>{% for campus in top_campuses %}<p><strong>{{ loop.index }}. {{ campus.campus }}</strong><br><small>{{ campus.activities }} activities · {{ '{:,}'.format(campus.participations) }} participations</small></p>{% else %}<div class="empty-state">No rankings available.</div>{% endfor %}</aside></div>
+<section class="summary-strip" aria-label="Historical participation summary">
+  <div class="summary-stat"><small>Volunteer Participations</small><strong>{{ '{:,}'.format(total_volunteers) }}</strong></div>
+  <div class="summary-stat"><small>Historical Activities</small><strong>{{ total_activities }}</strong></div>
+  <div class="summary-stat"><small>Reporting Units</small><strong>{{ campus_stats|length }}</strong></div>
+  <div class="summary-stat"><small>Years Covered</small><strong>2020–2025</strong></div>
+</section>
+<section class="panel chart-panel">
+  <header class="panel__header"><div><h2>Leading Campuses</h2><small>Aggregate participations, not unique accounts</small></div><a class="btn btn--sm btn--outline" href="{{ url_for('director.analytics') }}">Full Analytics</a></header>
+  <div id="director-campus-chart" class="chart" data-chart="bar" data-source="director-campus-data" aria-label="Leading campuses bar chart"></div>
+  <script id="director-campus-data" type="application/json">{{ {'labels': campus_stats|map(attribute='campus')|list, 'values': campus_stats|map(attribute='participations')|list, 'name': 'Participations'}|tojson }}</script>
+  <details class="chart-fallback"><summary>View detailed values</summary><ol>{% for campus in campus_stats %}<li><strong>{{ campus.campus }}</strong> — {{ campus.activities }} activities, {{ '{:,}'.format(campus.participations) }} participations</li>{% else %}<li>No historical participation data is available.</li>{% endfor %}</ol></details>
+</section>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"></script><script src="{{ url_for('static', filename='scripts/charts.js') }}"></script>{% endblock %}

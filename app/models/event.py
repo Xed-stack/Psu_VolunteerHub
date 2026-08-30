@@ -32,6 +32,8 @@ class Event(db.Model):
     category = db.Column(db.String(50), default='General')
     location = db.Column(db.String(500), default='')
     slots = db.Column(db.Integer, default=0)
+    cover_image_path = db.Column(db.String(255), nullable=True)
+    cover_image_name = db.Column(db.String(255), nullable=True)
     campus_id = db.Column(db.Integer, db.ForeignKey(
         'campuses.id', ondelete='SET NULL'))
 

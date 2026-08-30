@@ -1,13 +1,46 @@
 {% extends 'layouts/role_base.html' if current_user.is_authenticated else 'layouts/public_base.html' %}
-{% set active_page = 'opportunities' %}
 {% block title %}Opportunities | PSU Volunteer Hub{% endblock %}
-{% block page_label %}Opportunity Directory{% endblock %}
-{% block body %}{{ opportunity_content() }}{% endblock %}
-{% block content %}{{ opportunity_content() }}{% endblock %}
-{% macro opportunity_content() %}
-<header class="page-heading"><div><h1>Volunteer Opportunities</h1><p>Showing {{ events|length }} active opportunities</p></div>{% if current_user.is_authenticated and current_user.role == 'coordinator' %}<a class="button button--primary" href="{{ url_for('coordinator.create_activity') }}">Create activity</a>{% endif %}</header>
-{% include 'partials/flash_messages.html' %}
-<section class="panel"><form class="filter-row" method="get" action="{{ url_for('events.opportunities') }}"><label class="field">Search<input type="search" name="search" value="{{ search_query or '' }}" placeholder="Title, skill, or location"></label><label class="field">Campus<select name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if selected_campus == campus.id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select></label><label class="field">Category<select name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select></label><button class="button button--primary" type="submit">Apply filters</button><a class="button button--secondary" href="{{ url_for('events.opportunities') }}">Clear</a></form></section>
-<section class="event-grid opportunity-grid" aria-label="Available opportunities">{% for event in events %}<article class="panel opportunity-card"><span class="badge">{{ event.category or 'Community' }}</span><h2>{{ event.title }}</h2><p>{{ event.description|truncate(160) }}</p><ul class="meta-list"><li><span class="material-symbols-outlined">calendar_month</span>{{ event.date.strftime('%b %d, %Y · %I:%M %p') }}</li><li><span class="material-symbols-outlined">location_on</span>{{ event.campus.name if event.campus else 'PSU Campus' }}</li><li><span class="material-symbols-outlined">group</span>{{ event.slots_remaining() }} slots remaining</li></ul>{% if current_user.is_authenticated and current_user.role == 'volunteer' %}<form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}"><button class="button button--primary" type="submit">Register</button></form>{% elif not current_user.is_authenticated %}<a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in to register</a><a class="button button--secondary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join as external volunteer</a>{% endif %}</article>{% else %}<div class="empty-state">No opportunities match these filters.</div>{% endfor %}</section>
-{% if total_pages > 1 %}<nav class="pagination" aria-label="Opportunity pages">{% if current_page > 1 %}<a href="{{ url_for('events.opportunities', page=current_page-1, campus=selected_campus, category=selected_category, search=search_query) }}">Previous</a>{% endif %}{% for p in range(1,total_pages+1) %}<a {% if p == current_page %}aria-current="page"{% endif %} href="{{ url_for('events.opportunities', page=p, campus=selected_campus, category=selected_category, search=search_query) }}">{{ p }}</a>{% endfor %}{% if current_page < total_pages %}<a href="{{ url_for('events.opportunities', page=current_page+1, campus=selected_campus, category=selected_category, search=search_query) }}">Next</a>{% endif %}</nav>{% endif %}
-{% endmacro %}
+{% block header_title %}Opportunities{% endblock %}
+{% block header_subtitle %}Discover ways to serve{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Volunteer Opportunities</h1><p>Showing {{ events|length }} active opportunities</p></div></header>
+<form class="panel filter-row" method="get">
+  <label class="field">Search<input class="input" name="search" value="{{ request.args.get('search', '') }}"></label>
+  <label class="field">Campus<select class="select" name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if request.args.get('campus')|int == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>
+  <label class="field">Category<select class="select" name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category }}" {{ 'selected' if request.args.get('category') == category }}>{{ category }}</option>{% endfor %}</select></label>
+  <div class="form-actions"><button class="button button--primary" type="submit">Apply filters</button><a href="{{ url_for('events.opportunities') }}">Clear</a></div>
+</form>
+<section class="event-grid opportunity-grid" aria-label="Available opportunities">
+  {% for event in events %}
+    <article class="panel opportunity-card">
+      <div class="opportunity-card__media">
+        {% if event.cover_image_path %}<img src="{{ url_for('static', filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" loading="lazy">{% else %}<div class="opportunity-card__fallback" aria-hidden="true"><span class="material-symbols-outlined">volunteer_activism</span></div>{% endif %}
+      </div>
+      <div class="opportunity-card__body">
+        <span class="badge">{{ event.category or 'Community' }}</span>
+        <h2>{{ event.title }}</h2>
+        <p>{{ event.description|truncate(160) }}</p>
+        <ul class="meta-list">
+          <li><span class="material-symbols-outlined">calendar_month</span>{{ event.date.strftime('%b %d, %Y · %I:%M %p') }}</li>
+          <li><span class="material-symbols-outlined">location_on</span>{{ event.campus.name if event.campus else 'PSU Campus' }}</li>
+          <li><span class="material-symbols-outlined">group</span>{{ event.slots_remaining() }} slots remaining</li>
+        </ul>
+        {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
+          <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}"><button class="button button--primary" type="submit">Register</button></form>
+        {% elif not current_user.is_authenticated %}
+          <div class="card-actions"><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in to register</a><a class="button button--secondary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join as external volunteer</a></div>
+        {% endif %}
+      </div>
+    </article>
+  {% else %}
+    <div class="empty-state">No opportunities match these filters.</div>
+  {% endfor %}
+</section>
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Opportunity pages">
+  {% if current_page > 1 %}<a class="button button--secondary" href="{{ url_for('events.opportunities', page=current_page - 1, campus=selected_campus, category=selected_category, search=search_query) }}">Previous</a>{% endif %}
+  <span>Page {{ current_page }} of {{ total_pages }}</span>
+  {% if current_page < total_pages %}<a class="button button--secondary" href="{{ url_for('events.opportunities', page=current_page + 1, campus=selected_campus, category=selected_category, search=search_query) }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

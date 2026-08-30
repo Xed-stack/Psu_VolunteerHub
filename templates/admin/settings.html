@@ -3,4 +3,13 @@
 {% block title %}System Settings · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}System configuration{% endblock %}
-{% block content %}<header class="page-heading"><div><h1>System Settings</h1><p>Configure platform-wide operational defaults.</p></div></header><form class="panel" method="post"><div class="form-grid"><label class="field">Max Slots Per Event<input id="max_slots_per_event" name="max_slots_per_event" type="number" min="1" value="{{ settings.get('max_slots_per_event','100') }}"></label><label class="field">Default Password Length<input id="default_password_length" name="default_password_length" type="number" min="6" value="{{ settings.get('default_password_length','8') }}"></label></div><div class="form-actions"><button class="btn btn--primary" type="submit">Save Settings</button></div></form>{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>System Settings</h1><p>Configure platform-wide operational defaults.</p></div></header>
+<form class="panel" method="post">
+  <div class="form-grid">
+    <label class="field">Max slots per event<input id="max_slots_per_event" name="max_slots_per_event" type="number" min="1" max="10000" value="{{ settings.get('max_slots_per_event', '100') }}"></label>
+    <label class="field">Minimum password length<input id="default_password_length" name="default_password_length" type="number" min="8" max="128" value="{{ settings.get('default_password_length', '8') }}"></label>
+  </div>
+  <div class="form-actions"><button class="btn btn--primary" type="submit">Save settings</button></div>
+</form>
+{% endblock %}

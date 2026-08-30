@@ -1,0 +1,20 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Add Campus · PSU Volunteer Hub{% endblock %}
+{% block header_title %}Administration{% endblock %}
+{% block header_subtitle %}Campus configuration{% endblock %}
+{% block content %}
+<header class="page-heading">
+  <div><h1>Add Campus</h1><p>Create a campus available to users, events, and reports.</p></div>
+</header>
+<form class="panel" method="post">
+  <div class="form-grid">
+    <label class="field">Campus name<input class="input" name="name" value="{{ request.form.get('name', '') }}" required></label>
+    <label class="field">Campus code<input class="input" name="code" value="{{ request.form.get('code', '') }}" maxlength="20" required></label>
+    <label class="field field--wide">Description<textarea class="input" name="description">{{ request.form.get('description', '') }}</textarea></label>
+  </div>
+  <div class="form-actions">
+    <a class="btn btn--ghost" href="{{ url_for('admin.admin_dash') }}">Cancel</a>
+    <button class="btn btn--primary" type="submit">Create Campus</button>
+  </div>
+</form>
+{% endblock %}

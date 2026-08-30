@@ -4,7 +4,7 @@ RBAC (Role-Based Access Control) Utilities for PSU Volunteer Hub
 Provides decorators and helpers to restrict route access by user role.
 """
 from functools import wraps
-from flask import redirect, url_for, flash, g
+from flask import redirect, url_for, g, abort
 from flask_login import current_user
 
 
@@ -18,7 +18,7 @@ def role_required(role: str, abort_403: bool = True):
             user_role = getattr(current_user, 'role', None)
             if user_role != role:
                 if abort_403:
-                    flash(f"Access denied. Requires {role} role.", "error")
+                    abort(403)
                 return redirect(url_for('dashboard'))
             g.user_role = user_role
             return f(*args, **kwargs)
@@ -38,7 +38,7 @@ def roles_required(*roles: str, abort_403: bool = True):
             user_role = getattr(current_user, 'role', None)
             if user_role not in allowed_roles:
                 if abort_403:
-                    flash("Access denied for your account role.", "error")
+                    abort(403)
                 return redirect(url_for('dashboard'))
             g.user_role = user_role
             return f(*args, **kwargs)
@@ -62,7 +62,7 @@ def coordinator_or_above(abort_403: bool = True):
             allowed_roles = ['coordinator', 'director', 'admin']
             if user_role not in allowed_roles:
                 if abort_403:
-                    flash("Access denied. Requires coordinator or higher role.", "error")
+                    abort(403)
                 return redirect(url_for('dashboard'))
             g.user_role = user_role
             return f(*args, **kwargs)

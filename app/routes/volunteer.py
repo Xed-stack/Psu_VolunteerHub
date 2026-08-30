@@ -151,14 +151,5 @@ def profile_page():
 @login_required
 @role_required('volunteer')
 def analytics():
-    kpi_cards = AnalyticsAggregator.kpi_summary()
-    campus_data = AnalyticsAggregator.campus_stats()
-    demographics = AnalyticsAggregator.role_demographics()
-    trend_data = AnalyticsAggregator.trend_data()
-    heatmap_data = AnalyticsAggregator.heatmap_data()
-    return render_template('volunteer/Volunteer_analytics.html',
-                           kpi_cards=kpi_cards,
-                           campus_data=campus_data,
-                           demographics=demographics,
-                           trend_data=trend_data,
-                           heatmap_data=heatmap_data)
+    """Compatibility redirect: volunteers do not receive global analytics."""
+    return redirect(url_for('events.volunteer_dash'))

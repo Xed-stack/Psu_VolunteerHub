@@ -5,10 +5,21 @@ Handles login, registration, and logout.
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models.user import User, Interest, Skill
+from sqlalchemy import or_
+from app.models.user import User, Interest, Skill, SystemSetting
 from app.models import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
+
+
+def _password_min_length():
+    setting = SystemSetting.query.filter_by(key='default_password_length').first()
+    try:
+        return max(8, int(setting.value)) if setting else 8
+    except (TypeError, ValueError):
+        return 8
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -26,8 +37,11 @@ def login():
             flash('Please enter both email/ID and password.', 'warning')
             return render_template('login.html')
 
-        # Lookup user by email (supports both email and ID number)
-        user = User.query.filter_by(email=identifier).first()
+        # Institutional email matching is case-insensitive; PSU IDs are exact.
+        user = User.query.filter(or_(
+            db.func.lower(User.email) == identifier.lower(),
+            User.id_number == identifier,
+        )).first()
 
         if user is None or not user.check_password(password):
             flash('Invalid email/ID or password.', 'error')
@@ -66,7 +80,10 @@ def interests():
 
     from config import Config
     interest_skill_map = getattr(Config, 'INTEREST_SKILL_MAP', {})
-    all_interests = Interest.query.all()
+    configured_names = list(interest_skill_map)
+    all_interests = Interest.query.filter(
+        Interest.name.in_(configured_names)
+    ).order_by(Interest.name).all()
     interests_data = []
     for interest in all_interests:
         skill_names = interest_skill_map.get(interest.name, [])
@@ -81,13 +98,8 @@ def interests():
 
 @auth_bp.route('/skills', methods=['GET', 'POST'])
 def skills():
-    """Kept for backwards compatibility — the wizard now reveals skills inline."""
-    if request.method == 'POST':
-        session['selected_skills'] = request.form.getlist('skills')
-        return redirect(url_for('auth.register'))
-
-    all_skills = Skill.query.all()
-    return render_template('skills.html', skills=all_skills)
+    """Compatibility endpoint for the former separate skills step."""
+    return redirect(url_for('auth.interests'))
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -110,13 +122,14 @@ def register():
         last_name = request.form.get('last_name', '').strip()
         full_name = f"{first_name} {last_name}".strip()
 
-        email = request.form.get('email', '').strip()
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-
-        id_number = request.form.get('id_number', '').strip()
-
-        # Campus string key from dropdown (e.g., 'lingayen', 'urdaneta')
-        campus_key = request.form.get('campus')
+        id_number = request.form.get('id_number', '').strip() or None
+        volunteer_type = request.form.get('volunteer_type', '').strip().lower()
+        college_affiliation = request.form.get(
+            'college_affiliation', '').strip()
+        campus_id = request.form.get('campus', type=int)
+        password_min = _password_min_length()
 
         # Validation
         errors = []
@@ -126,27 +139,35 @@ def register():
             errors.append('Email is required.')
         if not password:
             errors.append('Password is required.')
-        elif len(password) < 6:
-            errors.append('Password must be at least 6 characters.')
+        elif len(password) < password_min:
+            errors.append(
+                f'Password must be at least {password_min} characters.')
 
         if not id_number:
             errors.append('PSU ID Number is required for volunteers.')
+        if volunteer_type not in VOLUNTEER_TYPES:
+            errors.append('Select Student, Faculty, or Staff.')
+        if not college_affiliation:
+            errors.append('College affiliation is required.')
 
         # Check duplicate email
-        if email and User.query.filter_by(email=email).first():
+        if email and User.query.filter(
+                db.func.lower(User.email) == email).first():
             errors.append('An account with this email already exists.')
+        if id_number and User.query.filter_by(id_number=id_number).first():
+            errors.append('An account with this PSU ID already exists.')
 
         # Resolve campus string to Campus Model DB record
-        campus_obj = None
-        if campus_key:
-            campus_obj = Campus.query.filter(
-                Campus.name.ilike(f"%{campus_key}%")).first()
+        campus_obj = db.session.get(Campus, campus_id) if campus_id else None
+        if campus_obj is None:
+            errors.append('Select a valid PSU campus.')
 
         if errors:
             for error in errors:
                 flash(error, 'error')
             return render_template('Signup.html', campuses=campuses,
-                                    interests=interests, skills=skills)
+                                    interests=interests, skills=skills,
+                                    password_min=password_min)
 
         # Public registration always creates a volunteer. Privileged roles
         # can only be assigned through the protected Admin interface.
@@ -158,6 +179,8 @@ def register():
             email=email,
             id_number=id_number,
             role=assigned_role,
+            volunteer_type=volunteer_type,
+            college_affiliation=college_affiliation,
             campus_id=campus_obj.id if campus_obj else None
         )
         user.set_password(password)
@@ -205,7 +228,8 @@ def register():
         return redirect(url_for('auth.login'))
 
     return render_template('Signup.html', campuses=campuses,
-                            interests=interests, skills=skills)
+                           interests=interests, skills=skills,
+                           password_min=_password_min_length())
 
 
 @auth_bp.route('/logout')

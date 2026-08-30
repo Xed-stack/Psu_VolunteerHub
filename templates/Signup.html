@@ -1,2 +1,45 @@
-{% extends 'layouts/auth_base.html' %}{% block title %}Create account | PSU Volunteer Hub{% endblock %}
-{% block body %}<main class="auth-shell"><section class="auth-brand"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><h1>Join the PSU volunteer community</h1><p>Your selected interests and skills help us recommend relevant opportunities.</p></section><section class="auth-form"><small>Step 3 of 3</small><h1>Create your volunteer account</h1><form action="{{ url_for('auth.register') }}" method="post">{% include 'partials/csrf_field.html' %}<div class="form-grid"><label class="field">First name<input name="first_name" required></label><label class="field">Last name<input name="last_name" required></label><label class="field field--wide">Institutional email<input type="email" name="email" required></label><label class="field field--wide">Password<input type="password" name="password" minlength="8" required></label><label class="field">Volunteer category<select name="volunteer_type"><option value="student">Student</option><option value="faculty">Faculty</option><option value="staff">Staff</option></select></label><label class="field">PSU ID number<input name="id_number" required></label><label class="field field--wide">Campus<select name="campus">{% for campus in campuses %}<option value="{{ campus.id }}">{{ campus.name }}</option>{% else %}<option value="lingayen">Lingayen</option>{% endfor %}</select></label></div><button class="button button--primary button--block" type="submit">Create account</button></form><p>Coordinator, Director, and Admin accounts are created by an administrator.</p><p>Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p></section></main>{% endblock %}
+{% extends 'layouts/auth_base.html' %}
+{% block title %}Create account | PSU Volunteer Hub{% endblock %}
+{% block body %}
+<main class="auth-shell">
+  <section class="auth-brand">
+    <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo">
+    <h1>Join the PSU volunteer community</h1>
+    <p>Your selected interests and skills help us recommend relevant opportunities.</p>
+  </section>
+  <section class="auth-form">
+    <small>Step 2 of 2</small>
+    <h1>Create your volunteer account</h1>
+    <form action="{{ url_for('auth.register') }}" method="post">
+      {% include 'partials/csrf_field.html' %}
+      <div class="form-grid">
+        <label class="field">First name<input name="first_name" value="{{ request.form.get('first_name', '') }}" required></label>
+        <label class="field">Last name<input name="last_name" value="{{ request.form.get('last_name', '') }}" required></label>
+        <label class="field field--wide">Institutional email<input type="email" name="email" value="{{ request.form.get('email', '') }}" required></label>
+        <label class="field field--wide">Password<input type="password" name="password" minlength="{{ password_min or 8 }}" required><small>At least {{ password_min or 8 }} characters.</small></label>
+        <label class="field">Volunteer category
+          <select name="volunteer_type" required>
+            <option value="">Select category</option>
+            {% for value, label in [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff')] %}
+              <option value="{{ value }}" {{ 'selected' if request.form.get('volunteer_type') == value }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">College affiliation<input name="college_affiliation" value="{{ request.form.get('college_affiliation', '') }}" placeholder="e.g. College of Computing" required></label>
+        <label class="field">PSU ID number<input name="id_number" value="{{ request.form.get('id_number', '') }}" required></label>
+        <label class="field">Campus
+          <select name="campus" required>
+            <option value="">Select campus</option>
+            {% for campus in campuses %}
+              <option value="{{ campus.id }}" {{ 'selected' if request.form.get('campus')|int == campus.id }}>{{ campus.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <button class="button button--primary button--block" type="submit">Create account</button>
+    </form>
+    <p>Coordinator, Director, and Admin accounts are created by an administrator.</p>
+    <p>Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+  </section>
+</main>
+{% endblock %}

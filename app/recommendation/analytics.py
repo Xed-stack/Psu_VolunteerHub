@@ -6,6 +6,7 @@ All methods are static — no state, pure aggregation queries.
 """
 from datetime import datetime, timedelta
 import numpy as np
+import pandas as pd
 from scipy.stats import f_oneway
 from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
@@ -354,13 +355,18 @@ class AnalyticsAggregator:
             key = e.date.strftime('%Y-%m')
             reg_map[key] = reg_map.get(key, 0) + regs
             att_map[key] = att_map.get(key, 0) + att
-        months_list = sorted(set(reg_map) | set(att_map))
-        if len(months_list) > months:
-            months_list = months_list[-months:]
+        frame = pd.DataFrame([
+            {'period': period, 'registrations': reg_map.get(period, 0),
+             'attended': att_map.get(period, 0)}
+            for period in sorted(set(reg_map) | set(att_map))
+        ]).tail(months)
+        months_list = frame['period'].tolist() if not frame.empty else []
         return {
             'months': months_list,
-            'registrations': [reg_map.get(m, 0) for m in months_list],
-            'attended': [att_map.get(m, 0) for m in months_list],
+            'registrations': frame['registrations'].astype(int).tolist()
+            if not frame.empty else [],
+            'attended': frame['attended'].astype(int).tolist()
+            if not frame.empty else [],
         }
 
     @staticmethod

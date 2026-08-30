@@ -4,11 +4,8 @@ Recommendation Engine for PSU Volunteer Hub
 Content-based recommendation using cosine similarity between a
 volunteer's skill/interest terms and each event's skill/category terms.
 
-IMPORTANT (manuscript clarification): this engine uses *binary* term-vector
-cosine similarity. It does NOT use TF-IDF weighting and does NOT import
-scikit-learn. Term frequencies are not weighted; only the presence/absence of
-a normalized taxonomy term matters. The docstring is kept accurate on purpose
-so the implementation is not misdescribed as TF-IDF.
+This engine uses scikit-learn cosine similarity over *binary* term vectors.
+It does not use TF-IDF weighting; term presence, not frequency, is measured.
 
 Terms are represented as binary vectors over their combined, normalized,
 synonym-collapsed vocabulary.
@@ -16,6 +13,7 @@ Cosine similarity = |shared terms| / sqrt(|user terms| * |event terms|)
 """
 import re
 from datetime import datetime
+from sklearn.metrics.pairwise import cosine_similarity
 from app.models.event import Event, RecommendationLog, Registration
 from app.models.user import User, Skill, Interest
 from app.models import db
@@ -72,8 +70,10 @@ def _cosine_similarity(user_terms: set, event_terms: set) -> float:
     event_terms = normalize_terms(event_terms)
     if not user_terms or not event_terms:
         return 0.0
-    magnitude = (len(user_terms) * len(event_terms)) ** 0.5
-    return len(user_terms & event_terms) / magnitude
+    vocabulary = sorted(user_terms | event_terms)
+    user_vector = [[1 if term in user_terms else 0 for term in vocabulary]]
+    event_vector = [[1 if term in event_terms else 0 for term in vocabulary]]
+    return float(cosine_similarity(user_vector, event_vector)[0][0])
 
 
 def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None):

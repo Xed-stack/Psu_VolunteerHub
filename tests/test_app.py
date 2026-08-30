@@ -156,7 +156,8 @@ class TestAuth:
             'email': 'alice@test.com',
             'password': 'secret123',
             'account_type': 'volunteer', 'id_number': '21-0001',
-            'campus': 'Lingayen',
+            'campus': '1', 'volunteer_type': 'student',
+            'college_affiliation': 'College of Computing Sciences',
         }, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
@@ -170,7 +171,8 @@ class TestAuth:
             'email': 'privilege@test.com',
             'password': 'secret123',
             'account_type': 'coordinator', 'id_number': '21-0099',
-            'campus': 'Lingayen',
+            'campus': '1', 'volunteer_type': 'student',
+            'college_affiliation': 'College of Computing Sciences',
         })
         assert resp.status_code == 302
         with app.app_context():
@@ -244,7 +246,7 @@ class TestRoleAccess:
         uid = _create_user(app, email='vol2@test.com')
         _login_as(client, uid)
         resp = client.get('/coordinator_dash', follow_redirects=True)
-        assert resp.status_code == 200
+        assert resp.status_code == 403
 
     def test_coordinator_can_access_coordinator_dash(self, client, app):
         uid = _create_user(app, email='coord@test.com', role='coordinator', campus_id=1)
@@ -865,8 +867,7 @@ class TestMissingFeatures:
                            role='coordinator', campus_id=1)
         _login_as(client, uid)
         resp = client.get('/analytics')
-        assert resp.status_code == 302
-        assert resp.location == '/dashboard'
+        assert resp.status_code == 403
 
     def test_admin_can_access_director_analytics(self, client, app):
         uid = _create_user(app, email='adminanalytics@test.com', role='admin')
@@ -879,7 +880,7 @@ class TestMissingFeatures:
                            role='coordinator', campus_id=1)
         _login_as(client, uid)
         resp = client.post('/opportunities/register/1')
-        assert resp.status_code == 302
+        assert resp.status_code == 403
         with app.app_context():
             assert Registration.query.filter_by(user_id=uid).count() == 0
 
@@ -1073,10 +1074,13 @@ class TestAdminUserManagement:
 
     def test_admin_edit_user_post(self, client, app):
         with app.app_context():
+            safety_admin = User(name='Safety Admin', email='safety@test.com',
+                                role='admin')
+            safety_admin.set_password('pw')
             admin = User(name='EditPostAdmin', email='editpost@test.com',
                          role='admin', campus_id=1)
             admin.set_password('pw')
-            db.session.add(admin)
+            db.session.add_all([safety_admin, admin])
             db.session.commit()
             target_id = admin.id
         _login_as(client, target_id)
@@ -1322,8 +1326,8 @@ class TestReportingSystem:
     def test_unauthorized_role_denied(self, client, app):
         uid = _create_user(app, email='volrep@test.com', role='volunteer')
         _login_as(client, uid)
-        assert client.get('/reports/events.csv').status_code == 302
-        assert client.get('/reports/university.csv').status_code == 302
+        assert client.get('/reports/events.csv').status_code == 403
+        assert client.get('/reports/university.csv').status_code == 403
 
     def test_pdf_generation_with_reportlab(self, client, app):
         # Regression: reportlab must be installed and produce a valid PDF.

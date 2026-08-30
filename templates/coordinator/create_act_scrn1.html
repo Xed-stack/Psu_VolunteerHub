@@ -1,1 +1,21 @@
-{% extends 'layouts/role_base.html' %}{% block title %}Create Activity · PSU Volunteer Hub{% endblock %}{% block header_title %}Coordinator Console{% endblock %}{% block header_subtitle %}Create a volunteer opportunity{% endblock %}{% block content %}<div class="page-heading"><div><h1>Create Activity</h1><p>Publish a structured volunteer opportunity for a PSU campus.</p></div></div><form class="panel" method="POST"><div class="form-grid"><div class="field field--wide"><label class="field__label" for="title">Activity title</label><input class="input" id="title" name="title" required></div><div class="field field--wide"><label class="field__label" for="description">Description</label><textarea class="input" id="description" name="description" required></textarea></div><div class="field"><label class="field__label" for="date">Date</label><input class="input" id="date" name="date" type="date" required></div><div class="field"><label class="field__label" for="location">Location</label><input class="input" id="location" name="location"></div><div class="field"><label class="field__label" for="category">Category</label><input class="input" id="category" name="category" value="General"></div><div class="field"><label class="field__label" for="slots">Volunteer slots</label><input class="input" id="slots" name="slots" type="number" min="1" value="20"></div><div class="field"><label class="field__label" for="campus_id">Campus</label><select class="select" id="campus_id" name="campus_id">{% for campus in campuses %}<option value="{{ campus.id }}">{{ campus.name }}</option>{% endfor %}</select></div><div class="field"><label class="field__label" for="required_skills">Required skills</label><input class="input" id="required_skills" name="required_skills"></div></div><div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('coordinator.coordinator_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">Publish Activity</button></div></form>{% endblock %}
+{% extends 'layouts/role_base.html' %}
+{% block title %}Create Activity · PSU Volunteer Hub{% endblock %}
+{% block header_title %}Coordinator Console{% endblock %}
+{% block header_subtitle %}Create a volunteer opportunity{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Create Activity</h1><p>Publish a structured volunteer opportunity for your campus.</p></div></header>
+<form class="panel" method="post" enctype="multipart/form-data">
+  <div class="form-grid">
+    <label class="field field--wide">Activity title<input class="input" name="title" value="{{ request.form.get('title', '') }}" required></label>
+    <label class="field field--wide">Description<textarea class="input" name="description" required>{{ request.form.get('description', '') }}</textarea></label>
+    <label class="field">Date<input class="input" name="date" type="date" value="{{ request.form.get('date', '') }}" required></label>
+    <label class="field">Location<input class="input" name="location" value="{{ request.form.get('location', '') }}"></label>
+    <label class="field">Category<input class="input" name="category" value="{{ request.form.get('category', 'General') }}"></label>
+    <label class="field">Volunteer slots<input class="input" name="slots" type="number" min="1" max="{{ max_slots or 100 }}" value="{{ request.form.get('slots', 20) }}"><small>Maximum {{ max_slots or 100 }}.</small></label>
+    <label class="field">Campus<select class="select" name="campus_id" disabled>{% for campus in campuses %}<option>{{ campus.name }}</option>{% endfor %}</select></label>
+    <label class="field">Required skills<input class="input" name="required_skills" value="{{ request.form.get('required_skills', '') }}" placeholder="Teaching/Tutoring, Communication/Public Speaking"></label>
+    <label class="field field--wide">Event cover image<input class="input" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp"><small>Optional JPEG, PNG, or WebP, up to 5 MB.</small></label>
+  </div>
+  <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('coordinator.coordinator_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">Publish Activity</button></div>
+</form>
+{% endblock %}

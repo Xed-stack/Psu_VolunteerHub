@@ -35,10 +35,22 @@
       const sidebar = document.getElementById('roleSidebar');
       const overlay = document.getElementById('shellOverlay');
       const toggle = document.querySelector('[data-sidebar-toggle]');
-      const close = () => { sidebar?.classList.remove('is-open'); overlay?.classList.remove('is-visible'); toggle?.setAttribute('aria-expanded', 'false'); };
-      toggle?.addEventListener('click', () => { const open = sidebar.classList.toggle('is-open'); overlay.classList.toggle('is-visible', open); toggle.setAttribute('aria-expanded', String(open)); });
+      const close = (restoreFocus = false) => {
+        sidebar?.classList.remove('is-open');
+        overlay?.classList.remove('is-visible');
+        document.body.classList.remove('sidebar-open');
+        toggle?.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) toggle?.focus();
+      };
+      toggle?.addEventListener('click', () => {
+        const open = sidebar.classList.toggle('is-open');
+        overlay.classList.toggle('is-visible', open);
+        document.body.classList.toggle('sidebar-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+      });
       document.querySelectorAll('[data-sidebar-close]').forEach(el => el.addEventListener('click', close));
-      window.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+      sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => close()));
+      window.addEventListener('keydown', event => { if (event.key === 'Escape') close(true); });
     })();
   </script>
   {% include 'partials/csrf_forms_script.html' %}

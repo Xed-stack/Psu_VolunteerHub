@@ -5,18 +5,64 @@ Manages event creation, attendance tracking, and coordinator dashboard.
 """
 import os
 import uuid
+from PIL import Image, UnidentifiedImageError
+from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.event import Event, Registration, Attendance, Campus, Milestone
 from app.utils.decorators import role_required
 from app.models.notification import notify_campus_coordinators
+from app.models.user import SystemSetting
 from app.recommendation.analytics import AnalyticsAggregator
 from app.reports import (
     build_events_report, render_csv, render_pdf, ReportError)
 from datetime import datetime, timedelta
 
 coordinator_bp = Blueprint('coordinator', __name__, url_prefix='')
+
+EVENT_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+EVENT_COVER_MAX_BYTES = 5 * 1024 * 1024
+
+
+def _max_event_slots():
+    setting = SystemSetting.query.filter_by(key='max_slots_per_event').first()
+    try:
+        return max(1, int(setting.value)) if setting else 100
+    except (TypeError, ValueError):
+        return 100
+
+
+def _save_event_cover(file):
+    if not file or not file.filename:
+        return None
+    extension = secure_filename(file.filename).rsplit('.', 1)[-1].lower()
+    if extension not in EVENT_COVER_EXTENSIONS:
+        raise ValueError('Cover image must be JPEG, PNG, or WebP.')
+    file.stream.seek(0, os.SEEK_END)
+    size = file.stream.tell()
+    file.stream.seek(0)
+    if size > EVENT_COVER_MAX_BYTES:
+        raise ValueError('Cover image must be 5 MB or smaller.')
+    try:
+        with Image.open(file.stream) as image:
+            detected = (image.format or '').lower()
+            image.verify()
+    except (UnidentifiedImageError, OSError):
+        raise ValueError('Cover image is not a valid image file.')
+    finally:
+        file.stream.seek(0)
+    valid_formats = {'jpeg': {'jpg', 'jpeg'}, 'png': {'png'}, 'webp': {'webp'}}
+    if extension not in valid_formats.get(detected, set()):
+        raise ValueError('Cover image extension does not match its contents.')
+    upload_dir = os.path.join(current_app.static_folder, 'uploads', 'events')
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'{uuid.uuid4().hex}.{extension}'
+    file.save(os.path.join(upload_dir, filename))
+    return {
+        'path': f'uploads/events/{filename}',
+        'original_name': secure_filename(file.filename),
+    }
 
 
 def _coordinator_campus_id():
@@ -74,6 +120,7 @@ def create_activity():
         required_skills = request.form.get('required_skills', '').strip()
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
+        max_slots = _max_event_slots()
         campus_id = current_user.campus_id
         if campus_id is None:
             flash('Your account must be assigned to a campus before creating activities.', 'error')
@@ -81,18 +128,33 @@ def create_activity():
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
             return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+        if slots < 1 or slots > max_slots:
+            flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
+            return render_template('coordinator/create_act_scrn1.html',
+                                   campuses=campuses, max_slots=max_slots)
         try:
             date = datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
             flash('Invalid date format. Use YYYY-MM-DD.', 'error')
             return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
-        event = Event(title=title, description=description, date=date, category=category,
-                      location=location, required_skills=required_skills, slots=slots, campus_id=campus_id)
+        try:
+            cover = _save_event_cover(request.files.get('cover_image'))
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return render_template('coordinator/create_act_scrn1.html',
+                                   campuses=campuses, max_slots=max_slots)
+        event = Event(title=title, description=description, date=date,
+                      category=category, location=location,
+                      required_skills=required_skills, slots=slots,
+                      campus_id=campus_id,
+                      cover_image_path=cover['path'] if cover else None,
+                      cover_image_name=cover['original_name'] if cover else None)
         db.session.add(event)
         db.session.commit()
         flash('Activity created successfully!', 'success')
         return redirect(url_for('coordinator.coordinator_dash'))
-    return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+    return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
+                           max_slots=_max_event_slots())
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -121,6 +183,7 @@ def edit_activity(event_id):
         required_skills = request.form.get('required_skills', '').strip()
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
+        max_slots = _max_event_slots()
 
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
@@ -130,9 +193,10 @@ def edit_activity(event_id):
         except ValueError:
             flash('Invalid date format. Use YYYY-MM-DD.', 'error')
             return render_template('coordinator/edit_activity.html', event=event)
-        if slots < 1:
-            flash('Slots must be a positive number.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event)
+        if slots < 1 or slots > max_slots:
+            flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   max_slots=max_slots)
 
         # Registration-sensitive: do not reduce capacity below existing
         # registrations (PSU + external). This preserves all participation.
@@ -149,12 +213,27 @@ def edit_activity(event_id):
         event.category = category
         event.required_skills = required_skills
         event.slots = slots
+        old_cover = event.cover_image_path
+        try:
+            cover = _save_event_cover(request.files.get('cover_image'))
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   max_slots=max_slots)
+        if cover:
+            event.cover_image_path = cover['path']
+            event.cover_image_name = cover['original_name']
         # campus_id is intentionally left unchanged (server-side ownership).
         db.session.commit()
+        if cover and old_cover:
+            old_path = os.path.join(current_app.static_folder, old_cover)
+            if os.path.isfile(old_path):
+                os.remove(old_path)
         flash('Activity updated successfully!', 'success')
         return redirect(url_for('coordinator.coordinator_dash'))
 
-    return render_template('coordinator/edit_activity.html', event=event)
+    return render_template('coordinator/edit_activity.html', event=event,
+                           max_slots=_max_event_slots())
 
 
 @coordinator_bp.route('/attendance', methods=['GET', 'POST'])
@@ -359,6 +438,8 @@ def analytics():
         end_date=end_date, category=category)
     monthly = AnalyticsAggregator.monthly_engagement(
         campus_id=_coordinator_campus_id())
+    weekly = AnalyticsAggregator.weekly_engagement(
+        campus_id=_coordinator_campus_id())
     type_split = AnalyticsAggregator.psu_vs_outsider(
         campus_id=_coordinator_campus_id(), start_date=start_date,
         end_date=end_date, category=category)
@@ -379,6 +460,7 @@ def analytics():
                             category_breakdown=category_breakdown,
                             activity_breakdown=activity_breakdown,
                             monthly=monthly,
+                            weekly=weekly,
                             type_split=type_split)
 
 

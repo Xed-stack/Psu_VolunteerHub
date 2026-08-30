@@ -1,10 +1,8 @@
 /*
  * base.css — PSU Volunteer Hub design tokens (single source of truth)
  * ---------------------------------------------------------------------------
- * Both the hand-written CSS sheets (which keep their own :root and override
- * these on their pages) and the Tailwind pages (whose inline config now reads
- * var(--...)) resolve to the values defined here, so the product has one
- * canonical palette instead of two drifting sets.
+ * Every public, authentication, and role stylesheet consumes these shared
+ * tokens. This remains the system's only global stylesheet.
  */
 
 :root {

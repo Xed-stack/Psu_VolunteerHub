@@ -111,6 +111,7 @@ def analytics():
                             historical_summary=historical_summary,
                             historical_campus_data=historical_campus_data,
                             campuses=campuses, activity_types=activity_types,
+                            categories=categories,
                             selected_filters=filters,
                             live_rows=live_rows, live_summary=live_summary,
                             participation=participation,
