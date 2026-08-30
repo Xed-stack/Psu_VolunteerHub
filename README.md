@@ -35,9 +35,9 @@ All accounts use password: **`password`**
 | **Student Volunteer**     | `student@psu.edu`     | Browse events, register, view recommendations, track profile              |
 | **Faculty Volunteer**     | `faculty@psu.edu`     | Same as student                                                           |
 | **Staff Volunteer**       | `staff@psu.edu`       | Same as student                                                           |
-| **Extension Coordinator** | `coordinator@psu.edu` | Create/manage events, track attendance, upload milestones, export reports |
+| **Extension Coordinator** | `coordinator@psu.edu` | Manage events, attendance, external volunteers, milestones, and reports    |
 | **Director**              | `director@psu.edu`    | View cross-campus analytics, compare participation, export campus reports |
-| **Admin**                 | `admin@psu.edu`       | Manage all users, system settings, campus filter                          |
+| **Admin**                 | `admin@psu.edu`       | Manage users/campuses/settings, monitor health, and download backups      |
 
 ## Registration
 
@@ -50,6 +50,8 @@ New users can register at `/auth/register`. Public registration always creates a
 
 The onboarding wizard collects configured interests and their related skills together. The former separate `/auth/skills` step redirects to `/auth/interests`. Login accepts either email or the exact PSU ID.
 
+External or outsider volunteers do not need platform accounts. They can join an individual opportunity through its public registration form, and coordinators can encode external participants from attendance management.
+
 ## Features
 
 ### Volunteer
@@ -60,15 +62,18 @@ The onboarding wizard collects configured interests and their related skills tog
 - View participation history
 - View earned certificates
 - View event cover images on opportunity cards
+- Receive and manage in-app registration notifications
 
 ### Coordinator
 
 - Create and manage events
 - Define required skills per event
 - Upload or replace optional JPEG, PNG, or WebP event covers (maximum 5 MB)
-- Track attendance
+- Prevent event capacity from being reduced below existing PSU and external registrations
+- Track attendance and service hours for PSU and external volunteers
+- Add external volunteers to campus activities
 - Upload milestone documents
-- Export event reports (CSV)
+- Export event reports (CSV/PDF)
 - Review interactive Plotly analytics for activity categories, volunteer types, and engagement trends
 
 ### Director
@@ -77,6 +82,7 @@ The onboarding wizard collects configured interests and their related skills tog
 - Compare campus participation
 - Filter analytics by campus, date, category, and activity type
 - Review interactive Plotly campus and engagement charts
+- Compare PSU and outsider participation
 - Export live and historical reports (CSV/PDF)
 
 ### Admin
@@ -88,6 +94,7 @@ The onboarding wizard collects configured interests and their related skills tog
 - System settings for event capacity and password-length limits
 - Protect the final active Admin from deactivation or demotion
 - Live database health check
+- Review in-app system activity notifications
 - Audit log
 
 Unauthorized role access returns HTTP `403`. The volunteer global analytics page was removed; `/volunteer_analytics` redirects volunteers to their dashboard.
@@ -143,5 +150,6 @@ deployments must provide writable, persistent storage for that directory.
 - **Frontend:** CSS, Material Symbols, Jinja2, locally bundled Plotly
 - **Database:** SQLite (dev) / MySQL (production)
 - **Media:** Pillow image validation for event covers
+- **Reports:** ReportLab PDF generation and CSV/ZIP exports
 - **Auth:** Werkzeug password hashing, session-based
 - **Testing:** pytest
