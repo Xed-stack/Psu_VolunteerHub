@@ -3,26 +3,79 @@
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}User management{% endblock %}
 {% block content %}
-<header class="page-heading">
-  <div><h1>{{ 'Edit User' if user else 'Create User' }}</h1><p>{{ 'Update account details and access.' if user else 'Add a new account to the volunteer hub.' }}</p></div>
-</header>
-<form class="panel" method="post">
-  <div class="form-grid">
-    <label class="field">Full name<input class="input" name="name" value="{{ user.name if user else request.form.get('name', '') }}" required></label>
-    <label class="field">Email<input class="input" name="email" type="email" value="{{ user.email if user else request.form.get('email', '') }}" required></label>
-    {% if not user %}<label class="field">Password<input class="input" name="password" type="password" minlength="{{ password_min }}" required><small>At least {{ password_min }} characters.</small></label>{% endif %}
-    <label class="field">PSU ID<input class="input" name="id_number" value="{{ user.id_number or '' if user else request.form.get('id_number', '') }}"></label>
-    <label class="field">Role
-      <select class="select" name="role">{% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}<option value="{{ role }}" {{ 'selected' if user and user.role == role }}>{{ role|title }}</option>{% endfor %}</select>
-    </label>
-    <label class="field">Campus
-      <select class="select" name="campus_id"><option value="">No campus</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if user and user.campus_id == campus.id }}>{{ campus.name }}</option>{% endfor %}</select>
-    </label>
-    <label class="field">Volunteer category
-      <select class="select" name="volunteer_type"><option value="">Not applicable</option>{% for value in ['student', 'faculty', 'staff'] %}<option value="{{ value }}" {{ 'selected' if user and user.volunteer_type == value }}>{{ value|title }}</option>{% endfor %}</select>
-    </label>
-    <label class="field">College affiliation<input class="input" name="college_affiliation" value="{{ user.college_affiliation or '' if user else request.form.get('college_affiliation', '') }}"></label>
-  </div>
-  <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('admin.admin_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">{{ 'Save Changes' if user else 'Create User' }}</button></div>
-</form>
+  <header class="page-heading">
+    <div>
+      <h1>{{ 'Edit User' if user else 'Create User' }}</h1>
+      <p>{{ 'Update account details and access.' if user else 'Add a new account to the volunteer hub.' }}</p>
+    </div>
+  </header>
+  <form class="panel" method="post">
+    <div class="form-grid">
+      <label class="field">
+        Full name<input
+  class="input"
+  name="name"
+  value="{{ user.name if user else request.form.get('name', '') }}"
+  required
+>
+      </label>
+      <label class="field">
+        Email<input
+  class="input"
+  name="email"
+  type="email"
+  value="{{ user.email if user else request.form.get('email', '') }}"
+  required
+>
+      </label>
+      {% if not user %}<label class="field">Password<input
+  class="input"
+  name="password"
+  type="password"
+  minlength="{{ password_min }}"
+  required
+><small>At least {{ password_min }} characters.</small></label>{% endif %}
+      <label class="field">
+        PSU ID<input
+  class="input"
+  name="id_number"
+  value="{{ user.id_number or '' if user else request.form.get('id_number', '') }}"
+>
+      </label>
+      <label class="field">
+        Role
+        <select class="select" name="role">{% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}<option
+  value="{{ role }}"
+  {{ 'selected' if user and user.role == role }}
+>{{ role|title }}</option>{% endfor %}</select>
+      </label>
+      <label class="field">
+        Campus
+        <select class="select" name="campus_id"><option value="">No campus</option>{% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {{ 'selected' if user and user.campus_id == campus.id }}
+>{{ campus.name }}</option>{% endfor %}</select>
+      </label>
+      <label class="field">
+        Volunteer category
+        <select class="select" name="volunteer_type"><option value="">Not applicable</option>{% for value in ['student', 'faculty', 'staff'] %}<option
+  value="{{ value }}"
+  {{ 'selected' if user and user.volunteer_type == value }}
+>{{ value|title }}</option>{% endfor %}</select>
+      </label>
+      <label class="field">
+        College affiliation<input
+  class="input"
+  name="college_affiliation"
+  value="{{ user.college_affiliation or '' if user else request.form.get('college_affiliation', '') }}"
+>
+      </label>
+    </div>
+    <div class="form-actions">
+      <a
+        class="btn btn--ghost"
+        href="{{ url_for('admin.admin_dash') }}"
+      >Cancel</a><button class="btn btn--primary" type="submit">{{ 'Save Changes' if user else 'Create User' }}</button>
+    </div>
+  </form>
 {% endblock %}

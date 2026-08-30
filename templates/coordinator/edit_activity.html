@@ -3,18 +3,79 @@
 {% block header_title %}Coordinator Console{% endblock %}
 {% block header_subtitle %}Edit volunteer opportunity{% endblock %}
 {% block content %}
-<header class="page-heading"><div><h1>Edit Activity</h1><p>Update this opportunity for {{ current_user.campus.name if current_user.campus else 'your campus' }}.</p></div></header>
-<form class="panel" method="post" enctype="multipart/form-data">
-  <div class="form-grid">
-    <label class="field field--wide">Activity title<input class="input" name="title" required value="{{ event.title or '' }}"></label>
-    <label class="field field--wide">Description<textarea class="input" name="description" required>{{ event.description or '' }}</textarea></label>
-    <label class="field">Date<input class="input" name="date" type="date" required value="{{ event.date.strftime('%Y-%m-%d') if event.date else '' }}"></label>
-    <label class="field">Location<input class="input" name="location" value="{{ event.location or '' }}"></label>
-    <label class="field">Category<input class="input" name="category" value="{{ event.category or 'General' }}"></label>
-    <label class="field">Volunteer slots<input class="input" name="slots" type="number" min="1" max="{{ max_slots or 100 }}" value="{{ event.slots or 1 }}"><small>Maximum {{ max_slots or 100 }}.</small></label>
-    <label class="field">Required skills<input class="input" name="required_skills" value="{{ event.required_skills or '' }}"></label>
-    <label class="field">Replace cover image<input class="input" name="cover_image" type="file" accept="image/jpeg,image/png,image/webp"><small>{{ event.cover_image_name or 'No cover uploaded' }}</small></label>
-  </div>
-  <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('coordinator.coordinator_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">Save Changes</button></div>
-</form>
+  <header class="page-heading">
+    <div>
+      <h1>Edit Activity</h1>
+      <p>Update this opportunity for {{ current_user.campus.name if current_user.campus else 'your campus' }}.</p>
+    </div>
+  </header>
+  <form class="panel" method="post" enctype="multipart/form-data">
+    <div class="form-grid">
+      <label class="field field--wide">
+        Activity title<input
+  class="input"
+  name="title"
+  required
+  value="{{ event.title or '' }}"
+>
+      </label>
+      <label class="field field--wide">
+        Description<textarea class="input" name="description" required>{{ event.description or '' }}</textarea>
+      </label>
+      <label class="field">
+        Date<input
+  class="input"
+  name="date"
+  type="date"
+  required
+  value="{{ event.date.strftime('%Y-%m-%d') if event.date else '' }}"
+>
+      </label>
+      <label class="field">
+        Location<input
+  class="input"
+  name="location"
+  value="{{ event.location or '' }}"
+>
+      </label>
+      <label class="field">
+        Category<input
+  class="input"
+  name="category"
+  value="{{ event.category or 'General' }}"
+>
+      </label>
+      <label class="field">
+        Volunteer slots<input
+  class="input"
+  name="slots"
+  type="number"
+  min="1"
+  max="{{ max_slots or 100 }}"
+  value="{{ event.slots or 1 }}"
+><small>Maximum {{ max_slots or 100 }}.</small>
+      </label>
+      <label class="field">
+        Required skills<input
+  class="input"
+  name="required_skills"
+  value="{{ event.required_skills or '' }}"
+>
+      </label>
+      <label class="field">
+        Replace cover image<input
+  class="input"
+  name="cover_image"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+><small>{{ event.cover_image_name or 'No cover uploaded' }}</small>
+      </label>
+    </div>
+    <div class="form-actions">
+      <a
+        class="btn btn--ghost"
+        href="{{ url_for('coordinator.coordinator_dash') }}"
+      >Cancel</a><button class="btn btn--primary" type="submit">Save Changes</button>
+    </div>
+  </form>
 {% endblock %}

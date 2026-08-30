@@ -1,6 +1,157 @@
-{% extends 'layouts/role_base.html' %}{% set active_page='profile' %}
-{% block title %}Profile | PSU Volunteer Hub{% endblock %}{% block page_label %}Volunteer Profile{% endblock %}
-{% block content %}<header class="profile-summary panel"><img src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Profile of {{ current_user.name }}"><div><span class="badge">Verified volunteer</span><h1>{{ current_user.name }}</h1><p>{{ current_user.email }}</p></div><span class="status-label">Profile active</span></header>
-<section class="metric-grid"><article class="metric-card"><small>Total hours</small><strong>{{ user_stats.total_hours or 0 }}</strong></article><article class="metric-card"><small>Activities</small><strong>{{ user_stats.total_activities or 0 }}</strong></article><article class="metric-card"><small>Level</small><strong>{{ user_stats.level_label }}</strong></article><article class="metric-card"><small>Progress</small><strong>{{ user_stats.level_percent }}%</strong></article></section>
-<div class="content-grid"><div class="stack"><section class="panel"><header class="panel__header"><h2>Edit matching profile</h2></header><form method="post"><label class="field"><span class="field__label">Skills</span><input class="input" name="skills" value="{{ profile.skill_list|join(', ') if profile else '' }}" placeholder="Teaching, Communication, Python"></label><label class="field"><span class="field__label">Interests</span><input class="input" name="interests" value="{{ profile.interest_list|join(', ') if profile else '' }}" placeholder="Education, Technology, Environment"></label><button class="btn btn--primary" type="submit">Save profile</button></form></section><section class="panel"><header class="panel__header"><h2>Skills</h2></header><div class="tag-list">{% if profile and profile.skill_list %}{% for skill in profile.skill_list %}<span class="badge">{{ skill }}</span>{% endfor %}{% else %}<span class="status-label">No skills added yet</span>{% endif %}</div></section><section class="panel"><header class="panel__header"><h2>Recommended for you</h2></header><ul class="clean-list">{% for rec in recommendations %}<li><strong>{{ rec.event.title }}</strong><small>{{ rec.percentage }}% match</small></li>{% else %}<li>Add skills and interests to receive recommendations.</li>{% endfor %}</ul></section><section class="panel"><header class="panel__header"><h2>Preferred categories</h2></header><div class="tag-list">{% for category in preferred_categories %}<span class="badge">{{ category }}</span>{% else %}<span class="status-label">No category history yet</span>{% endfor %}</div></section></div>
-<div class="stack"><section class="panel"><header class="panel__header"><h2>Achievement badges</h2></header><div class="badge-grid">{% for badge in badges %}<article class="achievement {% if not badge.earned %}is-locked{% endif %}"><span class="material-symbols-outlined">{{ badge.icon }}</span><strong>{{ badge.name }}</strong></article>{% endfor %}</div></section><section class="panel"><header class="panel__header"><h2>Activity history</h2><a href="{{ url_for('events.opportunities') }}">Browse opportunities</a></header><div class="table-scroll"><table class="data-table"><thead><tr><th scope="col">Activity</th><th scope="col">Registered</th><th scope="col">Status</th><th scope="col">Certificate</th></tr></thead><tbody>{% for reg in registrations %}<tr><td>{{ reg.event.title if reg.event else '—' }}</td><td>{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else '—' }}</td><td><span class="badge">{{ reg.status|title }}</span></td><td><span class="badge {{ 'badge--primary' if reg.certificate_eligible else 'badge--neutral' }}">{{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}</span></td></tr>{% else %}<tr><td colspan="4">No activities yet.</td></tr>{% endfor %}</tbody></table></div></section></div></div>{% endblock %}
+{% extends 'layouts/role_base.html' %}
+{% set active_page = "profile" %}
+{% block title %}Profile | PSU Volunteer Hub{% endblock %}
+{% block page_label %}Volunteer Profile{% endblock %}
+{% block content %}
+  <header class="profile-summary panel">
+    <img
+      src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"
+      alt="Profile of {{ current_user.name }}"
+    >
+    <div>
+      <span class="badge">Verified volunteer</span>
+      <h1>{{ current_user.name }}</h1>
+      <p>{{ current_user.email }}</p>
+    </div>
+    <span class="status-label">Profile active</span>
+  </header>
+  <section class="metric-grid">
+    <article class="metric-card">
+      <small>Total hours</small>
+      <strong>{{ user_stats.total_hours or 0 }}</strong>
+    </article>
+    <article class="metric-card">
+      <small>Activities</small>
+      <strong>{{ user_stats.total_activities or 0 }}</strong>
+    </article>
+    <article class="metric-card">
+      <small>Level</small>
+      <strong>{{ user_stats.level_label }}</strong>
+    </article>
+    <article class="metric-card">
+      <small>Progress</small>
+      <strong>{{ user_stats.level_percent }}%</strong>
+    </article>
+  </section>
+  <div class="content-grid">
+    <div class="stack">
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Edit matching profile</h2>
+        </header>
+        <form method="post">
+          <label class="field">
+            <span class="field__label">Skills</span>
+            <input
+              class="input"
+              name="skills"
+              value="{{ profile.skill_list|join(', ') if profile else '' }}"
+              placeholder="Teaching, Communication, Python"
+            >
+          </label>
+          <label class="field">
+            <span class="field__label">Interests</span>
+            <input
+              class="input"
+              name="interests"
+              value="{{ profile.interest_list|join(', ') if profile else '' }}"
+              placeholder="Education, Technology, Environment"
+            >
+          </label>
+          <button class="btn btn--primary" type="submit">Save profile</button>
+        </form>
+      </section>
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Skills</h2>
+        </header>
+        <div class="tag-list">
+          {% if profile and profile.skill_list %}
+            {% for skill in profile.skill_list %}<span class="badge">{{ skill }}</span>{% endfor %}
+          {% else %}
+            <span class="status-label">No skills added yet</span>
+          {% endif %}
+        </div>
+      </section>
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Recommended for you</h2>
+        </header>
+        <ul class="clean-list">
+          {% for rec in recommendations %}
+            <li><strong>{{ rec.event.title }}</strong><small>{{ rec.percentage }}% match</small></li>
+          {% else %}
+            <li>Add skills and interests to receive recommendations.</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Preferred categories</h2>
+        </header>
+        <div class="tag-list">
+          {% for category in preferred_categories %}
+            <span class="badge">{{ category }}</span>
+          {% else %}
+            <span class="status-label">No category history yet</span>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+    <div class="stack">
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Achievement badges</h2>
+        </header>
+        <div class="badge-grid">
+          {% for badge in badges %}
+            <article
+              class="achievement {% if not badge.earned %}is-locked{% endif %}"
+            >
+              <span class="material-symbols-outlined">{{ badge.icon }}</span>
+              <strong>{{ badge.name }}</strong>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Activity history</h2>
+          <a href="{{ url_for('events.opportunities') }}">Browse opportunities</a>
+        </header>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Activity</th>
+                <th>Registered</th>
+                <th>Status</th>
+                <th>Certificate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for reg in registrations %}
+                <tr>
+                  <td>{{ reg.event.title if reg.event else 'Not available' }}</td>
+                  <td>{{ reg.registered_at.strftime("%b %d, %Y") if reg.registered_at else 'Not available' }}</td>
+                  <td><span class="badge">{{ reg.status|title }}</span></td>
+                  <td>
+                    <span
+                      class="badge {{ 'badge--primary' if reg.certificate_eligible else 'badge--neutral' }}"
+                    >
+                      {{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}
+                    </span>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="4">No activities yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

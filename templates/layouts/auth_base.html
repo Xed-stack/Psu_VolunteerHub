@@ -1,13 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Account · PSU Volunteer Hub{% endblock %}</title>
-  <link rel="icon" href="{{ url_for('static', filename='assets/PSU-logo.png') }}" type="image/png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles/base.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles/auth.css') }}">
-</head>
-<body class="auth-page">{% include 'partials/flash_messages.html' %}{% block body %}{% endblock %}{% include 'partials/csrf_forms_script.html' %}{% block scripts %}{% endblock %}</body>
+  <head>
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    >
+    <title>{% block title %}Account · PSU Volunteer Hub{% endblock %}</title>
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+      type="image/png"
+    >
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    >
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/base.css') }}"
+    >
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/auth.css') }}"
+    >
+  </head>
+  <body class="auth-page">
+    {% include 'partials/flash_messages.html' %}
+    {% block body %}{% endblock %}
+    {% include 'partials/csrf_forms_script.html' %}
+    {% block scripts %}{% endblock %}
+  </body>
 </html>

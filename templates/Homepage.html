@@ -1,4 +1,66 @@
-{% extends 'layouts/public_base.html' %}{% block title %}PSU Volunteer Hub{% endblock %}
-{% block body %}<nav class="public-nav"><a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo">PSU Volunteer Hub</a><div class="public-nav__links"><a href="#about">About</a><a href="{{ url_for('events.opportunities') }}">Opportunities</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div></nav>
-<main class="public-main"><section class="hero"><div><span class="badge">Pangasinan State University</span><h1>Make service count.</h1><p>Discover volunteer opportunities, build community impact, and track every hour in one university-wide hub.</p><div class="button-row"><a class="button button--primary" href="{{ url_for('auth.interests') }}">Get started</a><a class="button button--secondary" href="{{ url_for('events.opportunities') }}">Browse opportunities</a></div></div><div class="hero-visual"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="Pangasinan State University seal"></div></section>
-<section class="section" id="about"><h2>One hub, shared impact</h2><div class="feature-grid"><article class="panel"><span class="material-symbols-outlined">recommend</span><h3>Relevant matches</h3><p>Cosine similarity connects volunteer skills and interests with suitable activities.</p></article><article class="panel"><span class="material-symbols-outlined">calendar_month</span><h3>Simple coordination</h3><p>Find opportunities, register, and keep your upcoming commitments visible.</p></article><article class="panel"><span class="material-symbols-outlined">insights</span><h3>Measured service</h3><p>Understand participation and service engagement across PSU campuses.</p></article></div></section></main><footer class="public-footer">© 2026 Pangasinan State University · Excellence in Service</footer>{% endblock %}
+{% extends 'layouts/public_base.html' %}
+{% block title %}PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <nav class="public-nav">
+    <a class="public-brand" href="{{ url_for('home') }}">
+      <img
+        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+        alt="PSU logo"
+      >
+      PSU Volunteer Hub
+    </a>
+    <div class="public-nav__links">
+      <a href="#about">About</a>
+      <a href="{{ url_for('events.opportunities') }}">Opportunities</a>
+      <a
+        class="button button--primary"
+        href="{{ url_for('auth.login') }}"
+      >Sign in</a>
+    </div>
+  </nav>
+  <main class="public-main">
+    <section class="hero">
+      <div>
+        <span class="badge">Pangasinan State University</span>
+        <h1>Make service count.</h1>
+        <p>Discover volunteer opportunities, build community impact, and track every hour in one university-wide hub.</p>
+        <div class="button-row">
+          <a
+            class="button button--primary"
+            href="{{ url_for('auth.interests') }}"
+          >Get started</a>
+          <a
+            class="button button--secondary"
+            href="{{ url_for('events.opportunities') }}"
+          >Browse opportunities</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img
+          src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+          alt="Pangasinan State University seal"
+        >
+      </div>
+    </section>
+    <section class="section" id="about">
+      <h2>One hub, shared impact</h2>
+      <div class="feature-grid">
+        <article class="panel"><span class="material-symbols-outlined">recommend</span>
+          <h3>Relevant matches</h3>
+          <p>Cosine similarity connects volunteer skills and interests with suitable activities.</p>
+        </article>
+        <article class="panel"><span class="material-symbols-outlined">calendar_month</span>
+          <h3>Simple coordination</h3>
+          <p>Find opportunities, register, and keep your upcoming commitments visible.</p>
+        </article>
+        <article class="panel"><span class="material-symbols-outlined">insights</span>
+          <h3>Measured service</h3>
+          <p>Understand participation and service engagement across PSU campuses.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer class="public-footer">
+    © 2026 Pangasinan State University · Excellence in Service
+  </footer>
+{% endblock %}

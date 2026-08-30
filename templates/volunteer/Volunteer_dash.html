@@ -1,11 +1,91 @@
 {% extends 'layouts/role_base.html' %}
-{% set active_page = 'dashboard' %}
+{% set active_page = "dashboard" %}
 {% block title %}Volunteer Dashboard | PSU Volunteer Hub{% endblock %}
 {% block page_label %}Volunteer Portal{% endblock %}
-{% block header_actions %}<a class="button button--primary" href="{{ url_for('events.opportunities') }}"><span class="material-symbols-outlined">search</span> Find opportunities</a>{% endblock %}
+{% block header_actions %}
+  <a
+    class="button button--primary"
+    href="{{ url_for('events.opportunities') }}"
+  >
+    <span class="material-symbols-outlined">search</span> Find opportunities
+  </a>
+{% endblock %}
 {% block content %}
-<header class="page-heading"><div><h1>Welcome back, {{ current_user.name }}</h1><p>Track your service and discover activities matched with cosine similarity.</p></div></header>
-<section class="metric-grid" aria-label="Volunteer summary"><article class="metric-card"><small>Service hours</small><strong>{{ user_stats.total_hours }}</strong></article><article class="metric-card"><small>Activities</small><strong>{{ user_stats.total_activities }}</strong></article><article class="metric-card"><small>Recognition</small><strong>{{ certification.level }}</strong></article><article class="metric-card"><small>Next milestone</small><strong>{{ certification.next_level }}</strong></article></section>
-<div class="content-grid"><section class="panel"><header class="panel__header"><h2>Recommended for you</h2><a href="{{ url_for('events.opportunities') }}">View all</a></header>{% if recommendations %}<div class="card-list">{% for item in recommendations %}{% set event = item.event if item.event is defined else item %}<article class="activity-card"><div><span class="badge">{{ event.category or 'Community' }}</span><h3>{{ event.title }}</h3><p>{{ event.description|truncate(130) }}</p><small>{{ event.date.strftime('%b %d, %Y') }} · {{ event.campus.name if event.campus else 'PSU' }}</small></div><a class="button button--secondary" href="{{ url_for('events.opportunities', search=event.title) }}">Details</a></article>{% endfor %}</div>{% else %}<div class="empty-state">Complete your interests and skills to improve your recommendations.</div>{% endif %}</section>
-<aside class="stack"><section class="panel"><header class="panel__header"><h2>Upcoming schedule</h2></header>{% if upcoming_schedule %}<ul class="clean-list">{% for item in upcoming_schedule %}<li><strong>{{ item.event.title }}</strong><small>{{ item.date.strftime('%b %d, %Y · %I:%M %p') }}</small></li>{% endfor %}</ul>{% else %}<div class="empty-state">No upcoming activities.</div>{% endif %}</section><section class="panel"><header class="panel__header"><h2>Recent activity</h2></header>{% if recent_activity %}<ul class="clean-list">{% for registration in recent_activity %}<li><strong>{{ registration.event.title }}</strong><small>{{ registration.status|title }}</small></li>{% endfor %}</ul>{% else %}<div class="empty-state">Your registrations will appear here.</div>{% endif %}</section></aside></div>
+  <header class="page-heading">
+    <div>
+      <h1>Welcome back, {{ current_user.name }}</h1>
+      <p>Track your service and discover activities matched with cosine similarity.</p>
+    </div>
+  </header>
+  <section class="metric-grid" aria-label="Volunteer summary">
+    <article class="metric-card"><small>Service hours</small><strong>{{ user_stats.total_hours }}</strong></article>
+    <article class="metric-card"><small>Activities</small><strong>{{ user_stats.total_activities }}</strong></article>
+    <article class="metric-card"><small>Recognition</small><strong>{{ certification.level }}</strong></article>
+    <article class="metric-card"><small>Next milestone</small><strong>{{ certification.next_level }}</strong></article>
+  </section>
+  <div class="content-grid">
+    <section class="panel">
+      <header class="panel__header">
+        <h2>Recommended for you</h2>
+        <a href="{{ url_for('events.opportunities') }}">View all</a>
+      </header>
+      {% if recommendations %}
+        <div class="card-list">
+          {% for item in recommendations %}
+            {% set event = item.event if item.event is defined else item %}
+            <article class="activity-card">
+              <div>
+                <span class="badge">{{ event.category or 'Community' }}</span>
+                <h3>{{ event.title }}</h3>
+                <p>{{ event.description|truncate(130) }}</p>
+                <small>{{ event.date.strftime("%b %d, %Y") }} · {{ event.campus.name if event.campus else 'PSU' }}</small>
+              </div>
+              <a
+                class="button button--secondary"
+                href="{{ url_for('events.opportunities', search=event.title) }}"
+              >Details</a>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Complete your interests and skills to improve your recommendations.</div>
+      {% endif %}
+    </section>
+    <aside class="stack">
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Upcoming schedule</h2>
+        </header>
+        {% if upcoming_schedule %}
+          <ul class="clean-list">
+            {% for item in upcoming_schedule %}
+              <li>
+                <strong>{{ item.event.title }}</strong>
+                <small>{{ item.date.strftime("%b %d, %Y at %I:%M %p") }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">No upcoming activities.</div>
+        {% endif %}
+      </section>
+      <section class="panel">
+        <header class="panel__header">
+          <h2>Recent activity</h2>
+        </header>
+        {% if recent_activity %}
+          <ul class="clean-list">
+            {% for registration in recent_activity %}
+              <li>
+                <strong>{{ registration.event.title }}</strong>
+                <small>{{ registration.status|title }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">Your registrations will appear here.</div>
+        {% endif %}
+      </section>
+    </aside>
+  </div>
 {% endblock %}

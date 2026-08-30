@@ -1,2 +1,48 @@
-{% extends 'layouts/auth_base.html' %}{% block title %}Sign in | PSU Volunteer Hub{% endblock %}
-{% block body %}<main class="auth-shell"><section class="auth-brand"><a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"></a><h1>PSU Volunteer Hub</h1><p>Connect your service with the communities that need it.</p></section><section class="auth-form"><h1>Sign in</h1><p>Access your university volunteer portal.</p><form action="{{ url_for('auth.login') }}" method="post"><label class="field">Email or ID number<input id="identifier" name="identifier" required autocomplete="username" placeholder="name@psu.edu.ph"></label><label class="field">Password<input id="password" type="password" name="password" required autocomplete="current-password"></label><label class="check-row"><input type="checkbox" name="remember"> Remember this device</label><button class="button button--primary button--block" type="submit">Sign in</button></form><p>New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an account</a></p></section></main>{% endblock %}
+{% extends 'layouts/auth_base.html' %}
+{% block title %}Sign in | PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <a href="{{ url_for('home') }}">
+        <img
+          src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+          alt="PSU logo"
+        >
+      </a>
+      <h1>PSU Volunteer Hub</h1>
+      <p>Connect your service with the communities that need it.</p>
+    </section>
+    <section class="auth-form">
+      <h1>Sign in</h1>
+      <p>Access your university volunteer portal.</p>
+      <form action="{{ url_for('auth.login') }}" method="post">
+        <label class="field">
+          Email or ID number
+          <input
+            id="identifier"
+            name="identifier"
+            required
+            autocomplete="username"
+            placeholder="name@psu.edu.ph"
+          >
+        </label>
+        <label class="field">
+          Password
+          <input
+            id="password"
+            type="password"
+            name="password"
+            required
+            autocomplete="current-password"
+          >
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="remember">
+          Remember this device
+        </label>
+        <button class="button button--primary button--block" type="submit">Sign in</button>
+      </form>
+      <p>New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an account</a></p>
+    </section>
+  </main>
+{% endblock %}

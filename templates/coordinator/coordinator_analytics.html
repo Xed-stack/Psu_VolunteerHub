@@ -1,135 +1,332 @@
 {% extends 'layouts/role_base.html' %}
-{% set active_page = 'analytics' %}
+{% set active_page = "analytics" %}
 {% block title %}Campus Analytics · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Coordinator Console{% endblock %}
 {% block header_subtitle %}{{ campus_name }} Campus{% endblock %}
 {% block header_actions %}
-  <a class="btn btn--outline" href="{{ url_for('coordinator.export_events_pdf', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), category=request.args.get('category')) }}">Export PDF</a>
-  <a class="btn btn--primary" href="{{ url_for('coordinator.export_events_csv', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), category=request.args.get('category')) }}">Export CSV</a>
+  <a
+    class="btn btn--outline"
+    href="{{ url_for('coordinator.export_events_pdf', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), category=request.args.get('category')) }}"
+  >Export PDF</a>
+  <a
+    class="btn btn--primary"
+    href="{{ url_for('coordinator.export_events_csv', start_date=request.args.get('start_date'), end_date=request.args.get('end_date'), category=request.args.get('category')) }}"
+  >Export CSV</a>
 {% endblock %}
-
 {% block content %}
-<header class="page-heading">
-  <div>
-    <h1>Campus Analytics</h1>
-    <p>Participation, readiness, and engagement data for {{ campus_name }}.</p>
-  </div>
-</header>
-
-<section class="panel" aria-labelledby="filter-heading">
-  <h2 class="sr-only" id="filter-heading">Report filters</h2>
-  <form class="filter-row" method="get">
-    <label class="field">Start date<input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}"></label>
-    <label class="field">End date<input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}"></label>
-    <label class="field">Category
-      <select name="category">
-        <option value="">All categories</option>
-        {% for category in categories %}
-          <option value="{{ category }}" {{ 'selected' if request.args.get('category') == category }}>{{ category }}</option>
+  <header class="page-heading">
+    <div>
+      <h1>Campus Analytics</h1>
+      <p>Participation, readiness, and engagement data for {{ campus_name }}.</p>
+    </div>
+  </header>
+  <section class="panel" aria-labelledby="filter-heading">
+    <h2 class="sr-only" id="filter-heading">Report filters</h2>
+    <form class="filter-row" method="get">
+      <label class="field">
+        Start date<input
+  type="date"
+  name="start_date"
+  value="{{ request.args.get('start_date', '') }}"
+>
+      </label>
+      <label class="field">
+        End date<input
+  type="date"
+  name="end_date"
+  value="{{ request.args.get('end_date', '') }}"
+>
+      </label>
+      <label class="field">
+        Category
+        <select name="category">
+          <option value="">All categories</option>
+          {% for category in categories %}
+            <option
+              value="{{ category }}"
+              {{ 'selected' if request.args.get("category") == category }}
+            >{{ category }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn--primary" type="submit">Apply filters</button>
+      <a
+        class="btn btn--ghost"
+        href="{{ url_for('coordinator.analytics') }}"
+      >Clear</a>
+    </form>
+  </section>
+  <section class="summary-strip" aria-label="Campus key metrics">
+    <article><small>Active volunteers</small><strong>{{ kpi_cards.total_active_volunteers }}</strong></article>
+    <article><small>Hours logged</small><strong>{{ kpi_cards.total_hours }}h</strong></article>
+    <article><small>Attendance rate</small><strong>{{ participation.attendance_rate }}%</strong></article>
+    <article><small>Registrations</small><strong>{{ participation.registrations }}</strong></article>
+  </section>
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Participation Summary</h2>
+        <small>Filtered campus totals without monetary valuation</small>
+      </div>
+    </header>
+    <div class="summary-strip summary-strip--compact">
+      <article><small>Unique volunteers</small><strong>{{ participation.unique_volunteers }}</strong></article>
+      <article><small>Sign-up to attendance</small><strong>{{ participation.conversion_rate }}%</strong></article>
+      <article><small>Service hours</small><strong>{{ participation.service_hours }}h</strong></article>
+      <article><small>PSU / outsider</small><strong>{{ type_split.psu }} / {{ type_split.outsider }}</strong></article>
+    </div>
+  </section>
+  <section class="analytics-grid">
+    <article class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Participation by Category</h2>
+          <small>Registrations per activity category</small>
+        </div>
+      </header>
+      <div
+        class="chart"
+        data-chart="pie"
+        data-source="categoryChartData"
+        role="img"
+        aria-label="Participation by category chart"
+      ></div>
+      <details class="chart-data">
+        <summary>View chart data</summary>
+        <ul>
+          {% for item in category_breakdown %}
+            <li>{{ item.category }}: {{ item.registrations }}</li>
+          {% else %}
+            <li>No category data.</li>
+          {% endfor %}
+        </ul>
+      </details>
+    </article>
+    <article class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Participant Type</h2>
+          <small>PSU and outsider registrations</small>
+        </div>
+      </header>
+      <div
+        class="chart"
+        data-chart="donut"
+        data-source="typeChartData"
+        role="img"
+        aria-label="Participant type chart"
+      ></div>
+      <details class="chart-data">
+        <summary>View chart data</summary>
+        <p>PSU: {{ type_split.psu }} · Outsider: {{ type_split.outsider }}</p>
+      </details>
+    </article>
+  </section>
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Engagement Trend</h2>
+        <small>Compare monthly activity with service-hour trends</small>
+      </div>
+      <label class="field field--inline">
+        View
+        <select
+          data-chart-switch="engagementChart"
+          data-source="engagementChartData"
+        >
+          <option value="monthly">Monthly attendance</option>
+          <option value="trend">Service-hour trend</option>
+        </select>
+      </label>
+    </header>
+    <div
+      class="chart chart--wide"
+      id="engagementChart"
+      role="img"
+      aria-label="Campus engagement trend chart"
+    ></div>
+    <details class="chart-data">
+      <summary>View monthly chart data</summary>
+      <ul>
+        {% for month in monthly.months %}
+          <li>
+            {{ month }}: {{ monthly.registrations[loop.index0] }} registered,
+            {{ monthly.attended[loop.index0] }} attended
+          </li>
+        {% else %}
+          <li>No engagement data.</li>
         {% endfor %}
-      </select>
-    </label>
-    <button class="btn btn--primary" type="submit">Apply filters</button>
-    <a class="btn btn--ghost" href="{{ url_for('coordinator.analytics') }}">Clear</a>
-  </form>
-</section>
-
-<section class="summary-strip" aria-label="Campus key metrics">
-  <article><small>Active volunteers</small><strong>{{ kpi_cards.total_active_volunteers }}</strong></article>
-  <article><small>Hours logged</small><strong>{{ kpi_cards.total_hours }}h</strong></article>
-  <article><small>Attendance rate</small><strong>{{ participation.attendance_rate }}%</strong></article>
-  <article><small>Registrations</small><strong>{{ participation.registrations }}</strong></article>
-</section>
-
-<section class="panel">
-  <header class="panel__header">
-    <div><h2>Participation Summary</h2><small>Filtered campus totals without monetary valuation</small></div>
-  </header>
-  <div class="summary-strip summary-strip--compact">
-    <article><small>Unique volunteers</small><strong>{{ participation.unique_volunteers }}</strong></article>
-    <article><small>Sign-up to attendance</small><strong>{{ participation.conversion_rate }}%</strong></article>
-    <article><small>Service hours</small><strong>{{ participation.service_hours }}h</strong></article>
-    <article><small>PSU / outsider</small><strong>{{ type_split.psu }} / {{ type_split.outsider }}</strong></article>
-  </div>
-</section>
-
-<section class="analytics-grid">
-  <article class="panel">
-    <header class="panel__header"><div><h2>Participation by Category</h2><small>Registrations per activity category</small></div></header>
-    <div class="chart" data-chart="pie" data-source="categoryChartData" role="img" aria-label="Participation by category chart"></div>
-    <details class="chart-data"><summary>View chart data</summary>
-      <ul>{% for item in category_breakdown %}<li>{{ item.category }}: {{ item.registrations }}</li>{% else %}<li>No category data.</li>{% endfor %}</ul>
+      </ul>
     </details>
-  </article>
-  <article class="panel">
-    <header class="panel__header"><div><h2>Participant Type</h2><small>PSU and outsider registrations</small></div></header>
-    <div class="chart" data-chart="donut" data-source="typeChartData" role="img" aria-label="Participant type chart"></div>
-    <details class="chart-data"><summary>View chart data</summary><p>PSU: {{ type_split.psu }} · Outsider: {{ type_split.outsider }}</p></details>
-  </article>
-</section>
-
-<section class="panel">
-  <header class="panel__header">
-    <div><h2>Engagement Trend</h2><small>Compare monthly activity with service-hour trends</small></div>
-    <label class="field field--inline">View
-      <select data-chart-switch="engagementChart" data-source="engagementChartData">
-        <option value="monthly">Monthly attendance</option>
-        <option value="trend">Service-hour trend</option>
-      </select>
-    </label>
-  </header>
-  <div class="chart chart--wide" id="engagementChart" role="img" aria-label="Campus engagement trend chart"></div>
-  <details class="chart-data"><summary>View monthly chart data</summary>
-    <ul>{% for month in monthly.months %}<li>{{ month }}: {{ monthly.registrations[loop.index0] }} registered, {{ monthly.attended[loop.index0] }} attended</li>{% else %}<li>No engagement data.</li>{% endfor %}</ul>
-  </details>
-</section>
-
-<section class="panel">
-  <header class="panel__header"><div><h2>Filtered Activity Report</h2><small>Restricted to {{ campus_name }} Campus</small></div></header>
-  <div class="table-scroll" tabindex="0"><table class="data-table">
-    <thead><tr><th>Activity</th><th>Date</th><th>Category</th><th>Registrations</th><th>PSU</th><th>External</th><th>Attended</th><th>Completed</th><th>Hours</th></tr></thead>
-    <tbody>
-      {% for row in report_rows %}<tr><td>{{ row.title }}</td><td>{{ row.date.strftime('%Y-%m-%d') }}</td><td>{{ row.category }}</td><td>{{ row.registrations }}</td><td>{{ row.psu_registrations }}</td><td>{{ row.external_registrations }}</td><td>{{ row.attended }}</td><td>{{ row.completed }}</td><td>{{ row.hours }}</td></tr>
-      {% else %}<tr><td colspan="9"><div class="empty-state">No activities match the current filters.</div></td></tr>{% endfor %}
-    </tbody>
-  </table></div>
-  <div class="summary-strip summary-strip--compact">
-    <article><small>Events</small><strong>{{ report_summary.event_count }}</strong></article>
-    <article><small>Registrations</small><strong>{{ report_summary.total_registrations }}</strong></article>
-    <article><small>Attended</small><strong>{{ report_summary.total_attended }}</strong></article>
-    <article><small>Completed</small><strong>{{ report_summary.total_completed }}</strong></article>
-    <article><small>Hours</small><strong>{{ report_summary.total_hours }}h</strong></article>
-  </div>
-</section>
-
-<section class="panel">
-  <header class="panel__header"><div><h2>Activity Performance</h2><small>Registration, conversion, and service outcomes</small></div></header>
-  <div class="table-scroll" tabindex="0"><table class="data-table">
-    <thead><tr><th>Activity</th><th>Category</th><th>Registrations</th><th>Attended</th><th>Conversion</th><th>Hours</th></tr></thead>
-    <tbody>{% for activity in activity_breakdown %}<tr><td>{{ activity.title }}</td><td>{{ activity.category }}</td><td>{{ activity.registrations }}</td><td>{{ activity.attended }}</td><td>{{ activity.conversion_rate }}%</td><td>{{ activity.service_hours }}h</td></tr>{% else %}<tr><td colspan="6"><div class="empty-state">No activities match the current filters.</div></td></tr>{% endfor %}</tbody>
-  </table></div>
-</section>
-
-<section class="analytics-grid">
-  <article class="panel">
-    <header class="panel__header"><div><h2>Event Readiness Forecast</h2><small>Predicted attendance based on prior events</small></div></header>
-    <div class="readiness-list">{% for item in forecast_data %}{% set pct = (item.predicted_attendance_rate * 100)|round|int %}<article class="readiness-item"><header><strong>{{ item.event.title }}</strong><span>{{ pct }}%</span></header><progress value="{{ pct }}" max="100">{{ pct }}%</progress></article>{% else %}<div class="empty-state">Not enough past event data to forecast turnout.</div>{% endfor %}</div>
-  </article>
-  <article class="panel">
-    <header class="panel__header"><div><h2>Attendance Snapshot</h2><small>Registration-to-attendance results</small></div></header>
-    <div class="table-scroll" tabindex="0"><table class="data-table"><thead><tr><th>Event</th><th>Registered</th><th>Attended</th><th>Rate</th></tr></thead><tbody>{% for row in attendance_summary %}<tr><td>{{ row.event.title }}</td><td>{{ row.registered }}</td><td>{{ row.attended }}</td><td>{{ row.rate }}%</td></tr>{% else %}<tr><td colspan="4"><div class="empty-state">No completed events yet.</div></td></tr>{% endfor %}</tbody></table></div>
-  </article>
-</section>
-
-<script id="categoryChartData" type="application/json">{{ {'labels': category_breakdown|map(attribute='category')|list, 'values': category_breakdown|map(attribute='registrations')|list}|tojson }}</script>
-<script id="typeChartData" type="application/json">{{ {'labels': ['PSU Volunteers', 'Outsider Volunteers'], 'values': [type_split.psu, type_split.outsider]}|tojson }}</script>
-<script id="engagementChartData" type="application/json">{{ {
-  'monthly': {'labels': monthly.months, 'primary': monthly.registrations, 'secondary': monthly.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'},
-  'trend': {'labels': trend_data.months, 'primary': trend_data.hours, 'secondary': trend_data.registrations, 'primaryName': 'Service hours', 'secondaryName': 'Registrations'}
-}|tojson }}</script>
+  </section>
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Filtered Activity Report</h2>
+        <small>Restricted to {{ campus_name }} Campus</small>
+      </div>
+    </header>
+    <div class="table-scroll" tabindex="0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Activity</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Registrations</th>
+            <th>PSU</th>
+            <th>External</th>
+            <th>Attended</th>
+            <th>Completed</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report_rows %}
+            <tr>
+              <td>{{ row.title }}</td>
+              <td>{{ row.date.strftime("%Y-%m-%d") }}</td>
+              <td>{{ row.category }}</td>
+              <td>{{ row.registrations }}</td>
+              <td>{{ row.psu_registrations }}</td>
+              <td>{{ row.external_registrations }}</td>
+              <td>{{ row.attended }}</td>
+              <td>{{ row.completed }}</td>
+              <td>{{ row.hours }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="9">
+                <div class="empty-state">No activities match the current filters.</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="summary-strip summary-strip--compact">
+      <article><small>Events</small><strong>{{ report_summary.event_count }}</strong></article>
+      <article><small>Registrations</small><strong>{{ report_summary.total_registrations }}</strong></article>
+      <article><small>Attended</small><strong>{{ report_summary.total_attended }}</strong></article>
+      <article><small>Completed</small><strong>{{ report_summary.total_completed }}</strong></article>
+      <article><small>Hours</small><strong>{{ report_summary.total_hours }}h</strong></article>
+    </div>
+  </section>
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>Activity Performance</h2>
+        <small>Registration, conversion, and service outcomes</small>
+      </div>
+    </header>
+    <div class="table-scroll" tabindex="0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Activity</th>
+            <th>Category</th>
+            <th>Registrations</th>
+            <th>Attended</th>
+            <th>Conversion</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for activity in activity_breakdown %}
+            <tr>
+              <td>{{ activity.title }}</td>
+              <td>{{ activity.category }}</td>
+              <td>{{ activity.registrations }}</td>
+              <td>{{ activity.attended }}</td>
+              <td>{{ activity.conversion_rate }}%</td>
+              <td>{{ activity.service_hours }}h</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">No activities match the current filters.</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="analytics-grid">
+    <article class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Event Readiness Forecast</h2>
+          <small>Predicted attendance based on prior events</small>
+        </div>
+      </header>
+      <div class="readiness-list">
+        {% for item in forecast_data %}
+          {% set pct = (item.predicted_attendance_rate * 100)|round|int %}
+          <article class="readiness-item">
+            <header>
+              <strong>{{ item.event.title }}</strong><span>{{ pct }}%</span>
+            </header>
+            <progress value="{{ pct }}" max="100">{{ pct }}%</progress>
+          </article>
+        {% else %}
+          <div class="empty-state">Not enough past event data to forecast turnout.</div>
+        {% endfor %}
+      </div>
+    </article>
+    <article class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Attendance Snapshot</h2>
+          <small>Registration-to-attendance results</small>
+        </div>
+      </header>
+      <div class="table-scroll" tabindex="0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Registered</th>
+              <th>Attended</th>
+              <th>Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in attendance_summary %}
+              <tr>
+                <td>{{ row.event.title }}</td>
+                <td>{{ row.registered }}</td>
+                <td>{{ row.attended }}</td>
+                <td>{{ row.rate }}%</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4">
+                  <div class="empty-state">No completed events yet.</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+  {% set category_chart_data = {
+    'labels': category_breakdown|map(attribute='category')|list,
+    'values': category_breakdown|map(attribute='registrations')|list
+  } %}
+  <script id="categoryChartData" type="application/json">{{ category_chart_data|tojson }}</script>
+  <script id="typeChartData" type="application/json">{{ {'labels': ['PSU Volunteers', 'Outsider Volunteers'], 'values': [type_split.psu, type_split.outsider]}|tojson }}</script>
+  <script id="engagementChartData" type="application/json">{{ {
+    'monthly': {'labels': monthly.months, 'primary': monthly.registrations, 'secondary': monthly.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'},
+    'trend': {'labels': trend_data.months, 'primary': trend_data.hours, 'secondary': trend_data.registrations, 'primaryName': 'Service hours', 'secondaryName': 'Registrations'}
+  }|tojson }}
+  </script>
 {% endblock %}
-
 {% block scripts %}
-  <script src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"></script>
+  <script
+    src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"
+  ></script>
   <script src="{{ url_for('static', filename='scripts/charts.js') }}"></script>
 {% endblock %}

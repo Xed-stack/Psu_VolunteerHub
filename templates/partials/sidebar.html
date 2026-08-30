@@ -1,27 +1,106 @@
 {% set endpoint = request.endpoint %}
 <aside class="role-sidebar" id="roleSidebar">
-  <a class="role-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><span><strong>PSU Volunteer Hub</strong><small>{% if current_user.role == 'coordinator' %}Coordinator Console{% elif current_user.role == 'director' %}Director Console{% elif current_user.role == 'admin' %}Administration{% else %}Volunteer Portal{% endif %}</small></span></a>
-  <nav class="role-nav" aria-label="{{ current_user.role_display_name }} navigation">
+  <a class="role-brand" href="{{ url_for('home') }}">
+    <img
+      src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+      alt="PSU logo"
+    >
+    <span>
+      <strong>PSU Volunteer Hub</strong>
+      <small>
+        {% if current_user.role == 'coordinator' %}
+          Coordinator Console
+        {% elif current_user.role == 'director' %}
+          Director Console
+        {% elif current_user.role == 'admin' %}
+          Administration
+        {% else %}
+          Volunteer Portal
+        {% endif %}
+      </small>
+    </span>
+  </a>
+  <nav
+    class="role-nav"
+    aria-label="{{ current_user.role_display_name }} navigation"
+  >
     {% if current_user.role == 'volunteer' %}
-      <a class="navlink {{ 'navlink--active' if endpoint == 'events.volunteer_dash' }}" href="{{ url_for('events.volunteer_dash') }}"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}" href="{{ url_for('events.opportunities') }}"><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'volunteer.profile_page' }}" href="{{ url_for('volunteer.profile_page') }}"><span class="material-symbols-outlined">person</span>Profile</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'events.volunteer_dash' }}"
+        href="{{ url_for('events.volunteer_dash') }}"
+      ><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
+        href="{{ url_for('events.opportunities') }}"
+      ><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'volunteer.profile_page' }}"
+        href="{{ url_for('volunteer.profile_page') }}"
+      ><span class="material-symbols-outlined">person</span>Profile</a>
     {% elif current_user.role == 'coordinator' %}
-      <a class="navlink {{ 'navlink--active' if endpoint == 'coordinator.coordinator_dash' }}" href="{{ url_for('coordinator.coordinator_dash') }}"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'coordinator.create_activity' }}" href="{{ url_for('coordinator.create_activity') }}"><span class="material-symbols-outlined">add_circle</span>Create Activity</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'coordinator.attendance' }}" href="{{ url_for('coordinator.attendance') }}"><span class="material-symbols-outlined">fact_check</span>Attendance</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'coordinator.analytics' }}" href="{{ url_for('coordinator.analytics') }}"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.coordinator_dash' }}"
+        href="{{ url_for('coordinator.coordinator_dash') }}"
+      ><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.create_activity' }}"
+        href="{{ url_for('coordinator.create_activity') }}"
+      ><span class="material-symbols-outlined">add_circle</span>Create Activity</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.attendance' }}"
+        href="{{ url_for('coordinator.attendance') }}"
+      ><span class="material-symbols-outlined">fact_check</span>Attendance</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.analytics' }}"
+        href="{{ url_for('coordinator.analytics') }}"
+      ><span class="material-symbols-outlined">analytics</span>Analytics</a>
     {% elif current_user.role == 'director' %}
-      <a class="navlink {{ 'navlink--active' if endpoint == 'director.director_dash' }}" href="{{ url_for('director.director_dash') }}"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}" href="{{ url_for('events.opportunities') }}"><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}" href="{{ url_for('director.analytics') }}"><span class="material-symbols-outlined">analytics</span>Analytics</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'director.director_dash' }}"
+        href="{{ url_for('director.director_dash') }}"
+      ><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
+        href="{{ url_for('events.opportunities') }}"
+      ><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}"
+        href="{{ url_for('director.analytics') }}"
+      ><span class="material-symbols-outlined">analytics</span>Analytics</a>
     {% else %}
-      <a class="navlink {{ 'navlink--active' if endpoint == 'admin.admin_dash' }}" href="{{ url_for('admin.admin_dash') }}"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}" href="{{ url_for('events.opportunities') }}"><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}" href="{{ url_for('director.analytics') }}"><span class="material-symbols-outlined">analytics</span>Analytics</a>
-      <a class="navlink {{ 'navlink--active' if endpoint in ['admin.create_user','admin.edit_user'] }}" href="{{ url_for('admin.admin_dash') }}#user-management"><span class="material-symbols-outlined">manage_accounts</span>User Management</a>
-      <a class="navlink {{ 'navlink--active' if endpoint == 'admin.settings' }}" href="{{ url_for('admin.settings') }}"><span class="material-symbols-outlined">settings</span>Settings</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'admin.admin_dash' }}"
+        href="{{ url_for('admin.admin_dash') }}"
+      ><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
+        href="{{ url_for('events.opportunities') }}"
+      ><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}"
+        href="{{ url_for('director.analytics') }}"
+      ><span class="material-symbols-outlined">analytics</span>Analytics</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint in ['admin.create_user','admin.edit_user'] }}"
+        href="{{ url_for('admin.admin_dash') }}#user-management"
+      ><span class="material-symbols-outlined">manage_accounts</span>User Management</a>
+      <a
+        class="navlink {{ 'navlink--active' if endpoint == 'admin.settings' }}"
+        href="{{ url_for('admin.settings') }}"
+      ><span class="material-symbols-outlined">settings</span>Settings</a>
     {% endif %}
   </nav>
-  <div class="role-user"><img src="{{ url_for('static', filename='assets/temp_profile.jpg') }}" alt="Profile"><span><strong>{{ current_user.name }}</strong><small>{{ current_user.role_display_name }}</small></span><a href="{{ url_for('auth.logout') }}" aria-label="Log out"><span class="material-symbols-outlined">logout</span></a></div>
+  <div class="role-user">
+    <img
+      src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"
+      alt="Profile"
+    >
+    <span>
+      <strong>{{ current_user.name }}</strong>
+      <small>{{ current_user.role_display_name }}</small>
+    </span>
+    <a href="{{ url_for('auth.logout') }}" aria-label="Log out">
+      <span class="material-symbols-outlined">logout</span>
+    </a>
+  </div>
 </aside>

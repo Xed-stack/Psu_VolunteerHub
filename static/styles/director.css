@@ -1,8 +1,35 @@
 @import url("role-shell.css");
-.role-page--director { --role-accent:#00408b; --role-soft:#d8e2ff; }
-.campus-bars { display:grid; gap:14px; }
-.campus-bar { display:grid; grid-template-columns:minmax(100px,180px) 1fr auto; gap:12px; align-items:center; }
-.campus-bar__track { height:10px; border-radius:999px; background:var(--surface-container-low); overflow:hidden; }
-.campus-bar__fill { height:100%; background:var(--primary); border-radius:inherit; }
-.role-content > .panel,.role-content > .content-grid { margin-bottom:24px; }
-.historical-metrics { margin:18px 0 0; }
+
+.campus-bars {
+  display: grid;
+  gap: 14px;
+}
+
+.campus-bar {
+  display: grid;
+  grid-template-columns: minmax(100px, 180px) 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.campus-bar__track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-container-low);
+  overflow: hidden;
+}
+
+.campus-bar__fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+}
+
+.role-content>.panel,
+.role-content>.content-grid {
+  margin-bottom: 24px;
+}
+
+.historical-metrics {
+  margin: 18px 0 0;
+}

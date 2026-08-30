@@ -1,34 +1,58 @@
 {% extends 'layouts/public_base.html' %}
 {% block title %}Join · PSU Volunteer Hub{% endblock %}
 {% block body %}
-<main class="auth-shell">
-  <section class="panel auth-card">
-    <header class="page-heading"><div>
-      <h1>{{ event.title }}</h1>
-      <p>{{ event.description }}</p>
-    </div></header>
-    {% include 'partials/flash_messages.html' %}
-    {% if not external_form %}
-    <p class="question">Are you currently from PSU?</p>
-    <div class="join-options">
-      <a class="button button--primary" href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id)) }}">Yes, I'm from PSU</a>
-      <a class="button button--secondary" href="{{ url_for('events.event_join', event_id=event.id, external='1') }}">No, I'm an external / outsider volunteer</a>
-    </div>
-    {% else %}
-    <form method="post" action="{{ url_for('events.event_join', event_id=event.id) }}">
-      <input type="hidden" name="from_psu" value="no">
-      {% include 'partials/csrf_field.html' %}
-      <label class="field">ID Number (required)<input class="input" type="text" name="id_number" required></label>
-      <label class="field">Name (optional)<input class="input" type="text" name="name"></label>
-      <label class="field">Contact Number (optional)<input class="input" type="text" name="contact_number"></label>
-      <label class="field">Address (optional)<input class="input" type="text" name="address"></label>
-      <label class="field">Email Address (optional)<input class="input" type="email" name="email"></label>
-      <div class="form-actions">
-        <button class="button button--primary" type="submit">Register as external volunteer</button>
-        <a class="button button--ghost" href="{{ url_for('events.event_join', event_id=event.id) }}">Back</a>
-      </div>
-    </form>
-    {% endif %}
-  </section>
-</main>
+  <main class="auth-shell">
+    <section class="panel auth-card">
+      <header class="page-heading">
+        <div>
+          <h1>{{ event.title }}</h1>
+          <p>{{ event.description }}</p>
+        </div>
+      </header>
+      {% include 'partials/flash_messages.html' %}
+      {% if not external_form %}
+        <p class="question">Are you currently from PSU?</p>
+        <div class="join-options">
+          <a
+            class="button button--primary"
+            href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id)) }}"
+          >Yes, I'm from PSU</a>
+          <a
+            class="button button--secondary"
+            href="{{ url_for('events.event_join', event_id=event.id, external='1') }}"
+          >No, I'm an external / outsider volunteer</a>
+        </div>
+      {% else %}
+        <form
+          method="post"
+          action="{{ url_for('events.event_join', event_id=event.id) }}"
+        >
+          <input type="hidden" name="from_psu" value="no">
+          {% include 'partials/csrf_field.html' %}
+          <label class="field">
+            ID Number (required)<input class="input" type="text" name="id_number" required>
+          </label>
+          <label class="field">
+            Name (optional)<input class="input" type="text" name="name">
+          </label>
+          <label class="field">
+            Contact Number (optional)<input class="input" type="text" name="contact_number">
+          </label>
+          <label class="field">
+            Address (optional)<input class="input" type="text" name="address">
+          </label>
+          <label class="field">
+            Email Address (optional)<input class="input" type="email" name="email">
+          </label>
+          <div class="form-actions">
+            <button class="button button--primary" type="submit">Register as external volunteer</button>
+            <a
+              class="button button--ghost"
+              href="{{ url_for('events.event_join', event_id=event.id) }}"
+            >Back</a>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+  </main>
 {% endblock %}

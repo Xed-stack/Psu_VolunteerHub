@@ -1,6 +1,27 @@
 @import url("role-shell.css");
-.role-page--volunteer { --role-accent: var(--primary); --role-soft: var(--primary-light); }
-.recommendation-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
-.recommendation-card__score { padding:20px; text-align:center; color:#fff; background:linear-gradient(135deg,var(--primary),var(--primary-hover)); font-weight:700; }
-.profile-grid { display:grid; grid-template-columns:minmax(0,2fr) minmax(260px,1fr); gap:24px; }
-@media(max-width:900px){.profile-grid{grid-template-columns:1fr}}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.recommendation-card__score {
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  font-weight: 700;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+
+@media(max-width:900px) {
+  .profile-grid {
+    grid-template-columns: 1fr
+  }
+}

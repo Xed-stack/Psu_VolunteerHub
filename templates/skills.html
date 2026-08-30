@@ -1,2 +1,40 @@
-{% extends 'layouts/auth_base.html' %}{% block title %}Choose skills | PSU Volunteer Hub{% endblock %}
-{% block body %}<main class="auth-shell"><section class="auth-brand"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><h1>What can you contribute?</h1><p>Select the skills you can bring to PSU community activities.</p></section><section class="auth-form"><small>Step 2 of 3</small><h1>Select your skills</h1><form action="{{ url_for('auth.skills') }}" method="post"><div class="choice-grid">{% for skill in skills %}<div class="choice"><input id="skill-{{ skill.id }}" type="checkbox" name="skills" value="{{ skill.id }}"><label for="skill-{{ skill.id }}"><strong>{{ skill.name }}</strong></label></div>{% endfor %}</div><div class="form-actions"><a class="button button--secondary" href="{{ url_for('auth.interests') }}">Back</a><button class="button button--primary" type="submit">Continue</button></div></form></section></main>{% endblock %}
+{% extends 'layouts/auth_base.html' %}
+{% block title %}Choose skills | PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <img
+        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+        alt="PSU logo"
+      >
+      <h1>What can you contribute?</h1>
+      <p>Select the skills you can bring to PSU community activities.</p>
+    </section>
+    <section class="auth-form">
+      <small>Step 2 of 3</small>
+      <h1>Select your skills</h1>
+      <form action="{{ url_for('auth.skills') }}" method="post">
+        <div class="choice-grid">
+          {% for skill in skills %}
+            <div class="choice">
+              <input
+                id="skill-{{ skill.id }}"
+                type="checkbox"
+                name="skills"
+                value="{{ skill.id }}"
+              >
+              <label for="skill-{{ skill.id }}"><strong>{{ skill.name }}</strong></label>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="form-actions">
+          <a
+            class="button button--secondary"
+            href="{{ url_for('auth.interests') }}"
+          >Back</a>
+          <button class="button button--primary" type="submit">Continue</button>
+        </div>
+      </form>
+    </section>
+  </main>
+{% endblock %}

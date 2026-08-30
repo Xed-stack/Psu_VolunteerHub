@@ -1,47 +1,66 @@
 {% extends 'layouts/auth_base.html' %}
 {% block title %}Choose interests | PSU Volunteer Hub{% endblock %}
 {% block body %}
-<main class="auth-shell">
-  <section class="auth-brand">
-    <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo">
-    <h1>What matters to you?</h1>
-    <p>Choose your causes and the skills you can contribute.</p>
-  </section>
-  <section class="auth-form">
-    <small>Step 1 of 2</small>
-    <h1>Select interests and skills</h1>
-    <form action="{{ url_for('auth.interests') }}" method="post">
-      {% include 'partials/csrf_field.html' %}
-      <div class="choice-grid">
-        {% for item in interests_data %}
-          {% set interest = item.interest %}
-          <fieldset class="choice-group">
-            <legend>
-              <label class="choice">
-                <input id="interest-{{ interest.id }}" type="checkbox" name="interests" value="{{ interest.id }}">
-                <strong>{{ interest.name }}</strong>
-              </label>
-            </legend>
-            {% if item.skills %}
-              <div class="related-skills" aria-label="Skills related to {{ interest.name }}">
-                {% for skill in item.skills %}
-                  <label class="choice choice--compact">
-                    <input id="skill-{{ interest.id }}-{{ skill.id }}" type="checkbox" name="skills" value="{{ skill.id }}">
-                    <span>{{ skill.name }}</span>
-                  </label>
-                {% endfor %}
-              </div>
-            {% endif %}
-          </fieldset>
-        {% else %}
-          <div class="empty-state">No interests are configured.</div>
-        {% endfor %}
-      </div>
-      <div class="form-actions">
-        <a class="button button--secondary" href="{{ url_for('auth.login') }}">Back</a>
-        <button class="button button--primary" type="submit">Continue</button>
-      </div>
-    </form>
-  </section>
-</main>
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <img
+        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
+        alt="PSU logo"
+      >
+      <h1>What matters to you?</h1>
+      <p>Choose your causes and the skills you can contribute.</p>
+    </section>
+    <section class="auth-form">
+      <small>Step 1 of 2</small>
+      <h1>Select interests and skills</h1>
+      <form action="{{ url_for('auth.interests') }}" method="post">
+        {% include 'partials/csrf_field.html' %}
+        <div class="choice-grid">
+          {% for item in interests_data %}
+            {% set interest = item.interest %}
+            <fieldset class="choice-group">
+              <legend>
+                <label class="choice">
+                  <input
+                    id="interest-{{ interest.id }}"
+                    type="checkbox"
+                    name="interests"
+                    value="{{ interest.id }}"
+                  >
+                  <strong>{{ interest.name }}</strong>
+                </label>
+              </legend>
+              {% if item.skills %}
+                <div
+                  class="related-skills"
+                  aria-label="Skills related to {{ interest.name }}"
+                >
+                  {% for skill in item.skills %}
+                    <label class="choice choice--compact">
+                      <input
+                        id="skill-{{ interest.id }}-{{ skill.id }}"
+                        type="checkbox"
+                        name="skills"
+                        value="{{ skill.id }}"
+                      >
+                      <span>{{ skill.name }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </fieldset>
+          {% else %}
+            <div class="empty-state">No interests are configured.</div>
+          {% endfor %}
+        </div>
+        <div class="form-actions">
+          <a
+            class="button button--secondary"
+            href="{{ url_for('auth.login') }}"
+          >Back</a>
+          <button class="button button--primary" type="submit">Continue</button>
+        </div>
+      </form>
+    </section>
+  </main>
 {% endblock %}

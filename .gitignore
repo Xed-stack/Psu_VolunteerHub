@@ -19,3 +19,7 @@ __pycache__/
 .env
 # ignore runtime server logs
 *.log
+
+# ignore local tooling caches
+.npm-cache/
+.skill-install-tmp/

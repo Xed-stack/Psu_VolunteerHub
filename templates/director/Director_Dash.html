@@ -3,18 +3,67 @@
 {% block header_title %}Director Console{% endblock %}
 {% block header_subtitle %}University-wide oversight{% endblock %}
 {% block content %}
-<header class="page-heading"><div><h1>Extension Director Dashboard</h1><p>Historical participation across PSU campuses and reporting units.</p></div></header>
-<section class="summary-strip" aria-label="Historical participation summary">
-  <div class="summary-stat"><small>Volunteer Participations</small><strong>{{ '{:,}'.format(total_volunteers) }}</strong></div>
-  <div class="summary-stat"><small>Historical Activities</small><strong>{{ total_activities }}</strong></div>
-  <div class="summary-stat"><small>Reporting Units</small><strong>{{ campus_stats|length }}</strong></div>
-  <div class="summary-stat"><small>Years Covered</small><strong>2020–2025</strong></div>
-</section>
-<section class="panel chart-panel">
-  <header class="panel__header"><div><h2>Leading Campuses</h2><small>Aggregate participations, not unique accounts</small></div><a class="btn btn--sm btn--outline" href="{{ url_for('director.analytics') }}">Full Analytics</a></header>
-  <div id="director-campus-chart" class="chart" data-chart="bar" data-source="director-campus-data" aria-label="Leading campuses bar chart"></div>
-  <script id="director-campus-data" type="application/json">{{ {'labels': campus_stats|map(attribute='campus')|list, 'values': campus_stats|map(attribute='participations')|list, 'name': 'Participations'}|tojson }}</script>
-  <details class="chart-fallback"><summary>View detailed values</summary><ol>{% for campus in campus_stats %}<li><strong>{{ campus.campus }}</strong> — {{ campus.activities }} activities, {{ '{:,}'.format(campus.participations) }} participations</li>{% else %}<li>No historical participation data is available.</li>{% endfor %}</ol></details>
-</section>
+  <header class="page-heading">
+    <div>
+      <h1>Extension Director Dashboard</h1>
+      <p>Historical participation across PSU campuses and reporting units.</p>
+    </div>
+  </header>
+  <section
+    class="summary-strip"
+    aria-label="Historical participation summary"
+  >
+    <div class="summary-stat">
+      <small>Volunteer Participations</small>
+      <strong>{{ '{:,}'.format(total_volunteers) }}</strong>
+    </div>
+    <div class="summary-stat"><small>Historical Activities</small><strong>{{ total_activities }}</strong></div>
+    <div class="summary-stat"><small>Reporting Units</small><strong>{{ campus_stats|length }}</strong></div>
+    <div class="summary-stat"><small>Years Covered</small><strong>2020–2025</strong></div>
+  </section>
+  <section class="panel chart-panel">
+    <header class="panel__header">
+      <div>
+        <h2>Leading Campuses</h2>
+        <small>Aggregate participations, not unique accounts</small>
+      </div>
+      <a
+        class="btn btn--sm btn--outline"
+        href="{{ url_for('director.analytics') }}"
+      >Full Analytics</a>
+    </header>
+    <div
+      id="director-campus-chart"
+      class="chart"
+      data-chart="bar"
+      data-source="director-campus-data"
+      aria-label="Leading campuses bar chart"
+    ></div>
+    {% set campus_chart_data = {
+      'labels': campus_stats|map(attribute='campus')|list,
+      'values': campus_stats|map(attribute='participations')|list,
+      'name': 'Participations'
+    } %}
+    <script id="director-campus-data" type="application/json">{{ campus_chart_data|tojson }}</script>
+    <details class="chart-fallback">
+      <summary>View detailed values</summary>
+      <ol>
+        {% for campus in campus_stats %}
+          <li>
+            <strong>{{ campus.campus }}</strong>:
+            {{ campus.activities }} activities,
+            {{ '{:,}'.format(campus.participations) }} participations
+          </li>
+        {% else %}
+          <li>No historical participation data is available.</li>
+        {% endfor %}
+      </ol>
+    </details>
+  </section>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"></script><script src="{{ url_for('static', filename='scripts/charts.js') }}"></script>{% endblock %}
+{% block scripts %}
+  <script
+    src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"
+  ></script>
+  <script src="{{ url_for('static', filename='scripts/charts.js') }}"></script>
+{% endblock %}
