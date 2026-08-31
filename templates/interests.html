@@ -19,6 +19,8 @@
           {% for item in interests_data %}
             {% set interest = item.interest %}
             <fieldset class="choice-group">
+              <label class="choice-group__hit" for="interest-{{ interest.id }}" aria-hidden="true" tabindex="-1"></label>
+
               <legend>
                 <label class="choice">
                   <input
@@ -30,6 +32,7 @@
                   <strong>{{ interest.name }}</strong>
                 </label>
               </legend>
+
               {% if item.skills %}
                 <div
                   class="related-skills"
@@ -64,3 +67,10 @@
     </section>
   </main>
 {% endblock %}
+<script>
+  document.querySelectorAll('.choice input').forEach(input => {
+  const sync = () => input.closest('.choice').classList.toggle('is-checked', input.checked);
+  input.addEventListener('change', sync);
+  sync(); // handle pre-checked state on load
+});
+</script>

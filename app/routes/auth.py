@@ -15,7 +15,8 @@ VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
 
 
 def _password_min_length():
-    setting = SystemSetting.query.filter_by(key='default_password_length').first()
+    setting = SystemSetting.query.filter_by(
+        key='default_password_length').first()
     try:
         return max(8, int(setting.value)) if setting else 8
     except (TypeError, ValueError):
@@ -166,8 +167,8 @@ def register():
             for error in errors:
                 flash(error, 'error')
             return render_template('Signup.html', campuses=campuses,
-                                    interests=interests, skills=skills,
-                                    password_min=password_min)
+                                   interests=interests, skills=skills,
+                                   password_min=password_min)
 
         # Public registration always creates a volunteer. Privileged roles
         # can only be assigned through the protected Admin interface.

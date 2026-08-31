@@ -76,10 +76,35 @@ body {
   cursor: pointer
 }
 
-.choice input:checked+label {
+.choice-group {
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  padding: 14px;
+  transition: border-color .15s ease, background-color .15s ease;
+  position: relative;
+}
+
+.choice-group__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.choice-group legend, .choice-group .related-skills {
+  position: relative;
+  z-index: 1;
+}
+
+.choice-group:has(legend input:checked){
   border-color: var(--primary);
   background: var(--primary-light);
-  color: var(--primary)
+}
+
+.choice:has(input:checked){
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 @media(max-width:720px) {
