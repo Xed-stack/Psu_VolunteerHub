@@ -12,72 +12,88 @@
   <form class="panel" method="post" enctype="multipart/form-data">
     <div class="form-grid">
       <label class="field field--wide">
-        Activity title<input
-        class="input"
-        name="title"
-        value="{{ request.form.get('title', '') }}"
-        required
-      >
+        Activity title
+        <input
+          class="input"
+          name="title"
+          value="{{ request.form.get('title', '') }}"
+          required
+        >
       </label>
       <label class="field field--wide">
         Description<textarea class="input" name="description" required>{{ request.form.get('description', '') }}</textarea>
       </label>
       <label class="field">
-        Date<input
-        class="input"
-        name="date"
-        type="date"
-        value="{{ request.form.get('date', '') }}"
-        required
-      >
+        Date
+        <input
+          class="input"
+          name="date"
+          type="date"
+          value="{{ request.form.get('date', '') }}"
+          required
+        >
       </label>
       <label class="field">
-        Location<input
-        class="input"
-        name="location"
-        value="{{ request.form.get('location', '') }}"
-      >
+        Location
+        <input
+          class="input"
+          name="location"
+          value="{{ request.form.get('location', '') }}"
+        >
       </label>
       <label class="field">
-              Category<input
-        class="input"
-        name="category"
-        value="{{ request.form.get('category', 'General') }}"
-      >
+        Category
+        <input
+          class="input"
+          name="category"
+          value="{{ request.form.get('category', 'General') }}"
+        >
       </label>
       <label class="field">
-        Volunteer slots<input
-      class="input"
-      name="slots"
-      type="number"
-      min="1"
-      max="{{ max_slots or 100 }}"
-      value="{{ request.form.get('slots', 20) }}"
-    ><small>Maximum {{ max_slots or 100 }}.</small>
+        Volunteer slots
+        <input
+          class="input"
+          name="slots"
+          type="number"
+          min="1"
+          max="{{ max_slots or 100 }}"
+          value="{{ request.form.get('slots', 20) }}"
+        >
+        <small>Maximum {{ max_slots or 100 }}.</small>
       </label>
-      <label class="field">Campus {% for campus in campuses %}<p class="campus-name">{{ campus.name }}</p> {% endfor %}</label>
+      <div class="field">
+        <span class="field__label">Campus</span>
+        <output class="input field__readonly" aria-label="Assigned campus">
+          {{ campuses[0].name if campuses else 'Not assigned' }}
+        </output>
+        <small>Activities are always assigned to your campus.</small>
+      </div>
       <label class="field">
-        Required skills<input
-        class="input"
-        name="required_skills"
-        value="{{ request.form.get('required_skills', '') }}"
-        placeholder="Teaching/Tutoring, Communication/Public Speaking"
-      >
+        Required skills
+        <input
+          class="input"
+          name="required_skills"
+          value="{{ request.form.get('required_skills', '') }}"
+          placeholder="Teaching/Tutoring, Communication/Public Speaking"
+        >
       </label>
       <label class="field field--wide">
-        Event cover image<input
-        class="input"
-        name="cover_image"
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-      ><small>Optional JPEG, PNG, or WebP, up to 5 MB.</small>
+        Event cover image
+        <input
+          class="input"
+          name="cover_image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+        >
+        <small>Optional JPEG, PNG, or WebP, up to 5 MB.</small>
       </label>
     </div>
     <div class="form-actions">
       <a
         class="btn btn--ghost"
         href="{{ url_for('coordinator.coordinator_dash') }}"
-      >Cancel</a><button class="btn btn--primary" type="submit">Publish Activity</button>
+      >Cancel</a>
+      <button class="btn btn--primary" type="submit">Publish Activity</button>
     </div>
   </form>
 {% endblock %}

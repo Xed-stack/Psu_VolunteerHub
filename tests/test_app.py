@@ -146,6 +146,20 @@ class TestAppInit:
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestAuth:
+    def test_interest_cards_are_selectable_without_duplicate_script(self, client, app):
+        with app.app_context():
+            db.session.add(Interest(name='Education & Literacy'))
+            db.session.add(Skill(name='Teaching/Tutoring'))
+            db.session.commit()
+
+        resp = client.get('/auth/interests')
+        body = resp.get_data(as_text=True)
+
+        assert resp.status_code == 200
+        assert 'class="choice-group__hit"' in body
+        assert '<span class="sr-only">Select Education &amp; Literacy</span>' in body
+        assert "document.querySelectorAll('.choice input')" not in body
+
     def test_register_get(self, client):
         resp = client.get('/auth/register')
         assert resp.status_code == 200
@@ -348,7 +362,12 @@ class TestCoordinatorFeatures:
         uid = _create_user(app, email='create1@test.com', role='coordinator', campus_id=1)
         _login_as(client, uid)
         resp = client.get('/create_activity')
+        body = resp.get_data(as_text=True)
+
         assert resp.status_code == 200
+        assert 'aria-label="Assigned campus"' in body
+        assert 'Lingayen' in body
+        assert 'name="campus_id"' not in body
 
     def test_create_activity_post(self, client, app):
         uid = _create_user(app, email='create2@test.com', role='coordinator', campus_id=2)
