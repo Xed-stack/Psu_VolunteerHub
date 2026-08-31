@@ -403,6 +403,14 @@ body.sidebar-open {
   margin: 0;
 }
 
+.campus-name{
+  border: 1px solid rgb(196, 195, 195);
+  border-radius: 5px;
+  padding: 3px;
+  margin: -1px;
+  margin-top: 1px;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
