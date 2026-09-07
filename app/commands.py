@@ -4,9 +4,12 @@ from pathlib import Path
 
 import click
 from flask.cli import with_appcontext
+from datetime import datetime, timedelta
 
 from app.models import db
-from app.models.event import Campus, HistoricalActivity
+from app.models.event import (Campus, HistoricalActivity, Event, Registration,
+                              Attendance)
+from app.models.user import User
 
 
 def _optional_int(value, field, line_number):
@@ -87,5 +90,93 @@ def import_historical_activities(csv_path, dry_run):
         f'{updated} updated, {unchanged} unchanged.')
 
 
+@click.command('seed-demo-analytics')
+@with_appcontext
+def seed_demo_analytics():
+    """Create idempotent demo registrations and attendance for presentations."""
+    prefix = '[Demo Analytics]'
+    volunteers = User.query.filter_by(role='volunteer').order_by(User.id).all()
+    campuses = Campus.query.order_by(Campus.id).limit(4).all()
+    if not volunteers or not campuses:
+        raise click.ClickException('Seed campuses and volunteer users first.')
+
+    now = datetime.now()
+    definitions = [
+        ('Community Food Drive', 'Community', 1, 7, 4),
+        ('Green Campus Initiative', 'Environment', 2, 6, 5),
+        ('Youth Coding Mentor', 'Technology', 3, 5, 3),
+        ('Rural Literacy Program', 'Education', 4, 4, 2),
+        ('Coastal Cleanup Drive', 'Environment', 5, 8, 7),
+        ('Community Wellness Fair', 'Health', 6, 3, 2),
+    ]
+    extra_categories = [
+        ('Tree Growing Day', 'Environment'),
+        ('Reading Buddies', 'Education'),
+        ('Digital Skills Clinic', 'Technology'),
+        ('Barangay Health Caravan', 'Health'),
+        ('Nutrition Pack Distribution', 'Community'),
+        ('Riverbank Restoration', 'Environment'),
+        ('Math Mentoring Day', 'Education'),
+        ('Computer Basics Workshop', 'Technology'),
+        ('Wellness Screening', 'Health'),
+        ('Relief Goods Packing', 'Community'),
+        ('Coastal Habitat Survey', 'Environment'),
+        ('Youth Tutoring Circle', 'Education'),
+        ('Online Safety Seminar', 'Technology'),
+        ('First Aid Orientation', 'Health'),
+        ('Community Garden Build', 'Community'),
+        ('Mangrove Stewardship', 'Environment'),
+        ('Library Learning Lab', 'Education'),
+        ('Device Repair Clinic', 'Technology'),
+    ]
+    definitions.extend(
+        (title, category, index + 1, 10 + index * 8,
+         3 + (index * 3) % 10)
+        for index, (title, category) in enumerate(extra_categories)
+    )
+    created_events = created_registrations = created_attendance = 0
+    for title, category, campus_offset, days_ago, registration_count in definitions:
+        campus = campuses[(campus_offset - 1) % len(campuses)]
+        event = Event.query.filter_by(title=f'{prefix} {title}').first()
+        if event is None:
+            event = Event(
+                title=f'{prefix} {title}',
+                description='Presentation data for PSU Volunteer Hub analytics.',
+                date=now - timedelta(days=days_ago),
+                category=category,
+                required_skills='Communication, Teamwork',
+                slots=max(registration_count, 10),
+                campus_id=campus.id)
+            db.session.add(event)
+            db.session.flush()
+            created_events += 1
+        for index in range(registration_count):
+            volunteer = volunteers[index % len(volunteers)]
+            registration = Registration.query.filter_by(
+                user_id=volunteer.id, event_id=event.id).first()
+            if registration is None:
+                registration = Registration(
+                    user_id=volunteer.id, event_id=event.id, status='confirmed')
+                db.session.add(registration)
+                db.session.flush()
+                created_registrations += 1
+            if index < max(1, registration_count - 1):
+                attendance = Attendance.query.filter_by(
+                    registration_id=registration.id).first()
+                if attendance is None:
+                    db.session.add(Attendance(
+                        registration_id=registration.id,
+                        user_id=volunteer.id,
+                        event_id=event.id,
+                        status='present'))
+                    registration.status = 'completed'
+                    created_attendance += 1
+    db.session.commit()
+    click.echo(
+        f'{created_events} events, {created_registrations} registrations, '
+        f'{created_attendance} attendance records created.')
+
+
 def register_commands(app):
     app.cli.add_command(import_historical_activities)
+    app.cli.add_command(seed_demo_analytics)

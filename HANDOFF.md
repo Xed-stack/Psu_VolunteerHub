@@ -21,6 +21,9 @@
 - Historical activity data now provides fallbacks for participation-by-category and cross-campus analytics when live activity data is absent.
 - Admin category management supports create/delete; deleted categories move affected events to `General` and notify the event creator or campus coordinators.
 - Admin analytics is hidden from the admin interface while the route/template implementation remains available.
+- The public `/opportunities` page now uses shared shell styling, responsive opportunity cards, CSRF-protected registration forms, and a clear `Registered` state for existing volunteer sign-ups.
+- Analytics no longer displays or exports service-hour values; registration and attendance counts are the participation measures used throughout the UI and reports.
+- The `seed-demo-analytics` Flask command creates idempotent presentation data across campuses, categories, registrations, and attendance without overwriting existing records.
 - Accounts can be deactivated, request reactivation through the login flow, be reviewed in a Deactivated Users tab, and be permanently deleted manually after 30 days. Safeguards protect the last active admin and the current admin account.
 - The roadmap in `VOLUNTEER_HUB_ROADMAP.md` records proposed future work. It is not implemented.
 
@@ -33,6 +36,14 @@ Historical CSV data can be imported with:
 ```powershell
 flask import-historical-activities data/historical_activities_2020_2025.csv
 ```
+
+For a local panel/demo dashboard with live registration and attendance charts:
+
+```powershell
+.\.venv\Scripts\flask.exe seed-demo-analytics
+```
+
+The command is safe to rerun. It creates records titled `[Demo Analytics] ...` only when they do not already exist. To move the exact current local database to another laptop, import `database/psu_volunteer_hub_latest.sql` into the configured `psu_volunteer_hub` MySQL/MariaDB database; Git transfers the seed command and SQL file, not a running database server.
 
 ## Recommended first checks
 
@@ -51,7 +62,7 @@ Then manually check:
 
 ## Next recommended work
 
-Use `VOLUNTEER_HUB_ROADMAP.md` as the source of truth. Start with Phase 1: the landing-page redesign and event carousel. Reuse approved PSU photos or coordinator-uploaded event/milestone imagery; do not add unlicensed stock photos. The requested QR attendance, SMS/email, SIS integration, and automatic purging are explicitly out of scope.
+Use `VOLUNTEER_HUB_ROADMAP.md` as the source of truth. Verify the current landing page, opportunities view, analytics seed data, and MySQL import before starting remaining roadmap items. Reuse approved PSU photos or coordinator-uploaded event/milestone imagery; do not add unlicensed stock photos. The requested QR attendance, SMS/email, SIS integration, and automatic purging are explicitly out of scope.
 
 ## Working-tree note
 

@@ -35,6 +35,8 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Phase 3 — descriptive analytics and reports
 
+Current implementation note: descriptive analytics, PDF/CSV reporting, historical aggregate views, and an idempotent local `seed-demo-analytics` fixture are implemented. The fixture supplies representative live events, registrations, and attendance for panel demonstrations; it does not alter deployment data unless the command is explicitly run against that database.
+
 - Keep analytics limited to descriptive reporting defined by the manuscript: counts, percentages, means, attendance/sign-up conversion, participation by campus/category/demographic, activity performance, and weekly/monthly trends. Do not expose K-means segmentation or ANOVA in the user interface.
 - Move role-appropriate KPI summaries to the top of analytics pages. Make each event-count KPI clickable and route it to the corresponding filtered event/report list; for example, a summary of 50 events opens that 50-event filtered list.
 - Add a search field to the Live Activity Report and initially display ten rows. Provide **View all** to expand/paginate without losing the active filters.
@@ -43,7 +45,7 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 - Let users change supported visualizations where the metric is compatible: line for time series, bar for comparisons, and pie/donut for composition. Preserve a text/table equivalent for accessibility.
 - Add Plotly chart controls for zoom, reset, and exporting the active chart image. Retain current PDF/CSV report exports for the filtered report as a whole; do not attempt browser screenshots as official reports.
 - Label historical imports as aggregate records and show a short data-quality note: historical counts cannot produce individual attendance, demographics, or precise event dates not recorded in the source. Add the same limitation to analytics export metadata.
-- Add a repeatable simulated-data fixture for local development and automated tests only. It creates representative users, campuses, events, registrations, attendance, and historical aggregates without modifying real deployment data.
+- Keep the repeatable `seed-demo-analytics` fixture for local development and panel demonstrations. It creates representative events, registrations, and attendance without modifying real deployment data unless explicitly run there. Historical aggregate imports remain separate through `import-historical-activities`.
 
 ## Phase 4 — administration and governance extensions
 

@@ -9,6 +9,7 @@
       <div class="public-nav__links"><a aria-current="page" href="{{ url_for('events.opportunities') }}">Opportunities</a><a href="{{ url_for('help_page') }}">Help</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div>
     </nav>
   {% endif %}
+  <div class="opportunities-page">
   <header class="page-heading">
     <div>
       <h1>Volunteer Opportunities</h1>
@@ -97,4 +98,5 @@
 >Next</a>{% endif %}
     </nav>
   {% endif %}
+  </div>
 {% endblock %}
