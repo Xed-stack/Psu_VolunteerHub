@@ -39,3 +39,23 @@ def test_director_menu_has_no_admin_only_items():
         "current_user.role == 'admin'", 1)[0]
     assert "User Management" not in director
     assert "Settings" not in director
+
+
+def test_admin_menu_hides_analytics_but_preserves_director_access():
+    sidebar = (TEMPLATES / "partials" / "sidebar.html").read_text(encoding="utf-8")
+    navigation = sidebar.split('<nav', 1)[1]
+    director = navigation.split("current_user.role == 'director'", 1)[1].split(
+        "{% else %}", 1)[0]
+    admin = navigation.split("{% else %}", 1)[1].split("{% endif %}", 1)[0]
+    assert "Analytics" in director
+    assert "Analytics" not in admin
+
+
+def test_mobile_sidebar_has_a_labeled_logout_action():
+    sidebar = (TEMPLATES / "partials" / "sidebar.html").read_text(encoding="utf-8")
+    styles = (ROOT / "static" / "styles" / "role-shell.css").read_text(encoding="utf-8")
+
+    assert 'class="role-user__logout"' in sidebar
+    assert "Log out</span>" in sidebar
+    assert ".role-user__logout" in styles
+    assert "@media (max-width: 767px)" in styles

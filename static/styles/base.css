@@ -172,6 +172,19 @@
   background: var(--surface-container-low);
 }
 
+.btn--danger {
+  background: var(--error);
+  color: #fff;
+}
+
+.btn--danger:hover {
+  background: #8f1515;
+}
+
+.muted {
+  color: var(--on-surface-variant);
+}
+
 .btn--block {
   display: flex;
   width: 100%;

@@ -83,15 +83,21 @@ def register_for_event(event_id):
         abort(404)
     existing = Registration.query.filter_by(
         user_id=current_user.id, event_id=event_id).first()
-    if existing:
+    if existing and existing.status != 'cancelled':
         flash('You are already registered for this event.', 'warning')
         return redirect(url_for('events.opportunities'))
     if event.slots > 0 and event.slots_remaining() <= 0:
         flash('No available slots for this event.', 'error')
         return redirect(url_for('events.opportunities'))
-    registration = Registration(
-        user_id=current_user.id, event_id=event_id, status='confirmed')
-    db.session.add(registration)
+    if existing:
+        existing.status = 'confirmed'
+        registration = existing
+        success_message = 'Your registration has been restored.'
+    else:
+        registration = Registration(
+            user_id=current_user.id, event_id=event_id, status='confirmed')
+        db.session.add(registration)
+        success_message = 'Successfully registered for the event!'
     db.session.commit()
     bootstrap_from_event(current_user, event)
     notify_campus_coordinators(
@@ -101,8 +107,38 @@ def register_for_event(event_id):
                 f'"{event.title}".',
         notification_type='registration',
         related_event_id=event.id)
-    flash('Successfully registered for the event!', 'success')
+    flash(success_message, 'success')
     return redirect(url_for('events.opportunities'))
+
+
+@events_bp.route('/registrations/<int:registration_id>/cancel', methods=['POST'])
+@login_required
+@role_required('volunteer')
+def cancel_registration(registration_id):
+    """Cancel the current volunteer's pending or confirmed future signup."""
+    registration = db.session.get(Registration, registration_id)
+    if registration is None:
+        abort(404)
+    if registration.user_id != current_user.id:
+        abort(403)
+    event = registration.event
+    if (registration.status not in ('pending', 'confirmed')
+            or registration.attendance_record is not None
+            or event.date <= datetime.now()):
+        flash('This registration can no longer be cancelled.', 'error')
+        return redirect(url_for('events.volunteer_dash'))
+
+    registration.status = 'cancelled'
+    db.session.commit()
+    notify_campus_coordinators(
+        event.campus_id,
+        title=f'Registration cancelled: {event.title}',
+        message=f'{current_user.name or current_user.email} cancelled their '
+                f'registration for "{event.title}".',
+        notification_type='registration_cancelled',
+        related_event_id=event.id)
+    flash('Your registration has been cancelled.', 'success')
+    return redirect(url_for('events.volunteer_dash'))
 
 
 @events_bp.route('/volunteer_dash')
@@ -129,10 +165,22 @@ def volunteer_dash():
         cert_level = 'Platinum'
     user_stats = {'total_hours': round(
         total_hours, 1), 'total_activities': total_activities, 'cert_level': cert_level}
+    now = datetime.now()
     upcoming = Registration.query.filter_by(user_id=current_user.id).join(Event).filter(
-        Event.date >= datetime.now()).order_by(Event.date.asc()).limit(5).all()
+        Event.date >= now, Registration.status.in_(('pending', 'confirmed'))
+    ).order_by(Event.date.asc()).limit(5).all()
     recent_activity = Registration.query.filter_by(user_id=current_user.id).order_by(
         Registration.registered_at.desc()).limit(5).all()
+    registrations = Registration.query.filter_by(user_id=current_user.id).join(Event).all()
+    upcoming_registrations = [r for r in registrations if (
+        r.status in ('pending', 'confirmed') and r.event.date > now)]
+    history_registrations = [r for r in registrations if r not in upcoming_registrations]
+    upcoming_registrations.sort(key=lambda r: r.event.date)
+    history_registrations.sort(
+        key=lambda r: r.registered_at or datetime.min, reverse=True)
+    registration_items = [
+        {'registration': r, 'can_cancel': r in upcoming_registrations}
+        for r in upcoming_registrations + history_registrations]
     upcoming_schedule = [{'event': r.event, 'date': r.event.date}
                          for r in upcoming]
     certification = {'level': cert_level, 'hours': round(total_hours, 1), 'next_level': 'Silver' if cert_level ==
@@ -141,6 +189,7 @@ def volunteer_dash():
                            recommendations=recommendations,
                            user_stats=user_stats,
                            recent_activity=recent_activity,
+                           registration_items=registration_items,
                            upcoming_schedule=upcoming_schedule,
                            certification=certification)
 

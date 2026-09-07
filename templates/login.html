@@ -45,4 +45,17 @@
       <p>New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an account</a></p>
     </section>
   </main>
+  {% if show_reactivation_modal %}
+    <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="reactivation-title">
+      <div class="auth-modal__card">
+        <span class="material-symbols-outlined" aria-hidden="true">person_off</span>
+        <h2 id="reactivation-title">Account deactivated</h2>
+        <p>Your account is currently deactivated. You can ask an administrator to review and reactivate it.</p>
+        <form method="post" action="{{ url_for('auth.request_reactivation') }}">
+          <button class="button button--primary button--block" type="submit">Request reactivation</button>
+        </form>
+        <a class="auth-modal__cancel" href="{{ url_for('auth.login') }}">Return to sign in</a>
+      </div>
+    </section>
+  {% endif %}
 {% endblock %}

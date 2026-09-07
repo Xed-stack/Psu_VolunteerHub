@@ -9,7 +9,7 @@ from flask_wtf.csrf import CSRFProtect
 from app.models import db
 from app.models.user import User, SystemSetting
 from app.models.event import (Event, Registration, Attendance, Milestone,
-                              Campus, ExternalParticipant)
+                              Campus, ExternalParticipant, ActivityCategory)
 from app.models.notification import Notification
 from config import config
 
@@ -127,10 +127,15 @@ def create_app(config_name='development'):
 def _seed_interests_skills(app):
     """Seed interest and skill lookup tables from config category lists."""
     from app.models.user import Interest, Skill
+    from app.models.event import ActivityCategory
     from config import Config
     for name in getattr(Config, 'EVENT_CATEGORIES', []):
         if name and not Interest.query.filter_by(name=name).first():
             db.session.add(Interest(name=name))
+        if name and not ActivityCategory.query.filter_by(name=name).first():
+            db.session.add(ActivityCategory(name=name))
+    if not ActivityCategory.query.filter_by(name='General').first():
+        db.session.add(ActivityCategory(name='General'))
     for name in getattr(Config, 'SKILL_CATEGORIES', []):
         if name and not Skill.query.filter_by(name=name).first():
             db.session.add(Skill(name=name))

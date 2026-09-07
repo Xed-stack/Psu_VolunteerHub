@@ -68,6 +68,13 @@
                     >Edit</a>
                     <form
                       method="post"
+                      action="{{ url_for('coordinator.delete_activity', event_id=event.id) }}"
+                      onsubmit="return confirm({{ ('Remove ' ~ event.title ~ '? This permanently deletes the activity and cancels all registrations.')|tojson }});"
+                    >
+                      <button class="btn btn--sm btn--danger" type="submit">Remove</button>
+                    </form>
+                    <form
+                      method="post"
                       action="{{ url_for('coordinator.upload_milestone', event_id=event.id) }}"
                       enctype="multipart/form-data"
                     >

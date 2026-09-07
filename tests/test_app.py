@@ -4,6 +4,7 @@ from app import create_app
 from app.models import db
 from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
 from app.models.event import Event, Registration, Attendance, Campus, ExternalParticipant
+from app.models.notification import Notification
 from app.recommendation.engine import (
     _cosine_similarity,
     bootstrap_from_event,
@@ -320,6 +321,46 @@ class TestVolunteerFeatures:
             assert r is not None
             assert r.event_id == eid
 
+    def test_volunteer_can_cancel_and_restore_future_registration(self, client, app):
+        uid = _create_user(app, email='cancel@test.com', campus_id=1)
+        _login_as(client, uid)
+        with app.app_context():
+            event = Event.query.first()
+            event_id = event.id
+        client.post(f'/opportunities/register/{event_id}')
+        with app.app_context():
+            registration = Registration.query.filter_by(
+                user_id=uid, event_id=event_id).first()
+            registration_id = registration.id
+        response = client.post(f'/registrations/{registration_id}/cancel')
+        assert response.status_code == 302
+        with app.app_context():
+            assert db.session.get(Registration, registration_id).status == 'cancelled'
+        client.post(f'/opportunities/register/{event_id}')
+        with app.app_context():
+            assert db.session.get(Registration, registration_id).status == 'confirmed'
+
+    def test_volunteer_cannot_cancel_another_users_registration(self, client, app):
+        owner_id = _create_user(app, email='owner@test.com', campus_id=1)
+        other_id = _create_user(app, email='other@test.com', campus_id=1)
+        with app.app_context():
+            registration = Registration(user_id=owner_id, event_id=1, status='confirmed')
+            db.session.add(registration)
+            db.session.commit()
+            registration_id = registration.id
+        _login_as(client, other_id)
+        assert client.post(f'/registrations/{registration_id}/cancel').status_code == 403
+
+    def test_dashboard_lists_registration_and_cancel_control(self, client, app):
+        uid = _create_user(app, email='dashboardreg@test.com', campus_id=1)
+        with app.app_context():
+            db.session.add(Registration(user_id=uid, event_id=1, status='confirmed'))
+            db.session.commit()
+        _login_as(client, uid)
+        body = client.get('/volunteer_dash').get_data(as_text=True)
+        assert 'My Registrations' in body
+        assert '/registrations/' in body
+
     def test_profile_get(self, client, app):
         uid = _create_user(app, email='prof@test.com')
         _login_as(client, uid)
@@ -394,6 +435,53 @@ class TestCoordinatorFeatures:
         resp = client.get('/attendance')
         assert resp.status_code == 200
 
+    def test_deactivated_user_can_request_reactivation(self, client, app):
+        user_id = _create_user(app, email='appeal@test.com')
+        admin_id = _create_user(app, email='appeal-admin@test.com', role='admin')
+        with app.app_context():
+            user = db.session.get(User, user_id)
+            user.is_active = False
+            user.deactivated_at = datetime.utcnow()
+            db.session.commit()
+        login = client.post('/auth/login', data={
+            'identifier': 'appeal@test.com', 'password': 'password123'})
+        assert login.status_code == 200
+        assert b'Account deactivated' in login.data
+        requested = client.post('/auth/request-reactivation', follow_redirects=True)
+        assert requested.status_code == 200
+        with app.app_context():
+            user = db.session.get(User, user_id)
+            assert user.reactivation_requested_at is not None
+            assert Notification.query.filter_by(
+                user_id=admin_id, notification_type='reactivation_request').count() == 1
+
+    def test_coordinator_deletes_own_event_and_notifies_volunteer(self, client, app):
+        coordinator_id = _create_user(
+            app, email='remove-coord@test.com', role='coordinator', campus_id=1)
+        volunteer_id = _create_user(app, email='remove-vol@test.com', campus_id=1)
+        with app.app_context():
+            event = Event.query.filter_by(campus_id=1).first()
+            event_id = event.id
+            db.session.add(Registration(
+                user_id=volunteer_id, event_id=event_id, status='confirmed'))
+            db.session.commit()
+        _login_as(client, coordinator_id)
+        response = client.post(f'/coordinator/events/{event_id}/delete')
+        assert response.status_code == 302
+        with app.app_context():
+            assert db.session.get(Event, event_id) is None
+            assert Registration.query.filter_by(event_id=event_id).count() == 0
+            assert Notification.query.filter_by(
+                user_id=volunteer_id, notification_type='event_cancelled').count() == 1
+
+    def test_coordinator_cannot_delete_other_campus_event(self, client, app):
+        coordinator_id = _create_user(
+            app, email='wrong-campus@test.com', role='coordinator', campus_id=1)
+        with app.app_context():
+            event_id = Event.query.filter_by(campus_id=2).first().id
+        _login_as(client, coordinator_id)
+        assert client.post(f'/coordinator/events/{event_id}/delete').status_code == 403
+
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # F. Director Features
@@ -431,7 +519,7 @@ class TestAdminFeatures:
         resp = client.get('/admin_dash')
         assert resp.status_code == 200
 
-    def test_admin_toggle_user_active(self, client, app):
+    def test_admin_deactivate_and_reactivate_user(self, client, app):
         _create_user(app, email='target@test.com', name='Target')
         admin_uid = _create_user(app, email='adm2@test.com', role='admin')
         _login_as(client, admin_uid)
@@ -444,11 +532,43 @@ class TestAdminFeatures:
         with app.app_context():
             target = db.session.get(User, target_id)
             assert target.is_active is False
-        resp2 = client.post(f'/admin/users/deactivate/{target_id}', follow_redirects=True)
+        resp2 = client.post(f'/admin/users/{target_id}/reactivate',
+                            follow_redirects=True)
         assert resp2.status_code == 200
         with app.app_context():
             target = db.session.get(User, target_id)
             assert target.is_active is True
+
+    def test_admin_category_removal_moves_events_to_general(self, client, app):
+        admin_uid = _create_user(app, email='category-admin@test.com', role='admin')
+        _login_as(client, admin_uid)
+        with app.app_context():
+            from app.models.event import ActivityCategory
+            category = ActivityCategory(name='Temporary Category')
+            db.session.add(category)
+            event = Event.query.first()
+            event.category = category.name
+            db.session.commit()
+            category_id = category.id
+            event_id = event.id
+        response = client.post(f'/admin/categories/{category_id}/delete')
+        assert response.status_code == 302
+        with app.app_context():
+            assert db.session.get(Event, event_id).category == 'General'
+
+    def test_expired_deactivated_user_can_be_deleted(self, client, app):
+        admin_uid = _create_user(app, email='delete-admin@test.com', role='admin')
+        target_uid = _create_user(app, email='expired-target@test.com')
+        _login_as(client, admin_uid)
+        with app.app_context():
+            target = db.session.get(User, target_uid)
+            target.is_active = False
+            target.deactivated_at = datetime.utcnow() - timedelta(days=30)
+            db.session.commit()
+        response = client.post(f'/admin/users/{target_uid}/delete')
+        assert response.status_code == 302
+        with app.app_context():
+            assert db.session.get(User, target_uid) is None
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

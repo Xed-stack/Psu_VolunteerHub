@@ -84,6 +84,9 @@
         document.querySelectorAll('[data-sidebar-close]').forEach(el => el.addEventListener('click', close));
         sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => close()));
         window.addEventListener('keydown', event => { if (event.key === 'Escape') close(true); });
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 767) close();
+        });
       })();
     </script>
     {% include 'partials/csrf_forms_script.html' %}

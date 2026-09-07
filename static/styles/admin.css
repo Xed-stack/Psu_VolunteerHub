@@ -6,6 +6,23 @@
   gap: 12px;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.admin-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-full);
+  background: #fff;
+}
+
 .admin-action {
   min-height: 120px;
   display: flex;

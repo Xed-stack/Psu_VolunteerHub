@@ -134,6 +134,36 @@ body {
   outline-offset: 2px;
 }
 
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 28, 44, .55);
+}
+
+.auth-modal__card {
+  width: min(100%, 440px);
+  padding: 28px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.auth-modal__card > .material-symbols-outlined {
+  font-size: 42px;
+  color: var(--error);
+}
+
+.auth-modal__cancel {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--on-surface-variant);
+}
+
 @media(max-width:720px) {
   .auth-shell {
     grid-template-columns: 1fr

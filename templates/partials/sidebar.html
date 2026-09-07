@@ -77,10 +77,6 @@
         href="{{ url_for('events.opportunities') }}"
       ><span class="material-symbols-outlined">volunteer_activism</span>Opportunities</a>
       <a
-        class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}"
-        href="{{ url_for('director.analytics') }}"
-      ><span class="material-symbols-outlined">analytics</span>Analytics</a>
-      <a
         class="navlink {{ 'navlink--active' if endpoint in ['admin.create_user','admin.edit_user'] }}"
         href="{{ url_for('admin.admin_dash') }}#user-management"
       ><span class="material-symbols-outlined">manage_accounts</span>User Management</a>
@@ -99,8 +95,9 @@
       <strong>{{ current_user.name }}</strong>
       <small>{{ current_user.role_display_name }}</small>
     </span>
-    <a href="{{ url_for('auth.logout') }}" aria-label="Log out">
+    <a class="role-user__logout" href="{{ url_for('auth.logout') }}" aria-label="Log out">
       <span class="material-symbols-outlined">logout</span>
+      <span class="role-user__logout-label">Log out</span>
     </a>
   </div>
 </aside>

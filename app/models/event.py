@@ -36,9 +36,14 @@ class Event(db.Model):
     cover_image_name = db.Column(db.String(255), nullable=True)
     campus_id = db.Column(db.Integer, db.ForeignKey(
         'campuses.id', ondelete='SET NULL'))
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True)
 
     # Relationships
     campus = db.relationship('Campus', backref='events', lazy=True)
+    created_by = db.relationship(
+        'User', backref=db.backref('created_events', lazy=True))
     registrations = db.relationship(
         'Registration', backref='event', lazy=True, cascade='all, delete-orphan')
     attendance_records = db.relationship(
@@ -217,6 +222,17 @@ class Campus(db.Model):
 
     def __repr__(self) -> str:
         return f"Campus(id={self.id}, name='{self.name}')"
+
+
+class ActivityCategory(db.Model):
+    """Administrator-managed categories available to volunteer activities."""
+    __tablename__ = 'activity_categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"ActivityCategory(id={self.id}, name='{self.name}')"
 
 
 class RecommendationLog(db.Model):

@@ -6,7 +6,9 @@ Handles login, registration, and logout.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
+from datetime import datetime
 from app.models.user import User, Interest, Skill, SystemSetting
+from app.models.notification import Notification
 from app.models import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -49,8 +51,8 @@ def login():
             return render_template('login.html')
 
         if not user.is_active:
-            flash('Account is deactivated. Contact an administrator.', 'error')
-            return render_template('login.html')
+            session['reactivation_user_id'] = user.id
+            return render_template('login.html', show_reactivation_modal=True)
 
         login_user(user, remember=remember)
 
@@ -67,6 +69,33 @@ def login():
         return redirect(url_for(role_redirects.get(user.role, 'dashboard')))
 
     return render_template('login.html')
+
+
+@auth_bp.route('/request-reactivation', methods=['POST'])
+def request_reactivation():
+    """Create one admin-visible appeal after a valid deactivated login."""
+    user_id = session.get('reactivation_user_id')
+    user = db.session.get(User, user_id) if user_id else None
+    if user is None or user.is_active:
+        flash('Please sign in again before requesting reactivation.', 'error')
+        return redirect(url_for('auth.login'))
+    if user.reactivation_requested_at:
+        flash('Your reactivation request is already pending review.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    user.reactivation_requested_at = datetime.utcnow()
+    administrators = User.query.filter_by(role='admin', _is_active=True).all()
+    for administrator in administrators:
+        db.session.add(Notification(
+            user_id=administrator.id,
+            title=f'Reactivation request: {user.name}',
+            message=(f'{user.name} ({user.email}) requested reactivation of '
+                     'their deactivated account.'),
+            notification_type='reactivation_request'))
+    db.session.commit()
+    session.pop('reactivation_user_id', None)
+    flash('Your reactivation request has been sent to an administrator.', 'success')
+    return redirect(url_for('auth.login'))
 
 
 @auth_bp.route('/interests', methods=['GET', 'POST'])

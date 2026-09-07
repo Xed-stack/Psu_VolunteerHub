@@ -37,7 +37,8 @@ body {
 .public-nav__links {
   display: flex;
   align-items: center;
-  gap: 20px
+  color: #f3f3f3;
+  gap: 20px;
 }
 
 .public-nav__links a {

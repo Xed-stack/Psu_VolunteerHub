@@ -231,7 +231,7 @@
         <header class="panel__header">
           <div>
             <h2>Cross-Campus Comparison</h2>
-            <small>Live registrations by campus</small>
+            <small>{{ 'Live registrations by campus' if participation.registrations else 'Historical participations by campus (2020–2025)' }}</small>
           </div>
         </header>
         <div
@@ -246,7 +246,7 @@
         <header class="panel__header">
           <div>
             <h2>Participation by Category</h2>
-            <small>Filtered live registrations</small>
+            <small>{{ 'Filtered live registrations' if participation.registrations else 'Historical participations by activity type (2020–2025)' }}</small>
           </div>
         </header>
         <div
@@ -403,8 +403,13 @@
     </section>
     {% set historical_chart = {'labels': historical_campus_data|map(attribute='campus')|list, 'values': historical_campus_data|map(attribute='participations')|list} %}
     {% set role_chart = {'labels': demographics.keys()|list, 'values': demographics.values()|list} %}
-    {% set campus_chart = {'labels': campus_comparison|map(attribute='campus')|list, 'values': campus_comparison|map(attribute='registrations')|list} %}
-    {% set category_chart = {'labels': category_breakdown|map(attribute='category')|list, 'values': category_breakdown|map(attribute='registrations')|list} %}
+    {% if participation.registrations %}
+      {% set campus_chart = {'labels': campus_comparison|map(attribute='campus')|list, 'values': campus_comparison|map(attribute='registrations')|list} %}
+      {% set category_chart = {'labels': category_breakdown|map(attribute='category')|list, 'values': category_breakdown|map(attribute='registrations')|list} %}
+    {% else %}
+      {% set campus_chart = {'labels': historical_campus_data|map(attribute='campus')|list, 'values': historical_campus_data|map(attribute='participations')|list} %}
+      {% set category_chart = {'labels': historical_category_data|map(attribute='category')|list, 'values': historical_category_data|map(attribute='participations')|list} %}
+    {% endif %}
     {% set engagement_chart = {
       'monthly': {'labels': monthly.months, 'primary': monthly.registrations, 'secondary': monthly.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'},
       'weekly': {'labels': weekly.weeks, 'primary': weekly.registrations, 'secondary': weekly.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'}

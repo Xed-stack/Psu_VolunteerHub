@@ -33,6 +33,11 @@
     <div class="summary-stat"><small>Volunteer Accounts</small><strong>{{ pending_approvals }}</strong></div>
     <div class="summary-stat"><small>Displayed Users</small><strong>{{ users|length }}</strong></div>
   </section>
+  <nav class="admin-tabs" aria-label="Administration sections">
+    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'users' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='users') }}">Active Users</a>
+    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'deactivated' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='deactivated') }}">Deactivated Users ({{ deactivated_users|length }})</a>
+  </nav>
+  {% if active_tab == 'users' %}
   <section class="panel" id="user-management">
     <header class="panel__header">
       <h2>User Management</h2>
@@ -96,11 +101,11 @@
                   class="inline-form"
                 >
                   <button
-                    class="btn btn--sm btn--ghost"
+                    class="btn btn--sm btn--danger"
                     type="submit"
-                    onclick="return confirm('Toggle active status for this user?')"
+                    onclick="return confirm('Deactivate {{ user.name }}? They will be unable to sign in.')"
                   >
-                    Toggle
+                    Deactivate
                   </button>
                 </form>
               </td>
@@ -114,6 +119,18 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </section>
+  <section class="panel">
+    <header class="panel__header"><div><h2>Activity Categories</h2><small>Categories available when coordinators create or edit activities.</small></div></header>
+    <form class="filter-row" method="post" action="{{ url_for('admin.create_category') }}">
+      <label class="field">New category<input class="input" name="name" maxlength="50" required></label>
+      <button class="btn btn--primary" type="submit">Add Category</button>
+    </form>
+    <div class="tag-list">
+      {% for category in categories %}
+        <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="inline-form"><button class="btn btn--sm btn--danger" type="submit" onclick="return confirm('Remove {{ category.name }}? Affected activities will become General.')">Remove</button></form>{% endif %}</span>
+      {% endfor %}
     </div>
   </section>
   <section class="panel">
@@ -141,4 +158,29 @@
       </a>
     </div>
   </section>
+  {% else %}
+  <section class="panel" id="deactivated-users">
+    <header class="panel__header"><div><h2>Deactivated Users</h2><small>Accounts become eligible for permanent deletion 30 days after deactivation.</small></div></header>
+    <div class="table-scroll" tabindex="0" aria-label="Deactivated users table">
+      <table class="data-table">
+        <thead><tr><th>User</th><th>Role</th><th>Campus</th><th>Deactivated</th><th>Reactivation</th><th>Deletion</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for user in deactivated_users %}
+          <tr>
+            <td><strong>{{ user.name }}</strong><br><small>{{ user.email }}</small></td>
+            <td>{{ user.role|title }}</td><td>{{ user.campus.name if user.campus else '—' }}</td>
+            <td>{{ (user.deactivated_at or user.created_at).strftime('%b %d, %Y') }}</td>
+            <td>{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
+            <td><span class="badge {{ 'badge--neutral' if user.deletion_expired else 'badge--primary' }}">{{ 'Expired' if user.deletion_expired else user.deletion_days_left ~ ' days left' }}</span></td>
+            <td class="table-actions">
+              <form method="post" action="{{ url_for('admin.reactivate_user', user_id=user.id) }}" class="inline-form"><button class="btn btn--sm btn--primary" type="submit">Reactivate</button></form>
+              {% if user.deletion_expired %}<form method="post" action="{{ url_for('admin.delete_expired_user', user_id=user.id) }}" class="inline-form"><button class="btn btn--sm btn--danger" type="submit" onclick="return confirm('Permanently delete {{ user.name }} and their account data? This cannot be undone.')">Delete</button></form>{% endif %}
+            </td>
+          </tr>
+          {% else %}<tr><td colspan="7"><div class="empty-state">No deactivated users.</div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
 {% endblock %}

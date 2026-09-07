@@ -39,11 +39,11 @@
 >
       </label>
       <label class="field">
-        Category<input
-  class="input"
-  name="category"
-  value="{{ event.category or 'General' }}"
->
+        Category<select class="select" name="category" required>
+          {% for category in categories %}
+            <option value="{{ category }}" {{ 'selected' if (event.category or 'General') == category }}>{{ category }}</option>
+          {% endfor %}
+        </select>
       </label>
       <label class="field">
         Volunteer slots<input

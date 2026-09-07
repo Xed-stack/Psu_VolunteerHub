@@ -59,6 +59,8 @@ def analytics():
     heatmap_data = AnalyticsAggregator.heatmap_data()
     historical_summary = AnalyticsAggregator.historical_summary(**filters)
     historical_campus_data = AnalyticsAggregator.historical_campus_stats(**filters)
+    historical_category_data = (
+        AnalyticsAggregator.historical_activity_type_stats(**filters))
     from app.models.event import HistoricalActivity
     campuses = Campus.query.order_by(Campus.name).all()
     activity_types = [row[0] for row in db.session.query(
@@ -110,6 +112,7 @@ def analytics():
                             heatmap_data=heatmap_data,
                             historical_summary=historical_summary,
                             historical_campus_data=historical_campus_data,
+                            historical_category_data=historical_category_data,
                             campuses=campuses, activity_types=activity_types,
                             categories=categories,
                             selected_filters=filters,

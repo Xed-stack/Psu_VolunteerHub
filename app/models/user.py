@@ -69,6 +69,8 @@ class User(UserMixin, db.Model):
     campus_id = db.Column(db.Integer, db.ForeignKey(
         'campuses.id', ondelete='SET NULL'))
     _is_active = db.Column('is_active', db.Boolean, default=True)
+    deactivated_at = db.Column(db.DateTime, nullable=True)
+    reactivation_requested_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

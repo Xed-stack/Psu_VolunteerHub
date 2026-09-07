@@ -87,6 +87,30 @@ class AnalyticsAggregator:
         return results
 
     @staticmethod
+    def historical_activity_type_stats(campus_id=None, start_year=None,
+                                       end_year=None, activity_type=None):
+        """Return historical participation totals grouped by activity type."""
+        query = db.session.query(
+            HistoricalActivity.activity_type,
+            db.func.sum(HistoricalActivity.volunteer_count),
+        )
+        if campus_id:
+            query = query.filter(HistoricalActivity.campus_id == campus_id)
+        if start_year:
+            query = query.filter(HistoricalActivity.year_conducted >= start_year)
+        if end_year:
+            query = query.filter(HistoricalActivity.year_conducted <= end_year)
+        if activity_type:
+            query = query.filter(HistoricalActivity.activity_type == activity_type)
+        rows = query.group_by(HistoricalActivity.activity_type).all()
+        results = [{
+            'category': kind or 'Unspecified',
+            'participations': int(participations or 0),
+        } for kind, participations in rows]
+        results.sort(key=lambda row: row['participations'], reverse=True)
+        return results
+
+    @staticmethod
     def campus_stats():
         """Return list of {campus, volunteers, hours} per campus sorted by hours desc."""
         campuses = Campus.query.all()

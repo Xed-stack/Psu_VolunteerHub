@@ -10,9 +10,10 @@ from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort
 from flask_login import login_required, current_user
 from app.models import db
-from app.models.event import Event, Registration, Attendance, Campus, Milestone
+from app.models.event import (ActivityCategory, Event, Registration, Attendance,
+                              Campus, Milestone)
 from app.utils.decorators import role_required
-from app.models.notification import notify_campus_coordinators
+from app.models.notification import Notification, notify_campus_coordinators
 from app.models.user import SystemSetting
 from app.recommendation.analytics import AnalyticsAggregator
 from app.reports import (
@@ -31,6 +32,11 @@ def _max_event_slots():
         return max(1, int(setting.value)) if setting else 100
     except (TypeError, ValueError):
         return 100
+
+
+def _activity_categories():
+    return [category.name for category in ActivityCategory.query.order_by(
+        ActivityCategory.name).all()]
 
 
 def _save_event_cover(file):
@@ -112,6 +118,7 @@ def coordinator_dash():
 @role_required('coordinator')
 def create_activity():
     campuses = [current_user.campus] if current_user.campus else []
+    categories = _activity_categories()
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
@@ -128,6 +135,11 @@ def create_activity():
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
             return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+        if category not in categories:
+            flash('Select a valid activity category.', 'error')
+            return render_template('coordinator/create_act_scrn1.html',
+                                   campuses=campuses, categories=categories,
+                                   max_slots=max_slots)
         if slots < 1 or slots > max_slots:
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/create_act_scrn1.html',
@@ -147,6 +159,7 @@ def create_activity():
                       category=category, location=location,
                       required_skills=required_skills, slots=slots,
                       campus_id=campus_id,
+                      created_by_id=current_user.id,
                       cover_image_path=cover['path'] if cover else None,
                       cover_image_name=cover['original_name'] if cover else None)
         db.session.add(event)
@@ -154,7 +167,7 @@ def create_activity():
         flash('Activity created successfully!', 'success')
         return redirect(url_for('coordinator.coordinator_dash'))
     return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
-                           max_slots=_max_event_slots())
+                           categories=categories, max_slots=_max_event_slots())
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -175,6 +188,8 @@ def edit_activity(event_id):
     if event.campus_id != current_user.campus_id:
         abort(403)
 
+    categories = _activity_categories()
+
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
@@ -185,6 +200,10 @@ def edit_activity(event_id):
         slots = request.form.get('slots', 0, type=int)
         max_slots = _max_event_slots()
 
+        if category not in categories:
+            flash('Select a valid activity category.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   categories=categories, max_slots=max_slots)
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
             return render_template('coordinator/edit_activity.html', event=event)
@@ -233,7 +252,44 @@ def edit_activity(event_id):
         return redirect(url_for('coordinator.coordinator_dash'))
 
     return render_template('coordinator/edit_activity.html', event=event,
-                           max_slots=_max_event_slots())
+                           categories=categories, max_slots=_max_event_slots())
+
+
+@coordinator_bp.route('/coordinator/events/<int:event_id>/delete', methods=['POST'])
+@login_required
+@role_required('coordinator')
+def delete_activity(event_id):
+    """Permanently remove a campus-owned event and notify PSU volunteers."""
+    event = db.session.get(Event, event_id)
+    if event is None:
+        abort(404)
+    if event.campus_id != current_user.campus_id:
+        abort(403)
+
+    registrations = Registration.query.filter_by(event_id=event.id).all()
+    affected_volunteers = [r.user_id for r in registrations if r.user_id is not None]
+    for user_id in affected_volunteers:
+        db.session.add(Notification(
+            user_id=user_id,
+            title=f'Activity cancelled: {event.title}',
+            message=f'The activity "{event.title}" has been removed by its '
+                    'coordinator. Your registration was cancelled.',
+            notification_type='event_cancelled'))
+
+    cover_path = event.cover_image_path
+    registration_count = len(registrations)
+    db.session.delete(event)
+    db.session.commit()
+    if cover_path:
+        file_path = os.path.join(current_app.static_folder, cover_path)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    if registration_count:
+        flash(f'Activity removed. {registration_count} registration(s) were cancelled.',
+              'success')
+    else:
+        flash('Activity removed.', 'success')
+    return redirect(url_for('coordinator.coordinator_dash'))
 
 
 @coordinator_bp.route('/attendance', methods=['GET', 'POST'])

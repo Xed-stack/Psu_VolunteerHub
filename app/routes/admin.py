@@ -7,14 +7,15 @@ import csv
 import io
 import json
 import zipfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, Response)
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.user import User, SystemSetting, VolunteerProfile
-from app.models.event import Campus
+from app.models.event import ActivityCategory, Campus, Event
+from app.models.notification import Notification, notify_campus_coordinators
 from app.utils.decorators import role_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='')
@@ -39,15 +40,35 @@ def _sync_volunteer_profile(user, old_role=None):
         db.session.delete(user.profile)
 
 
+def _admin_redirect(tab='users'):
+    return redirect(url_for('admin.admin_dash', tab=tab))
+
+
+def _reactivate(user):
+    user.is_active = True
+    user.deactivated_at = None
+    user.reactivation_requested_at = None
+
+
 @admin_bp.route('/admin_dash')
 @login_required
 @role_required('admin')
 def admin_dash():
+    active_tab = request.args.get('tab', 'users')
+    if active_tab not in ('users', 'deactivated'):
+        active_tab = 'users'
     campus_id = request.args.get('campus_id', type=int)
     query = User.query
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
-    users = query.order_by(User.created_at.desc()).all()
+    users = query.filter(User._is_active.is_(True)).order_by(User.created_at.desc()).all()
+    deactivated_users = User.query.filter(
+        User._is_active.is_(False)).order_by(User.deactivated_at.asc()).all()
+    now = datetime.utcnow()
+    for user in deactivated_users:
+        deactivated_at = user.deactivated_at or user.created_at
+        user.deletion_days_left = max(0, 30 - (now - deactivated_at).days)
+        user.deletion_expired = now >= deactivated_at + timedelta(days=30)
     active_users = User.query.filter_by(_is_active=True).count()
     pending_approvals = User.query.filter_by(
         role='volunteer', _is_active=True).count()
@@ -59,6 +80,7 @@ def admin_dash():
     server_status = {'database': database_status}
     audit_logs = []
     campuses = Campus.query.all()
+    categories = ActivityCategory.query.order_by(ActivityCategory.name).all()
     return render_template('admin/Admin_mngmt_dash.html',
                            users=users,
                            server_status=server_status,
@@ -66,7 +88,10 @@ def admin_dash():
                            pending_approvals=pending_approvals,
                            audit_logs=audit_logs,
                            selected_campus=campus_id,
-                           campuses=campuses)
+                           campuses=campuses,
+                           categories=categories,
+                           deactivated_users=deactivated_users,
+                           active_tab=active_tab)
 
 
 @admin_bp.route('/admin/users/deactivate/<int:user_id>', methods=['POST'])
@@ -79,12 +104,105 @@ def deactivate_user(user_id):
     if (user.role == 'admin' and user.is_active
             and _active_admin_count() <= 1):
         flash('The final active Admin cannot be deactivated.', 'error')
-        return redirect(url_for('admin.admin_dash'))
-    user.is_active = not user.is_active
+        return _admin_redirect()
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'error')
+        return _admin_redirect()
+    if not user.is_active:
+        flash('This account is already deactivated.', 'warning')
+        return _admin_redirect('deactivated')
+    user.is_active = False
+    user.deactivated_at = datetime.utcnow()
+    user.reactivation_requested_at = None
     db.session.commit()
-    status = 'activated' if user.is_active else 'deactivated'
-    flash(f'User {user.name} has been {status}.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+    flash(f'User {user.name} has been deactivated.', 'success')
+    return _admin_redirect()
+
+
+@admin_bp.route('/admin/users/<int:user_id>/reactivate', methods=['POST'])
+@login_required
+@role_required('admin')
+def reactivate_user(user_id):
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    _reactivate(user)
+    db.session.commit()
+    flash(f'User {user.name} has been reactivated.', 'success')
+    return _admin_redirect('deactivated')
+
+
+@admin_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin')
+def delete_expired_user(user_id):
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404)
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'error')
+        return _admin_redirect('deactivated')
+    deadline = (user.deactivated_at or user.created_at) + timedelta(days=30)
+    if user.is_active or datetime.utcnow() < deadline:
+        abort(403)
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'User {user.name} was permanently deleted.', 'success')
+    return _admin_redirect('deactivated')
+
+
+@admin_bp.route('/admin/categories/create', methods=['POST'])
+@login_required
+@role_required('admin')
+def create_category():
+    name = ' '.join(request.form.get('name', '').split())
+    if not name:
+        flash('Category name is required.', 'error')
+    elif len(name) > 50:
+        flash('Category names must be 50 characters or fewer.', 'error')
+    elif ActivityCategory.query.filter(
+            db.func.lower(ActivityCategory.name) == name.lower()).first():
+        flash('That category already exists.', 'error')
+    else:
+        db.session.add(ActivityCategory(name=name))
+        db.session.commit()
+        flash(f'{name} category created.', 'success')
+    return _admin_redirect()
+
+
+@admin_bp.route('/admin/categories/<int:category_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin')
+def delete_category(category_id):
+    category = db.session.get(ActivityCategory, category_id)
+    if category is None:
+        abort(404)
+    if category.name == 'General':
+        flash('The General category cannot be removed.', 'error')
+        return _admin_redirect()
+    events = Event.query.filter_by(category=category.name).all()
+    for event in events:
+        event.category = 'General'
+        title = f'Category changed: {event.title}'
+        message = (f'The {category.name} category was removed. Your activity '
+                   'was changed to General; please choose a new category.')
+        if event.created_by_id:
+            db.session.add(Notification(
+                user_id=event.created_by_id, title=title, message=message,
+                notification_type='category_changed', related_event_id=event.id))
+        else:
+            coordinators = User.query.filter_by(
+                role='coordinator', campus_id=event.campus_id,
+                _is_active=True).all()
+            for coordinator in coordinators:
+                db.session.add(Notification(
+                    user_id=coordinator.id, title=title, message=message,
+                    notification_type='category_changed', related_event_id=event.id))
+    db.session.delete(category)
+    db.session.commit()
+    flash(f'{category.name} removed; {len(events)} activities moved to General.',
+          'success')
+    return _admin_redirect()
 
 
 @admin_bp.route('/admin/users/role/<int:user_id>', methods=['POST'])

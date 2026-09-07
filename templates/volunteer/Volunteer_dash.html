@@ -14,7 +14,7 @@
   <header class="page-heading">
     <div>
       <h1>Welcome back, {{ current_user.name }}</h1>
-      <p>Track your service and discover activities matched with cosine similarity.</p>
+      <p>Track your service and discover activities.</p>
     </div>
   </header>
   <section class="metric-grid" aria-label="Volunteer summary">
@@ -22,6 +22,44 @@
     <article class="metric-card"><small>Activities</small><strong>{{ user_stats.total_activities }}</strong></article>
     <article class="metric-card"><small>Recognition</small><strong>{{ certification.level }}</strong></article>
     <article class="metric-card"><small>Next milestone</small><strong>{{ certification.next_level }}</strong></article>
+  </section>
+  <section class="panel">
+    <header class="panel__header">
+      <div>
+        <h2>My Registrations</h2>
+        <small>Upcoming commitments and registration history.</small>
+      </div>
+    </header>
+    {% if registration_items %}
+      <div class="table-scroll" tabindex="0">
+        <table class="data-table">
+          <thead>
+            <tr><th>Activity</th><th>Date</th><th>Campus</th><th>Category</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for item in registration_items %}
+              {% set registration = item.registration %}
+              <tr>
+                <td><strong>{{ registration.event.title }}</strong></td>
+                <td>{{ registration.event.date.strftime('%b %d, %Y · %I:%M %p') }}</td>
+                <td>{{ registration.event.campus.name if registration.event.campus else 'PSU' }}</td>
+                <td>{{ registration.event.category or 'General' }}</td>
+                <td><span class="badge">{{ registration.status|title }}</span></td>
+                <td>
+                  {% if item.can_cancel %}
+                    <form method="post" action="{{ url_for('events.cancel_registration', registration_id=registration.id) }}">
+                      <button class="btn btn--sm btn--danger" type="submit">Cancel</button>
+                    </form>
+                  {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">You have not registered for any activities yet.</div>
+    {% endif %}
   </section>
   <div class="content-grid">
     <section class="panel">
