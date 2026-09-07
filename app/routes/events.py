@@ -62,6 +62,14 @@ def opportunities():
     # so the dropdown never offers options that return zero results.
     categories = [row[0] for row in db.session.query(
         Event.category).distinct().order_by(Event.category).all() if row[0]]
+    registered_event_ids = set()
+    if current_user.is_authenticated and current_user.role == 'volunteer':
+        registered_event_ids = {
+            registration.event_id
+            for registration in Registration.query.filter_by(
+                user_id=current_user.id).all()
+            if registration.status != 'cancelled'
+        }
     return render_template('volunteer/Volunteer_opportunities.html',
                            events=events, campuses=campuses,
                            categories=categories,
@@ -71,7 +79,8 @@ def opportunities():
                            selected_campus=campus_id,
                            selected_category=category,
                            selected_status='upcoming',
-                           search_query=search)
+                           search_query=search,
+                           registered_event_ids=registered_event_ids)
 
 
 @events_bp.route('/opportunities/register/<int:event_id>', methods=['POST'])

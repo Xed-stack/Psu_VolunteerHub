@@ -12,7 +12,7 @@
   <header class="page-heading">
     <div>
       <h1>Volunteer Opportunities</h1>
-      <p>Showing {{ events|length }} active opportunities</p>
+      <p>Showing {{ total_count }} active opportunities</p>
     </div>
   </header>
   <form class="panel filter-row" method="get">
@@ -59,11 +59,14 @@
             <li><span class="material-symbols-outlined">location_on</span>{{ event.campus.name if event.campus else 'PSU Campus' }}</li>
             <li><span class="material-symbols-outlined">group</span>{{ event.slots_remaining() }} slots remaining</li>
           </ul>
-          {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
+          {% if current_user.is_authenticated and current_user.role == 'volunteer' and event.id in registered_event_ids %}
+            <span class="button button--secondary" aria-label="Already registered for {{ event.title }}">Registered</span>
+          {% elif current_user.is_authenticated and current_user.role == 'volunteer' %}
             <form
               method="post"
               action="{{ url_for('events.register_for_event', event_id=event.id) }}"
             >
+              {% include 'partials/csrf_field.html' %}
               <button class="button button--primary" type="submit">Join Now</button>
             </form>
           {% elif not current_user.is_authenticated %}
