@@ -91,7 +91,52 @@ def create_app(config_name='development'):
     @app.route('/')
     def home():
         from flask import render_template
-        return render_template('Homepage.html')
+        from datetime import datetime
+        from app.models.event import Event, HistoricalActivity
+
+        now = datetime.now()
+        featured_events = Event.query.filter(
+            Event.date >= now,
+            Event.slots > 0,
+        ).order_by(Event.date.asc()).limit(6).all()
+        completed_events = Event.query.filter(
+            Event.date < now,
+        ).order_by(Event.date.desc()).limit(3).all()
+        historical_summary = {
+            'activities': HistoricalActivity.query.count(),
+            'participants': int(db.session.query(db.func.sum(
+                HistoricalActivity.volunteer_count)).scalar() or 0),
+        }
+        return render_template(
+            'Homepage.html',
+            featured_events=featured_events,
+            completed_events=completed_events,
+            historical_summary=historical_summary,
+        )
+
+    @app.route('/historical-activities')
+    def historical_activities():
+        from flask import render_template, request
+        from app.models.event import HistoricalActivity
+
+        page = request.args.get('page', 1, type=int)
+        pagination = HistoricalActivity.query.order_by(
+            HistoricalActivity.year_conducted.desc(),
+            HistoricalActivity.unit_name.asc(),
+            HistoricalActivity.title.asc(),
+        ).paginate(page=page, per_page=20, error_out=False)
+        return render_template(
+            'historical_activities.html',
+            activities=pagination.items,
+            current_page=pagination.page,
+            total_pages=pagination.pages,
+            total_count=pagination.total,
+        )
+
+    @app.route('/help')
+    def help_page():
+        from flask import render_template
+        return render_template('help.html')
 
     @app.route('/favicon.ico')
     def favicon():

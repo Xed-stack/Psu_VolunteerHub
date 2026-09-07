@@ -129,7 +129,7 @@
     </form>
     <div class="tag-list">
       {% for category in categories %}
-        <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="inline-form"><button class="btn btn--sm btn--danger" type="submit" onclick="return confirm('Remove {{ category.name }}? Affected activities will become General.')">Remove</button></form>{% endif %}</span>
+        <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="inline-form"><button class="icon-button icon-button--danger" type="submit" title="Remove {{ category.name }}" aria-label="Remove {{ category.name }}" onclick="return confirm('Remove {{ category.name }}? Affected activities will become General.')">×</button></form>{% endif %}</span>
       {% endfor %}
     </div>
   </section>

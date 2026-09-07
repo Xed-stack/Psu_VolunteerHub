@@ -29,11 +29,15 @@ class Event(db.Model):
     description = db.Column(db.Text, nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=True)
+    cancellation_deadline = db.Column(db.DateTime, nullable=True)
     category = db.Column(db.String(50), default='General')
     location = db.Column(db.String(500), default='')
     slots = db.Column(db.Integer, default=0)
     cover_image_path = db.Column(db.String(255), nullable=True)
     cover_image_name = db.Column(db.String(255), nullable=True)
+    cover_uploaded_by_id = db.Column(
+        db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    cover_uploaded_at = db.Column(db.DateTime, nullable=True)
     campus_id = db.Column(db.Integer, db.ForeignKey(
         'campuses.id', ondelete='SET NULL'))
     created_by_id = db.Column(
@@ -43,13 +47,20 @@ class Event(db.Model):
     # Relationships
     campus = db.relationship('Campus', backref='events', lazy=True)
     created_by = db.relationship(
-        'User', backref=db.backref('created_events', lazy=True))
+        'User', foreign_keys=[created_by_id],
+        backref=db.backref('created_events', lazy=True))
+    cover_uploaded_by = db.relationship(
+        'User', foreign_keys=[cover_uploaded_by_id],
+        backref=db.backref('uploaded_event_covers', lazy=True))
     registrations = db.relationship(
         'Registration', backref='event', lazy=True, cascade='all, delete-orphan')
     attendance_records = db.relationship(
         'Attendance', backref='event', lazy=True, cascade='all, delete-orphan')
     milestones = db.relationship(
         'Milestone', backref='event', lazy=True, cascade='all, delete-orphan')
+    announcements = db.relationship(
+        'EventAnnouncement', backref='event', lazy=True,
+        cascade='all, delete-orphan')
 
     # 3NF Skills relationship
     required_skills_rel = db.relationship(
@@ -165,19 +176,18 @@ class Registration(db.Model):
 
     @property
     def certificate_eligible(self) -> bool:
-        """Eligibility requires a completed registration and recorded service."""
+        """Eligibility requires completed participation recorded by attendance."""
         attendance = self.attendance_record
         return bool(
             self.status == 'completed'
             and attendance
             and attendance.status == 'present'
-            and (attendance.hours_completed or 0) > 0
         )
 
 
 class Attendance(db.Model):
     """
-    Tracks attendance and hours contributed at an event.
+    Tracks attendance at an event.
     """
     __tablename__ = 'attendance'
 
@@ -192,6 +202,8 @@ class Attendance(db.Model):
         'events.id', ondelete='CASCADE'), nullable=False)
     status = db.Column(db.Enum('present', 'absent', 'excused',
                        name='attendance_statuses'), default='present')
+    # Legacy data column retained for migration compatibility. It is no longer
+    # collected, calculated, displayed, or exported by the application.
     hours_completed = db.Column(db.Float, default=0.0)
 
 
@@ -207,6 +219,29 @@ class Milestone(db.Model):
     filename = db.Column(db.String(255), nullable=False)
     upload_path = db.Column(db.String(500), default='')
     category = db.Column(db.String(100), default='photo')
+    uploaded_by_id = db.Column(
+        db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    uploaded_by = db.relationship(
+        'User', backref=db.backref('uploaded_milestones', lazy=True))
+
+
+class EventAnnouncement(db.Model):
+    """Coordinator update for volunteers registered for an event."""
+    __tablename__ = 'event_announcements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey(
+        'events.id', ondelete='CASCADE'), nullable=False, index=True)
+    author_id = db.Column(db.Integer, db.ForeignKey(
+        'users.id', ondelete='SET NULL'), nullable=True)
+    announcement_type = db.Column(
+        db.Enum('last_call', 'event_update', 'cancelled_postponed',
+                name='announcement_types'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    author = db.relationship(
+        'User', backref=db.backref('event_announcements', lazy=True))
 
 
 class Campus(db.Model):
@@ -269,7 +304,7 @@ class HistoricalActivity(db.Model):
 
     Historical reports contain aggregate volunteer totals rather than user-level
     registrations and attendance. Keeping them separate prevents fabricated
-    users, dates, capacities, and service hours from contaminating live data.
+    users, dates, and capacities from contaminating live data.
     """
     __tablename__ = 'historical_activities'
 
@@ -288,8 +323,12 @@ class HistoricalActivity(db.Model):
     volunteer_count = db.Column(db.Integer, nullable=True)
     year_conducted = db.Column(db.Integer, nullable=True, index=True)
     imported_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    imported_by_id = db.Column(
+        db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
 
     campus = db.relationship('Campus')
+    imported_by = db.relationship(
+        'User', backref=db.backref('historical_imports', lazy=True))
 
     __table_args__ = (
         db.CheckConstraint(

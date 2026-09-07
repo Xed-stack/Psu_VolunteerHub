@@ -10,8 +10,8 @@ from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort
 from flask_login import login_required, current_user
 from app.models import db
-from app.models.event import (ActivityCategory, Event, Registration, Attendance,
-                              Campus, Milestone)
+from app.models.event import (ActivityCategory, Event, EventAnnouncement,
+                              Registration, Attendance, Campus, Milestone)
 from app.utils.decorators import role_required
 from app.models.notification import Notification, notify_campus_coordinators
 from app.models.user import SystemSetting
@@ -35,8 +35,20 @@ def _max_event_slots():
 
 
 def _activity_categories():
-    return [category.name for category in ActivityCategory.query.order_by(
-        ActivityCategory.name).all()]
+    """Return valid categories even while a fresh database is being seeded.
+
+    The configured category list is the application-level source of truth. The
+    database table lets administrators extend it, but an empty lookup table
+    must not prevent coordinators from creating or editing activities.
+    """
+    configured = current_app.config.get('EVENT_CATEGORIES', [])
+    stored = [
+        category.name
+        for category in ActivityCategory.query.order_by(
+            ActivityCategory.name,
+        ).all()
+    ]
+    return list(dict.fromkeys([*configured, *stored, 'General']))
 
 
 def _save_event_cover(file):
@@ -77,6 +89,24 @@ def _coordinator_campus_id():
     return current_user.campus_id
 
 
+def _parse_event_schedule(form):
+    """Parse and validate native datetime-local fields with legacy date support."""
+    try:
+        start = datetime.fromisoformat(form.get('date', '').strip())
+        end_raw = form.get('end_date', '').strip()
+        deadline_raw = form.get('cancellation_deadline', '').strip()
+        end = datetime.fromisoformat(end_raw) if end_raw else None
+        deadline = (datetime.fromisoformat(deadline_raw) if deadline_raw
+                    else start - timedelta(days=2))
+    except ValueError:
+        return None, 'Enter valid activity dates and times.'
+    if end and end <= start:
+        return None, 'The end date and time must be after the start.'
+    if deadline >= start:
+        return None, 'The cancellation deadline must be before the activity starts.'
+    return (start, end, deadline), None
+
+
 @coordinator_bp.route('/coordinator_dash')
 @login_required
 @role_required('coordinator')
@@ -105,12 +135,11 @@ def coordinator_dash():
                             upcoming_count=upcoming_count,
                             total_volunteers=summary['unique_volunteers'],
                             attendance_rate=summary['attendance_rate'],
-                            service_hours=summary['service_hours'],
                             registrations=summary['registrations'],
                             recent_activities=recent_activities,
                             selected_status=status,
                             campus_name=campus_name,
-                            campus_total_hours=summary['service_hours'])
+                            campus_total_attended=summary['attended'])
 
 
 @coordinator_bp.route('/create_activity', methods=['GET', 'POST'])
@@ -144,11 +173,13 @@ def create_activity():
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/create_act_scrn1.html',
                                    campuses=campuses, max_slots=max_slots)
-        try:
-            date = datetime.strptime(date_str, '%Y-%m-%d')
-        except ValueError:
-            flash('Invalid date format. Use YYYY-MM-DD.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+        schedule, error = _parse_event_schedule(request.form)
+        if error:
+            flash(error, 'error')
+            return render_template('coordinator/create_act_scrn1.html',
+                                   campuses=campuses, categories=categories,
+                                   max_slots=max_slots)
+        date, end_date, cancellation_deadline = schedule
         try:
             cover = _save_event_cover(request.files.get('cover_image'))
         except ValueError as exc:
@@ -156,12 +187,16 @@ def create_activity():
             return render_template('coordinator/create_act_scrn1.html',
                                    campuses=campuses, max_slots=max_slots)
         event = Event(title=title, description=description, date=date,
+                      end_date=end_date,
+                      cancellation_deadline=cancellation_deadline,
                       category=category, location=location,
                       required_skills=required_skills, slots=slots,
                       campus_id=campus_id,
                       created_by_id=current_user.id,
                       cover_image_path=cover['path'] if cover else None,
-                      cover_image_name=cover['original_name'] if cover else None)
+                      cover_image_name=cover['original_name'] if cover else None,
+                      cover_uploaded_by_id=current_user.id if cover else None,
+                      cover_uploaded_at=datetime.utcnow() if cover else None)
         db.session.add(event)
         db.session.commit()
         flash('Activity created successfully!', 'success')
@@ -207,11 +242,12 @@ def edit_activity(event_id):
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
             return render_template('coordinator/edit_activity.html', event=event)
-        try:
-            date = datetime.strptime(date_str, '%Y-%m-%d')
-        except ValueError:
-            flash('Invalid date format. Use YYYY-MM-DD.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event)
+        schedule, error = _parse_event_schedule(request.form)
+        if error:
+            flash(error, 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   categories=categories, max_slots=max_slots)
+        date, end_date, cancellation_deadline = schedule
         if slots < 1 or slots > max_slots:
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
@@ -228,6 +264,8 @@ def edit_activity(event_id):
         event.title = title
         event.description = description
         event.date = date
+        event.end_date = end_date
+        event.cancellation_deadline = cancellation_deadline
         event.location = location
         event.category = category
         event.required_skills = required_skills
@@ -242,6 +280,8 @@ def edit_activity(event_id):
         if cover:
             event.cover_image_path = cover['path']
             event.cover_image_name = cover['original_name']
+            event.cover_uploaded_by_id = current_user.id
+            event.cover_uploaded_at = datetime.utcnow()
         # campus_id is intentionally left unchanged (server-side ownership).
         db.session.commit()
         if cover and old_cover:
@@ -292,6 +332,51 @@ def delete_activity(event_id):
     return redirect(url_for('coordinator.coordinator_dash'))
 
 
+@coordinator_bp.route('/coordinator/events/<int:event_id>/announcements',
+                      methods=['POST'])
+@login_required
+@role_required('coordinator')
+def publish_announcement(event_id):
+    event = db.session.get(Event, event_id)
+    if event is None:
+        abort(404)
+    if event.campus_id != current_user.campus_id:
+        abort(403)
+    announcement_type = request.form.get('announcement_type', '').strip()
+    message = request.form.get('message', '').strip()
+    allowed = {'last_call', 'event_update', 'cancelled_postponed'}
+    if announcement_type not in allowed or not message:
+        flash('Select an announcement type and enter a message.', 'error')
+        return redirect(url_for('coordinator.coordinator_dash'))
+    if len(message) > 1000:
+        flash('Announcement must be 1,000 characters or fewer.', 'error')
+        return redirect(url_for('coordinator.coordinator_dash'))
+
+    db.session.add(EventAnnouncement(
+        event_id=event.id,
+        author_id=current_user.id,
+        announcement_type=announcement_type,
+        message=message,
+    ))
+    registrations = Registration.query.filter(
+        Registration.event_id == event.id,
+        Registration.user_id.isnot(None),
+        Registration.status.in_(('pending', 'confirmed')),
+    ).all()
+    for registration in registrations:
+        db.session.add(Notification(
+            user_id=registration.user_id,
+            title=f'Activity update: {event.title}',
+            message=message,
+            notification_type=announcement_type,
+            related_event_id=event.id,
+        ))
+    db.session.commit()
+    flash(f'Announcement published to {len(registrations)} volunteer(s).',
+          'success')
+    return redirect(url_for('coordinator.coordinator_dash'))
+
+
 @coordinator_bp.route('/attendance', methods=['GET', 'POST'])
 @login_required
 @role_required('coordinator')
@@ -313,7 +398,6 @@ def attendance():
         event_id = request.form.get('event_id', type=int)
         reg_ids = request.form.getlist('registration_id')
         statuses = request.form.getlist('status')
-        hours_list = request.form.getlist('hours_completed')
         selected_event = Event.query.filter_by(
             id=event_id, campus_id=current_user.campus_id).first()
         if selected_event is None:
@@ -338,24 +422,14 @@ def attendance():
             status = statuses[i] if i < len(statuses) else 'present'
             if status not in {'present', 'absent', 'excused'}:
                 abort(400)
-            try:
-                hour_val = float(hours_list[i]) if i < len(hours_list) else 0.0
-            except (TypeError, ValueError):
-                abort(400)
-            if hour_val < 0:
-                abort(400)
-            reg.status = (
-                'completed' if status == 'present' and hour_val > 0
-                else 'confirmed'
-            )
+            reg.status = 'completed' if status == 'present' else 'confirmed'
             existing = Attendance.query.filter_by(
                 registration_id=reg.id).first()
             if existing:
                 existing.status = status
-                existing.hours_completed = hour_val
             else:
                 db.session.add(Attendance(registration_id=reg.id, user_id=reg.user_id,
-                               event_id=reg.event_id, status=status, hours_completed=hour_val))
+                               event_id=reg.event_id, status=status))
         db.session.commit()
         flash('Attendance updated successfully!', 'success')
         return redirect(url_for('coordinator.attendance', event_id=event_id))
@@ -390,8 +464,13 @@ def upload_milestone(event_id):
     filename = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
     filepath = os.path.join(upload_dir, filename)
     file.save(filepath)
-    milestone = Milestone(event_id=event.id, filename=file.filename,
-                          upload_path=f'uploads/milestones/{filename}', category=category)
+    milestone = Milestone(
+        event_id=event.id,
+        filename=secure_filename(file.filename),
+        upload_path=f'uploads/milestones/{filename}',
+        category=category,
+        uploaded_by_id=current_user.id,
+    )
     db.session.add(milestone)
     db.session.commit()
     flash('Milestone uploaded successfully!', 'success')

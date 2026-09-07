@@ -59,7 +59,6 @@
   </section>
   <section class="summary-strip" aria-label="Campus key metrics">
     <article><small>Active volunteers</small><strong>{{ kpi_cards.total_active_volunteers }}</strong></article>
-    <article><small>Hours logged</small><strong>{{ kpi_cards.total_hours }}h</strong></article>
     <article><small>Attendance rate</small><strong>{{ participation.attendance_rate }}%</strong></article>
     <article><small>Registrations</small><strong>{{ participation.registrations }}</strong></article>
   </section>
@@ -73,7 +72,6 @@
     <div class="summary-strip summary-strip--compact">
       <article><small>Unique volunteers</small><strong>{{ participation.unique_volunteers }}</strong></article>
       <article><small>Sign-up to attendance</small><strong>{{ participation.conversion_rate }}%</strong></article>
-      <article><small>Service hours</small><strong>{{ participation.service_hours }}h</strong></article>
       <article><small>PSU / outsider</small><strong>{{ type_split.psu }} / {{ type_split.outsider }}</strong></article>
     </div>
   </section>
@@ -127,7 +125,7 @@
     <header class="panel__header">
       <div>
         <h2>Engagement Trend</h2>
-        <small>Compare monthly activity with service-hour trends</small>
+        <small>Compare monthly registrations and attendance</small>
       </div>
       <label class="field field--inline">
         View
@@ -136,7 +134,7 @@
           data-source="engagementChartData"
         >
           <option value="monthly">Monthly attendance</option>
-          <option value="trend">Service-hour trend</option>
+          <option value="trend">Registration trend</option>
         </select>
       </label>
     </header>
@@ -179,7 +177,6 @@
             <th>External</th>
             <th>Attended</th>
             <th>Completed</th>
-            <th>Hours</th>
           </tr>
         </thead>
         <tbody>
@@ -193,11 +190,10 @@
               <td>{{ row.external_registrations }}</td>
               <td>{{ row.attended }}</td>
               <td>{{ row.completed }}</td>
-              <td>{{ row.hours }}</td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="9">
+              <td colspan="8">
                 <div class="empty-state">No activities match the current filters.</div>
               </td>
             </tr>
@@ -210,14 +206,13 @@
       <article><small>Registrations</small><strong>{{ report_summary.total_registrations }}</strong></article>
       <article><small>Attended</small><strong>{{ report_summary.total_attended }}</strong></article>
       <article><small>Completed</small><strong>{{ report_summary.total_completed }}</strong></article>
-      <article><small>Hours</small><strong>{{ report_summary.total_hours }}h</strong></article>
     </div>
   </section>
   <section class="panel">
     <header class="panel__header">
       <div>
         <h2>Activity Performance</h2>
-        <small>Registration, conversion, and service outcomes</small>
+        <small>Registration, attendance, and conversion outcomes</small>
       </div>
     </header>
     <div class="table-scroll" tabindex="0">
@@ -229,7 +224,6 @@
             <th>Registrations</th>
             <th>Attended</th>
             <th>Conversion</th>
-            <th>Hours</th>
           </tr>
         </thead>
         <tbody>
@@ -240,11 +234,10 @@
               <td>{{ activity.registrations }}</td>
               <td>{{ activity.attended }}</td>
               <td>{{ activity.conversion_rate }}%</td>
-              <td>{{ activity.service_hours }}h</td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="6">
+              <td colspan="5">
                 <div class="empty-state">No activities match the current filters.</div>
               </td>
             </tr>
@@ -320,7 +313,7 @@
   <script id="typeChartData" type="application/json">{{ {'labels': ['PSU Volunteers', 'Outsider Volunteers'], 'values': [type_split.psu, type_split.outsider]}|tojson }}</script>
   <script id="engagementChartData" type="application/json">{{ {
     'monthly': {'labels': monthly.months, 'primary': monthly.registrations, 'secondary': monthly.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'},
-    'trend': {'labels': trend_data.months, 'primary': trend_data.hours, 'secondary': trend_data.registrations, 'primaryName': 'Service hours', 'secondaryName': 'Registrations'}
+    'trend': {'labels': trend_data.months, 'primary': trend_data.registrations, 'secondary': trend_data.attended, 'primaryName': 'Registrations', 'secondaryName': 'Attended'}
   }|tojson }}
   </script>
 {% endblock %}

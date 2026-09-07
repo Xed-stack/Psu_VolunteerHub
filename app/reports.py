@@ -103,7 +103,6 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
     total_reg = 0
     total_attended = 0
     total_completed = 0
-    total_hours = 0.0
     total_psu = 0
     total_external = 0
 
@@ -121,9 +120,6 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             event_id=e.id, status='present').count()
         completed = Registration.query.filter_by(
             event_id=e.id, status='completed').count()
-        hours = float(
-            db.session.query(db.func.sum(Attendance.hours_completed))
-            .filter_by(event_id=e.id).scalar() or 0.0)
         campus_name = e.campus.name if e.campus else ''
         rows.append({
             'event_id': e.id,
@@ -136,14 +132,12 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             'external_registrations': external,
             'attended': attended,
             'completed': completed,
-            'hours': round(hours, 1),
         })
         total_reg += reg
         total_psu += psu
         total_external += external
         total_attended += attended
         total_completed += completed
-        total_hours += hours
 
     summary = {
         'event_count': len(events),
@@ -152,7 +146,6 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
         'total_external': total_external,
         'total_attended': total_attended,
         'total_completed': total_completed,
-        'total_hours': round(total_hours, 1),
     }
     return rows, summary
 
@@ -184,19 +177,18 @@ def render_csv(rows, summary, meta):
     writer.writerow([])
     writer.writerow(['Activity', 'Date', 'Campus', 'Category',
                      'Registrations', 'PSU', 'External', 'Attended',
-                     'Completed', 'Service Hours'])
+                     'Completed'])
     for r in rows:
         writer.writerow([
             r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
             r['category'], r['registrations'], r['psu_registrations'],
             r['external_registrations'], r['attended'],
-            r['completed'], r['hours'],
+            r['completed'],
         ])
     writer.writerow([])
     writer.writerow(['TOTAL', '', '', '', summary['total_registrations'],
                      summary['total_psu'], summary['total_external'],
-                     summary['total_attended'], summary['total_completed'],
-                     summary['total_hours']])
+                     summary['total_attended'], summary['total_completed']])
     return output.getvalue()
 
 
@@ -234,13 +226,13 @@ def render_pdf(rows, summary, meta):
     story.append(Spacer(1, 4 * mm))
 
     data = [['Activity', 'Date', 'Campus', 'Category', 'Reg.', 'PSU', 'Ext.',
-             'Attended', 'Completed', 'Hours']]
+             'Attended', 'Completed']]
     for r in rows:
         data.append([
             r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
             r['category'], str(r['registrations']), str(r['psu_registrations']),
             str(r['external_registrations']), str(r['attended']),
-            str(r['completed']), f"{r['hours']:.1f}",
+            str(r['completed']),
         ])
     table = Table(data, repeatRows=1)
     table.setStyle(TableStyle([
@@ -261,8 +253,7 @@ def render_pdf(rows, summary, meta):
         f"Registrations: {summary['total_registrations']} "
         f"(PSU: {summary['total_psu']}, External: {summary['total_external']}) &middot; "
         f"Attended: {summary['total_attended']} &middot; "
-        f"Completed: {summary['total_completed']} &middot; "
-        f"Service hours: {summary['total_hours']:.1f}", small))
+        f"Completed: {summary['total_completed']}", small))
     if meta.get('historical_note'):
         story.append(Spacer(1, 3 * mm))
         story.append(Paragraph(meta['historical_note'], small))

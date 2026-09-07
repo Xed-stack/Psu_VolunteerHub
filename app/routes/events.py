@@ -124,7 +124,7 @@ def cancel_registration(registration_id):
     event = registration.event
     if (registration.status not in ('pending', 'confirmed')
             or registration.attendance_record is not None
-            or event.date <= datetime.now()):
+            or (event.cancellation_deadline or event.date) <= datetime.now()):
         flash('This registration can no longer be cancelled.', 'error')
         return redirect(url_for('events.volunteer_dash'))
 
@@ -150,21 +150,10 @@ def volunteer_dash():
         Event.date >= datetime.now()).order_by(Event.date.asc()).all()
     recommendations = get_recommendations(
         profile, upcoming_events, campus_id=current_user.campus_id)
-    total_hours = db.session.query(db.func.sum(Attendance.hours_completed)).filter_by(
-        user_id=current_user.id).scalar() or 0.0
     total_activities = Registration.query.filter_by(
         user_id=current_user.id).count()
-    hours_val = total_hours or 0
-    if hours_val < 10:
-        cert_level = 'Bronze'
-    elif hours_val < 50:
-        cert_level = 'Silver'
-    elif hours_val < 100:
-        cert_level = 'Gold'
-    else:
-        cert_level = 'Platinum'
-    user_stats = {'total_hours': round(
-        total_hours, 1), 'total_activities': total_activities, 'cert_level': cert_level}
+    cert_level = 'Active' if total_activities else 'New'
+    user_stats = {'total_activities': total_activities, 'cert_level': cert_level}
     now = datetime.now()
     upcoming = Registration.query.filter_by(user_id=current_user.id).join(Event).filter(
         Event.date >= now, Registration.status.in_(('pending', 'confirmed'))
@@ -179,12 +168,17 @@ def volunteer_dash():
     history_registrations.sort(
         key=lambda r: r.registered_at or datetime.min, reverse=True)
     registration_items = [
-        {'registration': r, 'can_cancel': r in upcoming_registrations}
+        {
+            'registration': r,
+            'can_cancel': (
+                r in upcoming_registrations
+                and (r.event.cancellation_deadline or r.event.date) > now
+            ),
+        }
         for r in upcoming_registrations + history_registrations]
     upcoming_schedule = [{'event': r.event, 'date': r.event.date}
                          for r in upcoming]
-    certification = {'level': cert_level, 'hours': round(total_hours, 1), 'next_level': 'Silver' if cert_level ==
-                      'Bronze' else 'Gold' if cert_level == 'Silver' else 'Platinum' if cert_level == 'Gold' else 'Max'}
+    certification = {'level': cert_level}
     return render_template('volunteer/Volunteer_dash.html',
                            recommendations=recommendations,
                            user_stats=user_stats,

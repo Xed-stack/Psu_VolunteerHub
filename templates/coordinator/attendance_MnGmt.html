@@ -54,7 +54,6 @@
           <tr>
             <th>Volunteer</th>
             <th>Status</th>
-            <th>Hours</th>
           </tr>
         </thead>
         <tbody>
@@ -87,20 +86,10 @@
                   {% endfor %}
                 </select>
               </td>
-              <td>
-                <input
-                  class="input"
-                  name="hours_completed"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value="{{ attendance.hours_completed if attendance else 0 }}"
-                >
-              </td>
             </tr>
           {% else %}
             <tr>
-              <td colspan="3">
+              <td colspan="2">
                 <div class="empty-state">Choose an activity to view registrations.</div>
               </td>
             </tr>

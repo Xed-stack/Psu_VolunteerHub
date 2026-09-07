@@ -37,8 +37,7 @@ def director_dash():
     total_volunteers = sum(c['participations'] for c in campus_stats)
     total_activities = sum(c['activities'] for c in campus_stats)
     top_campuses = campus_stats[:3]
-    trends = {'volunteer_growth': 12.5,
-              'hours_growth': 8.3, 'events_growth': 15.0}
+    trends = {'volunteer_growth': 12.5, 'events_growth': 15.0}
     return render_template('director/Director_Dash.html',
                            campus_stats=campus_stats,
                            total_volunteers=total_volunteers,
@@ -79,7 +78,7 @@ def analytics():
     except ReportError:
         live_rows, live_summary = [], {
             'event_count': 0, 'total_registrations': 0,
-            'total_attended': 0, 'total_completed': 0, 'total_hours': 0.0}
+            'total_attended': 0, 'total_completed': 0}
     categories = [row[0] for row in db.session.query(Event.category).filter(
         Event.category.isnot(None)).distinct().order_by(Event.category).all()]
 

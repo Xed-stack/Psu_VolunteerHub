@@ -5,7 +5,7 @@
 {% block content %}
   <header class="profile-summary panel">
     <img
-      src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"
+      src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
       alt="Profile of {{ current_user.name }}"
     >
     <div>
@@ -16,10 +16,6 @@
     <span class="status-label">Profile active</span>
   </header>
   <section class="metric-grid">
-    <article class="metric-card">
-      <small>Total hours</small>
-      <strong>{{ user_stats.total_hours or 0 }}</strong>
-    </article>
     <article class="metric-card">
       <small>Activities</small>
       <strong>{{ user_stats.total_activities or 0 }}</strong>
@@ -39,27 +35,14 @@
         <header class="panel__header">
           <h2>Edit matching profile</h2>
         </header>
-        <form method="post">
-          <label class="field">
-            <span class="field__label">Skills</span>
-            <input
-              class="input"
-              name="skills"
-              value="{{ profile.skill_list|join(', ') if profile else '' }}"
-              placeholder="Teaching, Communication, Python"
-            >
-          </label>
-          <label class="field">
-            <span class="field__label">Interests</span>
-            <input
-              class="input"
-              name="interests"
-              value="{{ profile.interest_list|join(', ') if profile else '' }}"
-              placeholder="Education, Technology, Environment"
-            >
-          </label>
+        <p class="help-text">Choose at least one interest and skill. Better profile data improves recommendations, but matches are decision support rather than guarantees.</p>
+        <form method="post" enctype="multipart/form-data">
+          <fieldset class="choice-fieldset"><legend>Interests</legend>{% for interest in interest_catalog %}<label><input type="checkbox" name="interests" value="{{ interest.id }}" {{ 'checked' if interest in current_user.interests }}> {{ interest.name }}</label>{% endfor %}</fieldset>
+          <fieldset class="choice-fieldset"><legend>Skills</legend>{% for skill in skill_catalog %}<label><input type="checkbox" name="skills" value="{{ skill.id }}" {{ 'checked' if skill in current_user.skills }}> {{ skill.name }}</label>{% endfor %}</fieldset>
+          <label class="field">Profile image<input class="input" name="profile_image" type="file" accept="image/jpeg,image/png,image/webp"><small>Optional JPEG, PNG, or WebP, up to 3 MB.</small></label>
           <button class="btn btn--primary" type="submit">Save profile</button>
         </form>
+        {% if current_user.profile_image_path %}<form method="post" action="{{ url_for('volunteer.remove_profile_image') }}"><button class="btn btn--ghost" type="submit">Remove profile image</button></form>{% endif %}
       </section>
       <section class="panel">
         <header class="panel__header">

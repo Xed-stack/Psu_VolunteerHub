@@ -3,7 +3,8 @@ import re
 from app import create_app
 from app.models import db
 from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
-from app.models.event import Event, Registration, Attendance, Campus, ExternalParticipant
+from app.models.event import (Event, EventAnnouncement, Registration,
+                              Attendance, Campus, ExternalParticipant)
 from app.models.notification import Notification
 from app.recommendation.engine import (
     _cosine_similarity,
@@ -250,6 +251,35 @@ class TestAuth:
 # C. Role-based Access
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+class TestPhaseOnePublicExperience:
+    def test_home_shows_live_opportunities_and_institutional_summary(self, client):
+        response = client.get('/')
+        body = response.get_data(as_text=True)
+
+        assert response.status_code == 200
+        assert 'Serve with purpose.' in body
+        assert 'Featured opportunities' in body
+        assert 'Institutional record' in body
+        assert '/historical-activities' in body
+        assert '/help' in body
+
+    def test_historical_activity_directory_renders(self, client):
+        response = client.get('/historical-activities')
+        body = response.get_data(as_text=True)
+
+        assert response.status_code == 200
+        assert 'Volunteer activities, CY 2020–2025' in body
+        assert 'aggregate records' in body
+
+    def test_help_guide_explains_recommendations(self, client):
+        response = client.get('/help')
+        body = response.get_data(as_text=True)
+
+        assert response.status_code == 200
+        assert 'How to use the Volunteer Hub' in body
+        assert 'cosine similarity' in body
+
+
 class TestRoleAccess:
     def test_volunteer_can_access_volunteer_dash(self, client, app):
         uid = _create_user(app, email='vol@test.com')
@@ -369,17 +399,27 @@ class TestVolunteerFeatures:
 
     def test_profile_post_updates(self, client, app):
         uid = _create_user(app, email='profup@test.com')
+        with app.app_context():
+            skills = [Skill(name='Phase 2 Skill A'), Skill(name='Phase 2 Skill B')]
+            interests = [Interest(name='Phase 2 Interest A'),
+                         Interest(name='Phase 2 Interest B')]
+            db.session.add_all([*skills, *interests])
+            db.session.commit()
+            skill_ids = [str(skill.id) for skill in skills]
+            interest_ids = [str(interest.id) for interest in interests]
         _login_as(client, uid)
         resp = client.post('/profile', data={
-            'skills': 'Python, Teaching',
-            'interests': 'Education, Technology',
+            'skills': skill_ids,
+            'interests': interest_ids,
         }, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
             u = User.query.filter_by(email='profup@test.com').first()
             assert u is not None
-            assert {s.name for s in u.skills} == {'Python', 'Teaching'}
-            assert {i.name for i in u.interests} == {'Education', 'Technology'}
+            assert {s.name for s in u.skills} == {
+                'Phase 2 Skill A', 'Phase 2 Skill B'}
+            assert {i.name for i in u.interests} == {
+                'Phase 2 Interest A', 'Phase 2 Interest B'}
 
     def test_history_shows(self, client, app):
         uid = _create_user(app, email='hist@test.com')
@@ -504,7 +544,7 @@ class TestDirectorFeatures:
         from app.recommendation.analytics import AnalyticsAggregator
         with app.app_context():
             kpis = AnalyticsAggregator.kpi_summary()
-            for key in ('total_active_volunteers', 'total_hours', 'retention_rate'):
+            for key in ('total_active_volunteers', 'retention_rate'):
                 assert key in kpis, f'KPI key {key} missing'
 
 
@@ -1082,7 +1122,6 @@ class TestMissingFeatures:
             registration = db.session.get(Registration, registration_id)
             assert registration.status == 'completed'
             assert registration.certificate_eligible is True
-            assert registration.attendance_record.hours_completed == 2.5
 
     def test_absence_revokes_certificate_eligibility_without_duplicate(self, client, app):
         coordinator_id = _create_user(
@@ -1485,7 +1524,8 @@ class TestReportingSystem:
                          status='completed')
         resp = client.get('/reports/events.csv')
         body = resp.data.decode()
-        assert 'Service Hours' in body
+        assert 'Service Hours' not in body
+        assert 'Hours' not in body
         assert 'TOTAL' in body
 
 
@@ -1956,7 +1996,6 @@ class TestAnalytics:
             _, rep = build_events_report(campus_id=5)
         assert s['registrations'] == rep['total_registrations']
         assert s['attended'] == rep['total_attended']
-        assert s['service_hours'] == rep['total_hours']
 
     # â”€â”€ Scope / security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -2108,3 +2147,47 @@ class TestAnalytics:
             assert w['weeks'] == []
             assert AnalyticsAggregator.skill_distribution() == []
             assert AnalyticsAggregator.interest_distribution() == []
+class TestPhaseTwoControls:
+    def test_activity_schedule_and_cancellation_deadline(self, client, app):
+        coordinator_id = _create_user(
+            app, email='phase2coord@test.com', role='coordinator', campus_id=1)
+        _login_as(client, coordinator_id)
+        response = client.post('/create_activity', data={
+            'title': 'Phase 2 Activity',
+            'description': 'Tests the complete event schedule.',
+            'date': '2030-06-10T09:00',
+            'end_date': '2030-06-10T12:00',
+            'cancellation_deadline': '2030-06-08T09:00',
+            'category': 'General',
+            'slots': 20,
+        })
+
+        assert response.status_code == 302
+        with app.app_context():
+            event = Event.query.filter_by(title='Phase 2 Activity').one()
+            assert event.end_date == datetime(2030, 6, 10, 12)
+            assert event.cancellation_deadline == datetime(2030, 6, 8, 9)
+
+    def test_announcement_notifies_registered_volunteer(self, client, app):
+        coordinator_id = _create_user(
+            app, email='announcecoord@test.com', role='coordinator', campus_id=1)
+        volunteer_id = _create_user(
+            app, email='announcevol@test.com', campus_id=1)
+        with app.app_context():
+            db.session.add(Registration(
+                user_id=volunteer_id, event_id=1, status='confirmed'))
+            db.session.commit()
+        _login_as(client, coordinator_id)
+
+        response = client.post('/coordinator/events/1/announcements', data={
+            'announcement_type': 'event_update',
+            'message': 'Meet at the campus gate at 8:30 AM.',
+        })
+
+        assert response.status_code == 302
+        with app.app_context():
+            assert EventAnnouncement.query.filter_by(event_id=1).count() == 1
+            assert Notification.query.filter_by(
+                user_id=volunteer_id,
+                notification_type='event_update',
+            ).count() == 1

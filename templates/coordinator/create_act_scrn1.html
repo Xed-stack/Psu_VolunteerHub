@@ -24,14 +24,23 @@
         Description<textarea class="input" name="description" required>{{ request.form.get('description', '') }}</textarea>
       </label>
       <label class="field">
-        Date
+        Start date and time
         <input
           class="input"
           name="date"
-          type="date"
+          type="datetime-local"
           value="{{ request.form.get('date', '') }}"
           required
         >
+      </label>
+      <label class="field">
+        End date and time
+        <input class="input" name="end_date" type="datetime-local" value="{{ request.form.get('end_date', '') }}">
+      </label>
+      <label class="field">
+        Cancellation deadline
+        <input class="input" name="cancellation_deadline" type="datetime-local" value="{{ request.form.get('cancellation_deadline', '') }}">
+        <small>Leave blank to use two days before the activity.</small>
       </label>
       <label class="field">
         Location

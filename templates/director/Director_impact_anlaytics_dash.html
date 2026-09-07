@@ -22,7 +22,6 @@
   </header>
   <section class="summary-strip" aria-label="University metrics">
     <article><small>Active volunteers</small><strong>{{ kpi_cards.total_active_volunteers }}</strong></article>
-    <article><small>Hours logged</small><strong>{{ kpi_cards.total_hours }}h</strong></article>
     <article><small>Attendance rate</small><strong>{{ participation.attendance_rate }}%</strong></article>
     <article><small>Live registrations</small><strong>{{ participation.registrations }}</strong></article>
   </section>
@@ -191,7 +190,6 @@
               <th>External</th>
               <th>Attended</th>
               <th>Completed</th>
-              <th>Hours</th>
             </tr>
           </thead>
           <tbody>
@@ -206,11 +204,10 @@
                 <td>{{ row.external_registrations }}</td>
                 <td>{{ row.attended }}</td>
                 <td>{{ row.completed }}</td>
-                <td>{{ row.hours }}</td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="10">
+              <td colspan="9">
                   <div class="empty-state">No activities match the current filters.</div>
                 </td>
               </tr>
@@ -223,7 +220,6 @@
         <article><small>Registrations</small><strong>{{ live_summary.total_registrations }}</strong></article>
         <article><small>Attended</small><strong>{{ live_summary.total_attended }}</strong></article>
         <article><small>Completed</small><strong>{{ live_summary.total_completed }}</strong></article>
-        <article><small>Hours</small><strong>{{ live_summary.total_hours }}h</strong></article>
       </div>
     </section>
     <section class="analytics-grid">
@@ -262,7 +258,7 @@
       <header class="panel__header">
         <div>
           <h2>Cross-Campus Detail</h2>
-          <small>Registrations, attendance, and service hours</small>
+          <small>Registrations and attendance by campus</small>
         </div>
       </header>
       <div class="table-scroll" tabindex="0">
@@ -274,7 +270,6 @@
               <th>Unique volunteers</th>
               <th>Attended</th>
               <th>Rate</th>
-              <th>Hours</th>
             </tr>
           </thead>
           <tbody>
@@ -285,11 +280,10 @@
                 <td>{{ row.unique_volunteers }}</td>
                 <td>{{ row.attended }}</td>
                 <td>{{ row.attendance_rate }}%</td>
-                <td>{{ row.service_hours }}h</td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="6">
+              <td colspan="5">
                   <div class="empty-state">No campus data available.</div>
                 </td>
               </tr>
@@ -315,7 +309,6 @@
               <th>Registrations</th>
               <th>Attended</th>
               <th>Conversion</th>
-              <th>Hours</th>
             </tr>
           </thead>
           <tbody>
@@ -327,11 +320,10 @@
                 <td>{{ activity.registrations }}</td>
                 <td>{{ activity.attended }}</td>
                 <td>{{ activity.conversion_rate }}%</td>
-                <td>{{ activity.service_hours }}h</td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="7">
+              <td colspan="6">
                   <div class="empty-state">No activities match the current filters.</div>
                 </td>
               </tr>
@@ -399,7 +391,6 @@
       <article><small>PSU volunteers</small><strong>{{ type_split.psu }}</strong></article>
       <article><small>Outsider volunteers</small><strong>{{ type_split.outsider }}</strong></article>
       <article><small>Unique volunteers</small><strong>{{ participation.unique_volunteers }}</strong></article>
-      <article><small>Service hours</small><strong>{{ participation.service_hours }}h</strong></article>
     </section>
     {% set historical_chart = {'labels': historical_campus_data|map(attribute='campus')|list, 'values': historical_campus_data|map(attribute='participations')|list} %}
     {% set role_chart = {'labels': demographics.keys()|list, 'values': demographics.values()|list} %}

@@ -415,3 +415,79 @@ html,
 body {
   overflow-x: hidden;
 }
+.submit-spinner {
+  animation: submit-spin 0.75s linear infinite;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  height: 1em;
+  width: 1em;
+}
+
+.is-submitting {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+@keyframes submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit-spinner {
+    animation-duration: 1.5s;
+  }
+}
+.choice-fieldset {
+  border: 1px solid var(--outline-variant);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-block: 1rem;
+  padding: 1rem;
+}
+
+.choice-fieldset legend {
+  font-weight: 700;
+  padding-inline: 0.4rem;
+}
+
+.choice-fieldset label {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+  min-height: 44px;
+}
+
+.password-input {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr auto;
+}
+
+.icon-button--danger {
+  color: var(--danger, #a40000);
+  font-size: 1.5rem;
+}
+
+.event-announcement summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 0.7rem;
+}
+
+.event-announcement form {
+  display: grid;
+  gap: 0.75rem;
+  min-width: min(320px, 80vw);
+  padding-block: 0.5rem;
+}
+
+.event-updates article {
+  border-top: 1px solid var(--outline-variant);
+  padding-block: 0.75rem;
+}

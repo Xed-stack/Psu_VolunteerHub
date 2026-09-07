@@ -1,66 +1,142 @@
 {% extends 'layouts/public_base.html' %}
-{% block title %}PSU Volunteer Hub{% endblock %}
+{% block title %}PSU Volunteer Hub | Serve with purpose{% endblock %}
 {% block body %}
-  <nav class="public-nav">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <nav class="public-nav" aria-label="Public navigation">
     <a class="public-brand" href="{{ url_for('home') }}">
-      <img
-        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
-        alt="PSU logo"
-      >
-      PSU Volunteer Hub
+      <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="">
+      <span>PSU Volunteer Hub</span>
     </a>
     <div class="public-nav__links">
-      <a href="#about">About</a>
+      <a href="#how-it-works">How it works</a>
       <a href="{{ url_for('events.opportunities') }}">Opportunities</a>
-      <a
-        class="button button--primary"
-        href="{{ url_for('auth.login') }}"
-      >Sign in</a>
+      <a href="{{ url_for('help_page') }}">Help</a>
+      <a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a>
     </div>
   </nav>
-  <main class="public-main">
-    <section class="hero">
-      <div>
-        <span class="badge">Pangasinan State University</span>
-        <h1>Make Service Count.</h1>
-        <p>Discover volunteer opportunities, build community impact, and track every hour in one university-wide hub.</p>
+
+  <main id="main-content">
+    <section class="home-hero" aria-labelledby="hero-title">
+      <div class="hero-carousel" data-hero-carousel>
+        <img class="home-hero__image is-active" src="{{ url_for('static', filename='assets/FB_IMG_1788789005999.jpg') }}" alt="PSU volunteers gathered together during a coastal cleanup" data-hero-slide>
+        <img class="home-hero__image" src="{{ url_for('static', filename='assets/FB_IMG_1788776801482.jpg') }}" alt="PSU volunteers and community partners gathered for an outreach activity" data-hero-slide>
+        <img class="home-hero__image" src="{{ url_for('static', filename='assets/FB_IMG_1788788985440.jpg') }}" alt="PSU volunteers carrying collected waste along the shoreline" data-hero-slide>
+        <img class="home-hero__image" src="{{ url_for('static', filename='assets/FB_IMG_1788789024530.jpg') }}" alt="A team of PSU volunteers holding cleanup bags on the beach" data-hero-slide>
+        <img class="home-hero__image" src="{{ url_for('static', filename='assets/FB_IMG_1788789014784.jpg') }}" alt="PSU volunteers working together to collect shoreline litter" data-hero-slide>
+      </div>
+      <div class="home-hero__scrim" aria-hidden="true"></div>
+      <div class="home-hero__content">
+        <p class="home-eyebrow">Pangasinan State University</p>
+        <h1 id="hero-title">Serve with purpose.<br>See the impact.</h1>
+        <p>Find a community activity that fits your skills, your campus, and the causes you care about.</p>
         <div class="button-row">
-          <a
-            class="button button--primary"
-            href="{{ url_for('auth.interests') }}"
-          >Get started</a>
-          <a
-            class="button button--secondary"
-            href="{{ url_for('events.opportunities') }}"
-          >Browse opportunities</a>
+          <a class="button button--gold" href="{{ url_for('events.opportunities') }}">Browse Opportunities</a>
+          <a class="button button--on-dark" href="{{ url_for('auth.login') }}">Sign in</a>
         </div>
       </div>
-      <div class="hero-visual">
-        <img
-          src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
-          alt="Pangasinan State University seal"
-        >
+      <div class="hero-carousel__controls" data-hero-controls aria-label="Volunteer activity photos">
+        <button class="hero-carousel__arrow" type="button" data-hero-prev aria-label="Previous photo"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+        <div class="hero-carousel__dots" role="group" aria-label="Choose a photo">
+          {% for slide_number in range(1, 6) %}
+            <button class="hero-carousel__dot{{ ' is-active' if slide_number == 1 }}" type="button" data-hero-dot="{{ loop.index0 }}" aria-label="Show photo {{ slide_number }} of 5" aria-pressed="{{ 'true' if slide_number == 1 else 'false' }}"></button>
+          {% endfor %}
+        </div>
+        <button class="hero-carousel__arrow" type="button" data-hero-next aria-label="Next photo"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+        <button class="hero-carousel__pause" type="button" data-hero-pause aria-label="Pause photo rotation"><span class="material-symbols-outlined" aria-hidden="true">pause</span></button>
       </div>
     </section>
-    <section class="section" id="about">
-      <h2>One hub, shared impact</h2>
-      <div class="feature-grid">
-        <article class="panel"><span class="material-symbols-outlined">recommend</span>
-          <h3>Relevant matches</h3>
-          <p>Cosine similarity connects volunteer skills and interests with suitable activities.</p>
-        </article>
-        <article class="panel"><span class="material-symbols-outlined">calendar_month</span>
-          <h3>Simple coordination</h3>
-          <p>Find opportunities, register, and keep your upcoming commitments visible.</p>
-        </article>
-        <article class="panel"><span class="material-symbols-outlined">insights</span>
-          <h3>Measured service</h3>
-          <p>Understand participation and service engagement across PSU campuses.</p>
-        </article>
+
+    <section class="home-section home-section--intro" id="how-it-works" aria-labelledby="intro-title">
+      <div class="section-heading">
+        <p class="home-eyebrow">One university, many ways to serve</p>
+        <h2 id="intro-title">A clearer path from interest to action</h2>
+        <p>Build your volunteer profile, review relevant opportunities, and keep your participation in one place.</p>
+      </div>
+      <div class="home-features">
+        <article><span class="material-symbols-outlined" aria-hidden="true">person_search</span><h3>Match your interests</h3><p>Recommendations use your selected skills and interests as decision support.</p></article>
+        <article><span class="material-symbols-outlined" aria-hidden="true">volunteer_activism</span><h3>Join with confidence</h3><p>See the campus, schedule, required skills, and remaining capacity before joining.</p></article>
+        <article><span class="material-symbols-outlined" aria-hidden="true">fact_check</span><h3>Follow your participation</h3><p>Keep upcoming commitments and completed activities visible from your dashboard.</p></article>
       </div>
     </section>
+
+    <section class="home-section home-section--events" aria-labelledby="featured-title">
+      <header class="section-heading section-heading--split">
+        <div><p class="home-eyebrow">Starting soon</p><h2 id="featured-title">Featured opportunities</h2></div>
+        <div class="carousel-controls" data-carousel-controls hidden>
+          <button class="carousel-button" type="button" data-carousel-prev aria-label="Previous opportunity"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+          <button class="carousel-button" type="button" data-carousel-next aria-label="Next opportunity"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+        </div>
+      </header>
+      {% if featured_events %}
+        <div class="featured-carousel" data-carousel tabindex="0" aria-label="Featured volunteer opportunities">
+          {% for event in featured_events %}
+            <article class="featured-card">
+              <div class="featured-card__media">
+                {% if event.cover_image_path %}<img src="{{ url_for('static', filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}">{% else %}<div class="event-art" aria-hidden="true"><span class="material-symbols-outlined">diversity_3</span></div>{% endif %}
+                <span class="featured-card__category">{{ event.category or 'General' }}</span>
+              </div>
+              <div class="featured-card__body">
+                <h3>{{ event.title }}</h3>
+                <dl class="event-facts">
+                  <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'PSU' }}</dd></div>
+                  <div><dt>Starts</dt><dd>{{ event.date.strftime('%b %d, %Y · %I:%M %p') }}</dd></div>
+                  {% if event.end_date %}<div><dt>Ends</dt><dd>{{ event.end_date.strftime('%b %d, %Y · %I:%M %p') }}</dd></div>{% endif %}
+                  <div><dt>Capacity</dt><dd>{{ event.slots_remaining() }} slots remaining</dd></div>
+                </dl>
+                <div class="card-actions">
+                  <button class="button button--secondary" type="button" data-open-event="event-{{ event.id }}">View details</button>
+                  {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
+                    <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">{% include 'partials/csrf_field.html' %}<button class="button button--primary" type="submit">Join Now</button></form>
+                  {% else %}<a class="button button--primary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join Now</a>{% endif %}
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}<div class="empty-state">No upcoming activities are available yet. Please check again soon.</div>{% endif %}
+      <a class="text-link" href="{{ url_for('events.opportunities') }}">View all opportunities</a>
+    </section>
+
+    <section class="home-section home-impact" aria-labelledby="impact-title">
+      <div><p class="home-eyebrow">Institutional record, CY 2020–2025</p><h2 id="impact-title">Service across PSU communities</h2><p>Browse the audited activity records separately from live volunteer registrations.</p></div>
+      <a class="impact-link" href="{{ url_for('historical_activities') }}"><span><strong>{{ '{:,}'.format(historical_summary.activities) }}</strong> activities</span><span><strong>{{ '{:,}'.format(historical_summary.participants) }}</strong> reported participations</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
+    </section>
+
+    <section class="home-section" aria-labelledby="stories-title">
+      <header class="section-heading"><p class="home-eyebrow">Recent work</p><h2 id="stories-title">Completed activities</h2></header>
+      {% if completed_events %}
+        <div class="story-grid">
+          {% for event in completed_events %}
+            <article class="story-card">
+              {% if event.cover_image_path %}<img src="{{ url_for('static', filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" loading="lazy">{% else %}<div class="event-art" aria-hidden="true"><span class="material-symbols-outlined">handshake</span></div>{% endif %}
+              <div>
+                <p>{{ event.date.strftime('%B %Y') }} · {{ event.campus.name if event.campus else 'PSU' }}</p>
+                <h3>{{ event.title }}</h3>
+                <details class="story-details">
+                  <summary>View activity details</summary>
+                  <p>{{ event.description }}</p>
+                </details>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}<div class="empty-state">Completed activities will appear here after coordinators record them.</div>{% endif %}
+    </section>
+
+    <section class="home-help" aria-labelledby="help-title"><div><h2 id="help-title">Need help joining an activity?</h2><p>Read the step-by-step guide or contact your campus Extension Coordinator.</p></div><a class="button button--on-dark" href="{{ url_for('help_page') }}">Open Help Guide</a></section>
   </main>
-  <footer class="public-footer">
-    © 2026 Pangasinan State University · Excellence in Service
-  </footer>
+
+  {% for event in featured_events %}
+    <dialog class="event-dialog" id="event-{{ event.id }}" aria-labelledby="event-title-{{ event.id }}">
+      <div class="event-dialog__header"><div><span class="featured-card__category">{{ event.category or 'General' }}</span><h2 id="event-title-{{ event.id }}">{{ event.title }}</h2></div><button class="dialog-close" type="button" data-close-dialog aria-label="Close event details"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></div>
+      <p>{{ event.description }}</p>
+      <dl class="event-facts event-facts--dialog">
+        <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'PSU' }}</dd></div><div><dt>Location</dt><dd>{{ event.location or 'Contact the campus coordinator' }}</dd></div><div><dt>Starts</dt><dd>{{ event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>{% if event.end_date %}<div><dt>Ends</dt><dd>{{ event.end_date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>{% endif %}<div><dt>Cancellation deadline</dt><dd>{{ (event.cancellation_deadline or event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div><div><dt>Required skills</dt><dd>{{ event.required_skills or 'No specific skill required' }}</dd></div><div><dt>Capacity</dt><dd>{{ event.slots_remaining() }} slots remaining</dd></div>
+      </dl>
+      <div class="card-actions">{% if current_user.is_authenticated and current_user.role == 'volunteer' %}<form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">{% include 'partials/csrf_field.html' %}<button class="button button--primary" type="submit">Join Now</button></form>{% else %}<a class="button button--primary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join Now</a>{% endif %}</div>
+    </dialog>
+  {% endfor %}
+
+  <footer class="public-footer"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><p><strong>PSU Volunteer Hub</strong><br>Pangasinan State University</p><a href="{{ url_for('help_page') }}">Help and contact</a></footer>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/public-home.js') }}"></script>{% endblock %}

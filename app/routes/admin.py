@@ -6,11 +6,12 @@ Manages user administration and system management.
 import csv
 import io
 import json
+import os
 import zipfile
 from datetime import date, datetime, timedelta
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
-                   flash, abort, Response)
+                   flash, abort, Response, current_app)
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.user import User, SystemSetting, VolunteerProfile
@@ -145,8 +146,13 @@ def delete_expired_user(user_id):
     deadline = (user.deactivated_at or user.created_at) + timedelta(days=30)
     if user.is_active or datetime.utcnow() < deadline:
         abort(403)
+    profile_image = user.profile_image_path
     db.session.delete(user)
     db.session.commit()
+    if profile_image:
+        image_path = os.path.join(current_app.static_folder, profile_image)
+        if os.path.isfile(image_path):
+            os.remove(image_path)
     flash(f'User {user.name} was permanently deleted.', 'success')
     return _admin_redirect('deactivated')
 

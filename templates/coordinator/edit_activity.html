@@ -23,13 +23,20 @@
         Description<textarea class="input" name="description" required>{{ event.description or '' }}</textarea>
       </label>
       <label class="field">
-        Date<input
+        Start date and time<input
   class="input"
   name="date"
-  type="date"
+  type="datetime-local"
   required
-  value="{{ event.date.strftime('%Y-%m-%d') if event.date else '' }}"
+  value="{{ event.date.strftime('%Y-%m-%dT%H:%M') if event.date else '' }}"
 >
+      </label>
+      <label class="field">
+        End date and time<input class="input" name="end_date" type="datetime-local" value="{{ event.end_date.strftime('%Y-%m-%dT%H:%M') if event.end_date else '' }}">
+      </label>
+      <label class="field">
+        Cancellation deadline<input class="input" name="cancellation_deadline" type="datetime-local" value="{{ event.cancellation_deadline.strftime('%Y-%m-%dT%H:%M') if event.cancellation_deadline else '' }}">
+        <small>Leave blank to use two days before the activity.</small>
       </label>
       <label class="field">
         Location<input
@@ -68,7 +75,7 @@
   name="cover_image"
   type="file"
   accept="image/jpeg,image/png,image/webp"
-><small>{{ event.cover_image_name or 'No cover uploaded' }}</small>
+><small>{{ event.cover_image_name or 'No cover uploaded' }}{% if event.cover_uploaded_by %} · Uploaded by {{ event.cover_uploaded_by.name }} on {{ event.cover_uploaded_at.strftime('%b %d, %Y') if event.cover_uploaded_at else 'unknown date' }}{% endif %}</small>
       </label>
     </div>
     <div class="form-actions">

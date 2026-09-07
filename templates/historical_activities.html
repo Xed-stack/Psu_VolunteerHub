@@ -1,0 +1,15 @@
+{% extends 'layouts/public_base.html' %}
+{% block title %}Institutional Activity Records | PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <nav class="public-nav" aria-label="Public navigation"><a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><span>PSU Volunteer Hub</span></a><div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Opportunities</a><a href="{{ url_for('help_page') }}">Help</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div></nav>
+  <main class="public-main public-main--records">
+    <header class="records-heading"><p class="home-eyebrow">Official institutional dataset</p><h1>Volunteer activities, CY 2020–2025</h1><p>{{ total_count }} aggregate records. Participant counts are reported totals, not unique volunteer accounts or individual attendance records.</p></header>
+    <div class="record-list">
+      {% for activity in activities %}
+        <article class="record-card"><div><span class="record-card__year">{{ activity.year_conducted or 'Year unavailable' }}</span><span>{{ activity.activity_type or 'Type unavailable' }}</span></div><h2>{{ activity.title }}</h2><dl><div><dt>Reporting unit</dt><dd>{{ activity.unit_name }}</dd></div><div><dt>Reported volunteers</dt><dd>{{ activity.volunteer_count if activity.volunteer_count is not none else 'Unavailable' }}</dd></div>{% if activity.participant_categories %}<div><dt>Participant groups</dt><dd>{{ activity.participant_categories }}</dd></div>{% endif %}{% if activity.partners %}<div><dt>Partners</dt><dd>{{ activity.partners }}</dd></div>{% endif %}<div><dt>Source</dt><dd>{{ activity.source_document }}, page {{ activity.source_page }}</dd></div></dl></article>
+      {% else %}<div class="empty-state">No institutional activity records have been imported.</div>{% endfor %}
+    </div>
+    {% if total_pages > 1 %}<nav class="pagination" aria-label="Institutional activity pages">{% if current_page > 1 %}<a class="button button--secondary" href="{{ url_for('historical_activities', page=current_page - 1) }}">Previous</a>{% endif %}<span>Page {{ current_page }} of {{ total_pages }}</span>{% if current_page < total_pages %}<a class="button button--secondary" href="{{ url_for('historical_activities', page=current_page + 1) }}">Next</a>{% endif %}</nav>{% endif %}
+  </main>
+  <footer class="public-footer"><p><strong>PSU Volunteer Hub</strong><br>Pangasinan State University</p><a href="{{ url_for('help_page') }}">Help and contact</a></footer>
+{% endblock %}

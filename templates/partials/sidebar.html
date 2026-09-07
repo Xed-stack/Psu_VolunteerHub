@@ -85,10 +85,14 @@
         href="{{ url_for('admin.settings') }}"
       ><span class="material-symbols-outlined">settings</span>Settings</a>
     {% endif %}
+    <a
+      class="navlink {{ 'navlink--active' if endpoint == 'help_page' }}"
+      href="{{ url_for('help_page') }}"
+    ><span class="material-symbols-outlined">help</span>Help</a>
   </nav>
   <div class="role-user">
     <img
-      src="{{ url_for('static', filename='assets/temp_profile.jpg') }}"
+      src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
       alt="Profile"
     >
     <span>

@@ -38,13 +38,17 @@
   required
 >
           </label>
+          <div class="field field--wide password-field">
+            <label for="signupPassword">Password</label>
+            <div class="password-input"><input id="signupPassword" type="password" name="password" minlength="{{ password_min or 8 }}" required><button class="button button--ghost" type="button" data-toggle-password="signupPassword" aria-label="Show password">Show</button></div>
+            <ul class="password-checklist" aria-live="polite">
+              <li data-password-check="length">At least {{ password_min or 8 }} characters</li>
+              <li data-password-check="letter">Contains a letter</li>
+              <li data-password-check="number">Contains a number</li>
+            </ul>
+          </div>
           <label class="field field--wide">
-            Password<input
-  type="password"
-  name="password"
-  minlength="{{ password_min or 8 }}"
-  required
-><small>At least {{ password_min or 8 }} characters.</small>
+            Confirm password<input id="signupPasswordConfirmation" type="password" name="password_confirmation" minlength="{{ password_min or 8 }}" required>
           </label>
           <label class="field">
             Volunteer category
@@ -94,4 +98,29 @@
       <p>Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
     </section>
   </main>
+{% endblock %}
+{% block scripts %}
+  <script>
+    document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.togglePassword);
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        button.textContent = showing ? 'Show' : 'Hide';
+        button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      });
+    });
+    const password = document.getElementById('signupPassword');
+    const checks = {
+      length: (value) => value.length >= {{ password_min or 8 }},
+      letter: (value) => /[A-Za-z]/.test(value),
+      number: (value) => /[0-9]/.test(value),
+    };
+    password.addEventListener('input', () => {
+      Object.entries(checks).forEach(([name, passes]) => {
+        document.querySelector(`[data-password-check="${name}"]`)
+          .classList.toggle('is-met', passes(password.value));
+      });
+    });
+  </script>
 {% endblock %}

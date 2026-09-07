@@ -1,6 +1,7 @@
 {% extends 'layouts/public_base.html' %}
 {% block title %}Join · PSU Volunteer Hub{% endblock %}
 {% block body %}
+  <nav class="public-nav" aria-label="Public navigation"><a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><span>PSU Volunteer Hub</span></a><div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Opportunities</a><a href="{{ url_for('help_page') }}">Help</a>{% if not current_user.is_authenticated %}<a class="button button--primary" href="{{ url_for('auth.login', next=request.path) }}">Sign in</a>{% endif %}</div></nav>
   <main class="auth-shell">
     <section class="panel auth-card">
       <header class="page-heading">
@@ -10,13 +11,35 @@
         </div>
       </header>
       {% include 'partials/flash_messages.html' %}
-      {% if not external_form %}
+      {% if event.announcements %}
+        <section class="event-updates" aria-labelledby="event-updates-title">
+          <h2 id="event-updates-title">Latest updates</h2>
+          {% for announcement in event.announcements|sort(attribute='created_at', reverse=true) %}
+            <article><strong>{{ announcement.announcement_type|replace('_', ' ')|title }}</strong><p>{{ announcement.message }}</p><small>{{ announcement.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small></article>
+          {% endfor %}
+        </section>
+      {% endif %}
+      {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
+        <dl class="event-facts event-facts--dialog">
+          <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'PSU' }}</dd></div>
+          <div><dt>Location</dt><dd>{{ event.location or 'Contact the campus coordinator' }}</dd></div>
+          <div><dt>Starts</dt><dd>{{ event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+          {% if event.end_date %}<div><dt>Ends</dt><dd>{{ event.end_date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>{% endif %}
+          <div><dt>Required skills</dt><dd>{{ event.required_skills or 'No specific skill required' }}</dd></div>
+          <div><dt>Capacity</dt><dd>{{ event.slots_remaining() }} slots remaining</dd></div>
+          <div><dt>Cancellation deadline</dt><dd>{{ (event.cancellation_deadline or event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+        </dl>
+        <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">
+          {% include 'partials/csrf_field.html' %}
+          <button class="button button--primary" type="submit">Join Now</button>
+        </form>
+      {% elif not external_form %}
         <p class="question">Are you currently from PSU?</p>
         <div class="join-options">
           <a
             class="button button--primary"
             href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id)) }}"
-          >Yes, I'm from PSU</a>
+          >Yes, sign in with my PSU account</a>
           <a
             class="button button--secondary"
             href="{{ url_for('events.event_join', event_id=event.id, external='1') }}"
@@ -45,7 +68,7 @@
             Email Address (optional)<input class="input" type="email" name="email">
           </label>
           <div class="form-actions">
-            <button class="button button--primary" type="submit">Register as external volunteer</button>
+            <button class="button button--primary" type="submit">Join as external volunteer</button>
             <a
               class="button button--ghost"
               href="{{ url_for('events.event_join', event_id=event.id) }}"

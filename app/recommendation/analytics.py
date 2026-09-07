@@ -6,10 +6,7 @@ All methods are static — no state, pure aggregation queries.
 """
 from datetime import datetime, timedelta
 import numpy as np
-import pandas as pd
-from scipy.stats import f_oneway
 from sklearn.linear_model import LinearRegression
-from sklearn.cluster import KMeans
 from app.models import db
 from app.models.user import (User, Skill, Interest, user_skills,
                              user_interests)
@@ -112,7 +109,7 @@ class AnalyticsAggregator:
 
     @staticmethod
     def campus_stats():
-        """Return list of {campus, volunteers, hours} per campus sorted by hours desc."""
+        """Return campus volunteer participation counts."""
         campuses = Campus.query.all()
         results = []
         for campus in campuses:
@@ -120,19 +117,20 @@ class AnalyticsAggregator:
             event_ids = [e.id for e in events]
             if not event_ids:
                 results.append(
-                    {'campus': campus.name, 'volunteers': 0, 'hours': 0.0})
+                    {'campus': campus.name, 'volunteers': 0, 'attended': 0})
                 continue
             vol_count = db.session.query(Registration.user_id)\
                 .filter(Registration.event_id.in_(event_ids))\
                 .distinct().count()
-            hours = db.session.query(db.func.sum(Attendance.hours_completed))\
-                .filter(Attendance.event_id.in_(event_ids)).scalar() or 0.0
+            attended = Attendance.query.filter(
+                Attendance.event_id.in_(event_ids),
+                Attendance.status == 'present').count()
             results.append({
                 'campus': campus.name,
                 'volunteers': vol_count,
-                'hours': round(hours, 1),
+                'attended': attended,
             })
-        results.sort(key=lambda x: x['hours'], reverse=True)
+        results.sort(key=lambda x: x['attended'], reverse=True)
         return results
 
     @staticmethod
@@ -147,14 +145,9 @@ class AnalyticsAggregator:
         if campus_id:
             event_ids = [e.id for e in Event.query.filter_by(
                 campus_id=campus_id).all()]
-            hours_q = db.session.query(db.func.sum(Attendance.hours_completed))
-            total_hours = hours_q.filter(Attendance.event_id.in_(
-                event_ids)).scalar() or 0.0 if event_ids else 0.0
             reg_q = Registration.query.filter(Registration.event_id.in_(
                 event_ids)) if event_ids else Registration.query.filter(False)
         else:
-            total_hours = db.session.query(db.func.sum(
-                Attendance.hours_completed)).scalar() or 0.0
             reg_q = Registration.query
 
         total_regs = reg_q.count()
@@ -165,16 +158,15 @@ class AnalyticsAggregator:
 
         return {
             'total_active_volunteers': total_active,
-            'total_hours': round(total_hours, 1),
             'retention_rate': retention_rate,
         }
 
     @staticmethod
     def trend_data(months=6, campus_id=None):
-        """Return dict {months, hours, registrations}, optionally scoped to one campus."""
+        """Return monthly attendance and registration counts."""
         cutoff = datetime.now() - timedelta(days=30 * months)
 
-        hours_query = db.session.query(Event.date, Attendance.hours_completed)\
+        attended_query = db.session.query(Event.date)\
             .join(Attendance, Attendance.event_id == Event.id)\
             .filter(Event.date >= cutoff)
         reg_query = db.session.query(Event.date)\
@@ -182,26 +174,26 @@ class AnalyticsAggregator:
             .filter(Event.date >= cutoff)
 
         if campus_id:
-            hours_query = hours_query.filter(Event.campus_id == campus_id)
+            attended_query = attended_query.filter(Event.campus_id == campus_id)
             reg_query = reg_query.filter(Event.campus_id == campus_id)
 
-        hours_rows = hours_query.all()
+        attended_rows = attended_query.all()
         reg_rows = reg_query.all()
 
-        hours_map = {}
-        for event_date, hours in hours_rows:
+        attended_map = {}
+        for (event_date,) in attended_rows:
             key = event_date.strftime('%Y-%m')
-            hours_map[key] = hours_map.get(key, 0.0) + (hours or 0.0)
+            attended_map[key] = attended_map.get(key, 0) + 1
 
         reg_map = {}
         for (event_date,) in reg_rows:
             key = event_date.strftime('%Y-%m')
             reg_map[key] = reg_map.get(key, 0) + 1
 
-        all_months = sorted(set(list(reg_map.keys()) + list(hours_map.keys())))
+        all_months = sorted(set(list(reg_map.keys()) + list(attended_map.keys())))
         return {
             'months': all_months,
-            'hours': [round(float(hours_map.get(m, 0)), 1) for m in all_months],
+            'attended': [int(attended_map.get(m, 0)) for m in all_months],
             'registrations': [int(reg_map.get(m, 0)) for m in all_months],
         }
 
@@ -236,7 +228,6 @@ class AnalyticsAggregator:
     #   Attended               = COUNT(Attendance.status == 'present')
     #   Attendance Rate        = Attended / Registrations * 100   (0 if no registrations)
     #   Conversion Rate        = Attended / Registrations * 100   (sign-up→attendance)
-    #   Service Hours           = SUM(Attendance.hours_completed)
     #
     # Coordinators must always pass their own campus_id; this module never reads
     # a client-supplied campus id, so cross-campus leakage is impossible.
@@ -292,7 +283,6 @@ class AnalyticsAggregator:
             'unique_volunteers': int(unique),
             'attended': attended,
             'completed': summary['total_completed'],
-            'service_hours': summary['total_hours'],
             'attendance_rate': round(safe_div, 1),
             'conversion_rate': round(safe_div, 1),
         }
@@ -300,7 +290,7 @@ class AnalyticsAggregator:
     @staticmethod
     def campus_comparison():
         """Cross-campus comparison rows (Director/Admin only). One row per
-        campus with registrations, unique volunteers, attended, rate, hours."""
+        campus with registrations, unique volunteers, attended, and rate."""
         results = []
         for c in Campus.query.order_by(Campus.name).all():
             s = AnalyticsAggregator.participation_summary(campus_id=c.id)
@@ -311,7 +301,6 @@ class AnalyticsAggregator:
                 'unique_volunteers': s['unique_volunteers'],
                 'attended': s['attended'],
                 'attendance_rate': s['attendance_rate'],
-                'service_hours': s['service_hours'],
             })
         results.sort(key=lambda r: r['registrations'], reverse=True)
         return results
@@ -332,7 +321,7 @@ class AnalyticsAggregator:
                 'date': r['date'], 'category': r['category'],
                 'campus': r['campus'], 'registrations': regs,
                 'attended': r['attended'], 'conversion_rate': conv,
-                'completed': r['completed'], 'service_hours': r['hours'],
+                'completed': r['completed'],
             })
         out.sort(key=lambda x: x['registrations'], reverse=True)
         return out[:limit]
@@ -379,18 +368,15 @@ class AnalyticsAggregator:
             key = e.date.strftime('%Y-%m')
             reg_map[key] = reg_map.get(key, 0) + regs
             att_map[key] = att_map.get(key, 0) + att
-        frame = pd.DataFrame([
+        rows = [
             {'period': period, 'registrations': reg_map.get(period, 0),
              'attended': att_map.get(period, 0)}
             for period in sorted(set(reg_map) | set(att_map))
-        ]).tail(months)
-        months_list = frame['period'].tolist() if not frame.empty else []
+        ][-months:]
         return {
-            'months': months_list,
-            'registrations': frame['registrations'].astype(int).tolist()
-            if not frame.empty else [],
-            'attended': frame['attended'].astype(int).tolist()
-            if not frame.empty else [],
+            'months': [row['period'] for row in rows],
+            'registrations': [int(row['registrations']) for row in rows],
+            'attended': [int(row['attended']) for row in rows],
         }
 
     @staticmethod
@@ -449,7 +435,7 @@ class AnalyticsAggregator:
 
     @staticmethod
     def heatmap_data():
-        """Return [{campus: str, value: float}] for campus engagement heatmap."""
+        """Return attendance counts for campus engagement heatmap."""
         campuses = Campus.query.all()
         data = []
         for campus in campuses:
@@ -458,9 +444,10 @@ class AnalyticsAggregator:
             if not event_ids:
                 data.append({'campus': campus.name, 'value': 0.0})
                 continue
-            hours = db.session.query(db.func.sum(Attendance.hours_completed))\
-                .filter(Attendance.event_id.in_(event_ids)).scalar() or 0.0
-            data.append({'campus': campus.name, 'value': round(hours, 1)})
+            attended = Attendance.query.filter(
+                Attendance.event_id.in_(event_ids),
+                Attendance.status == 'present').count()
+            data.append({'campus': campus.name, 'value': attended})
         return data
 
     @staticmethod
@@ -506,96 +493,3 @@ class AnalyticsAggregator:
             })
         return results
 
-    # Director: cross-campus significance testing
-
-    @staticmethod
-    def campus_engagement_significance():
-        """
-        One-way ANOVA testing whether volunteer engagement (hours
-        contributed per volunteer) differs significantly across campuses.
-
-        Returns {f_statistic, p_value, significant, campus_groups}.
-        """
-        campuses = Campus.query.all()
-        groups, campus_names = [], []
-
-        for campus in campuses:
-            event_ids = [e.id for e in Event.query.filter_by(
-                campus_id=campus.id).all()]
-            if not event_ids:
-                continue
-            rows = db.session.query(
-                Attendance.user_id, db.func.sum(Attendance.hours_completed)
-            ).filter(Attendance.event_id.in_(event_ids))\
-             .group_by(Attendance.user_id).all()
-            hours = [h for _, h in rows if h]
-            if len(hours) >= 2:
-                groups.append(hours)
-                campus_names.append(campus.name)
-
-        if len(groups) < 2:
-            return {
-                'f_statistic': None, 'p_value': None,
-                'significant': False, 'campus_groups': campus_names,
-            }
-
-        f_stat, p_value = f_oneway(*groups)
-        return {
-            'f_statistic': round(float(f_stat), 4),
-            'p_value': round(float(p_value), 4),
-            'significant': bool(p_value < 0.05),
-            'campus_groups': campus_names,
-        }
-
-    # Director: volunteer engagement segmentation
-
-    @staticmethod
-    def volunteer_segments(n_clusters=3):
-        """
-        Segment volunteers into engagement tiers using K-means clustering
-        on total hours, events attended, and recency of last activity.
-
-        Returns list of {user_id, name, cluster, label}.
-        """
-        volunteers = User.query.filter_by(role='volunteer').all()
-        now = datetime.now()
-
-        features, users_ordered = [], []
-        for v in volunteers:
-            present = [a for a in v.attendance_records if a.status == 'present']
-            total_hours = sum(a.hours_completed for a in present)
-            events_attended = len(present)
-            last_dates = [a.event.date for a in present if a.event]
-            recency_days = (now - max(last_dates)).days if last_dates else 365
-            features.append([total_hours, events_attended, recency_days])
-            users_ordered.append(v)
-
-        if len(features) < n_clusters:
-            return []
-
-        X = np.array(features)
-        kmeans = KMeans(n_clusters=n_clusters,
-                        random_state=42, n_init=10).fit(X)
-        labels = kmeans.labels_
-
-        # Rank clusters by average hours so labels are meaningful,
-        # not just arbitrary cluster numbers
-        avg_hours = {
-            c: np.mean([features[i][0]
-                       for i in range(len(labels)) if labels[i] == c])
-            for c in range(n_clusters)
-        }
-        ranked = sorted(avg_hours, key=avg_hours.get, reverse=True)
-        tier_names = ['Highly Active', 'Occasional', 'At Risk'][:n_clusters]
-        cluster_to_label = {cid: tier_names[rank]
-                            for rank, cid in enumerate(ranked)}
-
-        return [
-            {
-                'user_id': user.id,
-                'name': user.name,
-                'cluster': int(label),
-                'label': cluster_to_label[label],
-            }
-            for user, label in zip(users_ordered, labels)
-        ]

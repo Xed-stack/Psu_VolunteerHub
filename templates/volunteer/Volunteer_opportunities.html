@@ -3,6 +3,12 @@
 {% block header_title %}Opportunities{% endblock %}
 {% block header_subtitle %}Discover ways to serve{% endblock %}
 {% block content %}
+  {% if not current_user.is_authenticated %}
+    <nav class="public-nav" aria-label="Public navigation">
+      <a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><span>PSU Volunteer Hub</span></a>
+      <div class="public-nav__links"><a aria-current="page" href="{{ url_for('events.opportunities') }}">Opportunities</a><a href="{{ url_for('help_page') }}">Help</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div>
+    </nav>
+  {% endif %}
   <header class="page-heading">
     <div>
       <h1>Volunteer Opportunities</h1>
@@ -48,6 +54,8 @@
           <p>{{ event.description|truncate(160) }}</p>
           <ul class="meta-list">
             <li><span class="material-symbols-outlined">calendar_month</span>{{ event.date.strftime("%b %d, %Y · %I:%M %p") }}</li>
+            {% if event.end_date %}<li><span class="material-symbols-outlined">event_available</span>Ends {{ event.end_date.strftime("%b %d, %Y · %I:%M %p") }}</li>{% endif %}
+            <li><span class="material-symbols-outlined">timer</span>Cancel by {{ (event.cancellation_deadline or event.date).strftime("%b %d, %Y · %I:%M %p") }}</li>
             <li><span class="material-symbols-outlined">location_on</span>{{ event.campus.name if event.campus else 'PSU Campus' }}</li>
             <li><span class="material-symbols-outlined">group</span>{{ event.slots_remaining() }} slots remaining</li>
           </ul>
@@ -56,13 +64,13 @@
               method="post"
               action="{{ url_for('events.register_for_event', event_id=event.id) }}"
             >
-              <button class="button button--primary" type="submit">Register</button>
+              <button class="button button--primary" type="submit">Join Now</button>
             </form>
           {% elif not current_user.is_authenticated %}
             <div class="card-actions"><a
   class="button button--primary"
   href="{{ url_for('auth.login') }}"
->Sign in to register</a><a
+>Sign in to join</a><a
   class="button button--secondary"
   href="{{ url_for('events.event_join', event_id=event.id) }}"
 >Join as external volunteer</a></div>

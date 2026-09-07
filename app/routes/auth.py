@@ -154,6 +154,7 @@ def register():
 
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
+        password_confirmation = request.form.get('password_confirmation')
         id_number = request.form.get('id_number', '').strip() or None
         volunteer_type = request.form.get('volunteer_type', '').strip().lower()
         college_affiliation = request.form.get(
@@ -172,6 +173,9 @@ def register():
         elif len(password) < password_min:
             errors.append(
                 f'Password must be at least {password_min} characters.')
+        if (password_confirmation is not None
+                and password != password_confirmation):
+            errors.append('Password confirmation does not match.')
 
         if not id_number:
             errors.append('PSU ID Number is required for volunteers.')
@@ -191,6 +195,16 @@ def register():
         campus_obj = db.session.get(Campus, campus_id) if campus_id else None
         if campus_obj is None:
             errors.append('Select a valid PSU campus.')
+
+        selected_interest_ids = request.form.getlist('interests') or session.get(
+            'selected_interests', [])
+        selected_skill_ids = request.form.getlist('skills') or session.get(
+            'selected_skills', [])
+        if interests and skills:
+            if not selected_interest_ids:
+                errors.append('Select at least one interest.')
+            if not selected_skill_ids:
+                errors.append('Select at least one skill.')
 
         if errors:
             for error in errors:
@@ -218,8 +232,6 @@ def register():
 
         # 4. Attach Interest records carried over from the onboarding wizard
         #    (steps 1 & 2 stored them in the session).
-        selected_interest_ids = request.form.getlist('interests') or session.get(
-            'selected_interests', [])
         if selected_interest_ids:
             interest_ids = [
                 int(i_id) for i_id in selected_interest_ids if str(i_id).isdigit()]
@@ -230,8 +242,6 @@ def register():
             user.interests.extend(chosen_interests)
 
         # 4b. Attach Skill records carried over from the onboarding wizard
-        selected_skill_ids = request.form.getlist('skills') or session.get(
-            'selected_skills', [])
         if selected_skill_ids:
             skill_ids = [
                 int(s_id) for s_id in selected_skill_ids if str(s_id).isdigit()]

@@ -17,7 +17,7 @@
     <div class="summary-stat"><small>Active Volunteers</small><strong>{{ total_volunteers }}</strong></div>
     <div class="summary-stat"><small>Upcoming Activities</small><strong>{{ upcoming_count }}</strong></div>
     <div class="summary-stat"><small>Attendance Rate</small><strong>{{ attendance_rate }}%</strong></div>
-    <div class="summary-stat"><small>Service Hours</small><strong>{{ campus_total_hours }}h</strong></div>
+    <div class="summary-stat"><small>Attended</small><strong>{{ campus_total_attended }}</strong></div>
   </section>
   <div class="content-grid">
     <section class="panel">
@@ -87,6 +87,14 @@
                       >
                       <button class="btn btn--sm btn--outline" type="submit">Upload</button>
                     </form>
+                    <details class="event-announcement">
+                      <summary>Announcement</summary>
+                      <form method="post" action="{{ url_for('coordinator.publish_announcement', event_id=event.id) }}">
+                        <label class="field">Type<select name="announcement_type" required><option value="event_update">Event update</option><option value="last_call">Last call</option><option value="cancelled_postponed">Cancelled or postponed</option></select></label>
+                        <label class="field">Message<textarea name="message" maxlength="1000" required></textarea></label>
+                        <button class="btn btn--sm btn--primary" type="submit">Publish</button>
+                      </form>
+                    </details>
                   </div>
                 </td>
               </tr>
