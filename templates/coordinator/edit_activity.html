@@ -69,6 +69,12 @@
   value="{{ event.required_skills or '' }}"
 >
       </label>
+      <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', event.target_participants or '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
+      <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', event.participation_agreement_text or '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
+      <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', event.participation_agreement_version or '') }}"></label>
+      <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') or event.nda_required }}> <span>Require an event-specific NDA</span></label>
+      <label class="field field--wide"><span>NDA text</span><textarea class="input" name="nda_text" rows="5">{{ request.form.get('nda_text', event.nda_text or '') }}</textarea></label>
+      <label class="field"><span>NDA version</span><input class="input" name="nda_version" value="{{ request.form.get('nda_version', event.nda_version or '') }}"></label>
       <label class="field">
         Replace cover image<input
   class="input"

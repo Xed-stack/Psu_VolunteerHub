@@ -1,11 +1,14 @@
 import pytest
 import re
+import io
 from app import create_app
 from app.models import db
 from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
 from app.models.event import (Event, EventAnnouncement, Registration,
                               Attendance, Campus, ExternalParticipant)
 from app.models.notification import Notification
+from app.models.audit import AuditLog
+from app.models.policy import TermsRevision, TermsAcceptance
 from app.recommendation.engine import (
     _cosine_similarity,
     bootstrap_from_event,
@@ -344,31 +347,29 @@ class TestVolunteerFeatures:
         _login_as(client, uid)
         with app.app_context():
             eid = Event.query.first().id
-        resp = client.post(f'/opportunities/register/{eid}', follow_redirects=True)
+        resp = client.post(f'/opportunities/register/{eid}', data={'accept_agreement': 'yes'}, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
             r = Registration.query.filter_by(user_id=uid).first()
             assert r is not None
             assert r.event_id == eid
 
-    def test_volunteer_can_cancel_and_restore_future_registration(self, client, app):
+    def test_volunteer_can_request_future_registration_cancellation(self, client, app):
         uid = _create_user(app, email='cancel@test.com', campus_id=1)
         _login_as(client, uid)
         with app.app_context():
             event = Event.query.first()
             event_id = event.id
-        client.post(f'/opportunities/register/{event_id}')
+        client.post(f'/opportunities/register/{event_id}', data={'accept_agreement': 'yes'})
         with app.app_context():
             registration = Registration.query.filter_by(
                 user_id=uid, event_id=event_id).first()
             registration_id = registration.id
-        response = client.post(f'/registrations/{registration_id}/cancel')
+        response = client.post(f'/registrations/{registration_id}/cancel', data={'reason': 'Academic Conflict'})
         assert response.status_code == 302
         with app.app_context():
-            assert db.session.get(Registration, registration_id).status == 'cancelled'
-        client.post(f'/opportunities/register/{event_id}')
-        with app.app_context():
             assert db.session.get(Registration, registration_id).status == 'confirmed'
+            assert db.session.get(Registration, registration_id).cancellation_request.status == 'pending'
 
     def test_volunteer_cannot_cancel_another_users_registration(self, client, app):
         owner_id = _create_user(app, email='owner@test.com', campus_id=1)
@@ -388,7 +389,7 @@ class TestVolunteerFeatures:
             db.session.commit()
         _login_as(client, uid)
         body = client.get('/volunteer_dash').get_data(as_text=True)
-        assert 'My Registrations' in body
+        assert 'My registrations' in body
         assert '/registrations/' in body
 
     def test_profile_get(self, client, app):
@@ -1238,6 +1239,62 @@ class TestAdminUserManagement:
             assert u.name == 'New User'
             assert u.role == 'coordinator'
             assert u.campus_id == 1
+            entry = AuditLog.query.filter_by(
+                action='user_created', target_id=u.id).first()
+            assert entry is not None
+            assert entry.actor_id == uid
+
+    def test_admin_activity_log_requires_admin(self, client, app):
+        volunteer_id = _create_user(
+            app, email='auditvolunteer@test.com', role='volunteer')
+        _login_as(client, volunteer_id)
+        assert client.get('/admin_dash?tab=audit').status_code == 403
+
+    def test_admin_csv_import_and_safe_export(self, client, app):
+        admin_id = _create_user(app, email='csvadmin@test.com', role='admin')
+        _login_as(client, admin_id)
+        csv_text = (
+            'name,email,password,role,campus_code,id_number,volunteer_type,college_affiliation\n'
+            'CSV Volunteer,csvvolunteer@test.com,password123,volunteer,LINGAYEN,CSV-001,Student,\n')
+        response = client.post('/admin/users/import', data={
+            'file': (io.BytesIO(csv_text.encode()), 'users.csv'),
+        }, content_type='multipart/form-data', follow_redirects=True)
+        assert response.status_code == 200
+        with app.app_context():
+            user = User.query.filter_by(email='csvvolunteer@test.com').first()
+            assert user is not None
+            assert AuditLog.query.filter_by(
+                action='user_imported', target_id=user.id).first() is not None
+        export = client.get('/admin/users/export.csv')
+        assert export.status_code == 200
+        assert b'password_hash' not in export.data
+        assert b'csvvolunteer@test.com' in export.data
+
+    def test_active_terms_are_required_and_recorded(self, client, app):
+        admin_id = _create_user(app, email='termsadmin@test.com', role='admin')
+        volunteer_id = _create_user(
+            app, email='termsvolunteer@test.com', role='volunteer')
+        with app.app_context():
+            volunteer = db.session.get(User, volunteer_id)
+            volunteer.set_password('password123')
+            db.session.commit()
+        _login_as(client, admin_id)
+        published = client.post('/admin/terms', data={
+            'title': 'PSU Volunteer Hub Terms', 'version': '1.0',
+            'body': 'Use the system responsibly.',
+        })
+        assert published.status_code == 302
+        client.get('/auth/logout')
+        login = client.post('/auth/login', data={
+            'identifier': 'termsvolunteer@test.com', 'password': 'password123',
+        })
+        assert login.headers['Location'].endswith('/auth/terms')
+        accepted = client.post('/auth/terms', data={'accept_terms': 'on'})
+        assert accepted.status_code == 302
+        with app.app_context():
+            revision = TermsRevision.query.filter_by(version='1.0').one()
+            assert TermsAcceptance.query.filter_by(
+                user_id=volunteer_id, revision_id=revision.id).first() is not None
 
     def test_admin_edit_user_get(self, client, app):
         with app.app_context():
@@ -1605,7 +1662,7 @@ class TestOutsiderVolunteers:
     def test_outsider_can_register(self, client, app):
         eid = self._event_id(app)
         client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-005', 'name': 'Juan Dela Cruz'})
+            'from_psu': 'no', 'id_number': 'EXT-005', 'name': 'Juan Dela Cruz', 'accept_agreement': 'yes'})
         with app.app_context():
             ep = ExternalParticipant.query.filter_by(id_number='EXT-005').first()
             assert ep is not None
@@ -1620,7 +1677,7 @@ class TestOutsiderVolunteers:
         uid = _create_user(app, email='psujoin@test.com',
                            role='volunteer', campus_id=1)
         _login_as(client, uid)
-        resp = client.post(f'/opportunities/register/{eid}', follow_redirects=True)
+        resp = client.post(f'/opportunities/register/{eid}', data={'accept_agreement': 'yes'}, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
             reg = Registration.query.filter_by(

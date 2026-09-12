@@ -63,13 +63,7 @@
           {% if current_user.is_authenticated and current_user.role == 'volunteer' and event.id in registered_event_ids %}
             <span class="button button--secondary" aria-label="Already registered for {{ event.title }}">Registered</span>
           {% elif current_user.is_authenticated and current_user.role == 'volunteer' %}
-            <form
-              method="post"
-              action="{{ url_for('events.register_for_event', event_id=event.id) }}"
-            >
-              {% include 'partials/csrf_field.html' %}
-              <button class="button button--primary" type="submit">Join Now</button>
-            </form>
+            <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Review and join</a>
           {% elif not current_user.is_authenticated %}
             <div class="card-actions"><a
   class="button button--primary"

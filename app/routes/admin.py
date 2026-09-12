@@ -18,6 +18,9 @@ from app.models.user import User, SystemSetting, VolunteerProfile
 from app.models.event import ActivityCategory, Campus, Event
 from app.models.notification import Notification, notify_campus_coordinators
 from app.utils.decorators import role_required
+from app.models.audit import AuditLog
+from app.models.policy import TermsRevision, PrivacyRevision, ParticipationAgreementRevision
+from app.utils.audit import log_activity
 
 admin_bp = Blueprint('admin', __name__, url_prefix='')
 
@@ -56,7 +59,7 @@ def _reactivate(user):
 @role_required('admin')
 def admin_dash():
     active_tab = request.args.get('tab', 'users')
-    if active_tab not in ('users', 'deactivated'):
+    if active_tab not in ('users', 'deactivated', 'audit'):
         active_tab = 'users'
     campus_id = request.args.get('campus_id', type=int)
     query = User.query
@@ -79,7 +82,7 @@ def admin_dash():
     except Exception:
         database_status = 'Unavailable'
     server_status = {'database': database_status}
-    audit_logs = []
+    audit_logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(100).all()
     campuses = Campus.query.all()
     categories = ActivityCategory.query.order_by(ActivityCategory.name).all()
     return render_template('admin/Admin_mngmt_dash.html',
@@ -115,6 +118,7 @@ def deactivate_user(user_id):
     user.is_active = False
     user.deactivated_at = datetime.utcnow()
     user.reactivation_requested_at = None
+    log_activity('user_deactivated', user, {'name': user.name})
     db.session.commit()
     flash(f'User {user.name} has been deactivated.', 'success')
     return _admin_redirect()
@@ -128,6 +132,7 @@ def reactivate_user(user_id):
     if user is None:
         abort(404)
     _reactivate(user)
+    log_activity('user_reactivated', user, {'name': user.name})
     db.session.commit()
     flash(f'User {user.name} has been reactivated.', 'success')
     return _admin_redirect('deactivated')
@@ -147,6 +152,7 @@ def delete_expired_user(user_id):
     if user.is_active or datetime.utcnow() < deadline:
         abort(403)
     profile_image = user.profile_image_path
+    log_activity('user_deleted', user, {'name': user.name})
     db.session.delete(user)
     db.session.commit()
     if profile_image:
@@ -170,7 +176,10 @@ def create_category():
             db.func.lower(ActivityCategory.name) == name.lower()).first():
         flash('That category already exists.', 'error')
     else:
-        db.session.add(ActivityCategory(name=name))
+        category = ActivityCategory(name=name)
+        db.session.add(category)
+        db.session.flush()
+        log_activity('category_created', category, {'name': name})
         db.session.commit()
         flash(f'{name} category created.', 'success')
     return _admin_redirect()
@@ -205,6 +214,8 @@ def delete_category(category_id):
                     user_id=coordinator.id, title=title, message=message,
                     notification_type='category_changed', related_event_id=event.id))
     db.session.delete(category)
+    log_activity('category_deleted', category,
+                 {'name': category.name, 'events_reassigned': len(events)})
     db.session.commit()
     flash(f'{category.name} removed; {len(events)} activities moved to General.',
           'success')
@@ -230,6 +241,8 @@ def change_role(user_id):
     old_role = user.role
     user.role = new_role
     _sync_volunteer_profile(user, old_role)
+    log_activity('user_role_changed', user,
+                 {'from': old_role, 'to': new_role})
     db.session.commit()
     flash(f'User {user.name} role changed to {new_role}.', 'success')
     return redirect(url_for('admin.admin_dash'))
@@ -280,6 +293,7 @@ def create_user():
             from app.models.user import VolunteerProfile
             db.session.add(VolunteerProfile(user_id=user.id))
 
+        log_activity('user_created', user, {'role': role})
         db.session.commit()
         flash(f'User {name} created successfully.', 'success')
         return redirect(url_for('admin.admin_dash'))
@@ -321,6 +335,8 @@ def edit_user(user_id):
         user.campus_id = request.form.get(
             'campus_id', user.campus_id, type=int)
         _sync_volunteer_profile(user, old_role)
+        log_activity('user_updated', user,
+                     {'role_from': old_role, 'role_to': new_role})
         db.session.commit()
         flash(f'User {user.name} updated.', 'success')
         if user.id == current_user.id and old_role != new_role:
@@ -345,6 +361,7 @@ def reset_password(user_id):
         flash(f'Password must be at least {password_min} characters.', 'error')
         return redirect(url_for('admin.admin_dash'))
     user.set_password(new_password)
+    log_activity('user_password_reset', user)
     db.session.commit()
     flash(f'Password reset for {user.name}.', 'success')
     return redirect(url_for('admin.admin_dash'))
@@ -381,6 +398,9 @@ def settings():
             else:
                 setting = SystemSetting(key=key, value=value)
                 db.session.add(setting)
+        if values:
+            log_activity('settings_updated', SystemSetting(),
+                         {'keys': sorted(values)})
         db.session.commit()
         flash('Settings saved.', 'success')
     settings = {s.key: s.value for s in SystemSetting.query.all()}
@@ -405,8 +425,10 @@ def create_campus():
         if Campus.query.filter(db.func.upper(Campus.code) == code).first():
             errors.append('Campus code already exists.')
         if not errors:
-            db.session.add(Campus(name=name, code=code,
-                                  description=description))
+            campus = Campus(name=name, code=code, description=description)
+            db.session.add(campus)
+            db.session.flush()
+            log_activity('campus_created', campus, {'name': name, 'code': code})
             db.session.commit()
             flash(f'{name} campus created.', 'success')
             return redirect(url_for('admin.admin_dash'))
@@ -423,6 +445,207 @@ def _backup_value(value):
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return value
+
+
+USER_IMPORT_COLUMNS = (
+    'name', 'email', 'password', 'role', 'campus_code', 'id_number',
+    'volunteer_type', 'college_affiliation',
+)
+
+
+def _clean_import_row(row):
+    return {key: ' '.join((row.get(key) or '').split())
+            for key in USER_IMPORT_COLUMNS}
+
+
+@admin_bp.route('/admin/users/import-template.csv')
+@login_required
+@role_required('admin')
+def user_import_template():
+    output = io.StringIO(newline='')
+    writer = csv.DictWriter(output, fieldnames=USER_IMPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerow({
+        'name': 'Example Volunteer',
+        'email': 'volunteer@example.edu',
+        'password': 'ChangeMe123',
+        'role': 'volunteer',
+        'campus_code': 'LINGAYEN',
+        'id_number': '',
+        'volunteer_type': 'Student',
+        'college_affiliation': '',
+    })
+    return Response(output.getvalue(), mimetype='text/csv', headers={
+        'Content-Disposition': 'attachment;filename=psu_user_import_template.csv'})
+
+
+@admin_bp.route('/admin/users/export.csv')
+@login_required
+@role_required('admin')
+def export_users_csv():
+    output = io.StringIO(newline='')
+    fields = ('name', 'email', 'role', 'campus_code', 'id_number',
+              'volunteer_type', 'college_affiliation', 'is_active', 'created_at')
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+    for user in User.query.order_by(User.name).all():
+        writer.writerow({
+            'name': user.name,
+            'email': user.email,
+            'role': user.role,
+            'campus_code': user.campus.code if user.campus else '',
+            'id_number': user.id_number or '',
+            'volunteer_type': user.volunteer_type or '',
+            'college_affiliation': user.college_affiliation or '',
+            'is_active': 'yes' if user.is_active else 'no',
+            'created_at': user.created_at.isoformat() if user.created_at else '',
+        })
+    return Response(output.getvalue(), mimetype='text/csv', headers={
+        'Content-Disposition': 'attachment;filename=psu_users.csv'})
+
+
+@admin_bp.route('/admin/terms', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def manage_terms():
+    if request.method == 'POST':
+        title = ' '.join(request.form.get('title', '').split())
+        version = request.form.get('version', '').strip()
+        body = request.form.get('body', '').strip()
+        if not title or not version or not body:
+            flash('Title, version, and Terms of Use text are required.', 'error')
+        elif TermsRevision.query.filter_by(version=version).first():
+            flash('That terms version already exists.', 'error')
+        else:
+            TermsRevision.query.update({TermsRevision.is_active: False})
+            revision = TermsRevision(
+                title=title, body=body, version=version,
+                published_by_id=current_user.id, is_active=True)
+            db.session.add(revision)
+            db.session.flush()
+            log_activity('terms_published', revision, {'version': version})
+            db.session.commit()
+            flash(f'Terms version {version} is now active.', 'success')
+            return redirect(url_for('admin.manage_terms'))
+    revisions = TermsRevision.query.order_by(
+        TermsRevision.published_at.desc()).all()
+    return render_template('admin/terms_management.html', revisions=revisions)
+
+
+@admin_bp.route('/admin/policies/<document>', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def manage_policy(document):
+    documents = {
+        'privacy': (PrivacyRevision, 'Privacy Notice'),
+        'participation-agreement': (ParticipationAgreementRevision, 'Default Participation Agreement'),
+    }
+    if document not in documents:
+        abort(404)
+    model, label = documents[document]
+    if request.method == 'POST':
+        title, version, body = (' '.join(request.form.get('title', '').split()),
+                                request.form.get('version', '').strip(),
+                                request.form.get('body', '').strip())
+        if not title or not version or not body:
+            flash('Title, version, and document text are required.', 'error')
+        elif model.query.filter_by(version=version).first():
+            flash('That version already exists.', 'error')
+        else:
+            model.query.update({model.is_active: False})
+            revision = model(title=title, version=version, body=body,
+                             is_active=True, published_by_id=current_user.id)
+            db.session.add(revision)
+            db.session.flush()
+            log_activity(f'{document}_published', revision, {'version': version})
+            db.session.commit()
+            flash(f'{label} version {version} is now active.', 'success')
+            return redirect(url_for('admin.manage_policy', document=document))
+    return render_template('admin/policy_management.html', label=label,
+                           revisions=model.query.order_by(model.published_at.desc()).all())
+
+
+@admin_bp.route('/admin/users/import', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def import_users_csv():
+    password_min = _setting_int('default_password_length', 8, 8)
+    if request.method == 'GET':
+        return render_template('admin/user_import.html', password_min=password_min)
+
+    upload = request.files.get('file')
+    if not upload or not upload.filename:
+        flash('Choose a CSV file to import.', 'error')
+        return redirect(url_for('admin.import_users_csv'))
+    if not upload.filename.lower().endswith('.csv'):
+        flash('The import file must be a CSV.', 'error')
+        return redirect(url_for('admin.import_users_csv'))
+    try:
+        stream = io.StringIO(upload.stream.read().decode('utf-8-sig'))
+        reader = csv.DictReader(stream)
+    except UnicodeDecodeError:
+        flash('The CSV must use UTF-8 text encoding.', 'error')
+        return redirect(url_for('admin.import_users_csv'))
+    if set(USER_IMPORT_COLUMNS) - set(reader.fieldnames or []):
+        flash('The CSV does not match the downloadable import template.', 'error')
+        return redirect(url_for('admin.import_users_csv'))
+
+    campuses = {campus.code.upper(): campus for campus in Campus.query.all()}
+    existing_emails = {email.casefold() for email, in db.session.query(User.email)}
+    existing_ids = {number for number, in db.session.query(User.id_number)
+                    if number}
+    seen_emails, seen_ids, rows, errors = set(), set(), [], []
+    for line_number, raw_row in enumerate(reader, start=2):
+        row = _clean_import_row(raw_row)
+        email = row['email'].casefold()
+        role = row['role'].lower()
+        campus = campuses.get(row['campus_code'].upper()) if row['campus_code'] else None
+        if not row['name'] or not email or not row['password']:
+            errors.append(f'Row {line_number}: name, email, and password are required.')
+        elif len(row['password']) < password_min:
+            errors.append(f'Row {line_number}: password is too short.')
+        elif role not in ('volunteer', 'coordinator', 'director', 'admin'):
+            errors.append(f'Row {line_number}: role is invalid.')
+        elif row['campus_code'] and campus is None:
+            errors.append(f'Row {line_number}: campus code is invalid.')
+        elif email in existing_emails or email in seen_emails:
+            errors.append(f'Row {line_number}: email already exists.')
+        elif row['id_number'] and (row['id_number'] in existing_ids or row['id_number'] in seen_ids):
+            errors.append(f'Row {line_number}: PSU ID already exists.')
+        else:
+            row['email'] = email
+            row['role'] = role
+            row['campus_id'] = campus.id if campus else None
+            rows.append(row)
+            seen_emails.add(email)
+            if row['id_number']:
+                seen_ids.add(row['id_number'])
+    if errors:
+        for error in errors[:10]:
+            flash(error, 'error')
+        if len(errors) > 10:
+            flash(f'{len(errors) - 10} additional rows have errors.', 'error')
+        return redirect(url_for('admin.import_users_csv'))
+    if not rows:
+        flash('The CSV contains no user rows.', 'warning')
+        return redirect(url_for('admin.import_users_csv'))
+
+    for row in rows:
+        user = User(
+            name=row['name'], email=row['email'], role=row['role'],
+            campus_id=row['campus_id'], id_number=row['id_number'] or None,
+            volunteer_type=row['volunteer_type'] or None,
+            college_affiliation=row['college_affiliation'] or None,
+        )
+        user.set_password(row['password'])
+        db.session.add(user)
+        db.session.flush()
+        if user.role == 'volunteer':
+            db.session.add(VolunteerProfile(user_id=user.id))
+        log_activity('user_imported', user, {'role': user.role})
+    db.session.commit()
+    flash(f'{len(rows)} user account(s) imported.', 'success')
+    return redirect(url_for('admin.admin_dash'))
 
 
 @admin_bp.route('/admin/backup')

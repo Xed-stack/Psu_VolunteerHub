@@ -9,6 +9,8 @@ from sqlalchemy import or_
 from datetime import datetime
 from app.models.user import User, Interest, Skill, SystemSetting
 from app.models.notification import Notification
+from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
+                               PrivacyAcknowledgement)
 from app.models import db
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -23,6 +25,25 @@ def _password_min_length():
         return max(8, int(setting.value)) if setting else 8
     except (TypeError, ValueError):
         return 8
+
+
+def _active_terms():
+    return TermsRevision.query.filter_by(is_active=True).order_by(
+        TermsRevision.published_at.desc()).first()
+
+
+def _active_privacy():
+    return PrivacyRevision.query.filter_by(is_active=True).order_by(
+        PrivacyRevision.published_at.desc()).first()
+
+
+def _dashboard_endpoint(user):
+    return {
+        'volunteer': 'events.volunteer_dash',
+        'coordinator': 'coordinator.coordinator_dash',
+        'director': 'director.director_dash',
+        'admin': 'admin.admin_dash',
+    }.get(user.role, 'dashboard')
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -56,17 +77,15 @@ def login():
 
         login_user(user, remember=remember)
 
-        # Redirect to role-appropriate dashboard
-        role_redirects = {
-            'volunteer': 'events.volunteer_dash',
-            'coordinator': 'coordinator.coordinator_dash',
-            'director': 'director.director_dash',
-            'admin': 'admin.admin_dash',
-        }
         next_page = request.args.get('next')
+        active_terms = _active_terms()
+        if active_terms and not TermsAcceptance.query.filter_by(
+                user_id=user.id, revision_id=active_terms.id).first():
+            session['terms_next'] = next_page or url_for(_dashboard_endpoint(user))
+            return redirect(url_for('auth.accept_terms'))
         if next_page:
             return redirect(next_page)
-        return redirect(url_for(role_redirects.get(user.role, 'dashboard')))
+        return redirect(url_for(_dashboard_endpoint(user)))
 
     return render_template('login.html')
 
@@ -145,6 +164,8 @@ def register():
     campuses = Campus.query.all()
     interests = Interest.query.all()
     skills = Skill.query.all()
+    active_terms = _active_terms()
+    active_privacy = _active_privacy()
 
     if request.method == 'POST':
         # 1. Grab inputs from Signup.html
@@ -183,6 +204,10 @@ def register():
             errors.append('Select Student, Faculty, or Staff.')
         if not college_affiliation:
             errors.append('College affiliation is required.')
+        if active_terms and request.form.get('terms_accepted') != 'on':
+            errors.append('You must accept the current Terms of Use.')
+        if active_privacy and request.form.get('privacy_acknowledged') != 'on':
+            errors.append('You must acknowledge the current Privacy Notice.')
 
         # Check duplicate email
         if email and User.query.filter(
@@ -211,7 +236,8 @@ def register():
                 flash(error, 'error')
             return render_template('Signup.html', campuses=campuses,
                                    interests=interests, skills=skills,
-                                   password_min=password_min)
+                                   password_min=password_min,
+                                   active_terms=active_terms, active_privacy=active_privacy)
 
         # Public registration always creates a volunteer. Privileged roles
         # can only be assigned through the protected Admin interface.
@@ -257,6 +283,12 @@ def register():
         if assigned_role == 'volunteer':
             from app.models.user import VolunteerProfile
             db.session.add(VolunteerProfile(user_id=user.id))
+        if active_terms:
+            db.session.add(TermsAcceptance(
+                user_id=user.id, revision_id=active_terms.id))
+        if active_privacy:
+            db.session.add(PrivacyAcknowledgement(
+                user_id=user.id, revision_id=active_privacy.id))
 
         db.session.commit()
 
@@ -269,7 +301,53 @@ def register():
 
     return render_template('Signup.html', campuses=campuses,
                            interests=interests, skills=skills,
-                           password_min=_password_min_length())
+                           password_min=_password_min_length(),
+                           active_terms=active_terms, active_privacy=active_privacy)
+
+
+@auth_bp.route('/privacy', methods=['GET', 'POST'])
+@login_required
+def accept_privacy():
+    revision = _active_privacy()
+    if revision is None:
+        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+    accepted = PrivacyAcknowledgement.query.filter_by(
+        user_id=current_user.id, revision_id=revision.id).first()
+    if accepted:
+        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+    if request.method == 'POST' and request.form.get('acknowledge_privacy') == 'on':
+        db.session.add(PrivacyAcknowledgement(user_id=current_user.id, revision_id=revision.id))
+        db.session.commit()
+        flash('Privacy Notice acknowledged.', 'success')
+        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+    if request.method == 'POST':
+        flash('You must acknowledge the Privacy Notice to continue.', 'error')
+    return render_template('auth/privacy_acceptance.html', revision=revision)
+
+
+@auth_bp.route('/terms', methods=['GET', 'POST'])
+@login_required
+def accept_terms():
+    """Require acceptance of the current published terms before proceeding."""
+    revision = _active_terms()
+    if revision is None:
+        return redirect(url_for(_dashboard_endpoint(current_user)))
+    accepted = TermsAcceptance.query.filter_by(
+        user_id=current_user.id, revision_id=revision.id).first()
+    if accepted:
+        return redirect(session.pop(
+            'terms_next', url_for(_dashboard_endpoint(current_user))))
+    if request.method == 'POST':
+        if request.form.get('accept_terms') != 'on':
+            flash('You must accept the Terms of Use to continue.', 'error')
+        else:
+            db.session.add(TermsAcceptance(
+                user_id=current_user.id, revision_id=revision.id))
+            db.session.commit()
+            flash('Terms of Use accepted.', 'success')
+            return redirect(session.pop(
+                'terms_next', url_for(_dashboard_endpoint(current_user))))
+    return render_template('auth/terms_acceptance.html', revision=revision)
 
 
 @auth_bp.route('/logout')

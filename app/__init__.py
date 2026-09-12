@@ -3,14 +3,17 @@ Flask Application Factory for PSU Volunteer Hub
 =================================================
 Creates and configures the Flask application instance.
 """
-from flask import Flask
-from flask_login import LoginManager
+from flask import Flask, request, redirect, url_for
+from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
 from app.models import db
 from app.models.user import User, SystemSetting
 from app.models.event import (Event, Registration, Attendance, Milestone,
                               Campus, ExternalParticipant, ActivityCategory)
 from app.models.notification import Notification
+from app.models.audit import AuditLog
+from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
+                               PrivacyAcknowledgement, ParticipationAgreementRevision)
 from config import config
 
 
@@ -47,6 +50,26 @@ def create_app(config_name='development'):
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
+
+    @app.before_request
+    def require_current_terms():
+        """Keep authenticated users on the active Terms revision."""
+        if (not current_user.is_authenticated
+                or request.endpoint in ('static', 'auth.accept_terms',
+                                        'auth.accept_privacy', 'auth.logout')):
+            return None
+        from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
+                                       PrivacyAcknowledgement)
+        revision = TermsRevision.query.filter_by(is_active=True).order_by(
+            TermsRevision.published_at.desc()).first()
+        if revision and not TermsAcceptance.query.filter_by(
+                user_id=current_user.id, revision_id=revision.id).first():
+            return redirect(url_for('auth.accept_terms'))
+        privacy = PrivacyRevision.query.filter_by(is_active=True).order_by(
+            PrivacyRevision.published_at.desc()).first()
+        if privacy and not PrivacyAcknowledgement.query.filter_by(
+                user_id=current_user.id, revision_id=privacy.id).first():
+            return redirect(url_for('auth.accept_privacy'))
 
     # Register blueprints
     from app.routes.auth import auth_bp

@@ -11,9 +11,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.event import (ActivityCategory, Event, EventAnnouncement,
-                              Registration, Attendance, Campus, Milestone)
+                              Registration, Attendance, Campus, Milestone,
+                              CancellationRequest)
 from app.utils.decorators import role_required
 from app.models.notification import Notification, notify_campus_coordinators
+from app.models.notification import notify
+from app.utils.audit import log_activity
 from app.models.user import SystemSetting
 from app.recommendation.analytics import AnalyticsAggregator
 from app.reports import (
@@ -142,6 +145,47 @@ def coordinator_dash():
                             campus_total_attended=summary['attended'])
 
 
+@coordinator_bp.route('/coordinator/cancellation-requests', methods=['GET', 'POST'])
+@login_required
+@role_required('coordinator')
+def cancellation_requests():
+    status = request.args.get('status', 'pending')
+    query = CancellationRequest.query.join(Registration).join(Event).filter(
+        Event.campus_id == current_user.campus_id)
+    if status in ('pending', 'approved', 'rejected'):
+        query = query.filter(CancellationRequest.status == status)
+    if request.method == 'POST':
+        cancellation = db.session.get(CancellationRequest, request.form.get('request_id', type=int))
+        decision = request.form.get('decision')
+        note = request.form.get('review_note', '').strip()
+        if cancellation is None or cancellation.registration.event.campus_id != current_user.campus_id:
+            abort(403)
+        if cancellation.status != 'pending' or decision not in ('approved', 'rejected'):
+            flash('This request is no longer available for review.', 'error')
+        else:
+            cancellation.status = decision
+            cancellation.reviewed_by_id = current_user.id
+            cancellation.reviewed_at = datetime.utcnow()
+            cancellation.review_note = note or None
+            if decision == 'approved':
+                cancellation.registration.status = 'cancelled'
+            db.session.flush()
+            log_activity(f'cancellation_{decision}', cancellation,
+                         {'event_id': cancellation.registration.event_id})
+            if cancellation.registration.user_id:
+                notify(cancellation.registration.user_id,
+                       title=f'Cancellation request {decision}',
+                       message=f'Your request for "{cancellation.registration.event.title}" was {decision}.',
+                       notification_type=f'cancellation_{decision}',
+                       related_event_id=cancellation.registration.event_id)
+            db.session.commit()
+            flash(f'Cancellation request {decision}.', 'success')
+        return redirect(url_for('coordinator.cancellation_requests', status=status))
+    return render_template('coordinator/cancellation_requests.html',
+                           requests=query.order_by(CancellationRequest.requested_at.desc()).all(),
+                           selected_status=status)
+
+
 @coordinator_bp.route('/create_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('coordinator')
@@ -156,6 +200,12 @@ def create_activity():
         required_skills = request.form.get('required_skills', '').strip()
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
+        target_participants = request.form.get('target_participants', type=int)
+        agreement_text = request.form.get('participation_agreement_text', '').strip()
+        agreement_version = request.form.get('participation_agreement_version', '').strip()
+        nda_required = request.form.get('nda_required') == 'on'
+        nda_text = request.form.get('nda_text', '').strip()
+        nda_version = request.form.get('nda_version', '').strip()
         max_slots = _max_event_slots()
         campus_id = current_user.campus_id
         if campus_id is None:
@@ -173,6 +223,14 @@ def create_activity():
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/create_act_scrn1.html',
                                    campuses=campuses, max_slots=max_slots)
+        if target_participants is not None and target_participants < 1:
+            flash('Target participants must be a positive number when provided.', 'error')
+            return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
+                                   categories=categories, max_slots=max_slots)
+        if (agreement_text and not agreement_version) or (nda_required and (not nda_text or not nda_version)):
+            flash('Provide a version for a custom agreement and text/version for a required NDA.', 'error')
+            return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
+                                   categories=categories, max_slots=max_slots)
         schedule, error = _parse_event_schedule(request.form)
         if error:
             flash(error, 'error')
@@ -191,6 +249,11 @@ def create_activity():
                       cancellation_deadline=cancellation_deadline,
                       category=category, location=location,
                       required_skills=required_skills, slots=slots,
+                      target_participants=target_participants,
+                      participation_agreement_text=agreement_text or None,
+                      participation_agreement_version=agreement_version or None,
+                      nda_required=nda_required, nda_text=nda_text or None,
+                      nda_version=nda_version or None,
                       campus_id=campus_id,
                       created_by_id=current_user.id,
                       cover_image_path=cover['path'] if cover else None,
@@ -233,6 +296,12 @@ def edit_activity(event_id):
         required_skills = request.form.get('required_skills', '').strip()
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
+        target_participants = request.form.get('target_participants', type=int)
+        agreement_text = request.form.get('participation_agreement_text', '').strip()
+        agreement_version = request.form.get('participation_agreement_version', '').strip()
+        nda_required = request.form.get('nda_required') == 'on'
+        nda_text = request.form.get('nda_text', '').strip()
+        nda_version = request.form.get('nda_version', '').strip()
         max_slots = _max_event_slots()
 
         if category not in categories:
@@ -252,6 +321,14 @@ def edit_activity(event_id):
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
                                    max_slots=max_slots)
+        if target_participants is not None and target_participants < 1:
+            flash('Target participants must be a positive number when provided.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   categories=categories, max_slots=max_slots)
+        if (agreement_text and not agreement_version) or (nda_required and (not nda_text or not nda_version)):
+            flash('Provide a version for a custom agreement and text/version for a required NDA.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   categories=categories, max_slots=max_slots)
 
         # Registration-sensitive: do not reduce capacity below existing
         # registrations (PSU + external). This preserves all participation.
@@ -270,6 +347,12 @@ def edit_activity(event_id):
         event.category = category
         event.required_skills = required_skills
         event.slots = slots
+        event.target_participants = target_participants
+        event.participation_agreement_text = agreement_text or None
+        event.participation_agreement_version = agreement_version or None
+        event.nda_required = nda_required
+        event.nda_text = nda_text or None
+        event.nda_version = nda_version or None
         old_cover = event.cover_image_path
         try:
             cover = _save_event_cover(request.files.get('cover_image'))

@@ -50,6 +50,7 @@
         class="navlink {{ 'navlink--active' if endpoint == 'coordinator.attendance' }}"
         href="{{ url_for('coordinator.attendance') }}"
       ><span class="material-symbols-outlined">fact_check</span>Attendance</a>
+      <a class="navlink {{ 'navlink--active' if endpoint == 'coordinator.cancellation_requests' }}" href="{{ url_for('coordinator.cancellation_requests') }}"><span class="material-symbols-outlined">event_busy</span>Cancellation requests</a>
       <a
         class="navlink {{ 'navlink--active' if endpoint == 'coordinator.analytics' }}"
         href="{{ url_for('coordinator.analytics') }}"

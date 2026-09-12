@@ -22,44 +22,15 @@
     <article class="metric-card"><small>Recognition</small><strong>{{ certification.level }}</strong></article>
     <article class="metric-card"><small>Next milestone</small><strong>{{ certification.next_level }}</strong></article>
   </section>
+  <section class="panel registration-calendar" aria-labelledby="calendar-title">
+    <header class="panel__header"><div><h2 id="calendar-title">My active registrations</h2><small>Upcoming activities, including requests awaiting cancellation review.</small></div><nav class="calendar-nav" aria-label="Calendar month"><a class="btn btn--sm btn--ghost" href="{{ url_for('events.volunteer_dash', calendar_year=previous_calendar[0], calendar_month=previous_calendar[1]) }}">Previous month</a><strong>{{ calendar_month_name }}</strong><a class="btn btn--sm btn--ghost" href="{{ url_for('events.volunteer_dash', calendar_year=next_calendar[0], calendar_month=next_calendar[1]) }}">Next month</a></nav></header>
+    <div class="calendar-grid" role="grid" aria-label="{{ calendar_month_name }} registrations"><div class="calendar-weekdays" aria-hidden="true">{% for day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<span>{{ day }}</span>{% endfor %}</div>{% for week in calendar_weeks %}{% for day in week %}<div class="calendar-day {{ 'calendar-day--empty' if not day }}" role="gridcell">{% if day %}<strong>{{ day }}</strong>{% for registration in calendar_events.get(day, []) %}<a class="calendar-entry" href="#registration-{{ registration.id }}">{{ registration.event.title }}<small>{{ registration.event.date.strftime('%I:%M %p') }}{% if registration.cancellation_request and registration.cancellation_request.status == 'pending' %} · Cancellation pending{% endif %}</small></a>{% endfor %}{% endif %}</div>{% endfor %}{% endfor %}</div>
+    {% if not calendar_events %}<div class="empty-state">No active registrations this month. Use month navigation to review future commitments.</div>{% endif %}
+  </section>
   <section class="panel">
-    <header class="panel__header">
-      <div>
-        <h2>My Registrations</h2>
-        <small>Upcoming commitments and registration history.</small>
-      </div>
-    </header>
-    {% if registration_items %}
-      <div class="table-scroll" tabindex="0">
-        <table class="data-table">
-          <thead>
-            <tr><th>Activity</th><th>Date</th><th>Cancel by</th><th>Campus</th><th>Category</th><th>Status</th><th>Action</th></tr>
-          </thead>
-          <tbody>
-            {% for item in registration_items %}
-              {% set registration = item.registration %}
-              <tr>
-                <td><strong>{{ registration.event.title }}</strong></td>
-                <td>{{ registration.event.date.strftime('%b %d, %Y · %I:%M %p') }}</td>
-                <td>{{ (registration.event.cancellation_deadline or registration.event.date).strftime('%b %d, %Y · %I:%M %p') }}</td>
-                <td>{{ registration.event.campus.name if registration.event.campus else 'PSU' }}</td>
-                <td>{{ registration.event.category or 'General' }}</td>
-                <td><span class="badge">{{ registration.status|title }}</span></td>
-                <td>
-                  {% if item.can_cancel %}
-                    <form method="post" action="{{ url_for('events.cancel_registration', registration_id=registration.id) }}" onsubmit="return confirm({{ ('Cancel your registration for ' ~ registration.event.title ~ '?')|tojson }});">
-                      <button class="btn btn--sm btn--danger" type="submit">Cancel</button>
-                    </form>
-                  {% else %}<span class="muted">Unavailable</span>{% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="empty-state">You have not registered for any activities yet.</div>
-    {% endif %}
+    <header class="panel__header"><div><h2>My registrations</h2><small>Showing {{ shown_registrations }} of {{ registration_total }} matching registrations.</small></div></header>
+    <form class="form-grid registration-filters" method="get"><label class="field">Status<select class="select" name="status"><option value="">All statuses</option>{% for value in ['pending','confirmed','completed','cancelled'] %}<option value="{{ value }}" {{ 'selected' if registration_filters.status == value }}>{{ value|title }}</option>{% endfor %}</select></label><label class="field">Campus<select class="select" name="campus"><option value="">All campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if registration_filters.campus == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label><label class="field">Category<select class="select" name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category }}" {{ 'selected' if registration_filters.category == category }}>{{ category }}</option>{% endfor %}</select></label><label class="field">From<input class="input" type="date" name="start_date" value="{{ registration_filters.start_date }}"></label><label class="field">To<input class="input" type="date" name="end_date" value="{{ registration_filters.end_date }}"></label><div class="form-actions"><button class="btn btn--primary" type="submit">Apply filters</button><a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">Clear</a></div></form>
+    {% if registration_items %}<div class="registration-list">{% for item in registration_items %}{% set registration = item.registration %}<article class="registration-row" id="registration-{{ registration.id }}"><div><strong>{{ registration.event.title }}</strong><small>{{ registration.event.date.strftime('%b %d, %Y · %I:%M %p') }} · {{ registration.event.campus.name if registration.event.campus else 'PSU' }} · {{ registration.event.category or 'General' }}</small></div><div><span class="badge">{{ registration.status|title }}</span>{% if item.cancellation_status %}<span class="badge badge--neutral">Cancellation {{ item.cancellation_status|title }}</span>{% endif %}</div><div>{% if item.can_cancel %}<a class="btn btn--sm btn--danger" href="{{ url_for('events.cancel_registration', registration_id=registration.id) }}">Request cancellation</a>{% else %}<span class="muted">{% if item.cancellation_status == 'pending' %}Coordinator review pending{% elif registration.status == 'cancelled' %}Registration cancelled{% else %}Cancellation unavailable after deadline or attendance{% endif %}</span>{% endif %}</div></article>{% endfor %}</div>{% if shown_registrations < registration_total %}<a class="btn btn--outline" href="{{ url_for('events.volunteer_dash', show=shown_registrations + 5, **registration_filters) }}">Show 5 more</a>{% endif %}{% if shown_registrations > 5 %}<a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash', **registration_filters) }}">Show less</a>{% endif %}{% else %}<div class="empty-state">No registrations match these filters. Clear filters or browse opportunities.</div>{% endif %}
   </section>
   <div class="content-grid">
     <section class="panel">

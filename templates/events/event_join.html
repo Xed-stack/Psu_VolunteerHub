@@ -29,10 +29,7 @@
           <div><dt>Capacity</dt><dd>{{ event.slots_remaining() }} slots remaining</dd></div>
           <div><dt>Cancellation deadline</dt><dd>{{ (event.cancellation_deadline or event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
         </dl>
-        <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">
-          {% include 'partials/csrf_field.html' %}
-          <button class="button button--primary" type="submit">Join Now</button>
-        </form>
+        <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Review and join</a>
       {% elif not external_form %}
         <p class="question">Are you currently from PSU?</p>
         <div class="join-options">
@@ -67,8 +64,9 @@
           <label class="field">
             Email Address (optional)<input class="input" type="email" name="email">
           </label>
+          {% if agreement %}<section class="policy-panel"><h2>{{ agreement.title }}</h2><div class="policy-copy">{{ agreement.body }}</div><label class="check-row"><input type="checkbox" name="accept_agreement" value="yes" required><span>I accept the Participation Agreement.</span></label>{% if event.nda_required %}<h2>Non-Disclosure Agreement</h2><div class="policy-copy">{{ event.nda_text }}</div><label class="check-row"><input type="checkbox" name="accept_nda" value="yes" required><span>I accept the NDA.</span></label>{% endif %}</section>{% else %}<p class="form-error">This activity is not accepting registrations until its agreement is published.</p>{% endif %}
           <div class="form-actions">
-            <button class="button button--primary" type="submit">Join as external volunteer</button>
+            <button class="button button--primary" type="submit" {{ 'disabled' if not agreement }}>Join as external volunteer</button>
             <a
               class="button button--ghost"
               href="{{ url_for('events.event_join', event_id=event.id) }}"

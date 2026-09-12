@@ -36,6 +36,7 @@
   <nav class="admin-tabs" aria-label="Administration sections">
     <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'users' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='users') }}">Active Users</a>
     <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'deactivated' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='deactivated') }}">Deactivated Users ({{ deactivated_users|length }})</a>
+    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'audit' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='audit') }}">Activity Log</a>
   </nav>
   {% if active_tab == 'users' %}
   <section class="panel" id="user-management">
@@ -138,10 +139,27 @@
       <h2>Administrative Controls</h2>
     </header>
     <div class="admin-actions">
+      <a class="admin-action" href="{{ url_for('admin.manage_policy', document='privacy') }}"><span class="material-symbols-outlined">privacy_tip</span><strong>Privacy Notice</strong><small>Publish separate privacy revisions</small></a>
+      <a class="admin-action" href="{{ url_for('admin.manage_policy', document='participation-agreement') }}"><span class="material-symbols-outlined">handshake</span><strong>Default Agreement</strong><small>Set the fallback for existing activities</small></a>
       <a
         class="admin-action"
         href="{{ url_for('admin.create_campus') }}"
       ><span class="material-symbols-outlined">domain_add</span><strong>Add Campus</strong><small>Configure a new PSU campus</small></a>
+      <a class="admin-action" href="{{ url_for('admin.import_users_csv') }}">
+        <span class="material-symbols-outlined">upload_file</span>
+        <strong>Import Users</strong>
+        <small>Validate and add accounts from CSV</small>
+      </a>
+      <a class="admin-action" href="{{ url_for('admin.export_users_csv') }}">
+        <span class="material-symbols-outlined">download</span>
+        <strong>Export Users</strong>
+        <small>Download non-sensitive account data</small>
+      </a>
+      <a class="admin-action" href="{{ url_for('admin.manage_terms') }}">
+        <span class="material-symbols-outlined">gavel</span>
+        <strong>Terms of Use</strong>
+        <small>Publish and version policy revisions</small>
+      </a>
       <a
         class="admin-action"
         href="{{ url_for('notifications.list_notifications') }}"
@@ -158,7 +176,7 @@
       </a>
     </div>
   </section>
-  {% else %}
+  {% elif active_tab == 'deactivated' %}
   <section class="panel" id="deactivated-users">
     <header class="panel__header"><div><h2>Deactivated Users</h2><small>Accounts become eligible for permanent deletion 30 days after deactivation.</small></div></header>
     <div class="table-scroll" tabindex="0" aria-label="Deactivated users table">
@@ -178,6 +196,26 @@
             </td>
           </tr>
           {% else %}<tr><td colspan="7"><div class="empty-state">No deactivated users.</div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% else %}
+  <section class="panel" id="activity-log">
+    <header class="panel__header"><div><h2>Activity Log</h2><small>Most recent administrative changes. Entries are retained when a related account is removed.</small></div></header>
+    <div class="table-scroll" tabindex="0" aria-label="Administrative activity log">
+      <table class="data-table">
+        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+        <tbody>
+          {% for entry in audit_logs %}
+          <tr>
+            <td>{{ entry.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+            <td>{{ entry.actor.name if entry.actor else 'System / removed user' }}</td>
+            <td>{{ entry.action.replace('_', ' ')|title }}</td>
+            <td>{{ entry.target_type }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
+            <td><small>{{ entry.details or '—' }}</small></td>
+          </tr>
+          {% else %}<tr><td colspan="5"><div class="empty-state">No administrative activity has been recorded yet.</div></td></tr>{% endfor %}
         </tbody>
       </table>
     </div>

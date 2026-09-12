@@ -24,12 +24,15 @@
 - The public `/opportunities` page now uses shared shell styling, responsive opportunity cards, CSRF-protected registration forms, and a clear `Registered` state for existing volunteer sign-ups.
 - Analytics no longer displays or exports service-hour values; registration and attendance counts are the participation measures used throughout the UI and reports.
 - The `seed-demo-analytics` Flask command creates idempotent presentation data across campuses, categories, registrations, and attendance without overwriting existing records.
+- Phase 4 now includes an append-only Admin Activity Log, validated CSV user import/export (without password hashes), and versioned Terms of Use. An admin publishes the active terms revision; new registrations accept it during sign-up, while existing users are redirected to accept it before continuing.
 - Accounts can be deactivated, request reactivation through the login flow, be reviewed in a Deactivated Users tab, and be permanently deleted manually after 30 days. Safeguards protect the last active admin and the current admin account.
 - The roadmap in `VOLUNTEER_HUB_ROADMAP.md` records proposed future work. It is not implemented.
 
 ## Database requirement
 
 Apply `migrations/20260903_admin_categories_and_deactivation.sql` to the configured MySQL database before testing the administration features on a fresh database. It adds activity categories, event creator ownership, and deactivation/reactivation fields.
+
+Also apply `migrations/20260912_add_audit_logs.sql` and `migrations/20260912_add_terms_revisions.sql` for the Phase 4 audit and policy features on an existing database.
 
 Historical CSV data can be imported with:
 
@@ -62,7 +65,7 @@ Then manually check:
 
 ## Next recommended work
 
-Use `VOLUNTEER_HUB_ROADMAP.md` as the source of truth. Verify the current landing page, opportunities view, analytics seed data, and MySQL import before starting remaining roadmap items. Reuse approved PSU photos or coordinator-uploaded event/milestone imagery; do not add unlicensed stock photos. The requested QR attendance, SMS/email, SIS integration, and automatic purging are explicitly out of scope.
+Use `VOLUNTEER_HUB_ROADMAP.md` as the source of truth. Verify the current landing page, opportunities view, analytics seed data, and MySQL import before starting remaining roadmap items. The next planned feature set is policy and agreement management: separate Terms of Use and Privacy Notice acknowledgements at account registration, per-event Participation Agreements, optional event NDAs, and reasoned cancellation requests reviewed by a campus-scoped coordinator. These are not implemented yet; the current direct cancellation workflow remains in place until its request-and-review replacement is delivered. Reuse approved PSU photos or coordinator-uploaded event/milestone imagery; do not add unlicensed stock photos. The requested QR attendance, SMS/email, SIS integration, and automatic purging are explicitly out of scope.
 
 ## Working-tree note
 

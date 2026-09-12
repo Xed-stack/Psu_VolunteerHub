@@ -49,10 +49,29 @@ Current implementation note: descriptive analytics, PDF/CSV reporting, historica
 
 ## Phase 4 — administration and governance extensions
 
+Current implementation note: the administrative activity log, safe CSV user import/export, and versioned Terms of Use acceptance are implemented. The remaining governance enhancement is any broader administrative policy workflow beyond the currently published Terms of Use revisions.
+
 - Add CSV bulk-user import and export. Import uses a downloadable template, validates all rows before committing, reports row-level errors, hashes passwords server-side, and honors the existing role/campus constraints. Export excludes password hashes, tokens, and other secrets.
 - Add an append-only activity log with actor, action, target type/id, timestamp, and a concise metadata summary. Record account actions, role changes, category changes, event create/edit/delete, attendance updates, milestone uploads, announcement publication, historical imports, and bulk-import outcomes. Admins can filter and export the log; coordinators see only records within their campus.
 - Add versioned Terms and Conditions managed by an administrator. A published revision has title, body, version, publisher, and publication timestamp. New registrations and existing users on their next sign-in must accept the current revision before continuing; record user, revision, and acceptance timestamp. Do not retroactively invalidate attendance or historical registrations.
 - Add a migration for profile images, event cancellation deadlines, announcement records, upload provenance, activity logs, and terms acceptance. Backfill upload provenance as unknown where the historical record lacks an actor. Existing events retain a null cancellation deadline and continue to use their start time until a coordinator sets one.
+
+## Phase 5 — policy, agreements, cancellation review, and accomplishment management
+
+Current status: planned only. Do not replace the existing direct cancellation flow until the full request-and-review workflow, migration, authorization checks, notifications, and regression tests are ready together.
+
+- Add distinct Terms of Use acceptance and Privacy Notice acknowledgement to account registration. Record each document version and timestamp separately; never combine the two acknowledgements into one checkbox.
+- Require a versioned Event Participation Agreement for every event registration. Store acceptance on the registration record, not only on the volunteer account, so each event remains auditable.
+- Let coordinators configure an optional event-specific NDA, including its text and version. Require NDA acceptance only after the participation agreement. Cancelling a registration must never invalidate a previously accepted NDA or prevent a volunteer from requesting cancellation.
+- Replace direct volunteer cancellation with a cancellation-request workflow. A volunteer chooses a structured reason (medical/health, family emergency, academic conflict, work/schedule conflict, transportation problem, personal emergency, or other); `Other` requires an explanation. A pending request leaves participation registered until reviewed.
+- Add campus-scoped coordinator review for cancellation requests with pending, approved, and rejected filters; reviewer note; reviewer identity; and review timestamp. Approval changes participation to cancelled. Rejection keeps it registered. Preserve every request and decision as an audit-relevant record.
+- Reuse the existing notification service to alert coordinators about new requests and volunteers about submission, approval, or rejection. Do not create a second notification system.
+- Extend event list filters for coordinator activity management: Active by default, with Upcoming, Completed, Cancelled, and All options plus category, date, campus, and department where data exists. Replace vague `Unavailable` labels with disabled actions and accessible supporting text that explains why the action cannot be used.
+- Add a list/calendar switch for activities. The calendar supports monthly navigation, status, campus/department, date range, and event details; list filters should apply where practical.
+- Add optional activity targets: target participants, verified actual participants, and safe target completion percentage. For completed events, actual participants must be verified attendance—not registrations. Clearly label registrations for upcoming/active activities.
+- Reorder Coordinator and Director dashboards around accomplishments: KPI cards, charts, targets, actual participants, activity/campus comparisons, and supporting lists. Add a simple role-appropriate volunteer dashboard visualization without exposing coordinator/director analytics.
+- Introduce centralized, data-driven campus acronyms for compact director comparisons, while retaining full campus names in reports, details, tooltips, and accessible labels.
+- Test agreement/NDA acceptance, every cancellation boundary and role scope, audit retention, notification recipients, target calculations including zero targets, and the distinction between registrations, attendance, absence, cancellation, and actual participants.
 
 ## Interfaces and safeguards
 

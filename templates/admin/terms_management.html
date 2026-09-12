@@ -1,0 +1,9 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Terms of Use | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Administration{% endblock %}
+{% block header_subtitle %}Terms of Use{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Terms of Use</h1><p>Publishing a new revision requires every user to accept it at their next sign-in.</p></div></header>
+<section class="panel form-panel"><h2>Publish revision</h2><form method="post">{% include 'partials/csrf_field.html' %}<div class="form-grid"><label class="field"><span class="field-label">Title</span><input class="input" name="title" maxlength="150" required></label><label class="field"><span class="field-label">Version</span><input class="input" name="version" maxlength="30" placeholder="e.g. 1.0" required></label><label class="field field--wide"><span class="field-label">Terms text</span><textarea class="input" name="body" rows="12" required></textarea></label></div><div class="form-actions"><button class="btn btn--primary" type="submit">Publish Terms</button></div></form></section>
+<section class="panel"><header class="panel__header"><h2>Revision history</h2></header><div class="table-scroll" tabindex="0" aria-label="Terms revision history"><table class="data-table"><thead><tr><th>Version</th><th>Title</th><th>Published</th><th>Status</th></tr></thead><tbody>{% for revision in revisions %}<tr><td>{{ revision.version }}</td><td>{{ revision.title }}</td><td>{{ revision.published_at.strftime('%b %d, %Y') }}</td><td><span class="badge {{ 'badge--primary' if revision.is_active else 'badge--neutral' }}">{{ 'Active' if revision.is_active else 'Superseded' }}</span></td></tr>{% else %}<tr><td colspan="4"><div class="empty-state">No Terms of Use revision has been published.</div></td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

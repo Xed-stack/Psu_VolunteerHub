@@ -212,3 +212,15 @@ body {
 .password-checklist li.is-met::before {
   content: '✓';
 }
+
+.policy-copy {
+  max-height: 20rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--outline-variant);
+  border-radius: .5rem;
+  background: var(--surface-container-low);
+  line-height: 1.55;
+}

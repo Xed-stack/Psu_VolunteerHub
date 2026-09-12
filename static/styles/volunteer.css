@@ -25,3 +25,26 @@
     grid-template-columns: 1fr
   }
 }
+/* Personal schedule: the dense month grid helps volunteers spot commitments;
+   the list below remains the readable source for full registration details. */
+.calendar-nav { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.calendar-grid { border: 1px solid var(--outline-variant); border-radius: var(--radius); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); overflow: hidden; }
+.calendar-weekdays { background: var(--surface-container-low); color: var(--on-surface-variant); display: contents; font-size: .8rem; font-weight: 700; text-align: center; }
+.calendar-weekdays span { background: var(--surface-container-low); }
+.calendar-weekdays span { padding: .55rem .25rem; }
+.calendar-day { border-right: 1px solid var(--outline-variant); border-top: 1px solid var(--outline-variant); min-height: 7rem; padding: .45rem; }
+.calendar-day > strong { display: block; font-size: .85rem; }
+.calendar-day--empty { background: var(--surface-low); }
+.calendar-entry { background: var(--primary-light); color: var(--primary); display: block; font-size: .76rem; font-weight: 700; margin-top: .3rem; padding: .3rem; text-decoration: none; }
+.calendar-entry small, .registration-row small { display: block; font-weight: 400; margin-top: .2rem; }
+.registration-filters { align-items: end; margin-block: 1rem; }
+.registration-list { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.registration-row { align-items: center; border-top: 1px solid var(--outline-variant); display: grid; gap: .75rem; grid-template-columns: minmax(0, 1fr) auto auto; padding: .85rem 0; }
+@media (max-width: 760px) {
+  .calendar-weekdays span { font-size: .68rem; padding-inline: .1rem; }
+  .calendar-day { min-height: 5rem; padding: .25rem; }
+  .calendar-entry { font-size: .65rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .calendar-entry small { display: none; }
+  .registration-row { align-items: start; grid-template-columns: 1fr; }
+  .calendar-nav { width: 100%; }
+}

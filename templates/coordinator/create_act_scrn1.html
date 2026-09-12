@@ -86,6 +86,12 @@
           placeholder="Teaching/Tutoring, Communication/Public Speaking"
         >
       </label>
+      <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
+      <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
+      <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', '') }}"></label>
+      <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') }}> <span>Require an event-specific NDA</span></label>
+      <label class="field field--wide"><span>NDA text</span><textarea class="input" name="nda_text" rows="5">{{ request.form.get('nda_text', '') }}</textarea></label>
+      <label class="field"><span>NDA version</span><input class="input" name="nda_version" value="{{ request.form.get('nda_version', '') }}"></label>
       <label class="field field--wide">
         Event cover image
         <input

@@ -1,0 +1,12 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Request Cancellation · PSU Volunteer Hub{% endblock %}
+{% block content %}
+<section class="panel policy-panel"><header class="page-heading"><div><h1>Request cancellation</h1><p>{{ registration.event.title }} · {{ registration.event.date.strftime('%B %d, %Y at %I:%M %p') }}</p></div></header>
+  <p>Your registration remains active until your campus coordinator reviews this request.</p>
+  <form method="post" class="stack">{% include 'partials/csrf_field.html' %}
+    <fieldset class="choice-fieldset"><legend>Cancellation reason</legend>{% for reason in reasons %}<label><input type="radio" name="reason" value="{{ reason }}" required> {{ reason }}</label>{% endfor %}</fieldset>
+    <label class="field">Additional details <textarea class="input" name="details" rows="4" placeholder="Explain if you selected Other; optional for other reasons."></textarea></label>
+    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">Back</a><button class="btn btn--danger" type="submit">Submit cancellation request</button></div>
+  </form>
+</section>
+{% endblock %}

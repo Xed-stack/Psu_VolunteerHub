@@ -33,6 +33,12 @@ class Event(db.Model):
     category = db.Column(db.String(50), default='General')
     location = db.Column(db.String(500), default='')
     slots = db.Column(db.Integer, default=0)
+    target_participants = db.Column(db.Integer, nullable=True)
+    participation_agreement_text = db.Column(db.Text, nullable=True)
+    participation_agreement_version = db.Column(db.String(30), nullable=True)
+    nda_required = db.Column(db.Boolean, default=False, nullable=False)
+    nda_text = db.Column(db.Text, nullable=True)
+    nda_version = db.Column(db.String(30), nullable=True)
     cover_image_path = db.Column(db.String(255), nullable=True)
     cover_image_name = db.Column(db.String(255), nullable=True)
     cover_uploaded_by_id = db.Column(
@@ -148,6 +154,10 @@ class Registration(db.Model):
         default='pending'
     )
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    policy_accepted_at = db.Column(db.DateTime, nullable=True)
+    policy_version = db.Column(db.String(30), nullable=True)
+    nda_accepted_at = db.Column(db.DateTime, nullable=True)
+    nda_version = db.Column(db.String(30), nullable=True)
     attendance_record = db.relationship(
         'Attendance', back_populates='registration', uselist=False,
         passive_deletes=True)
@@ -183,6 +193,28 @@ class Registration(db.Model):
             and attendance
             and attendance.status == 'present'
         )
+
+
+class CancellationRequest(db.Model):
+    __tablename__ = 'cancellation_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    registration_id = db.Column(db.Integer, db.ForeignKey(
+        'registrations.id', ondelete='CASCADE'), nullable=False, unique=True)
+    reason = db.Column(db.String(50), nullable=False)
+    details = db.Column(db.Text, nullable=True)
+    status = db.Column(db.Enum('pending', 'approved', 'rejected',
+                               name='cancellation_request_statuses'),
+                       default='pending', nullable=False)
+    requested_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_id = db.Column(db.Integer, db.ForeignKey(
+        'users.id', ondelete='SET NULL'), nullable=True)
+    review_note = db.Column(db.Text, nullable=True)
+
+    registration = db.relationship('Registration', backref=db.backref(
+        'cancellation_request', uselist=False, cascade='all, delete-orphan'))
+    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_id])
 
 
 class Attendance(db.Model):

@@ -1,0 +1,17 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Import Users | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Import Users{% endblock %}
+{% block header_subtitle %}Administration{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Import Users</h1><p>Every row is validated before any account is created.</p></div></header>
+<section class="panel form-panel">
+  <h2>CSV user import</h2>
+  <p>Use the template. Passwords must be at least {{ password_min }} characters; exports never include password hashes.</p>
+  <p><a class="btn btn--ghost" href="{{ url_for('admin.user_import_template') }}">Download CSV template</a></p>
+  <form method="post" enctype="multipart/form-data">
+    {% include 'partials/csrf_field.html' %}
+    <label class="field"><span class="field-label">CSV file</span><input class="input" type="file" name="file" accept=".csv,text/csv" required></label>
+    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('admin.admin_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">Validate and import</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Review and Join · PSU Volunteer Hub{% endblock %}
+{% block content %}
+<section class="panel policy-panel">
+  <header class="page-heading"><div><h1>Join {{ event.title }}</h1><p>Review the participation requirements before your registration is confirmed.</p></div></header>
+  <h2>{{ agreement.title }}</h2><div class="policy-copy">{{ agreement.body }}</div>
+  <form method="post" class="stack">
+    {% include 'partials/csrf_field.html' %}
+    <label class="check-row"><input type="checkbox" name="accept_agreement" value="yes" required><span>I have read and accept this Participation Agreement.</span></label>
+    {% if event.nda_required %}
+      <h2>Non-Disclosure Agreement</h2><div class="policy-copy">{{ event.nda_text }}</div>
+      <label class="check-row"><input type="checkbox" name="accept_nda" value="yes" required><span>I have read and accept the NDA.</span></label>
+    {% endif %}
+    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('events.opportunities') }}">Back</a><button class="btn btn--primary" type="submit">Agree and join</button></div>
+  </form>
+</section>
+{% endblock %}

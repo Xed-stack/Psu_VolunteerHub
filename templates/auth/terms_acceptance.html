@@ -1,0 +1,12 @@
+{% extends 'layouts/auth_base.html' %}
+{% block title %}Terms of Use | PSU Volunteer Hub{% endblock %}
+{% block body %}
+<main class="auth-shell">
+  <section class="auth-brand"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><h1>Terms of Use</h1><p>Review the current terms before using the Volunteer Hub.</p></section>
+  <section class="auth-form">
+    <small>Version {{ revision.version }}</small><h1>{{ revision.title }}</h1>
+    <div class="policy-copy">{{ revision.body }}</div>
+    <form method="post">{% include 'partials/csrf_field.html' %}<label class="check-row"><input type="checkbox" name="accept_terms" required><span>I have read and accept these Terms of Use.</span></label><button class="button button--primary button--block" type="submit">Accept and continue</button></form>
+  </section>
+</main>
+{% endblock %}
