@@ -68,6 +68,7 @@
         class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}"
         href="{{ url_for('director.analytics') }}"
       ><span class="material-symbols-outlined">analytics</span>Analytics</a>
+      <a class="navlink {{ 'navlink--active' if endpoint == 'director.activity_calendar' }}" href="{{ url_for('director.activity_calendar') }}"><span class="material-symbols-outlined">calendar_month</span>Activity Calendar</a>
     {% else %}
       <a
         class="navlink {{ 'navlink--active' if endpoint == 'admin.admin_dash' }}"

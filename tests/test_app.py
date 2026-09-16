@@ -282,6 +282,15 @@ class TestPhaseOnePublicExperience:
         assert 'How to use the Volunteer Hub' in body
         assert 'cosine similarity' in body
 
+    def test_volunteer_can_dismiss_first_use_guide(self, client, app):
+        user_id = _create_user(app, email='guide@test.com')
+        _login_as(client, user_id)
+
+        assert 'Make your first activity count' in client.get('/volunteer_dash').get_data(as_text=True)
+        assert client.post('/volunteer_dash/guide/dismiss').status_code == 302
+        with app.app_context():
+            assert db.session.get(User, user_id).first_use_guide_dismissed_at is not None
+
 
 class TestRoleAccess:
     def test_volunteer_can_access_volunteer_dash(self, client, app):
@@ -939,7 +948,9 @@ class TestNotifications:
                            campus_id=1, name='CoordD')
         _login_as(client, vid)
         # Event id 1 (Youth Coding Mentor) has campus_id=1.
-        resp = client.post('/opportunities/register/1', follow_redirects=True)
+        resp = client.post('/opportunities/register/1',
+                           data={'accept_agreement': 'yes'},
+                           follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
             from app.models.notification import Notification
@@ -995,7 +1006,7 @@ class TestSearchFilterPagination:
         resp = client.get('/opportunities?page=1')
         assert resp.status_code == 200
         body = resp.data.decode()
-        assert 'Showing 9 active opportunities' in body
+        assert 'Showing 12 active opportunities' in body
         assert 'page=2' in body
 
     def test_filter_and_page_combined(self, client, app):
@@ -1628,7 +1639,8 @@ class TestOutsiderVolunteers:
     def test_outsider_name_optional(self, client, app):
         eid = self._event_id(app)
         resp = client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-001'})
+            'from_psu': 'no', 'id_number': 'EXT-001',
+            'accept_agreement': 'yes'})
         assert resp.status_code == 302
         with app.app_context():
             ep = ExternalParticipant.query.filter_by(id_number='EXT-001').first()
@@ -1638,7 +1650,8 @@ class TestOutsiderVolunteers:
     def test_outsider_contact_optional(self, client, app):
         eid = self._event_id(app)
         client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-002'})
+            'from_psu': 'no', 'id_number': 'EXT-002',
+            'accept_agreement': 'yes'})
         with app.app_context():
             assert ExternalParticipant.query.filter_by(
                 id_number='EXT-002').first().contact_number is None
@@ -1646,7 +1659,8 @@ class TestOutsiderVolunteers:
     def test_outsider_address_optional(self, client, app):
         eid = self._event_id(app)
         client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-003'})
+            'from_psu': 'no', 'id_number': 'EXT-003',
+            'accept_agreement': 'yes'})
         with app.app_context():
             assert ExternalParticipant.query.filter_by(
                 id_number='EXT-003').first().address is None
@@ -1654,7 +1668,8 @@ class TestOutsiderVolunteers:
     def test_outsider_email_optional(self, client, app):
         eid = self._event_id(app)
         client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-004'})
+            'from_psu': 'no', 'id_number': 'EXT-004',
+            'accept_agreement': 'yes'})
         with app.app_context():
             assert ExternalParticipant.query.filter_by(
                 id_number='EXT-004').first().email is None
@@ -1718,7 +1733,8 @@ class TestOutsiderVolunteers:
         with app.app_context():
             before = User.query.count()
         client.post(f'/event/{eid}/join', data={
-            'from_psu': 'no', 'id_number': 'EXT-PRIV'})
+            'from_psu': 'no', 'id_number': 'EXT-PRIV',
+            'accept_agreement': 'yes'})
         with app.app_context():
             after = User.query.count()
             assert after == before  # no User / privileged account created
@@ -1811,7 +1827,9 @@ class TestOutsiderVolunteers:
                            role='volunteer', campus_id=1)
         _login_as(client, uid)
         eid = self._event_id(app)
-        resp = client.post(f'/opportunities/register/{eid}', follow_redirects=True)
+        resp = client.post(f'/opportunities/register/{eid}',
+                           data={'accept_agreement': 'yes'},
+                           follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
             assert Registration.query.filter_by(
@@ -2073,6 +2091,21 @@ class TestAnalytics:
         assert resp.status_code == 200
         assert 'Cross-Campus Comparison' in resp.data.decode()
 
+    def test_live_activity_report_paginates_at_ten_rows(self, app, client):
+        director_id = _create_user(app, email='page_dir@test.com', role='director')
+        with app.app_context():
+            for index in range(2):
+                db.session.add(Event(title=f'Report Page {index}', description='Pagination test',
+                    date=datetime.now() + timedelta(days=70 + index), slots=10, campus_id=1))
+            db.session.commit()
+        _login_as(client, director_id)
+
+        first_page = client.get('/analytics?page=1').get_data(as_text=True)
+        second_page = client.get('/analytics?page=2').get_data(as_text=True)
+        assert 'Page 1' in first_page and 'Page 2' in first_page
+        assert 'Coastal Cleanup Drive' not in first_page
+        assert 'Coastal Cleanup Drive' in second_page
+
     def test_admin_accesses_university_analytics(self, app, client):
         aid = _create_user(app, email='admin_an@t.com', role='admin')
         _login_as(client, aid)
@@ -2127,6 +2160,21 @@ class TestAnalytics:
             rows = AnalyticsAggregator.activity_performance(campus_id=5)
         assert rows[0]['registrations'] == 3
         assert rows[0]['conversion_rate'] == 100.0
+
+    def test_activity_target_uses_verified_attendance(self, app):
+        event_id = self._event(app, 'Target', datetime.now() + timedelta(days=1), 5)
+        with app.app_context():
+            db.session.get(Event, event_id).target_participants = 4
+            db.session.commit()
+        self._reg(app, user_id=self._vol(app, 'target-present@test.com'),
+                  event_id=event_id, attendance_status='present')
+        self._reg(app, user_id=self._vol(app, 'target-absent@test.com'),
+                  event_id=event_id, attendance_status='absent')
+        with app.app_context():
+            row = next(item for item in AnalyticsAggregator.activity_accomplishments(5)
+                       if item['event'].id == event_id)
+        assert row['actual'] == 1
+        assert row['completion_percentage'] == 25.0
 
     def test_category_distribution(self, app):
         e1 = self._event(app, 'E1', datetime.now() + timedelta(days=1), 5,
@@ -2248,3 +2296,25 @@ class TestPhaseTwoControls:
                 user_id=volunteer_id,
                 notification_type='event_update',
             ).count() == 1
+
+
+class TestActivityCalendarViews:
+    def test_coordinator_calendar_is_campus_scoped(self, app, client):
+        coordinator_id = _create_user(
+            app, email='calendar-coordinator@test.com', role='coordinator', campus_id=1)
+        _login_as(client, coordinator_id)
+        response = client.get('/coordinator/calendar')
+        assert response.status_code == 200
+        assert 'Activity calendar' in response.get_data(as_text=True)
+
+    def test_director_calendar_requires_director_role(self, app, client):
+        volunteer_id = _create_user(app, email='calendar-volunteer@test.com', campus_id=1)
+        _login_as(client, volunteer_id)
+        assert client.get('/director/calendar').status_code in (302, 403)
+
+    def test_director_calendar_renders_for_director(self, app, client):
+        director_id = _create_user(app, email='calendar-director@test.com', role='director')
+        _login_as(client, director_id)
+        response = client.get('/director/calendar')
+        assert response.status_code == 200
+        assert 'University activity calendar' in response.get_data(as_text=True)

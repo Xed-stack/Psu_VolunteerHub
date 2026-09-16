@@ -296,6 +296,7 @@ def volunteer_dash():
     return render_template('volunteer/Volunteer_dash.html',
                            recommendations=recommendations,
                            user_stats=user_stats,
+                           show_first_use_guide=current_user.first_use_guide_dismissed_at is None,
                            recent_activity=recent_activity,
                            registration_items=registration_items,
                            registration_total=len(filtered_registrations), shown_registrations=shown,
@@ -310,6 +311,15 @@ def volunteer_dash():
                            next_calendar=(next_year, next_month),
                            upcoming_schedule=upcoming_schedule,
                            certification=certification)
+
+
+@events_bp.route('/volunteer_dash/guide/dismiss', methods=['POST'])
+@login_required
+@role_required('volunteer')
+def dismiss_first_use_guide():
+    current_user.first_use_guide_dismissed_at = datetime.utcnow()
+    db.session.commit()
+    return redirect(url_for('events.volunteer_dash'))
 
 
 @events_bp.route('/event/<int:event_id>/join', methods=['GET', 'POST'])

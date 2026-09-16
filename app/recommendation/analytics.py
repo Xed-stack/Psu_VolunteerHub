@@ -327,6 +327,44 @@ class AnalyticsAggregator:
         return out[:limit]
 
     @staticmethod
+    def activity_accomplishments(campus_id=None, start_date=None, end_date=None,
+                                 category=None, limit=20):
+        """Live-event goals; verified attendance is the only actual count."""
+        rows = []
+        for event in AnalyticsAggregator._scoped_event_query(
+                campus_id, start_date, end_date, category).order_by(Event.date.desc()).all():
+            registrations = Registration.query.filter(
+                Registration.event_id == event.id,
+                Registration.status != 'cancelled').count()
+            actual = Attendance.query.filter_by(
+                event_id=event.id, status='present').count()
+            cancelled = Registration.query.filter_by(
+                event_id=event.id, status='cancelled').count()
+            target = event.target_participants
+            rows.append({
+                'event': event, 'registrations': registrations, 'actual': actual,
+                'cancelled': cancelled, 'target': target,
+                'completion_percentage': round(actual / target * 100, 1)
+                if target else None,
+            })
+        return rows[:limit]
+
+    @staticmethod
+    def department_participants(campus_id=None, department=None):
+        """Participant affiliations available for the selected campus only."""
+        query = db.session.query(
+            User.college_affiliation, db.func.count(Attendance.id)
+        ).join(Attendance, Attendance.user_id == User.id).filter(
+            Attendance.status == 'present', User.college_affiliation.isnot(None))
+        if campus_id:
+            query = query.filter(User.campus_id == campus_id)
+        if department:
+            query = query.filter(User.college_affiliation == department)
+        return [{'department': name, 'actual_participants': int(count)}
+                for name, count in query.group_by(User.college_affiliation)
+                .order_by(db.func.count(Attendance.id).desc()).all()]
+
+    @staticmethod
     def category_distribution(campus_id=None, start_date=None, end_date=None):
         """Participation grouped by existing event category."""
         rows, _ = build_events_report(

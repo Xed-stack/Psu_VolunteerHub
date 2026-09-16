@@ -33,3 +33,13 @@
 .historical-metrics {
   margin: 18px 0 0;
 }
+
+.calendar-nav { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.calendar-grid { border: 1px solid var(--outline-variant); border-radius: var(--radius); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); overflow: hidden; }
+.calendar-weekdays { display: contents; }
+.calendar-weekdays span { background: var(--surface-container-low); color: var(--on-surface-variant); font-size: .8rem; font-weight: 700; padding: .55rem .25rem; text-align: center; }
+.calendar-day { border-right: 1px solid var(--outline-variant); border-top: 1px solid var(--outline-variant); min-height: 7rem; padding: .45rem; }
+.calendar-day--empty { background: var(--surface-low); }
+.calendar-entry { background: var(--primary-light); color: var(--primary); display: block; font-size: .76rem; font-weight: 700; margin-top: .3rem; padding: .3rem; text-decoration: none; }
+.calendar-entry small { display: block; font-weight: 400; margin-top: .2rem; }
+@media (max-width: 760px) { .calendar-day { min-height: 5rem; padding: .25rem; } .calendar-entry { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .calendar-entry small { display: none; } }

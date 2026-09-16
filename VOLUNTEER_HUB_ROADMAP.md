@@ -58,7 +58,7 @@ Current implementation note: the administrative activity log, safe CSV user impo
 
 ## Phase 5 — policy, agreements, cancellation review, and accomplishment management
 
-Current status: planned only. Do not replace the existing direct cancellation flow until the full request-and-review workflow, migration, authorization checks, notifications, and regression tests are ready together.
+Current status: implemented locally. The policy lifecycle migration, authorization checks, notifications, dashboard calendars, accomplishment reporting, and regression coverage are ready; apply the documented migration before using them on an existing MySQL database.
 
 - Add distinct Terms of Use acceptance and Privacy Notice acknowledgement to account registration. Record each document version and timestamp separately; never combine the two acknowledgements into one checkbox.
 - Require a versioned Event Participation Agreement for every event registration. Store acceptance on the registration record, not only on the volunteer account, so each event remains auditable.

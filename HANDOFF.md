@@ -65,7 +65,7 @@ Then manually check:
 
 ## Next recommended work
 
-Use `VOLUNTEER_HUB_ROADMAP.md` as the source of truth. Verify the current landing page, opportunities view, analytics seed data, and MySQL import before starting remaining roadmap items. The next planned feature set is policy and agreement management: separate Terms of Use and Privacy Notice acknowledgements at account registration, per-event Participation Agreements, optional event NDAs, and reasoned cancellation requests reviewed by a campus-scoped coordinator. These are not implemented yet; the current direct cancellation workflow remains in place until its request-and-review replacement is delivered. Reuse approved PSU photos or coordinator-uploaded event/milestone imagery; do not add unlicensed stock photos. The requested QR attendance, SMS/email, SIS integration, and automatic purging are explicitly out of scope.
+The policy lifecycle, cancellation review, Coordinator/Director calendars, accomplishment reporting, and first-use guide are implemented in the working tree. Apply `migrations/20260912_policy_lifecycle.sql` and `migrations/20260916_first_use_guide.sql` to an existing MySQL database before using those features there. The remaining roadmap work is limited to presentation refinements such as richer analytics controls; QR attendance, SMS/email, SIS integration, and automatic purging remain out of scope.
 
 ## Working-tree note
 

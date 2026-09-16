@@ -12,13 +12,17 @@
       class="btn btn--outline"
       href="{{ url_for('coordinator.export_events_csv') }}"
     >Export CSV</a>
+    <a class="btn btn--outline" href="{{ url_for('coordinator.activity_calendar') }}">Calendar view</a>
   </header>
   <section class="summary-strip" aria-label="Campus activity summary">
     <div class="summary-stat"><small>Active Volunteers</small><strong>{{ total_volunteers }}</strong></div>
     <div class="summary-stat"><small>Upcoming Activities</small><strong>{{ upcoming_count }}</strong></div>
     <div class="summary-stat"><small>Attendance Rate</small><strong>{{ attendance_rate }}%</strong></div>
     <div class="summary-stat"><small>Attended</small><strong>{{ campus_total_attended }}</strong></div>
+    <div class="summary-stat"><small>Pending cancellations</small><strong>{{ pending_cancellations }}</strong></div>
   </section>
+  <section class="panel"><header class="panel__header"><div><h2>Activity filters</h2><small>Default view shows upcoming activities.</small></div></header><form class="filter-row" method="get"><label class="field">Status<select class="select" name="status">{% for value in ['upcoming', 'completed', 'cancelled', 'all'] %}<option value="{{ value }}" {{ 'selected' if selected_status == value }}>{{ value|title }}</option>{% endfor %}</select></label><label class="field">Category<select class="select" name="category"><option value="">All categories</option>{% for value in categories %}<option value="{{ value }}" {{ 'selected' if selected_category == value }}>{{ value }}</option>{% endfor %}</select></label><label class="field">From<input class="input" type="date" name="start_date" value="{{ start_date }}"></label><label class="field">To<input class="input" type="date" name="end_date" value="{{ end_date }}"></label><button class="btn btn--primary" type="submit">Apply filters</button><a class="btn btn--ghost" href="{{ url_for('coordinator.coordinator_dash') }}">Clear</a></form></section>
+  <section class="panel"><header class="panel__header"><div><h2>Target progress</h2><small>Actual participants are verified attendance, not registrations.</small></div></header><div class="table-scroll" tabindex="0"><table class="data-table"><thead><tr><th>Activity</th><th>Registered</th><th>Actual participants</th><th>Cancelled</th><th>Target</th><th>Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.registrations }}</td><td>{{ row.actual }}</td><td>{{ row.cancelled }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="6">No activities match these filters.</td></tr>{% endfor %}</tbody></table></div></section>
   <div class="content-grid">
     <section class="panel">
       <header class="panel__header">

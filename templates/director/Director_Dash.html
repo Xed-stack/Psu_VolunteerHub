@@ -14,13 +14,14 @@
     aria-label="Historical participation summary"
   >
     <div class="summary-stat">
-      <small>Volunteer Participations</small>
-      <strong>{{ '{:,}'.format(total_volunteers) }}</strong>
+      <small>Verified actual participants</small>
+      <strong>{{ live_summary.attended }}</strong>
     </div>
-    <div class="summary-stat"><small>Historical Activities</small><strong>{{ total_activities }}</strong></div>
-    <div class="summary-stat"><small>Reporting Units</small><strong>{{ campus_stats|length }}</strong></div>
-    <div class="summary-stat"><small>Years Covered</small><strong>2020–2025</strong></div>
+    <div class="summary-stat"><small>Completed participations</small><strong>{{ live_summary.completed }}</strong></div>
+    <div class="summary-stat"><small>Live registrations</small><strong>{{ live_summary.registrations }}</strong></div>
+    <div class="summary-stat"><small>Historical reporting units</small><strong>{{ campus_stats|length }}</strong></div>
   </section>
+  <section class="panel"><header class="panel__header"><div><h2>Recent target progress</h2><small>Actual participants are verified present attendance.</small></div></header><div class="table-scroll"><table class="data-table"><thead><tr><th>Activity</th><th>Campus</th><th>Actual</th><th>Target</th><th>Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.event.campus.code if row.event.campus else 'PSU' }}<span class="sr-only">{{ row.event.campus.name if row.event.campus else '' }}</span></td><td>{{ row.actual }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="5">No live activity progress is available.</td></tr>{% endfor %}</tbody></table></div></section>
   <section class="panel chart-panel">
     <header class="panel__header">
       <div>

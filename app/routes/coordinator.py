@@ -5,6 +5,7 @@ Manages event creation, attendance tracking, and coordinator dashboard.
 """
 import os
 import uuid
+from calendar import Calendar
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort
@@ -115,17 +116,38 @@ def _parse_event_schedule(form):
 @role_required('coordinator')
 def coordinator_dash():
     status = request.args.get('status', 'upcoming')
+    category = request.args.get('category', '').strip()
+    start_date = request.args.get('start_date', '').strip()
+    end_date = request.args.get('end_date', '').strip()
     events = Event.query.filter_by(campus_id=current_user.campus_id)
     if status == 'upcoming':
         events = events.filter(Event.date >= datetime.now())
-    elif status == 'past':
+    elif status == 'completed':
         events = events.filter(Event.date < datetime.now())
+    elif status == 'cancelled':
+        events = events.join(Registration).filter(Registration.status == 'cancelled')
+    if category:
+        events = events.filter(Event.category == category)
+    for value, column in ((start_date, 'start'), (end_date, 'end')):
+        if value:
+            try:
+                date_value = datetime.fromisoformat(value)
+                events = events.filter(Event.date >= date_value if column == 'start'
+                                       else Event.date <= date_value.replace(hour=23, minute=59, second=59))
+            except ValueError:
+                flash('Use valid dates when filtering activities.', 'error')
     events = events.order_by(Event.date.desc()).all()
     upcoming_count = sum(1 for e in events if e.date >= datetime.now())
     # Centralized campus-scoped participation metrics (Phase 18): keeps the
     # dashboard consistent with the analytics page, CSV and PDF exports.
     summary = AnalyticsAggregator.participation_summary(
         campus_id=current_user.campus_id)
+    accomplishments = AnalyticsAggregator.activity_accomplishments(
+        campus_id=current_user.campus_id, start_date=start_date,
+        end_date=end_date, category=category)
+    pending_cancellations = CancellationRequest.query.join(Registration).join(Event).filter(
+        Event.campus_id == current_user.campus_id,
+        CancellationRequest.status == 'pending').count()
     recent_activities = Registration.query.filter(
         Registration.event_id.in_([e.id for e in events])
     ).order_by(Registration.registered_at.desc()).limit(5).all() if events else []
@@ -141,8 +163,36 @@ def coordinator_dash():
                             registrations=summary['registrations'],
                             recent_activities=recent_activities,
                             selected_status=status,
+                            selected_category=category, start_date=start_date,
+                            end_date=end_date, categories=_activity_categories(),
+                            accomplishments=accomplishments,
+                            pending_cancellations=pending_cancellations,
                             campus_name=campus_name,
                             campus_total_attended=summary['attended'])
+
+
+@coordinator_bp.route('/coordinator/calendar')
+@login_required
+@role_required('coordinator')
+def activity_calendar():
+    now = datetime.now()
+    year = request.args.get('year', now.year, type=int) or now.year
+    month = request.args.get('month', now.month, type=int) or now.month
+    if not 1 <= month <= 12:
+        year, month = now.year, now.month
+    events = Event.query.filter_by(campus_id=current_user.campus_id).filter(
+        db.extract('year', Event.date) == year,
+        db.extract('month', Event.date) == month).order_by(Event.date).all()
+    by_day = {}
+    for event in events:
+        by_day.setdefault(event.date.day, []).append(event)
+    previous = (year - 1, 12) if month == 1 else (year, month - 1)
+    following = (year + 1, 1) if month == 12 else (year, month + 1)
+    return render_template('coordinator/activity_calendar.html',
+                           calendar_weeks=Calendar(firstweekday=0).monthdayscalendar(year, month),
+                           calendar_events=by_day,
+                           calendar_month=datetime(year, month, 1).strftime('%B %Y'),
+                           previous_calendar=previous, next_calendar=following)
 
 
 @coordinator_bp.route('/coordinator/cancellation-requests', methods=['GET', 'POST'])

@@ -73,6 +73,7 @@ class User(UserMixin, db.Model):
     reactivation_requested_at = db.Column(db.DateTime, nullable=True)
     profile_image_path = db.Column(db.String(255), nullable=True)
     profile_image_name = db.Column(db.String(255), nullable=True)
+    first_use_guide_dismissed_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

@@ -17,6 +17,13 @@
       <p>Track your service and discover activities.</p>
     </div>
   </header>
+  {% if show_first_use_guide %}
+    <section class="panel" aria-labelledby="getting-started-title">
+      <header class="panel__header"><div><p class="eyebrow">Getting started</p><h2 id="getting-started-title">Make your first activity count</h2></div></header>
+      <ol class="clean-list"><li>Complete your interests and skills so recommendations can help you compare opportunities.</li><li>Browse an activity, review its schedule and agreement, then join when you are available.</li><li>Return here to monitor registrations and request a cancellation before its deadline.</li></ol>
+      <form method="post" action="{{ url_for('events.dismiss_first_use_guide') }}">{% include 'partials/csrf_field.html' %}<button class="btn btn--ghost" type="submit">Dismiss guide</button></form>
+    </section>
+  {% endif %}
   <section class="metric-grid" aria-label="Volunteer summary">
     <article class="metric-card"><small>Activities</small><strong>{{ user_stats.total_activities }}</strong></article>
     <article class="metric-card"><small>Recognition</small><strong>{{ certification.level }}</strong></article>

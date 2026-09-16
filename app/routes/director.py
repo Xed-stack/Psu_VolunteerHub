@@ -6,6 +6,7 @@ Uses AnalyticsAggregator for all aggregation queries.
 """
 import csv
 import io
+from calendar import Calendar
 from datetime import datetime
 from flask import Blueprint, render_template, Response, current_app, request, flash, redirect, url_for
 from flask_login import login_required, current_user
@@ -13,6 +14,7 @@ from app.utils.decorators import roles_required
 from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
 from app.models.event import Event, Campus
+from app.models.user import User
 from app.reports import (
     build_events_report, render_csv, render_pdf, resolve_campus,
     ReportError, _build_meta)
@@ -37,13 +39,48 @@ def director_dash():
     total_volunteers = sum(c['participations'] for c in campus_stats)
     total_activities = sum(c['activities'] for c in campus_stats)
     top_campuses = campus_stats[:3]
-    trends = {'volunteer_growth': 12.5, 'events_growth': 15.0}
+    live_summary = AnalyticsAggregator.participation_summary()
+    accomplishments = AnalyticsAggregator.activity_accomplishments(limit=5)
     return render_template('director/Director_Dash.html',
                            campus_stats=campus_stats,
                            total_volunteers=total_volunteers,
                            total_activities=total_activities,
-                           trends=trends,
-                           top_campuses=top_campuses)
+                           top_campuses=top_campuses,
+                           live_summary=live_summary,
+                           accomplishments=accomplishments)
+
+
+@director_bp.route('/director/calendar')
+@login_required
+@roles_required('director', 'admin')
+def activity_calendar():
+    now = datetime.now()
+    year = request.args.get('year', now.year, type=int) or now.year
+    month = request.args.get('month', now.month, type=int) or now.month
+    campus_id = resolve_campus(request.args.get('campus_id'))
+    category = request.args.get('category', '').strip()
+    if not 1 <= month <= 12:
+        year, month = now.year, now.month
+    query = Event.query.filter(db.extract('year', Event.date) == year,
+                               db.extract('month', Event.date) == month)
+    if campus_id:
+        query = query.filter(Event.campus_id == campus_id)
+    if category:
+        query = query.filter(Event.category == category)
+    by_day = {}
+    for event in query.order_by(Event.date).all():
+        by_day.setdefault(event.date.day, []).append(event)
+    previous = (year - 1, 12) if month == 1 else (year, month - 1)
+    following = (year + 1, 1) if month == 12 else (year, month + 1)
+    categories = [row[0] for row in db.session.query(Event.category).filter(
+        Event.category.isnot(None)).distinct().order_by(Event.category).all()]
+    return render_template('director/activity_calendar.html',
+                           calendar_weeks=Calendar(firstweekday=0).monthdayscalendar(year, month),
+                           calendar_events=by_day, calendar_month=datetime(year, month, 1).strftime('%B %Y'),
+                           calendar_year=year, calendar_number=month,
+                           previous_calendar=previous, next_calendar=following,
+                           campuses=Campus.query.order_by(Campus.name).all(), categories=categories,
+                           selected_campus=campus_id, selected_category=category)
 
 
 @director_bp.route('/analytics')
@@ -79,8 +116,21 @@ def analytics():
         live_rows, live_summary = [], {
             'event_count': 0, 'total_registrations': 0,
             'total_attended': 0, 'total_completed': 0}
+    report_page = max(request.args.get('page', 1, type=int), 1)
+    report_page_size = 10
+    report_total_pages = max(1, (len(live_rows) + report_page_size - 1) // report_page_size)
+    report_page = min(report_page, report_total_pages)
+    report_rows = live_rows[(report_page - 1) * report_page_size:report_page * report_page_size]
     categories = [row[0] for row in db.session.query(Event.category).filter(
         Event.category.isnot(None)).distinct().order_by(Event.category).all()]
+    department = request.args.get('department', '').strip()
+    selected_campus_id = request.args.get('campus_id', type=int)
+    department_query = db.session.query(User.college_affiliation).filter(
+        User.college_affiliation.isnot(None))
+    if selected_campus_id:
+        department_query = department_query.filter(User.campus_id == selected_campus_id)
+    departments = [row[0] for row in department_query.distinct().order_by(
+        User.college_affiliation).all()]
 
     # Phase 18: centralized descriptive analytics (university-wide for Director/Admin).
     live_campus_filter = live_campus
@@ -102,6 +152,8 @@ def analytics():
         category=live_category)
     top_skills = AnalyticsAggregator.skill_distribution(limit=8)
     top_interests = AnalyticsAggregator.interest_distribution(limit=8)
+    department_participants = AnalyticsAggregator.department_participants(
+        campus_id=live_campus_filter, department=department or None)
 
     return render_template('director/Director_impact_anlaytics_dash.html',
                             kpi_cards=kpi_cards,
@@ -115,7 +167,8 @@ def analytics():
                             campuses=campuses, activity_types=activity_types,
                             categories=categories,
                             selected_filters=filters,
-                            live_rows=live_rows, live_summary=live_summary,
+                            live_rows=report_rows, live_summary=live_summary,
+                            report_page=report_page, report_total_pages=report_total_pages,
                             participation=participation,
                             campus_comparison=campus_comparison,
                             category_breakdown=category_breakdown,
@@ -124,7 +177,9 @@ def analytics():
                             weekly=weekly,
                             type_split=type_split,
                             top_skills=top_skills,
-                            top_interests=top_interests)
+                            top_interests=top_interests,
+                            departments=departments, selected_department=department,
+                            department_participants=department_participants)
 
 
 @director_bp.route('/reports/campus.csv')
