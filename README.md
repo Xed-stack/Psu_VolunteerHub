@@ -1,155 +1,139 @@
 # PSU Volunteer Hub
 
-Centralized volunteer management platform for Pangasinan State University. Built with Flask, SQLAlchemy, MySQL/SQLite, Jinja, and CSS.
+PSU Volunteer Hub is a centralized volunteer-management platform for Pangasinan State University. It supports public opportunity discovery, volunteer registration, campus-scoped coordination, attendance, descriptive analytics, reports, policy acknowledgements, and administrative governance.
 
-## Quick Start (Command Prompt)
+## What it does
 
-```cmd
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-set DATABASE_URL=sqlite:///psu_local.db
-python -m flask --app "app:create_app" run --host=0.0.0.0 --port=5000
-```
+- Public landing page, featured activities, opportunity search/filtering, event details, external-volunteer joining, help guide, and 2020–2025 historical activity directory.
+- Volunteer profiles with controlled interests and skills, cosine-similarity recommendations, image upload, a first-use guide, registration calendar, filtered history, and cancellation requests.
+- Coordinator event creation and editing, agreements and optional NDAs, cancellation deadlines, announcements, attendance, external participants, milestones, reports, campus analytics, cancellation review, and campus calendar.
+- Director cross-campus dashboard, activity accomplishments, target-versus-verified attendance, monthly calendars, descriptive analytics, ten-row paginated Live Activity Reports, and CSV/PDF exports.
+- Admin user/campus/category management, deactivation/reactivation safeguards, validated CSV import/export, audit log, backups, Terms of Use, Privacy Notice, and default participation-agreement publishing.
 
-Open **http://127.0.0.1:5000** in your browser. A fresh development database and demo data are created automatically on first run.
+Historical records are aggregate institutional reporting units. They are never represented as individual user accounts, registrations, attendance records, or verified hours.
 
-## Quick Start (PowerShell)
+## Requirements
+
+- Python 3.10+
+- MySQL 8.x or MariaDB 10.4+ for the shared database
+- XAMPP MySQL is supported for local Windows development
+
+SQLite can be used only for a self-contained local development database.
+
+## Run locally
+
+### PowerShell with MySQL
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:DATABASE_URL="mysql+pymysql://root:@localhost/psu_volunteer_hub"
+$env:FLASK_APP="app:create_app"
+flask run --port 5000
+```
+
+Open `http://127.0.0.1:5000`.
+
+### Self-contained SQLite development setup
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 $env:DATABASE_URL="sqlite:///psu_local.db"
-python -m flask --app "app:create_app" run --host=0.0.0.0 --port=5000
+$env:FLASK_APP="app:create_app"
+flask run --port 5000
 ```
 
-Development defaults to `mysql+pymysql://root:@localhost/psu_volunteer_hub` when `DATABASE_URL` is not set. Use the SQLite value above for a self-contained local setup. Production requires `DATABASE_URL` and a non-default `SECRET_KEY`.
+For production, set a non-default `SECRET_KEY` and a MySQL `DATABASE_URL`. Do not commit either value.
 
-## Example Accounts
+## Demo accounts
 
-All accounts use password: **`password`**
+Fresh demo databases create these accounts with password `password`.
 
-| Role                      | Email                 | Can Do                                                                    |
-| ------------------------- | --------------------- | ------------------------------------------------------------------------- |
-| **Student Volunteer**     | `student@psu.edu`     | Browse events, register, view recommendations, track profile              |
-| **Faculty Volunteer**     | `faculty@psu.edu`     | Same as student                                                           |
-| **Staff Volunteer**       | `staff@psu.edu`       | Same as student                                                           |
-| **Extension Coordinator** | `coordinator@psu.edu` | Manage events, attendance, external volunteers, milestones, and reports    |
-| **Director**              | `director@psu.edu`    | View cross-campus analytics, compare participation, export campus reports |
-| **Admin**                 | `admin@psu.edu`       | Manage users/campuses/settings, monitor health, and download backups      |
+| Role | Email | Main capabilities |
+| --- | --- | --- |
+| Student Volunteer | `student@psu.edu` | Profile, recommendations, opportunities, registrations |
+| Faculty Volunteer | `faculty@psu.edu` | Same volunteer capabilities |
+| Staff Volunteer | `staff@psu.edu` | Same volunteer capabilities |
+| Extension Coordinator | `coordinator@psu.edu` | Campus activities, attendance, participants, reports |
+| Director | `director@psu.edu` | Cross-campus analytics, calendars, reports |
+| Admin | `admin@psu.edu` | User, campus, category, policy, and audit governance |
 
-## Registration
+## MySQL migrations
 
-New users can register at `/auth/register`. Public registration always creates a volunteer account and requires:
-
-- A unique PSU ID and case-insensitive unique email
-- Volunteer type: Student, Faculty, or Staff
-- College affiliation and home campus
-- A password meeting the Admin-configured minimum length
-
-The onboarding wizard collects configured interests and their related skills together. The former separate `/auth/skills` step redirects to `/auth/interests`. Login accepts either email or the exact PSU ID.
-
-External or outsider volunteers do not need platform accounts. They can join an individual opportunity through its public registration form, and coordinators can encode external participants from attendance management.
-
-## Features
-
-### Volunteer
-
-- Browse opportunities with filter + pagination
-- Receive personalized recommendations
-- Register for events
-- View participation history
-- View earned certificates
-- View event cover images on opportunity cards
-- Receive and manage in-app registration notifications
-
-### Coordinator
-
-- Create and manage events
-- Define required skills per event
-- Upload or replace optional JPEG, PNG, or WebP event covers (maximum 5 MB)
-- Prevent event capacity from being reduced below existing PSU and external registrations
-- Track attendance and service hours for PSU and external volunteers
-- Add external volunteers to campus activities
-- Upload milestone documents
-- Export event reports (CSV/PDF)
-- Review interactive Plotly analytics for activity categories, volunteer types, and engagement trends
-
-### Director
-
-- Cross-campus analytics dashboard
-- Compare campus participation
-- Filter analytics by campus, date, category, and activity type
-- Review interactive Plotly campus and engagement charts
-- Compare PSU and outsider participation
-- Export live and historical reports (CSV/PDF)
-
-### Admin
-
-- User management (add, edit, suspend, change role, reset password)
-- Campus filter for user list
-- Create campuses
-- Download a credential-free ZIP backup containing table CSVs and a manifest
-- System settings for event capacity and password-length limits
-- Protect the final active Admin from deactivation or demotion
-- Live database health check
-- Review in-app system activity notifications
-- Audit log
-
-Unauthorized role access returns HTTP `403`. The volunteer global analytics page was removed; `/volunteer_analytics` redirects volunteers to their dashboard.
-
-## Run Tests
+For an existing MySQL database, apply each migration that has not already been applied, in date order. In PowerShell:
 
 ```powershell
-python -m pytest tests/ -v
+Get-Content -Raw ".\migrations\20260912_policy_lifecycle.sql" |
+  & "C:\xampp\mysql\bin\mysql.exe" -u root psu_volunteer_hub
+
+Get-Content -Raw ".\migrations\20260916_first_use_guide.sql" |
+  & "C:\xampp\mysql\bin\mysql.exe" -u root psu_volunteer_hub
 ```
 
-## Historical Activity Import
+The earlier migrations in `migrations/` are also required for a database created before their feature sets. Do not rerun a migration containing non-idempotent `ALTER TABLE ... ADD COLUMN` statements.
 
-The audited 2020–2025 institutional report is stored separately from live
-events and attendance because it contains aggregate volunteer participations,
-not individual registrations, exact dates, or service hours.
-
-The reviewed seed file is `data/historical_activities_2020_2025.csv`. Import it
-into the configured MySQL database with:
+Verify the latest onboarding migration:
 
 ```powershell
-python -m flask --app "app:create_app" import-historical-activities `
-  data/historical_activities_2020_2025.csv
+& "C:\xampp\mysql\bin\mysql.exe" -u root -e "USE psu_volunteer_hub; SHOW COLUMNS FROM users LIKE 'first_use_guide_dismissed_at';"
 ```
 
-Validate without saving changes:
+## Historical and panel-demo data
+
+Import audited 2020–2025 aggregate activity data:
 
 ```powershell
-python -m flask --app "app:create_app" import-historical-activities `
-  data/historical_activities_2020_2025.csv --dry-run
+flask import-historical-activities data/historical_activities_2020_2025.csv
 ```
 
-The command is idempotent: rerunning it updates changed source rows and does
-not create duplicates. The application factory creates the table automatically;
-`migrations/20260828_add_historical_activities.sql` is provided for managed
-MySQL deployments that apply schema changes explicitly.
+Validate the source without modifying the database:
 
-## Profile And Event-Cover Migration
+```powershell
+flask import-historical-activities data/historical_activities_2020_2025.csv --dry-run
+```
 
-Existing MySQL 8.x or MariaDB 10.4+ deployments must apply
-`migrations/20260830_profile_and_event_cover.sql` before deploying this version.
-It:
+Seed representative live events, registrations, and attendance for a local panel demonstration:
 
-- Converts blank PSU IDs to `NULL` and adds a unique PSU-ID index
-- Adds volunteer type and college affiliation fields
-- Adds event cover path and original-name fields
+```powershell
+flask seed-demo-analytics
+```
 
-Uploaded event covers are stored under `static/uploads/events`. Production
-deployments must provide writable, persistent storage for that directory.
+The historical import and demo seed are idempotent. Historical imports remain separate from live activity data.
 
-## Tech Stack
+## Policies and cancellations
 
-- **Backend:** Flask, SQLAlchemy, Flask-Login, scikit-learn, pandas
-- **Frontend:** CSS, Material Symbols, Jinja2, locally bundled Plotly
-- **Database:** SQLite (dev) / MySQL (production)
-- **Media:** Pillow image validation for event covers
-- **Reports:** ReportLab PDF generation and CSV/ZIP exports
-- **Auth:** Werkzeug password hashing, session-based
+- Admins publish versioned Terms of Use, Privacy Notice, and default Participation Agreement revisions.
+- New users acknowledge active Terms and Privacy revisions. Existing users are prompted after a newly published revision.
+- Every event registration stores the accepted participation-agreement version; events may have their own agreement and optional NDA.
+- Volunteers request cancellation before the event deadline. A campus coordinator approves or rejects the request; approval changes the registration to cancelled.
+
+## Reports and analytics
+
+- Participation is measured through registrations and verified present attendance. Service-hour values are not used in current analytics or exports.
+- Director Live Activity Reports display ten rows per page while CSV/PDF exports include every activity matching the active filters.
+- Filters and campus boundaries apply to reports. Coordinators are restricted to their campus; Directors are read-only across campuses.
+
+## Tests
+
+```powershell
+python -m pytest -q tests\test_app.py
+```
+
+The latest full local verification completed with `170 passed` before the final documentation update.
+
+## Technology
+
+- **Backend:** Flask, SQLAlchemy, Flask-Login, Werkzeug
+- **Database:** MySQL/MariaDB; SQLite for isolated development
+- **Recommendations:** content-based cosine similarity using scikit-learn
+- **Frontend:** Jinja templates, Bare CSS, Material Symbols, locally bundled Plotly
+- **Media:** Pillow validation for uploads
+- **Reports:** ReportLab PDF and CSV exports
 - **Testing:** pytest
+
+## Repository hygiene
+
+Do not commit database exports, `.env` files, virtual environments, or uploaded user files. In particular, keep `Database/psu_volunteer_hub_after_policy_lifecycle.sql` local because it can contain real account data.
