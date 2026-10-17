@@ -3,13 +3,14 @@ Flask Application Factory for PSU Volunteer Hub
 =================================================
 Creates and configures the Flask application instance.
 """
-from flask import Flask, request, redirect, url_for
-from flask_login import LoginManager, current_user
+from flask import Flask, request, redirect, url_for, flash, session
+from flask_login import LoginManager, current_user, logout_user
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 from app.models import db
 from app.models.user import User, SystemSetting
 from app.models.event import (Event, Registration, Attendance, Milestone,
-                              Campus, ExternalParticipant, ActivityCategory)
+                              Campus, ExternalParticipant, ActivityCategory, SdgGoal)
 from app.models.notification import Notification
 from app.models.audit import AuditLog
 from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
@@ -29,8 +30,14 @@ def create_app(config_name='development'):
     # App configuration
     app.config.from_object(config[config_name])
 
-    if config_name == 'production' and not app.config.get('SQLALCHEMY_DATABASE_URI'):
-        raise ValueError('DATABASE_URL must be set in production')
+    if config_name == 'production':
+        if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+            raise ValueError('DATABASE_URL must be set in production')
+        if not app.config.get('SECRET_KEY'):
+            raise ValueError('SECRET_KEY must be set in production')
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=app.config['TRUSTED_PROXY_COUNT'],
+            x_proto=app.config['TRUSTED_PROXY_COUNT'])
 
     # app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///psu_volunteer_hub.db'
@@ -41,6 +48,18 @@ def create_app(config_name='development'):
     # Initialize extensions
     db.init_app(app)
     CSRFProtect(app)
+
+    @app.after_request
+    def set_security_headers(response):
+        if config_name == 'production':
+            response.headers.setdefault('Content-Security-Policy',
+                "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+            response.headers.setdefault('Strict-Transport-Security',
+                                        'max-age=31536000; includeSubDomains')
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        return response
 
     # Setup Flask-Login
     login_manager = LoginManager()
@@ -54,9 +73,15 @@ def create_app(config_name='development'):
     @app.before_request
     def require_current_terms():
         """Keep authenticated users on the active Terms revision."""
+        if current_user.is_authenticated and session.get('auth_version') != current_user.auth_version:
+            logout_user()
+            session.clear()
+            flash('Your session expired because your password was changed. Sign in again.', 'info')
+            return redirect(url_for('auth.login'))
         if (not current_user.is_authenticated
                 or request.endpoint in ('static', 'auth.accept_terms',
-                                        'auth.accept_privacy', 'auth.logout')):
+                                        'auth.accept_privacy', 'auth.complete_sex',
+                                        'auth.logout')):
             return None
         from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                        PrivacyAcknowledgement)
@@ -70,6 +95,8 @@ def create_app(config_name='development'):
         if privacy and not PrivacyAcknowledgement.query.filter_by(
                 user_id=current_user.id, revision_id=privacy.id).first():
             return redirect(url_for('auth.accept_privacy'))
+        if current_user.role == 'volunteer' and not current_user.sex:
+            return redirect(url_for('auth.complete_sex'))
 
     # Register blueprints
     from app.routes.auth import auth_bp
@@ -107,6 +134,7 @@ def create_app(config_name='development'):
         db.create_all()
         _seed_campuses(app)
         _seed_interests_skills(app)
+        _seed_sdgs(app)
         _seed_events(app)
         _seed_users(app)
 
@@ -207,6 +235,27 @@ def _seed_interests_skills(app):
     for name in getattr(Config, 'SKILL_CATEGORIES', []):
         if name and not Skill.query.filter_by(name=name).first():
             db.session.add(Skill(name=name))
+    db.session.commit()
+
+
+def _seed_sdgs(app):
+    """Seed the fixed UN SDG catalogue used by activity forms and reports."""
+    goals = (
+        'No Poverty', 'Zero Hunger', 'Good Health and Well-Being',
+        'Quality Education', 'Gender Equality', 'Clean Water and Sanitation',
+        'Affordable and Clean Energy', 'Decent Work and Economic Growth',
+        'Industry, Innovation and Infrastructure', 'Reduced Inequalities',
+        'Sustainable Cities and Communities',
+        'Responsible Consumption and Production', 'Climate Action',
+        'Life Below Water', 'Life on Land',
+        'Peace, Justice and Strong Institutions', 'Partnerships for the Goals',
+    )
+    for number, name in enumerate(goals, start=1):
+        goal = SdgGoal.query.filter_by(number=number).first()
+        if goal is None:
+            db.session.add(SdgGoal(number=number, name=name))
+        elif goal.name != name:
+            goal.name = name
     db.session.commit()
 
 

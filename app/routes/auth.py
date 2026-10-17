@@ -3,19 +3,56 @@ Authentication Routes for PSU Volunteer Hub
 =============================================
 Handles login, registration, and logout.
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
-from datetime import datetime
-from app.models.user import User, Interest, Skill, SystemSetting
+from datetime import datetime, timedelta
+from hashlib import sha256
+import secrets
+from app.models.user import (User, Interest, Skill, SystemSetting,
+                             AuthSecurityEvent, PasswordResetToken)
 from app.models.notification import Notification
 from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                PrivacyAcknowledgement)
 from app.models import db
+from app.services.email import send_email
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
+SEXES = {'male', 'female'}
+AUTH_LIMITS = {'login': (5, timedelta(minutes=15)),
+               'register': (5, timedelta(hours=1)),
+               'reactivation': (5, timedelta(minutes=15)),
+               'password_reset': (3, timedelta(hours=1))}
+
+
+def _request_ip():
+    return request.remote_addr or 'unknown'
+
+
+def _throttle_key(action, subject=''):
+    return AuthSecurityEvent.subject(f'{action}|{_request_ip()}|{subject.lower()}')
+
+
+def _is_limited(action, subject=''):
+    limit, window = AUTH_LIMITS[action]
+    cutoff = datetime.utcnow() - window
+    return AuthSecurityEvent.query.filter(
+        AuthSecurityEvent.action == action,
+        AuthSecurityEvent.subject_hash == _throttle_key(action, subject),
+        AuthSecurityEvent.created_at >= cutoff).count() >= limit
+
+
+def _record_attempt(action, subject=''):
+    db.session.add(AuthSecurityEvent(
+        action=action, subject_hash=_throttle_key(action, subject)))
+    db.session.commit()
+
+
+def _too_many_attempts():
+    flash('Too many attempts. Please wait and try again.', 'error')
+    return render_template('login.html'), 429
 
 
 def _password_min_length():
@@ -57,6 +94,9 @@ def login():
         password = request.form.get('password', '')
         remember = request.form.get('remember') == 'on'
 
+        if _is_limited('login', identifier):
+            return _too_many_attempts()
+
         if not identifier or not password:
             flash('Please enter both email/ID and password.', 'warning')
             return render_template('login.html')
@@ -68,6 +108,7 @@ def login():
         )).first()
 
         if user is None or not user.check_password(password):
+            _record_attempt('login', identifier)
             flash('Invalid email/ID or password.', 'error')
             return render_template('login.html')
 
@@ -76,6 +117,7 @@ def login():
             return render_template('login.html', show_reactivation_modal=True)
 
         login_user(user, remember=remember)
+        session['auth_version'] = user.auth_version
 
         next_page = request.args.get('next')
         active_terms = _active_terms()
@@ -94,6 +136,8 @@ def login():
 def request_reactivation():
     """Create one admin-visible appeal after a valid deactivated login."""
     user_id = session.get('reactivation_user_id')
+    if _is_limited('reactivation', str(user_id or '')):
+        return _too_many_attempts()
     user = db.session.get(User, user_id) if user_id else None
     if user is None or user.is_active:
         flash('Please sign in again before requesting reactivation.', 'error')
@@ -103,6 +147,8 @@ def request_reactivation():
         return redirect(url_for('auth.login'))
 
     user.reactivation_requested_at = datetime.utcnow()
+    db.session.add(AuthSecurityEvent(
+        action='reactivation', subject_hash=_throttle_key('reactivation', str(user_id))))
     administrators = User.query.filter_by(role='admin', _is_active=True).all()
     for administrator in administrators:
         db.session.add(Notification(
@@ -151,6 +197,24 @@ def skills():
     return redirect(url_for('auth.interests'))
 
 
+@auth_bp.route('/complete-sex', methods=['GET', 'POST'])
+@login_required
+def complete_sex():
+    """Collect the required demographic field from pre-existing volunteers."""
+    if current_user.role != 'volunteer' or current_user.sex:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        sex = request.form.get('sex', '').strip().lower()
+        if sex not in SEXES:
+            flash('Select Male or Female to continue.', 'error')
+        else:
+            current_user.sex = sex
+            db.session.commit()
+            flash('Profile information updated.', 'success')
+            return redirect(url_for('dashboard'))
+    return render_template('auth/complete_sex.html')
+
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle new user registration."""
@@ -174,10 +238,13 @@ def register():
         full_name = f"{first_name} {last_name}".strip()
 
         email = request.form.get('email', '').strip().lower()
+        if _is_limited('register', email):
+            return _too_many_attempts()
         password = request.form.get('password', '')
         password_confirmation = request.form.get('password_confirmation')
         id_number = request.form.get('id_number', '').strip() or None
         volunteer_type = request.form.get('volunteer_type', '').strip().lower()
+        sex = request.form.get('sex', '').strip().lower()
         college_affiliation = request.form.get(
             'college_affiliation', '').strip()
         campus_id = request.form.get('campus', type=int)
@@ -202,6 +269,8 @@ def register():
             errors.append('PSU ID Number is required for volunteers.')
         if volunteer_type not in VOLUNTEER_TYPES:
             errors.append('Select Student, Faculty, or Staff.')
+        if sex not in SEXES:
+            errors.append('Select Male or Female.')
         if not college_affiliation:
             errors.append('College affiliation is required.')
         if active_terms and request.form.get('terms_accepted') != 'on':
@@ -232,6 +301,7 @@ def register():
                 errors.append('Select at least one skill.')
 
         if errors:
+            _record_attempt('register', email)
             for error in errors:
                 flash(error, 'error')
             return render_template('Signup.html', campuses=campuses,
@@ -250,6 +320,7 @@ def register():
             id_number=id_number,
             role=assigned_role,
             volunteer_type=volunteer_type,
+            sex=sex,
             college_affiliation=college_affiliation,
             campus_id=campus_obj.id if campus_obj else None
         )
@@ -305,6 +376,58 @@ def register():
                            active_terms=active_terms, active_privacy=active_privacy)
 
 
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Issue a short-lived reset token without revealing account existence."""
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        if _is_limited('password_reset', email):
+            flash('If the account exists, a reset email will arrive shortly.', 'info')
+            return redirect(url_for('auth.login'))
+        _record_attempt('password_reset', email)
+        user = User.query.filter(db.func.lower(User.email) == email).first()
+        if user and user.is_active:
+            raw_token = secrets.token_urlsafe(32)
+            PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
+                {'used_at': datetime.utcnow()})
+            db.session.add(PasswordResetToken(
+                user_id=user.id, token_hash=sha256(raw_token.encode()).hexdigest(),
+                expires_at=datetime.utcnow() + timedelta(minutes=30)))
+            db.session.commit()
+            reset_url = url_for('auth.reset_password', token=raw_token, _external=True)
+            try:
+                send_email(user.email, 'Reset your PSU Volunteer Hub password',
+                           f'Use this link within 30 minutes to reset your password:\n{reset_url}')
+            except OSError:
+                current_app.logger.exception('Password reset email delivery failed')
+        flash('If the account exists, a reset email will arrive shortly.', 'info')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    token_hash = sha256(token.encode()).hexdigest()
+    record = PasswordResetToken.query.filter_by(token_hash=token_hash, used_at=None).first()
+    if record is None or record.expires_at < datetime.utcnow():
+        flash('This password-reset link is invalid or has expired.', 'error')
+        return redirect(url_for('auth.forgot_password'))
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirmation = request.form.get('password_confirmation', '')
+        minimum = _password_min_length()
+        if len(password) < minimum or password != confirmation:
+            flash(f'Use a matching password of at least {minimum} characters.', 'error')
+        else:
+            record.user.set_password(password)
+            record.user.auth_version += 1
+            record.used_at = datetime.utcnow()
+            db.session.commit()
+            flash('Password reset. Please sign in.', 'success')
+            return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html', password_min=_password_min_length())
+
+
 @auth_bp.route('/privacy', methods=['GET', 'POST'])
 @login_required
 def accept_privacy():
@@ -350,7 +473,7 @@ def accept_terms():
     return render_template('auth/terms_acceptance.html', revision=revision)
 
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
     """Log out the current user."""

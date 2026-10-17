@@ -13,7 +13,8 @@ All authorization/scoping decisions happen in the calling route:
 from datetime import datetime, timedelta
 
 from app.models import db
-from app.models.event import Event, Registration, Attendance, Campus
+from app.models.event import Event, Registration, Attendance, Campus, SdgGoal
+from app.models.user import User
 
 
 class ReportError(ValueError):
@@ -79,7 +80,7 @@ def report_invalid():
 
 
 def build_events_report(campus_id=None, start_date=None, end_date=None,
-                        category=None):
+                        category=None, sex=None, sdg_id=None):
     """Return (rows, summary) for the filtered event dataset.
 
     campus_id=None means all campuses. Coordinators must pass their own
@@ -96,6 +97,8 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
         query = query.filter(Event.date < end + timedelta(days=1))
     if category:
         query = query.filter(Event.category == category)
+    if sdg_id:
+        query = query.filter(Event.sdgs.any(SdgGoal.id == sdg_id))
 
     events = query.order_by(Event.date.desc()).all()
 
@@ -114,14 +117,24 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
         valid = Registration.query.filter(
             Registration.event_id == e.id,
             Registration.status != 'cancelled')
+        if sex in ('male', 'female'):
+            valid = valid.join(User, Registration.user_id == User.id).filter(User.sex == sex)
+        elif sex == 'unrecorded':
+            valid = valid.join(User, Registration.user_id == User.id).filter(User.sex.is_(None))
         reg = valid.count()
         psu = valid.filter(Registration.user_id.isnot(None)).count()
         external = valid.filter(
             Registration.external_participant_id.isnot(None)).count()
-        attended = Attendance.query.filter_by(
-            event_id=e.id, status='present').count()
-        completed = Registration.query.filter_by(
-            event_id=e.id, status='completed').count()
+        attendance = Attendance.query.filter_by(event_id=e.id, status='present')
+        completed_query = Registration.query.filter_by(event_id=e.id, status='completed')
+        if sex in ('male', 'female'):
+            attendance = attendance.join(User, Attendance.user_id == User.id).filter(User.sex == sex)
+            completed_query = completed_query.join(User, Registration.user_id == User.id).filter(User.sex == sex)
+        elif sex == 'unrecorded':
+            attendance = attendance.join(User, Attendance.user_id == User.id).filter(User.sex.is_(None))
+            completed_query = completed_query.join(User, Registration.user_id == User.id).filter(User.sex.is_(None))
+        attended = attendance.count()
+        completed = completed_query.count()
         cancelled = Registration.query.filter_by(event_id=e.id, status='cancelled').count()
         target = e.target_participants
         campus_name = e.campus.name if e.campus else ''
@@ -131,6 +144,7 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             'date': e.date,
             'campus': campus_name,
             'category': e.category or 'General',
+            'sdgs': ', '.join(f'SDG {goal.number}' for goal in e.sdgs) or 'Not tagged',
             'registrations': reg,
             'psu_registrations': psu,
             'external_registrations': external,
@@ -186,19 +200,19 @@ def render_csv(rows, summary, meta):
     writer.writerow([f"Category: {meta['category']}"])
     writer.writerow([f"Generated: {meta['generated']}"])
     writer.writerow([])
-    writer.writerow(['Activity', 'Date', 'Campus', 'Category',
+    writer.writerow(['Activity', 'Date', 'Campus', 'Category', 'SDGs',
                      'Registrations', 'PSU', 'External', 'Actual Participants',
                      'Cancelled', 'Completed', 'Target Participants', 'Target Completion'])
     for r in rows:
         writer.writerow([
             r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
-            r['category'], r['registrations'], r['psu_registrations'],
+            r['category'], r['sdgs'], r['registrations'], r['psu_registrations'],
             r['external_registrations'], r['attended'], r['cancelled'],
             r['completed'], r['target_participants'] or '',
             f"{r['completion_percentage']}%" if r['completion_percentage'] is not None else '',
         ])
     writer.writerow([])
-    writer.writerow(['TOTAL', '', '', '', summary['total_registrations'],
+    writer.writerow(['TOTAL', '', '', '', '', summary['total_registrations'],
                      summary['total_psu'], summary['total_external'],
                      summary['total_attended'], summary['total_cancelled'],
                      summary['total_completed'], summary['total_target_participants'], ''])
@@ -238,12 +252,12 @@ def render_pdf(rows, summary, meta):
         f"Generated: {meta['generated']}", small))
     story.append(Spacer(1, 4 * mm))
 
-    data = [['Activity', 'Date', 'Campus', 'Category', 'Reg.', 'PSU', 'Ext.',
+    data = [['Activity', 'Date', 'Campus', 'Category', 'SDGs', 'Reg.', 'PSU', 'Ext.',
              'Actual', 'Cancelled', 'Completed', 'Target', 'Progress']]
     for r in rows:
         data.append([
             r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
-            r['category'], str(r['registrations']), str(r['psu_registrations']),
+            r['category'], r['sdgs'], str(r['registrations']), str(r['psu_registrations']),
             str(r['external_registrations']), str(r['attended']),
             str(r['cancelled']), str(r['completed']),
             str(r['target_participants'] or ''),
@@ -257,7 +271,7 @@ def render_pdf(rows, summary, meta):
         ('FONTSIZE', (0, 0), (-1, -1), 8),
         ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#B8C2D1')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (4, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (5, 1), (-1, -1), 'CENTER'),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1),
          [colors.white, colors.HexColor('#F3F6FC')]),
     ]))

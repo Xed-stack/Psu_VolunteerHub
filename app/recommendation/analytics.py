@@ -472,6 +472,89 @@ class AnalyticsAggregator:
         return {role: count for role, count in rows}
 
     @staticmethod
+    def sex_participation(campus_id=None, start_date=None, end_date=None,
+                          category=None, sex=None):
+        """Verified PSU attendance grouped by recorded sex for Director use."""
+        query = db.session.query(User.sex, db.func.count(Attendance.id)).join(
+            Attendance, Attendance.user_id == User.id).join(
+            Event, Event.id == Attendance.event_id).filter(
+                User.role == 'volunteer', Attendance.status == 'present')
+        if campus_id:
+            query = query.filter(Event.campus_id == campus_id)
+        if start_date:
+            try:
+                query = query.filter(Event.date >= datetime.fromisoformat(start_date))
+            except ValueError:
+                start_date = None
+        if end_date:
+            try:
+                query = query.filter(Event.date < datetime.fromisoformat(end_date) + timedelta(days=1))
+            except ValueError:
+                end_date = None
+        if category:
+            query = query.filter(Event.category == category)
+        if sex in ('male', 'female'):
+            query = query.filter(User.sex == sex)
+        rows = {value: int(count) for value, count in query.group_by(User.sex).all()}
+        labels = (('female', 'Female'), ('male', 'Male'), (None, 'Not recorded'))
+        return [{'sex': label, 'actual_participants': rows.get(value, 0)}
+                for value, label in labels if sex is None or value == sex]
+
+    @staticmethod
+    def award_leaderboards(year):
+        """Return the annual, verified-participation Top 5 recognition lists."""
+        start = datetime(year, 1, 1)
+        end = datetime(year + 1, 1, 1)
+        volunteers = db.session.query(
+            User.id, User.name, Campus.name,
+            db.func.count(Attendance.id).label('attendance')
+        ).join(Attendance, Attendance.user_id == User.id).join(
+            Event, Event.id == Attendance.event_id).outerjoin(
+            Campus, Campus.id == User.campus_id).filter(
+                User.role == 'volunteer', Attendance.status == 'present',
+                Event.date >= start, Event.date < end).group_by(
+                    User.id, User.name, Campus.name).all()
+        volunteer_rows = []
+        for user_id, name, campus, attendance in volunteers:
+            completed = Registration.query.join(Event).filter(
+                Registration.user_id == user_id,
+                Registration.status == 'completed', Event.date >= start,
+                Event.date < end).count()
+            volunteer_rows.append({'name': name, 'campus': campus or 'Unassigned',
+                                   'attendance': int(attendance), 'completed': completed})
+        volunteer_rows.sort(key=lambda row: (-row['attendance'], -row['completed'], row['name']))
+
+        campus_rows = []
+        for campus in Campus.query.order_by(Campus.name).all():
+            registrations = Registration.query.join(Event).filter(
+                Registration.user_id.isnot(None), Registration.status != 'cancelled',
+                Event.campus_id == campus.id, Event.date >= start, Event.date < end).count()
+            if not registrations:
+                continue
+            attended = Attendance.query.join(Event).filter(
+                Attendance.user_id.isnot(None), Attendance.status == 'present',
+                Event.campus_id == campus.id, Event.date >= start, Event.date < end).count()
+            campus_rows.append({'name': campus.name, 'registrations': registrations,
+                                'attendance': attended,
+                                'rate': round(attended / registrations * 100, 1)})
+        campus_rows.sort(key=lambda row: (-row['rate'], -row['attendance'], row['name']))
+        return {
+            'volunteers': AnalyticsAggregator._rank_top_five(volunteer_rows, ('attendance', 'completed')),
+            'campuses': AnalyticsAggregator._rank_top_five(campus_rows, ('rate', 'attendance')),
+        }
+
+    @staticmethod
+    def _rank_top_five(rows, score_keys):
+        previous, rank = None, 0
+        for position, row in enumerate(rows[:5], start=1):
+            score = tuple(row[key] for key in score_keys)
+            if score != previous:
+                rank = position
+                previous = score
+            row['rank'] = rank
+        return rows[:5]
+
+    @staticmethod
     def heatmap_data():
         """Return attendance counts for campus engagement heatmap."""
         campuses = Campus.query.all()

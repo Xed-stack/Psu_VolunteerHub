@@ -7,6 +7,7 @@ Supports 4 user roles: volunteer, coordinator, director, admin.
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from hashlib import sha256
 from app.models import db
 
 # ----------------------------------------------------------------------
@@ -62,6 +63,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     id_number = db.Column(db.String(50), nullable=True, unique=True, index=True)
     volunteer_type = db.Column(db.String(20), nullable=True)
+    sex = db.Column(db.Enum('male', 'female', name='user_sexes'), nullable=True)
     college_affiliation = db.Column(db.String(150), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.Enum('volunteer', 'coordinator', 'director',
@@ -74,6 +76,7 @@ class User(UserMixin, db.Model):
     profile_image_path = db.Column(db.String(255), nullable=True)
     profile_image_name = db.Column(db.String(255), nullable=True)
     first_use_guide_dismissed_at = db.Column(db.DateTime, nullable=True)
+    auth_version = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -154,3 +157,33 @@ class SystemSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text, default='')
+
+
+class AuthSecurityEvent(db.Model):
+    """Short-lived security events used for database-backed throttling."""
+    __tablename__ = 'auth_security_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(40), nullable=False, index=True)
+    subject_hash = db.Column(db.String(64), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False,
+                           index=True)
+
+    @staticmethod
+    def subject(value):
+        return sha256(value.encode('utf-8')).hexdigest()
+
+
+class PasswordResetToken(db.Model):
+    """Hashed, expiring, single-use tokens for self-service password resets."""
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'),
+                        nullable=False, index=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy=True))

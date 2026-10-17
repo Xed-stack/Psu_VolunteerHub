@@ -35,7 +35,7 @@
   --control-radius: 8px;
   --transition-speed: 0.2s;
 
-  /* Material-style aliases (used by home/signup/profile + Tailwind config) */
+  /* Compatibility aliases used by existing public and profile components. */
   --primary: #00408b;
   --primary-hover: #003370;
   --primary-variant: #002d62;
@@ -98,9 +98,8 @@
 /* ===========================================================================
  * Shared component primitives
  * ---------------------------------------------------------------------------
- * One visual language for the whole product. Both the hand-written CSS pages
- * and the Tailwind pages should resolve their buttons, inputs, cards and nav
- * links to these rules so every screen looks like the same app.
+ * One visual language for the whole product. Every page resolves buttons,
+ * inputs, cards, and navigation through these shared rules.
  * =========================================================================== */
 
 /* Buttons ----------------------------------------------------------------- */

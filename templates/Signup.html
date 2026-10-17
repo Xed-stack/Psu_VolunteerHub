@@ -64,6 +64,14 @@
             </select>
           </label>
           <label class="field">
+            Sex
+            <select name="sex" required>
+              <option value="">Select sex</option>
+              <option value="male" {{ 'selected' if request.form.get('sex') == 'male' }}>Male</option>
+              <option value="female" {{ 'selected' if request.form.get('sex') == 'female' }}>Female</option>
+            </select>
+          </label>
+          <label class="field">
             College affiliation<input
   name="college_affiliation"
   value="{{ request.form.get('college_affiliation', '') }}"

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -11,6 +12,13 @@ class Config:
 
     UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+    MILESTONE_MAX_BYTES = 10 * 1024 * 1024
+    PRIVATE_UPLOAD_FOLDER = os.environ.get(
+        'PRIVATE_UPLOAD_FOLDER', os.path.join(basedir, 'instance', 'uploads'))
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
 
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'doc', 'docx'}
 
@@ -94,6 +102,10 @@ class ProductionConfig(Config):
     # collection whenever DATABASE_URL is unset. Enforcement happens in
     # create_app() when the production config is actually selected.
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SESSION_COOKIE_SECURE = True
+    PREFERRED_URL_SCHEME = 'https'
+    TRUSTED_PROXY_COUNT = int(os.environ.get('TRUSTED_PROXY_COUNT', '1'))
 
 
 class TestingConfig(Config):

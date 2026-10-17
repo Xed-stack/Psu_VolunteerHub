@@ -93,13 +93,22 @@ body.sidebar-open {
 }
 
 .role-user__logout {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
   color: var(--on-surface-variant);
+  cursor: pointer;
   text-decoration: none;
 }
+
+.role-user form { margin-left: auto; }
+
+.role-user__logout:hover { background: var(--surface-container-low); }
 
 .role-user__logout-label {
   display: none;
@@ -400,6 +409,10 @@ body.sidebar-open {
   flex-wrap: wrap;
   align-items: end;
   gap: 12px;
+}
+
+.filter-row .btn {
+  align-self: end;
 }
 
 .filter-row .field {

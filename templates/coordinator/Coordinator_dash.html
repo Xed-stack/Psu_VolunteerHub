@@ -59,7 +59,7 @@
                 <td>
                   <strong>{{ event.title }}</strong>
                   <br>
-                  <small>{{ event.category or 'General' }}</small>
+                  <small>{{ event.category or 'General' }}{% if event.sdgs %} · {% for sdg in event.sdgs %}SDG {{ sdg.number }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</small>
                 </td>
                 <td>{{ event.date.strftime("%b %d, %Y") }}</td>
                 <td>{{ event.location or campus_name }}</td>

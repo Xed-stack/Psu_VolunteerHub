@@ -5,16 +5,17 @@ Manages event creation, attendance tracking, and coordinator dashboard.
 """
 import os
 import uuid
+import zipfile
 from calendar import Calendar
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort, send_from_directory
 from flask_login import login_required, current_user
 from app.models import db
 from app.models.event import (ActivityCategory, Event, EventAnnouncement,
                               Registration, Attendance, Campus, Milestone,
-                              CancellationRequest)
-from app.utils.decorators import role_required
+                              CancellationRequest, SdgGoal)
+from app.utils.decorators import role_required, roles_required
 from app.models.notification import Notification, notify_campus_coordinators
 from app.models.notification import notify
 from app.utils.audit import log_activity
@@ -28,6 +29,7 @@ coordinator_bp = Blueprint('coordinator', __name__, url_prefix='')
 
 EVENT_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
 EVENT_COVER_MAX_BYTES = 5 * 1024 * 1024
+MILESTONE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'pdf', 'docx'}
 
 
 def _max_event_slots():
@@ -53,6 +55,19 @@ def _activity_categories():
         ).all()
     ]
     return list(dict.fromkeys([*configured, *stored, 'General']))
+
+
+def _selected_sdgs(form):
+    """Resolve submitted SDG ids against the server-side catalogue."""
+    ids = [int(value) for value in form.getlist('sdg_ids') if value.isdigit()]
+    return SdgGoal.query.filter(SdgGoal.id.in_(ids)).order_by(SdgGoal.number).all() if ids else []
+
+
+def _activity_form_context(**context):
+    context.setdefault('categories', _activity_categories())
+    context.setdefault('sdgs', SdgGoal.query.order_by(SdgGoal.number).all())
+    context.setdefault('max_slots', _max_event_slots())
+    return context
 
 
 def _save_event_cover(file):
@@ -87,6 +102,33 @@ def _save_event_cover(file):
     }
 
 
+def _validate_milestone(file):
+    """Validate content, not just the user-controlled filename extension."""
+    extension = secure_filename(file.filename).rsplit('.', 1)[-1].lower()
+    if extension not in MILESTONE_EXTENSIONS:
+        raise ValueError('Milestones must be JPEG, PNG, WebP, PDF, or DOCX files.')
+    file.stream.seek(0, os.SEEK_END)
+    if file.stream.tell() > current_app.config['MILESTONE_MAX_BYTES']:
+        raise ValueError('Milestone files must be 10 MB or smaller.')
+    file.stream.seek(0)
+    if extension in {'jpg', 'jpeg', 'png', 'webp'}:
+        try:
+            with Image.open(file.stream) as image:
+                detected = (image.format or '').lower()
+                image.verify()
+        except (UnidentifiedImageError, OSError):
+            raise ValueError('Milestone image is not valid.')
+        allowed_extensions = {'jpg', 'jpeg'} if detected == 'jpeg' else {detected}
+        if extension not in allowed_extensions:
+            raise ValueError('Milestone filename does not match its image content.')
+    elif extension == 'pdf' and not file.stream.read(5).startswith(b'%PDF-'):
+        raise ValueError('Milestone file is not a valid PDF.')
+    elif extension == 'docx' and not zipfile.is_zipfile(file.stream):
+        raise ValueError('Milestone file is not a valid DOCX.')
+    file.stream.seek(0)
+    return extension
+
+
 def _coordinator_campus_id():
     """Coordinator campus scope is always derived server-side, never from the
     request, so a forged ?campus_id= parameter cannot leak another campus."""
@@ -94,20 +136,23 @@ def _coordinator_campus_id():
 
 
 def _parse_event_schedule(form):
-    """Parse and validate native datetime-local fields with legacy date support."""
+    """Parse activity dates and derive its cancellation deadline from days."""
     try:
         start = datetime.fromisoformat(form.get('date', '').strip())
         end_raw = form.get('end_date', '').strip()
-        deadline_raw = form.get('cancellation_deadline', '').strip()
         end = datetime.fromisoformat(end_raw) if end_raw else None
-        deadline = (datetime.fromisoformat(deadline_raw) if deadline_raw
-                    else start - timedelta(days=2))
     except ValueError:
         return None, 'Enter valid activity dates and times.'
+    days_raw = form.get('cancellation_days', '2').strip()
+    try:
+        cancellation_days = int(days_raw)
+    except ValueError:
+        return None, 'Enter whole days before the activity for cancellations.'
+    if not 0 <= cancellation_days <= 365:
+        return None, 'Cancellation must close from 0 to 365 days before the activity.'
+    deadline = start - timedelta(days=cancellation_days)
     if end and end <= start:
         return None, 'The end date and time must be after the start.'
-    if deadline >= start:
-        return None, 'The cancellation deadline must be before the activity starts.'
     return (start, end, deadline), None
 
 
@@ -260,15 +305,20 @@ def create_activity():
         campus_id = current_user.campus_id
         if campus_id is None:
             flash('Your account must be assigned to a campus before creating activities.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+            return render_template('coordinator/create_act_scrn1.html', **_activity_form_context(campuses=campuses))
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', campuses=campuses)
+            return render_template('coordinator/create_act_scrn1.html', **_activity_form_context(campuses=campuses))
         if category not in categories:
             flash('Select a valid activity category.', 'error')
             return render_template('coordinator/create_act_scrn1.html',
                                    campuses=campuses, categories=categories,
                                    max_slots=max_slots)
+        sdgs = _selected_sdgs(request.form)
+        if SdgGoal.query.count() and not sdgs:
+            flash('Select at least one Sustainable Development Goal.', 'error')
+            return render_template('coordinator/create_act_scrn1.html',
+                                   **_activity_form_context(campuses=campuses))
         if slots < 1 or slots > max_slots:
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/create_act_scrn1.html',
@@ -311,11 +361,12 @@ def create_activity():
                       cover_uploaded_by_id=current_user.id if cover else None,
                       cover_uploaded_at=datetime.utcnow() if cover else None)
         db.session.add(event)
+        event.sdgs = sdgs
         db.session.commit()
         flash('Activity created successfully!', 'success')
         return redirect(url_for('coordinator.coordinator_dash'))
-    return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
-                           categories=categories, max_slots=_max_event_slots())
+    return render_template('coordinator/create_act_scrn1.html',
+                           **_activity_form_context(campuses=campuses))
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -358,6 +409,11 @@ def edit_activity(event_id):
             flash('Select a valid activity category.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
                                    categories=categories, max_slots=max_slots)
+        sdgs = _selected_sdgs(request.form)
+        if SdgGoal.query.count() and not sdgs:
+            flash('Select at least one Sustainable Development Goal.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event,
+                                   **_activity_form_context())
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
             return render_template('coordinator/edit_activity.html', event=event)
@@ -396,6 +452,7 @@ def edit_activity(event_id):
         event.location = location
         event.category = category
         event.required_skills = required_skills
+        event.sdgs = sdgs
         event.slots = slots
         event.target_participants = target_participants
         event.participation_agreement_text = agreement_text or None
@@ -425,7 +482,7 @@ def edit_activity(event_id):
         return redirect(url_for('coordinator.coordinator_dash'))
 
     return render_template('coordinator/edit_activity.html', event=event,
-                           categories=categories, max_slots=_max_event_slots())
+                           **_activity_form_context())
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/delete', methods=['POST'])
@@ -586,21 +643,20 @@ def upload_milestone(event_id):
         flash('No file selected.', 'error')
         return redirect(url_for('coordinator.coordinator_dash'))
     category = request.form.get('category', 'photo')
-    upload_dir = os.path.join(current_app.root_path,
-                              'static', 'uploads', 'milestones')
-    os.makedirs(upload_dir, exist_ok=True)
-    ext = file.filename.rsplit(
-        '.', 1)[-1].lower() if '.' in file.filename else ''
-    if ext not in current_app.config.get('ALLOWED_EXTENSIONS', set()):
-        flash('Unsupported file type.', 'error')
+    try:
+        ext = _validate_milestone(file)
+    except ValueError as exc:
+        flash(str(exc), 'error')
         return redirect(url_for('coordinator.coordinator_dash'))
-    filename = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+    upload_dir = os.path.join(current_app.config['PRIVATE_UPLOAD_FOLDER'], 'milestones')
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.{ext}"
     filepath = os.path.join(upload_dir, filename)
     file.save(filepath)
     milestone = Milestone(
         event_id=event.id,
         filename=secure_filename(file.filename),
-        upload_path=f'uploads/milestones/{filename}',
+        upload_path=f'milestones/{filename}',
         category=category,
         uploaded_by_id=current_user.id,
     )
@@ -608,6 +664,24 @@ def upload_milestone(event_id):
     db.session.commit()
     flash('Milestone uploaded successfully!', 'success')
     return redirect(url_for('coordinator.coordinator_dash'))
+
+
+@coordinator_bp.route('/milestones/<int:milestone_id>/download')
+@login_required
+@roles_required('coordinator', 'director', 'admin')
+def download_milestone(milestone_id):
+    """Serve new private milestone files only to authorized internal roles."""
+    milestone = db.session.get(Milestone, milestone_id)
+    if milestone is None:
+        abort(404)
+    if current_user.role == 'coordinator' and milestone.event.campus_id != current_user.campus_id:
+        abort(403)
+    if milestone.upload_path.startswith('uploads/'):
+        abort(410)
+    directory, filename = os.path.split(milestone.upload_path)
+    return send_from_directory(
+        os.path.join(current_app.config['PRIVATE_UPLOAD_FOLDER'], directory),
+        filename, as_attachment=True, download_name=milestone.filename)
 
 
 @coordinator_bp.route('/reports/events.csv')

@@ -13,7 +13,7 @@ from flask_login import login_required, current_user
 from app.utils.decorators import roles_required
 from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
-from app.models.event import Event, Campus
+from app.models.event import Event, Campus, SdgGoal
 from app.models.user import User
 from app.reports import (
     build_events_report, render_csv, render_pdf, resolve_campus,
@@ -108,10 +108,16 @@ def analytics():
     live_start = request.args.get('start_date', '').strip()
     live_end = request.args.get('end_date', '').strip()
     live_category = request.args.get('category', '').strip()
+    live_sex = request.args.get('sex', '').strip().lower()
+    live_sex = live_sex if live_sex in ('male', 'female', 'unrecorded') else None
+    live_sdg_id = request.args.get('sdg_id', type=int)
+    if live_sdg_id and db.session.get(SdgGoal, live_sdg_id) is None:
+        live_sdg_id = None
     try:
         live_rows, live_summary = build_events_report(
             campus_id=live_campus, start_date=live_start,
-            end_date=live_end, category=live_category)
+            end_date=live_end, category=live_category, sex=live_sex,
+            sdg_id=live_sdg_id)
     except ReportError:
         live_rows, live_summary = [], {
             'event_count': 0, 'total_registrations': 0,
@@ -154,6 +160,15 @@ def analytics():
     top_interests = AnalyticsAggregator.interest_distribution(limit=8)
     department_participants = AnalyticsAggregator.department_participants(
         campus_id=live_campus_filter, department=department or None)
+    sex_participation = AnalyticsAggregator.sex_participation(
+        campus_id=live_campus_filter, start_date=live_start, end_date=live_end,
+        category=live_category, sex=live_sex)
+    award_years = sorted({event.date.year for event in Event.query.with_entities(Event.date).all()}, reverse=True)
+    award_year = request.args.get('award_year', type=int)
+    if award_year not in award_years:
+        award_year = award_years[0] if award_years else datetime.now().year
+    leaderboards = (AnalyticsAggregator.award_leaderboards(award_year)
+                    if current_user.role == 'director' else None)
 
     return render_template('director/Director_impact_anlaytics_dash.html',
                             kpi_cards=kpi_cards,
@@ -166,6 +181,8 @@ def analytics():
                             historical_category_data=historical_category_data,
                             campuses=campuses, activity_types=activity_types,
                             categories=categories,
+                            sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
+                            selected_sex=live_sex, selected_sdg_id=live_sdg_id,
                             selected_filters=filters,
                             live_rows=report_rows, live_summary=live_summary,
                             report_page=report_page, report_total_pages=report_total_pages,
@@ -179,7 +196,10 @@ def analytics():
                             top_skills=top_skills,
                             top_interests=top_interests,
                             departments=departments, selected_department=department,
-                            department_participants=department_participants)
+                            department_participants=department_participants,
+                            sex_participation=sex_participation,
+                            award_years=award_years, award_year=award_year,
+                            leaderboards=leaderboards)
 
 
 @director_bp.route('/reports/campus.csv')
@@ -289,9 +309,13 @@ def _university_report_payload():
     start = request.args.get('start_date', '').strip()
     end = request.args.get('end_date', '').strip()
     category = request.args.get('category', '').strip()
+    sex = request.args.get('sex', '').strip().lower()
+    sdg_id = request.args.get('sdg_id', type=int)
+    sdg = db.session.get(SdgGoal, sdg_id) if sdg_id else None
     rows, summary = build_events_report(
         campus_id=campus_id, start_date=start, end_date=end,
-        category=category)
+        category=category, sex=sex if sex in ('male', 'female', 'unrecorded') else None,
+        sdg_id=sdg.id if sdg else None)
     scope = _report_scope_label(campus_id)
     role_label = 'Administration' if current_user.role == 'admin' else 'Director'
     meta = _build_meta(

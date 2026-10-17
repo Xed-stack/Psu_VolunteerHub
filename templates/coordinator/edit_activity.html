@@ -35,8 +35,8 @@
         End date and time<input class="input" name="end_date" type="datetime-local" value="{{ event.end_date.strftime('%Y-%m-%dT%H:%M') if event.end_date else '' }}">
       </label>
       <label class="field">
-        Cancellation deadline<input class="input" name="cancellation_deadline" type="datetime-local" value="{{ event.cancellation_deadline.strftime('%Y-%m-%dT%H:%M') if event.cancellation_deadline else '' }}">
-        <small>Leave blank to use two days before the activity.</small>
+        Cancellation closes<input class="input" name="cancellation_days" type="number" min="0" max="365" step="1" value="{{ request.form.get('cancellation_days', ((event.date - (event.cancellation_deadline or event.date)).days if event.date else 2)) }}" required>
+        <small>Whole days before the activity. Use 0 to allow cancellation until the start time.</small>
       </label>
       <label class="field">
         Location<input
@@ -69,6 +69,16 @@
   value="{{ event.required_skills or '' }}"
 >
       </label>
+      {% set selected_sdg_ids = request.form.getlist('sdg_ids') or event.sdgs|map(attribute='id')|map('string')|list %}
+      <fieldset class="field field--wide choice-fieldset">
+        <legend>Sustainable Development Goals</legend>
+        <small>Select every goal this activity can contribute to.</small>
+        <div class="check-grid">
+          {% for sdg in sdgs %}
+            <label class="check-row"><input type="checkbox" name="sdg_ids" value="{{ sdg.id }}" {{ 'checked' if sdg.id|string in selected_sdg_ids }}> <span>SDG {{ sdg.number }} — {{ sdg.name }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
       <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', event.target_participants or '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
       <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', event.participation_agreement_text or '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
       <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', event.participation_agreement_version or '') }}"></label>

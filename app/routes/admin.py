@@ -361,6 +361,7 @@ def reset_password(user_id):
         flash(f'Password must be at least {password_min} characters.', 'error')
         return redirect(url_for('admin.admin_dash'))
     user.set_password(new_password)
+    user.auth_version += 1
     log_activity('user_password_reset', user)
     db.session.commit()
     flash(f'Password reset for {user.name}.', 'success')

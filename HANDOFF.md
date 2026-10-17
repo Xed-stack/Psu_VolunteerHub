@@ -27,12 +27,18 @@
 - Phase 4 now includes an append-only Admin Activity Log, validated CSV user import/export (without password hashes), and versioned Terms of Use. An admin publishes the active terms revision; new registrations accept it during sign-up, while existing users are redirected to accept it before continuing.
 - Accounts can be deactivated, request reactivation through the login flow, be reviewed in a Deactivated Users tab, and be permanently deleted manually after 30 days. Safeguards protect the last active admin and the current admin account.
 - The roadmap in `VOLUNTEER_HUB_ROADMAP.md` records proposed future work. It is not implemented.
+- Director demographics, SDG, and recognition are now implemented locally: volunteer sex is required at registration (existing volunteers complete it once after sign-in), coordinators tag activities with the official 17 SDGs, and Director Analytics shows sex-disaggregated verified participation plus calendar-year Top 5 recognition.
+- Recognition is informational only: volunteers rank by verified present attendance then completed activities; campuses rank by verified attendance rate then verified present attendance. External, cancelled, absent, unverified, and historical aggregate records are excluded.
 
 ## Database requirement
 
 Apply `migrations/20260903_admin_categories_and_deactivation.sql` to the configured MySQL database before testing the administration features on a fresh database. It adds activity categories, event creator ownership, and deactivation/reactivation fields.
 
 Also apply `migrations/20260912_add_audit_logs.sql` and `migrations/20260912_add_terms_revisions.sql` for the Phase 4 audit and policy features on an existing database.
+
+Apply `migrations/20261016_director_demographics_sdgs.sql` before using the Director demographics and SDG features against an existing MySQL database. Then restart Flask so the built-in SDG catalogue seed can verify the 17 official goals.
+
+Apply `migrations/20261016_security_hardening.sql` before deploying the security update to an existing MySQL database. It adds session-version invalidation, database-backed authentication throttling, and password-reset tokens. Production also requires `SECRET_KEY`, `DATABASE_URL`, HTTPS behind a trusted proxy, a writable `PRIVATE_UPLOAD_FOLDER` outside the web root, and SMTP configuration for reset emails.
 
 Historical CSV data can be imported with:
 
@@ -65,7 +71,34 @@ Then manually check:
 
 ## Next recommended work
 
-The policy lifecycle, cancellation review, Coordinator/Director calendars, accomplishment reporting, and first-use guide are implemented in the working tree. Apply `migrations/20260912_policy_lifecycle.sql` and `migrations/20260916_first_use_guide.sql` to an existing MySQL database before using those features there. The remaining roadmap work is limited to presentation refinements such as richer analytics controls; QR attendance, SMS/email, SIS integration, and automatic purging remain out of scope.
+### Director demographics, SDG, and recognition phase
+
+Implemented locally; apply the migration noted above before using it with an existing MySQL database. The policy lifecycle, cancellation review, Coordinator/Director calendars, accomplishment reporting, and first-use guide are already implemented. Apply `migrations/20260912_policy_lifecycle.sql` and `migrations/20260916_first_use_guide.sql` to an existing MySQL database before using those features there.
+
+1. **Sex-disaggregated data**
+   - Add a required `Male` or `Female` sex value during volunteer registration.
+   - Redirect existing volunteers with no recorded value to complete it before accessing their dashboard.
+   - Add a Director-only sex filter plus clearly labeled sex-disaggregated participation chart/table. Legacy records remain `Not recorded` until completed.
+
+2. **Sustainable Development Goals (SDGs)**
+   - [x] Seed the official 17 UN SDGs as a catalog.
+   - [x] Let coordinators assign all applicable SDGs to an activity through a many-to-many relationship.
+   - [x] Show assigned SDGs in the live report and PDF/CSV exports, with a Director SDG filter.
+   - [ ] Show assigned SDGs in activity details/calendars and add a dedicated participation-by-SDG comparison when that reporting view is needed.
+   - Keep historical aggregate records separate; never infer SDGs for them.
+
+3. **Automatic annual recognition**
+   - Add a Director-only calendar-year selector and Top 5 recognition lists.
+   - Rank Outstanding Volunteers by verified present attendance, then completed activities; equal values share a rank.
+   - Rank Outstanding Campuses by verified attendance rate, then total verified present attendance.
+   - Exclude registrations without verified attendance, absences, cancellations, external participants, and historical aggregate data. The labels are informational; PSU retains final award approval.
+
+4. **Verification**
+   - Add a versioned MySQL migration for sex, SDG catalog, and the event–SDG relationship.
+   - Test registration/profile completion, Director-only authorization, multi-SDG event editing/filtering, reporting, ranking order/ties/year scope, and zero-data states.
+   - Run the full pytest suite and check Director analytics at desktop and mobile widths.
+
+QR attendance, SMS/email, SIS integration, financial features, and automatic account purging remain out of scope.
 
 ## Working-tree note
 

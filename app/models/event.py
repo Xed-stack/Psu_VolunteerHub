@@ -17,6 +17,23 @@ event_skills = db.Table(
         'skills.id', ondelete='CASCADE'), primary_key=True)
 )
 
+event_sdgs = db.Table(
+    'event_sdgs',
+    db.Column('event_id', db.Integer, db.ForeignKey(
+        'events.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('sdg_id', db.Integer, db.ForeignKey(
+        'sdg_goals.id', ondelete='RESTRICT'), primary_key=True),
+)
+
+
+class SdgGoal(db.Model):
+    """Official Sustainable Development Goals available for activities."""
+    __tablename__ = 'sdg_goals'
+
+    id = db.Column(db.Integer, primary_key=True)
+    number = db.Column(db.Integer, unique=True, nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+
 
 class Event(db.Model):
     """
@@ -71,6 +88,9 @@ class Event(db.Model):
     # 3NF Skills relationship
     required_skills_rel = db.relationship(
         'Skill', secondary=event_skills, backref=db.backref('events', lazy='dynamic'))
+    sdgs = db.relationship(
+        'SdgGoal', secondary=event_sdgs,
+        backref=db.backref('events', lazy='dynamic'), order_by='SdgGoal.number')
 
     @property
     def required_skills(self) -> str:

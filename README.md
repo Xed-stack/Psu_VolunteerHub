@@ -71,6 +71,12 @@ Get-Content -Raw ".\migrations\20260912_policy_lifecycle.sql" |
 
 Get-Content -Raw ".\migrations\20260916_first_use_guide.sql" |
   & "C:\xampp\mysql\bin\mysql.exe" -u root psu_volunteer_hub
+
+Get-Content -Raw ".\migrations\20261016_director_demographics_sdgs.sql" |
+  & "C:\xampp\mysql\bin\mysql.exe" -u root psu_volunteer_hub
+
+Get-Content -Raw ".\migrations\20261016_security_hardening.sql" |
+  & "C:\xampp\mysql\bin\mysql.exe" -u root psu_volunteer_hub
 ```
 
 The earlier migrations in `migrations/` are also required for a database created before their feature sets. Do not rerun a migration containing non-idempotent `ALTER TABLE ... ADD COLUMN` statements.
@@ -123,6 +129,15 @@ python -m pytest -q tests\test_app.py
 ```
 
 The latest full local verification completed with `170 passed` before the final documentation update.
+
+## Production security checklist
+
+- Set strong, unique `SECRET_KEY` and `DATABASE_URL` environment variables; the app refuses to start in production without both.
+- Deploy behind an HTTPS reverse proxy and set `TRUSTED_PROXY_COUNT` to the number of trusted proxies. Do not expose the Flask development server publicly.
+- Use a dedicated MySQL application account with only the database privileges the app needs; never deploy with MySQL `root` credentials.
+- Configure a working SMTP server (`MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER`) before enabling public password resets.
+- Back up MySQL regularly, encrypt backups, and test restoration before each release. Apply migrations to a backup/staging copy first.
+- Keep `PRIVATE_UPLOAD_FOLDER` outside the web root. New milestone uploads are private and are downloaded only through role-checked routes.
 
 ## Technology
 

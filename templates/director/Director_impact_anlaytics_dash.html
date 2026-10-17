@@ -171,6 +171,10 @@
           {% endfor %}
           </select>
         </label>
+        {% if current_user.role == 'director' %}
+        <label class="field">Sex<select name="sex"><option value="">All recorded statuses</option><option value="female" {{ 'selected' if selected_sex == 'female' }}>Female</option><option value="male" {{ 'selected' if selected_sex == 'male' }}>Male</option><option value="unrecorded" {{ 'selected' if selected_sex == 'unrecorded' }}>Not recorded</option></select></label>
+        <label class="field">SDG<select name="sdg_id"><option value="">All SDGs</option>{% for sdg in sdgs %}<option value="{{ sdg.id }}" {{ 'selected' if selected_sdg_id == sdg.id }}>SDG {{ sdg.number }} — {{ sdg.name }}</option>{% endfor %}</select></label>
+        {% endif %}
         <label class="field">Participant affiliation<select name="department"><option value="">All affiliations</option>{% for department in departments %}<option value="{{ department }}" {{ 'selected' if selected_department == department }}>{{ department }}</option>{% endfor %}</select><small>Options are limited to the selected campus when one is selected.</small></label>
         <button class="btn btn--primary" type="submit">Apply</button>
         <a
@@ -178,6 +182,20 @@
           href="{{ url_for('director.analytics') }}"
         >Clear</a>
       </form>
+      {% if current_user.role == 'director' %}
+      <section class="analytics-grid" aria-label="Director recognition and demographics">
+        <article class="panel">
+          <header class="panel__header"><div><h2>Sex-disaggregated participation</h2><small>Verified PSU attendance only; legacy accounts without a recorded value remain separate.</small></div></header>
+          <div class="table-scroll" tabindex="0"><table class="data-table"><thead><tr><th>Sex</th><th>Actual participants</th></tr></thead><tbody>{% for row in sex_participation %}<tr><td>{{ row.sex }}</td><td>{{ row.actual_participants }}</td></tr>{% else %}<tr><td colspan="2"><div class="empty-state">No verified participation matches this scope.</div></td></tr>{% endfor %}</tbody></table></div>
+        </article>
+        <article class="panel">
+          <header class="panel__header"><div><h2>Outstanding recognition</h2><small>Calendar-year, informational Top 5 based on verified participation.</small></div></header>
+          <form class="filter-row" method="get"><input type="hidden" name="start_date" value="{{ request.args.get('start_date', '') }}"><input type="hidden" name="end_date" value="{{ request.args.get('end_date', '') }}"><label class="field">Award year<select name="award_year">{% for year in award_years %}<option value="{{ year }}" {{ 'selected' if award_year == year }}>{{ year }}</option>{% endfor %}</select></label><button class="btn btn--outline" type="submit">View</button></form>
+          <h3>Outstanding volunteers</h3><ol class="rank-list">{% for row in leaderboards.volunteers %}<li><span>#{{ row.rank }} {{ row.name }} · {{ row.campus }}</span><strong>{{ row.attendance }} present / {{ row.completed }} completed</strong></li>{% else %}<li>No verified volunteer participation for {{ award_year }}.</li>{% endfor %}</ol>
+          <h3>Outstanding campuses</h3><ol class="rank-list">{% for row in leaderboards.campuses %}<li><span>#{{ row.rank }} {{ row.name }}</span><strong>{{ row.rate }}% · {{ row.attendance }} present</strong></li>{% else %}<li>No verified campus participation for {{ award_year }}.</li>{% endfor %}</ol>
+        </article>
+      </section>
+      {% endif %}
       <section class="panel"><header class="panel__header"><div><h2>Verified participants by affiliation</h2><small>Counts use present attendance records for the selected campus.</small></div></header><div class="table-scroll"><table class="data-table"><thead><tr><th>Affiliation</th><th>Actual participants</th></tr></thead><tbody>{% for row in department_participants %}<tr><td>{{ row.department }}</td><td>{{ row.actual_participants }}</td></tr>{% else %}<tr><td colspan="2">No verified participant affiliations match this scope.</td></tr>{% endfor %}</tbody></table></div></section>
       <div class="table-scroll" tabindex="0">
         <table class="data-table">
@@ -187,6 +205,7 @@
               <th>Date</th>
               <th>Campus</th>
               <th>Category</th>
+              <th>SDGs</th>
               <th>Registrations</th>
               <th>PSU</th>
               <th>External</th>
@@ -201,6 +220,7 @@
                 <td>{{ row.date.strftime("%Y-%m-%d") }}</td>
                 <td>{{ row.campus }}</td>
                 <td>{{ row.category }}</td>
+                <td>{{ row.sdgs }}</td>
                 <td>{{ row.registrations }}</td>
                 <td>{{ row.psu_registrations }}</td>
                 <td>{{ row.external_registrations }}</td>
@@ -209,7 +229,7 @@
               </tr>
             {% else %}
               <tr>
-              <td colspan="9">
+              <td colspan="10">
                   <div class="empty-state">No activities match the current filters.</div>
                 </td>
               </tr>
@@ -219,9 +239,9 @@
       </div>
       {% if report_total_pages > 1 %}
         <nav class="pagination" aria-label="Live activity report pages">
-          {% if report_page > 1 %}<a class="btn btn--outline" href="{{ url_for('director.analytics', page=report_page - 1, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', '')) }}">Previous</a>{% endif %}
-          {% for page_number in range(1, report_total_pages + 1) %}<a class="btn {{ 'btn--primary' if page_number == report_page else 'btn--outline' }}" href="{{ url_for('director.analytics', page=page_number, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', '')) }}" {{ 'aria-current=page' if page_number == report_page }}>Page {{ page_number }}</a>{% endfor %}
-          {% if report_page < report_total_pages %}<a class="btn btn--outline" href="{{ url_for('director.analytics', page=report_page + 1, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', '')) }}">Next</a>{% endif %}
+          {% if report_page > 1 %}<a class="btn btn--outline" href="{{ url_for('director.analytics', page=report_page - 1, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', ''), sex=request.args.get('sex', ''), sdg_id=request.args.get('sdg_id', ''), award_year=request.args.get('award_year', '')) }}">Previous</a>{% endif %}
+          {% for page_number in range(1, report_total_pages + 1) %}<a class="btn {{ 'btn--primary' if page_number == report_page else 'btn--outline' }}" href="{{ url_for('director.analytics', page=page_number, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', ''), sex=request.args.get('sex', ''), sdg_id=request.args.get('sdg_id', ''), award_year=request.args.get('award_year', '')) }}" {{ 'aria-current=page' if page_number == report_page }}>Page {{ page_number }}</a>{% endfor %}
+          {% if report_page < report_total_pages %}<a class="btn btn--outline" href="{{ url_for('director.analytics', page=report_page + 1, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', ''), campus_id=request.args.get('campus_id', ''), category=request.args.get('category', ''), department=request.args.get('department', ''), sex=request.args.get('sex', ''), sdg_id=request.args.get('sdg_id', ''), award_year=request.args.get('award_year', '')) }}">Next</a>{% endif %}
         </nav>
       {% endif %}
       <div class="summary-strip summary-strip--compact">

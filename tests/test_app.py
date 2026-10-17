@@ -1,11 +1,13 @@
 import pytest
 import re
 import io
+from hashlib import sha256
 from app import create_app
 from app.models import db
-from app.models.user import User, VolunteerProfile, SystemSetting, Skill, Interest
+from app.models.user import (User, VolunteerProfile, SystemSetting, Skill, Interest,
+                             PasswordResetToken)
 from app.models.event import (Event, EventAnnouncement, Registration,
-                              Attendance, Campus, ExternalParticipant)
+                              Attendance, Campus, ExternalParticipant, Milestone)
 from app.models.notification import Notification
 from app.models.audit import AuditLog
 from app.models.policy import TermsRevision, TermsAcceptance
@@ -121,6 +123,7 @@ def _login_as(client, user_id):
     with client.session_transaction() as sess:
         sess['_user_id'] = str(user_id)
         sess['_fresh'] = True
+        sess['auth_version'] = 1
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -176,6 +179,7 @@ class TestAuth:
             'password': 'secret123',
             'account_type': 'volunteer', 'id_number': '21-0001',
             'campus': '1', 'volunteer_type': 'student',
+            'sex': 'female',
             'college_affiliation': 'College of Computing Sciences',
         }, follow_redirects=True)
         assert resp.status_code == 200
@@ -183,6 +187,7 @@ class TestAuth:
             u = User.query.filter_by(email='alice@test.com').first()
             assert u is not None
             assert u.role == 'volunteer'
+            assert u.sex == 'female'
 
     def test_public_registration_cannot_create_privileged_role(self, client, app):
         resp = client.post('/auth/register', data={
@@ -191,6 +196,7 @@ class TestAuth:
             'password': 'secret123',
             'account_type': 'coordinator', 'id_number': '21-0099',
             'campus': '1', 'volunteer_type': 'student',
+            'sex': 'male',
             'college_affiliation': 'College of Computing Sciences',
         })
         assert resp.status_code == 302
@@ -240,9 +246,40 @@ class TestAuth:
         }, follow_redirects=True)
         assert resp.status_code == 200
 
+    def test_login_is_throttled_after_repeated_failures(self, client):
+        for _ in range(5):
+            response = client.post('/auth/login', data={
+                'identifier': 'throttle@test.com', 'password': 'wrong'})
+            assert response.status_code == 200
+        response = client.post('/auth/login', data={
+            'identifier': 'throttle@test.com', 'password': 'wrong'})
+        assert response.status_code == 429
+
     def test_logout_requires_login(self, client):
-        resp = client.get('/auth/logout', follow_redirects=True)
+        resp = client.post('/auth/logout', follow_redirects=True)
         assert resp.status_code == 200
+
+    def test_password_reset_uses_expiring_single_use_token(self, client, app):
+        _create_user(app, email='recover@test.com')
+        response = client.post('/auth/forgot-password', data={
+            'email': 'recover@test.com'}, follow_redirects=True)
+        assert response.status_code == 200
+        with app.app_context():
+            token = PasswordResetToken.query.one()
+            assert token.used_at is None
+            assert token.expires_at > datetime.utcnow()
+
+    def test_expired_password_reset_token_is_rejected(self, client, app):
+        user_id = _create_user(app, email='expired-reset@test.com')
+        raw_token = 'expired-token'
+        with app.app_context():
+            db.session.add(PasswordResetToken(
+                user_id=user_id, token_hash=sha256(raw_token.encode()).hexdigest(),
+                expires_at=datetime.utcnow() - timedelta(minutes=1)))
+            db.session.commit()
+        response = client.get(f'/auth/reset-password/{raw_token}')
+        assert response.status_code == 302
+        assert response.headers['Location'].endswith('/auth/forgot-password')
 
     def test_protected_route_redirects_anon(self, client):
         resp = client.get('/volunteer_dash')
@@ -531,6 +568,19 @@ class TestCoordinatorFeatures:
             event_id = Event.query.filter_by(campus_id=2).first().id
         _login_as(client, coordinator_id)
         assert client.post(f'/coordinator/events/{event_id}/delete').status_code == 403
+
+    def test_private_milestone_download_is_campus_scoped(self, client, app):
+        coordinator_id = _create_user(
+            app, email='milestone-scope@test.com', role='coordinator', campus_id=1)
+        with app.app_context():
+            event = Event.query.filter_by(campus_id=2).first()
+            milestone = Milestone(event_id=event.id, filename='proof.pdf',
+                                  upload_path='milestones/proof.pdf')
+            db.session.add(milestone)
+            db.session.commit()
+            milestone_id = milestone.id
+        _login_as(client, coordinator_id)
+        assert client.get(f'/milestones/{milestone_id}/download').status_code == 403
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1295,7 +1345,7 @@ class TestAdminUserManagement:
             'body': 'Use the system responsibly.',
         })
         assert published.status_code == 302
-        client.get('/auth/logout')
+        client.post('/auth/logout')
         login = client.post('/auth/login', data={
             'identifier': 'termsvolunteer@test.com', 'password': 'password123',
         })
@@ -2262,7 +2312,7 @@ class TestPhaseTwoControls:
             'description': 'Tests the complete event schedule.',
             'date': '2030-06-10T09:00',
             'end_date': '2030-06-10T12:00',
-            'cancellation_deadline': '2030-06-08T09:00',
+            'cancellation_days': 2,
             'category': 'General',
             'slots': 20,
         })

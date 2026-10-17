@@ -37,6 +37,8 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 Current implementation note: descriptive analytics, PDF/CSV reporting, historical aggregate views, and an idempotent local `seed-demo-analytics` fixture are implemented. The fixture supplies representative live events, registrations, and attendance for panel demonstrations; it does not alter deployment data unless the command is explicitly run against that database.
 
+Director demographics, SDG tagging, and annual recognition are also implemented locally. Apply `migrations/20261016_director_demographics_sdgs.sql` to an existing MySQL database before enabling them there. The implementation records volunteer sex as `Male` or `Female`, sends legacy volunteers to a one-time profile-completion screen, uses the fixed official 17-SDG catalogue on activities, and keeps historical aggregates out of demographic and recognition calculations.
+
 - Keep analytics limited to descriptive reporting defined by the manuscript: counts, percentages, means, attendance/sign-up conversion, participation by campus/category/demographic, activity performance, and weekly/monthly trends. Do not expose K-means segmentation or ANOVA in the user interface.
 - Move role-appropriate KPI summaries to the top of analytics pages. Make each event-count KPI clickable and route it to the corresponding filtered event/report list; for example, a summary of 50 events opens that 50-event filtered list.
 - Add a search field to the Live Activity Report and initially display ten rows. Provide **View all** to expand/paginate without losing the active filters.
@@ -46,6 +48,9 @@ Current implementation note: descriptive analytics, PDF/CSV reporting, historica
 - Add Plotly chart controls for zoom, reset, and exporting the active chart image. Retain current PDF/CSV report exports for the filtered report as a whole; do not attempt browser screenshots as official reports.
 - Label historical imports as aggregate records and show a short data-quality note: historical counts cannot produce individual attendance, demographics, or precise event dates not recorded in the source. Add the same limitation to analytics export metadata.
 - Keep the repeatable `seed-demo-analytics` fixture for local development and panel demonstrations. It creates representative events, registrations, and attendance without modifying real deployment data unless explicitly run there. Historical aggregate imports remain separate through `import-historical-activities`.
+- Director Analytics includes a sex filter/table based on verified PSU attendance and an SDG filter for live activity reports. `Not recorded` is shown separately for pre-existing accounts until they complete the required value.
+- Coordinators select one or more applicable official SDGs while creating or editing an activity; Director PDF/CSV exports and the live report display those tags.
+- Director Analytics includes an informational calendar-year Top 5 for volunteers and campuses. Volunteer order is verified present attendance then completed activities; campus order is verified attendance rate then verified present attendance. Equal scores share a displayed rank. This is decision support only and excludes outsiders, cancellations, absences, unverified records, and historical aggregates.
 
 ## Phase 4 — administration and governance extensions
 

@@ -101,9 +101,12 @@
       <strong>{{ current_user.name }}</strong>
       <small>{{ current_user.role_display_name }}</small>
     </span>
-    <a class="role-user__logout" href="{{ url_for('auth.logout') }}" aria-label="Log out">
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      {% include 'partials/csrf_field.html' %}
+      <button class="role-user__logout" type="submit" aria-label="Log out">
       <span class="material-symbols-outlined">logout</span>
       <span class="role-user__logout-label">Log out</span>
-    </a>
+      </button>
+    </form>
   </div>
 </aside>
