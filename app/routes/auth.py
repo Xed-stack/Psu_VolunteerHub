@@ -20,7 +20,7 @@ from app.services.email import send_email
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
-SEXES = {'male', 'female'}
+SEXES = {'male', 'female', 'prefer_not_to_say'}
 AUTH_LIMITS = {'login': (5, timedelta(minutes=15)),
                'register': (5, timedelta(hours=1)),
                'reactivation': (5, timedelta(minutes=15)),
@@ -166,15 +166,31 @@ def request_reactivation():
 @auth_bp.route('/interests', methods=['GET', 'POST'])
 def interests():
     """Onboarding step 1: pick interests; connected skills reveal inline."""
-    if request.method == 'POST':
-        # Capture both interests and the skills revealed for them, then go
-        # straight to account creation (the skills step is now inline).
-        session['selected_interests'] = request.form.getlist('interests')
-        session['selected_skills'] = request.form.getlist('skills')
-        return redirect(url_for('auth.register'))
-
     from config import Config
     interest_skill_map = getattr(Config, 'INTEREST_SKILL_MAP', {})
+
+    if request.method == 'POST':
+        selected_interests = Interest.query.filter(
+            Interest.id.in_(request.form.getlist('interests')),
+            Interest.name.in_(interest_skill_map),
+        ).all()
+        selected_interest_ids = [str(interest.id) for interest in selected_interests]
+        allowed_skill_names = {
+            skill_name
+            for interest in selected_interests
+            for skill_name in interest_skill_map.get(interest.name, [])
+        }
+        allowed_skill_ids = {
+            str(skill.id)
+            for skill in Skill.query.filter(Skill.name.in_(allowed_skill_names)).all()
+        }
+        session['selected_interests'] = selected_interest_ids
+        session['selected_skills'] = [
+            skill_id for skill_id in request.form.getlist('skills')
+            if skill_id in allowed_skill_ids
+        ]
+        return redirect(url_for('auth.register'))
+
     configured_names = list(interest_skill_map)
     all_interests = Interest.query.filter(
         Interest.name.in_(configured_names)
@@ -206,7 +222,7 @@ def complete_sex():
     if request.method == 'POST':
         sex = request.form.get('sex', '').strip().lower()
         if sex not in SEXES:
-            flash('Select Male or Female to continue.', 'error')
+            flash('Select a sex response to continue.', 'error')
         else:
             current_user.sex = sex
             db.session.commit()
@@ -270,7 +286,7 @@ def register():
         if volunteer_type not in VOLUNTEER_TYPES:
             errors.append('Select Student, Faculty, or Staff.')
         if sex not in SEXES:
-            errors.append('Select Male or Female.')
+            errors.append('Select a sex response.')
         if not college_affiliation:
             errors.append('College affiliation is required.')
         if active_terms and request.form.get('terms_accepted') != 'on':

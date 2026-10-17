@@ -117,7 +117,7 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
         valid = Registration.query.filter(
             Registration.event_id == e.id,
             Registration.status != 'cancelled')
-        if sex in ('male', 'female'):
+        if sex in ('male', 'female', 'prefer_not_to_say'):
             valid = valid.join(User, Registration.user_id == User.id).filter(User.sex == sex)
         elif sex == 'unrecorded':
             valid = valid.join(User, Registration.user_id == User.id).filter(User.sex.is_(None))
@@ -127,7 +127,7 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             Registration.external_participant_id.isnot(None)).count()
         attendance = Attendance.query.filter_by(event_id=e.id, status='present')
         completed_query = Registration.query.filter_by(event_id=e.id, status='completed')
-        if sex in ('male', 'female'):
+        if sex in ('male', 'female', 'prefer_not_to_say'):
             attendance = attendance.join(User, Attendance.user_id == User.id).filter(User.sex == sex)
             completed_query = completed_query.join(User, Registration.user_id == User.id).filter(User.sex == sex)
         elif sex == 'unrecorded':

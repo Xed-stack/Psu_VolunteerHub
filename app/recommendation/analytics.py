@@ -493,10 +493,15 @@ class AnalyticsAggregator:
                 end_date = None
         if category:
             query = query.filter(Event.category == category)
-        if sex in ('male', 'female'):
+        if sex in ('male', 'female', 'prefer_not_to_say'):
             query = query.filter(User.sex == sex)
         rows = {value: int(count) for value, count in query.group_by(User.sex).all()}
-        labels = (('female', 'Female'), ('male', 'Male'), (None, 'Not recorded'))
+        labels = (
+            ('female', 'Female'),
+            ('male', 'Male'),
+            ('prefer_not_to_say', 'Prefer Not to Say'),
+            (None, 'Not recorded'),
+        )
         return [{'sex': label, 'actual_participants': rows.get(value, 0)}
                 for value, label in labels if sex is None or value == sex]
 

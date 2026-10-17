@@ -55,64 +55,77 @@ body {
 
 .choice-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Flexible tracks keep category cards readable before they stack. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
   gap: 12px
 }
 
 .choice {
-  position: relative
-}
-
-.choice input {
-  position: absolute;
-  opacity: 0
-}
-
-.choice label {
-  display: block;
-  padding: 14px;
-  border: 1px solid var(--outline-variant);
-  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
   cursor: pointer
 }
 
+.choice input {
+  /* Native controls keep checked and focused states accessible without scripts. */
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--primary)
+}
+
 .choice-group {
-  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
   border: 1px solid var(--outline-variant);
   border-radius: 10px;
-  padding: 14px;
+  padding: 10px 14px 14px;
   transition: border-color .15s ease, background-color .15s ease;
-}
-
-.choice-group__hit {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  margin: 0;
-  cursor: pointer;
-}
-
-.choice-group legend,
-.choice-group .related-skills {
-  position: relative;
-  z-index: 1;
 }
 
 .choice-group legend {
   padding: 0 4px;
 }
 
-.choice-group legend .choice,
-.choice--compact {
-  display: flex;
-  align-items: center;
+.choice--interest {
   min-height: 44px;
-  cursor: pointer;
+  align-items: center;
+  font-weight: 700;
+}
+
+.choice__text {
+  min-width: 0;
+}
+
+.choice__state {
+  display: none;
+  margin-left: 6px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.related-skills {
+  display: none;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.related-skills__hint {
+  margin: 0 0 2px;
+  color: var(--on-surface-variant);
+  font-size: 13px;
 }
 
 .choice--compact {
+  min-height: 44px;
+  align-items: center;
   padding: 8px 10px;
-  border: 1px solid transparent;
+  border: 1px solid var(--outline-variant);
   border-radius: 8px;
 }
 
@@ -121,15 +134,22 @@ body {
   background: var(--primary-light);
 }
 
+.choice-group:has(> legend input:checked) .choice__state {
+  display: inline;
+}
+
+.choice-group:has(> legend input:checked) .related-skills {
+  display: grid;
+}
+
 .choice--compact:has(input:checked) {
   border-color: var(--primary);
-  background: var(--primary-light);
+  background: #fff;
   color: var(--primary);
 }
 
 .choice-group:focus-within,
-.choice input:focus-visible+label,
-.choice--compact:has(input:focus-visible) {
+.choice:has(input:focus-visible) {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }

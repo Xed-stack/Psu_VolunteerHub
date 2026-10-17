@@ -1,0 +1,58 @@
+{% extends 'layouts/public_base.html' %}
+{% block title %}Registration details · PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <nav class="public-nav" aria-label="Public navigation">
+    <a class="public-brand" href="{{ url_for('home') }}">
+      <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="">
+      <span>PSU Volunteer Hub</span>
+    </a>
+    <div class="public-nav__links">
+      <a href="{{ url_for('events.opportunities') }}">Opportunities</a>
+      <a href="{{ url_for('help_page') }}">Help</a>
+    </div>
+  </nav>
+  <main class="public-main public-main--records">
+    <section class="panel guest-registration">
+      <header class="page-heading">
+        <div>
+          <h1>External volunteer registration</h1>
+          <p>Your registration details and cancellation option are managed from this secure link.</p>
+        </div>
+      </header>
+      {% include 'partials/flash_messages.html' %}
+      <dl class="event-facts event-facts--dialog">
+        <div><dt>Activity</dt><dd>{{ registration.event.title }}</dd></div>
+        <div><dt>Status</dt><dd>{{ registration.status|title }}</dd></div>
+        <div><dt>Campus</dt><dd>{{ registration.event.campus.name if registration.event.campus else 'PSU' }}</dd></div>
+        <div><dt>Starts</dt><dd>{{ registration.event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+        <div><dt>Cancellation deadline</dt><dd>{{ (registration.event.cancellation_deadline or registration.event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+      </dl>
+      <p class="guest-registration__reference"><strong>Reference:</strong> {{ registration.external_participant.id_number }}</p>
+      {% if registration.cancellation_request %}
+        <p class="guest-registration__note">Cancellation request status: <strong>{{ registration.cancellation_request.status|title }}</strong>.</p>
+      {% elif can_cancel %}
+        <section class="policy-panel" aria-labelledby="cancel-title">
+          <h2 id="cancel-title">Request cancellation</h2>
+          <p class="guest-registration__note">A campus coordinator will review your request before the registration is cancelled.</p>
+          <form method="post" action="{{ url_for('events.external_registration_cancel', token=token) }}">
+            {% include 'partials/csrf_field.html' %}
+            <label class="field">
+              Reason
+              <select class="select" name="reason" required>
+                <option value="">Choose a reason</option>
+                {% for reason in reasons %}<option value="{{ reason }}">{{ reason }}</option>{% endfor %}
+              </select>
+            </label>
+            <label class="field">
+              Details for Other reasons (optional otherwise)
+              <textarea class="input" name="details" rows="3"></textarea>
+            </label>
+            <button class="button button--secondary" type="submit">Request cancellation</button>
+          </form>
+        </section>
+      {% else %}
+        <p class="guest-registration__note">Cancellation is no longer available because the deadline passed, attendance was recorded, or the registration is closed.</p>
+      {% endif %}
+    </section>
+  </main>
+{% endblock %}

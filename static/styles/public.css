@@ -142,6 +142,69 @@ button:focus-visible,
     line-height: 1.2;
 }
 
+.opportunity-card__join {
+    display: grid;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.external-join-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    width: fit-content;
+    color: var(--primary);
+    font-weight: 750;
+}
+
+/* Equal choices prevent the community-volunteer route from appearing secondary. */
+.join-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.join-option {
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    min-height: 112px;
+    padding: 18px;
+    color: var(--on-surface);
+    background: #fff;
+    border: 1px solid var(--outline-variant);
+    border-radius: 12px;
+    text-decoration: none;
+}
+
+.join-option:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.join-option strong {
+    color: var(--primary-dark);
+    font-size: 1.05rem;
+}
+
+.join-option span {
+    color: var(--on-surface-variant);
+    line-height: 1.45;
+}
+
+.guest-registration__intro,
+.guest-registration__note {
+    color: var(--on-surface-variant);
+    line-height: 1.6;
+}
+
+.guest-registration__reference {
+    margin: 20px 0;
+    padding: 12px 14px;
+    background: var(--surface-container-low);
+    border-left: 4px solid var(--primary);
+}
+
 @media (max-width: 560px) {
     .opportunities-page {
         width: min(100% - 28px, 1180px);
@@ -157,6 +220,14 @@ button:focus-visible,
     .opportunities-page .form-actions a {
         width: 100%;
         justify-content: center;
+    }
+
+    .join-options {
+        grid-template-columns: 1fr;
+    }
+
+    .external-join-link {
+        width: 100%;
     }
 }
 

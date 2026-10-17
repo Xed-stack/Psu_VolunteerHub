@@ -1,0 +1,17 @@
+{% extends 'layouts/public_base.html' %}
+{% block title %}Registration link unavailable · PSU Volunteer Hub{% endblock %}
+{% block body %}
+  <nav class="public-nav" aria-label="Public navigation">
+    <a class="public-brand" href="{{ url_for('home') }}">
+      <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="">
+      <span>PSU Volunteer Hub</span>
+    </a>
+  </nav>
+  <main class="public-main public-main--records">
+    <section class="panel guest-registration">
+      <h1>Registration link unavailable</h1>
+      <p class="guest-registration__intro">This link is invalid or has expired. Please contact the activity's campus coordinator for help.</p>
+      <a class="button button--primary" href="{{ url_for('events.opportunities') }}">View opportunities</a>
+    </section>
+  </main>
+{% endblock %}

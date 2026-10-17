@@ -3,19 +3,25 @@ Events Routes for PSU Volunteer Hub
 =====================================
 Manages event listings, registrations, and the volunteer dashboard.
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   flash, abort, current_app)
 from flask_login import login_required, current_user
+from email_validator import EmailNotValidError, validate_email
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from sqlalchemy import func
 from app.models import db
-from app.models.user import VolunteerProfile
+from app.models.user import AuthSecurityEvent, VolunteerProfile
 from app.models.event import (Event, Registration, Attendance, Campus,
                              ExternalParticipant, CancellationRequest)
-from app.models.policy import ParticipationAgreementRevision
+from app.models.policy import ParticipationAgreementRevision, PrivacyRevision
 from app.recommendation.engine import get_recommendations, bootstrap_from_event
+from app.services.email import send_email
 from app.utils.decorators import role_required
 from app.models.notification import notify, notify_campus_coordinators
 from app.utils.audit import log_activity
-from datetime import datetime
+from datetime import datetime, timedelta
 from calendar import Calendar
+import secrets
 
 events_bp = Blueprint('events', __name__, url_prefix='')
 
@@ -24,6 +30,9 @@ CANCELLATION_REASONS = (
     'Work / Schedule Conflict', 'Transportation Problem',
     'Personal Emergency', 'Other',
 )
+EXTERNAL_REGISTRATION_LIMIT = 5
+EXTERNAL_REGISTRATION_WINDOW = timedelta(hours=1)
+EXTERNAL_LINK_MAX_AGE = 60 * 60 * 24 * 30
 
 
 def _agreement_for(event):
@@ -40,6 +49,141 @@ def _agreement_for(event):
                 'body': ('By joining this activity, I commit to participate, follow PSU '
                          'guidelines, and submit a cancellation request if I cannot attend.'),
             })
+
+
+def _privacy_for_external():
+    """Return the notice a new guest must acknowledge."""
+    revision = PrivacyRevision.query.filter_by(is_active=True).order_by(
+        PrivacyRevision.published_at.desc()).first()
+    if revision:
+        return {
+            'title': revision.title,
+            'body': revision.body,
+            'version': revision.version,
+        }
+    return {
+        'title': 'Privacy Notice',
+        'body': ('PSU Volunteer Hub uses your name, email, and optional phone '
+                 'number to manage this activity registration and related '
+                 'cancellation request.'),
+        'version': 'system-default',
+    }
+
+
+def _external_registration_error(event):
+    if event.date <= datetime.now():
+        return 'This activity has already started and cannot accept registrations.'
+    if event.slots <= 0 or event.slots_remaining() <= 0:
+        return 'This activity no longer has available slots.'
+    if _agreement_for(event) is None:
+        return 'This activity cannot accept registrations until its agreement is published.'
+    return None
+
+
+def _external_throttle_key(_email=''):
+    """Limit public guest submissions by source, not a user-controlled email."""
+    ip_address = request.remote_addr or 'unknown'
+    return AuthSecurityEvent.subject(f'external_registration|{ip_address}')
+
+
+def _external_registration_is_limited(email):
+    cutoff = datetime.utcnow() - EXTERNAL_REGISTRATION_WINDOW
+    return AuthSecurityEvent.query.filter(
+        AuthSecurityEvent.action == 'external_registration',
+        AuthSecurityEvent.subject_hash == _external_throttle_key(email),
+        AuthSecurityEvent.created_at >= cutoff,
+    ).count() >= EXTERNAL_REGISTRATION_LIMIT
+
+
+def _record_external_registration_attempt(email):
+    db.session.add(AuthSecurityEvent(
+        action='external_registration',
+        subject_hash=_external_throttle_key(email),
+    ))
+
+
+def _external_reference():
+    """Generate a non-guessable reference without exposing a database ID."""
+    while True:
+        reference = f'EXT-{secrets.token_hex(6).upper()}'
+        if not ExternalParticipant.query.filter_by(id_number=reference).first():
+            return reference
+
+
+def _guest_external_participant(name, email, contact_number):
+    """Find a guest by contact address or create a new guest record."""
+    participant = ExternalParticipant.query.filter(
+        func.lower(ExternalParticipant.email) == email.lower()).first()
+    if participant is None:
+        participant = ExternalParticipant(
+            id_number=_external_reference(),
+            name=name,
+            email=email,
+            contact_number=contact_number or None,
+        )
+        db.session.add(participant)
+    else:
+        # Preserve coordinator-entered data, but fill genuinely missing fields.
+        if not participant.name:
+            participant.name = name
+        if not participant.contact_number and contact_number:
+            participant.contact_number = contact_number
+    db.session.flush()
+    return participant
+
+
+def _external_token(registration):
+    serializer = URLSafeTimedSerializer(
+        current_app.config['SECRET_KEY'], salt='external-registration')
+    return serializer.dumps({'registration_id': registration.id})
+
+
+def _external_registration_from_token(token):
+    serializer = URLSafeTimedSerializer(
+        current_app.config['SECRET_KEY'], salt='external-registration')
+    payload = serializer.loads(token, max_age=EXTERNAL_LINK_MAX_AGE)
+    registration_id = payload.get('registration_id') if isinstance(payload, dict) else None
+    registration = db.session.get(Registration, registration_id)
+    if registration is None or not registration.is_external:
+        raise BadSignature('Unknown external registration')
+    return registration
+
+
+def _send_external_confirmation(registration):
+    participant = registration.external_participant
+    if not participant or not participant.email:
+        return
+    manage_url = url_for(
+        'events.external_registration_manage',
+        token=_external_token(registration),
+        _external=True,
+    )
+    body = (
+        f'Hello {participant.name},\n\n'
+        f'Your external volunteer registration for "{registration.event.title}" '
+        'has been received. No PSU account was created.\n\n'
+        f'Manage your registration or request cancellation: {manage_url}\n\n'
+        'This link expires after 30 days. Contact the campus coordinator if '
+        'you need help after it expires.'
+    )
+    try:
+        send_email(participant.email, 'PSU Volunteer Hub registration details', body)
+    except Exception:
+        current_app.logger.exception(
+            'Could not send external registration confirmation to %s',
+            participant.email,
+        )
+
+
+def _external_cancellation_available(registration):
+    event = registration.event
+    return (
+        registration.status in ('pending', 'confirmed')
+        and registration.attendance_record is None
+        and (event.cancellation_deadline or event.date) > datetime.now()
+        and not (registration.cancellation_request
+                 and registration.cancellation_request.status == 'pending')
+    )
 
 
 def _upsert_external_participant(id_number, name=None, contact_number=None,
@@ -334,30 +478,53 @@ def event_join(event_id):
     event = db.session.get(Event, event_id)
     if event is None:
         abort(404)
+    agreement = _agreement_for(event)
+    privacy = _privacy_for_external()
+    availability_error = _external_registration_error(event)
     if request.method == 'POST':
         from_psu = request.form.get('from_psu', '').strip()
         if from_psu == 'yes':
             return redirect(url_for(
                 'auth.login',
                 next=url_for('events.register_for_event', event_id=event.id)))
-        # Outsider path
-        id_number = request.form.get('id_number', '').strip()
-        if not id_number:
-            flash('ID number is required for outsider registration.', 'error')
+        # Community guest path. An internal reference is generated server-side.
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        if availability_error:
+            flash(availability_error, 'error')
             return render_template(
-                'events/event_join.html', event=event, external_form=True), 400
-        agreement = _agreement_for(event)
-        if agreement is None or request.form.get('accept_agreement') != 'yes' or (event.nda_required and request.form.get('accept_nda') != 'yes'):
+                'events/event_join.html', event=event, external_form=True,
+                agreement=agreement, privacy=privacy,
+                availability_error=availability_error), 400
+        if not name or not email:
+            flash('Enter your full name and email address to register.', 'error')
+            return render_template(
+                'events/event_join.html', event=event, external_form=True,
+                agreement=agreement, privacy=privacy), 400
+        try:
+            email = validate_email(email, check_deliverability=False).normalized
+        except EmailNotValidError:
+            flash('Enter a valid email address.', 'error')
+            return render_template(
+                'events/event_join.html', event=event, external_form=True,
+                agreement=agreement, privacy=privacy), 400
+        if _external_registration_is_limited(email):
+            flash('Too many registration attempts. Please wait and try again.', 'error')
+            return render_template(
+                'events/event_join.html', event=event, external_form=True,
+                agreement=agreement, privacy=privacy), 429
+        if (agreement is None
+                or request.form.get('accept_agreement') != 'yes'
+                or request.form.get('accept_privacy') != 'yes'
+                or (event.nda_required
+                    and request.form.get('accept_nda') != 'yes')):
+            _record_external_registration_attempt(email)
+            db.session.commit()
             flash('Accept the required agreement(s) before joining.', 'error')
             return render_template('events/event_join.html', event=event, external_form=True,
-                                   agreement=agreement), 400
-        participant = _upsert_external_participant(
-            id_number,
-            name=request.form.get('name', '').strip(),
-            contact_number=request.form.get('contact_number', '').strip(),
-            address=request.form.get('address', '').strip(),
-            email=request.form.get('email', '').strip())
-        # One registration per outsider per event.
+                                   agreement=agreement, privacy=privacy), 400
+        participant = _guest_external_participant(name, email, contact_number)
         existing = Registration.query.filter_by(
             external_participant_id=participant.id, event_id=event.id).first()
         if existing is None:
@@ -366,8 +533,14 @@ def event_join(event_id):
                 status='confirmed', policy_accepted_at=datetime.utcnow(),
                 policy_version=agreement['version'],
                 nda_accepted_at=datetime.utcnow() if event.nda_required else None,
-                nda_version=event.nda_version if event.nda_required else None)
+                nda_version=event.nda_version if event.nda_required else None,
+                external_privacy_accepted_at=datetime.utcnow(),
+                external_privacy_version=privacy['version'])
             db.session.add(registration)
+            db.session.flush()
+            log_activity('external_registration', registration,
+                         {'event_id': event.id, 'privacy_version': privacy['version']})
+            _record_external_registration_attempt(email)
             db.session.commit()
             notify_campus_coordinators(
                 event.campus_id,
@@ -376,10 +549,75 @@ def event_join(event_id):
                         f'registered for "{event.title}".',
                 notification_type='external_registration',
                 related_event_id=event.id)
-        flash('You are registered for this activity as an external volunteer.',
-              'success')
+            db.session.commit()
+            _send_external_confirmation(registration)
+            flash('Registration received. Check your email for the confirmation and management link.',
+                  'success')
+        else:
+            _record_external_registration_attempt(email)
+            db.session.commit()
+            _send_external_confirmation(existing)
+            flash('A registration for this activity already exists. Check your email for its details.',
+                  'info')
         return redirect(url_for('events.opportunities'))
 
     external_form = request.args.get('external') == '1'
     return render_template('events/event_join.html', event=event, external_form=external_form,
-                           agreement=_agreement_for(event))
+                           agreement=agreement, privacy=privacy,
+                           availability_error=availability_error)
+
+
+@events_bp.route('/external/registrations/<token>')
+def external_registration_manage(token):
+    """Show a guest only the registration represented by their signed link."""
+    try:
+        registration = _external_registration_from_token(token)
+    except (BadSignature, SignatureExpired):
+        return render_template('events/external_registration_unavailable.html'), 404
+    return render_template(
+        'events/external_registration_manage.html',
+        registration=registration,
+        token=token,
+        can_cancel=_external_cancellation_available(registration),
+        reasons=CANCELLATION_REASONS,
+    )
+
+
+@events_bp.route('/external/registrations/<token>/cancel', methods=['POST'])
+def external_registration_cancel(token):
+    """Accept a signed guest cancellation request for coordinator review."""
+    try:
+        registration = _external_registration_from_token(token)
+    except (BadSignature, SignatureExpired):
+        return render_template('events/external_registration_unavailable.html'), 404
+    if not _external_cancellation_available(registration):
+        flash('Cancellation is unavailable because the deadline passed or a request is already pending.',
+              'error')
+        return redirect(url_for('events.external_registration_manage', token=token))
+    reason = request.form.get('reason', '').strip()
+    details = request.form.get('details', '').strip()
+    if reason not in CANCELLATION_REASONS or (reason == 'Other' and not details):
+        flash('Choose a cancellation reason. Explain Other reasons.', 'error')
+        return redirect(url_for('events.external_registration_manage', token=token))
+    cancellation = CancellationRequest(
+        registration_id=registration.id,
+        reason=reason,
+        details=details or None,
+    )
+    db.session.add(cancellation)
+    db.session.flush()
+    log_activity('cancellation_requested', cancellation,
+                 {'event_id': registration.event_id, 'reason': reason,
+                  'external': True})
+    db.session.commit()
+    notify_campus_coordinators(
+        registration.event.campus_id,
+        title=f'Cancellation request: {registration.event.title}',
+        message=(f'{registration.external_participant.name or "External volunteer"} '
+                 f'requested cancellation for "{registration.event.title}".'),
+        notification_type='cancellation_requested',
+        related_event_id=registration.event_id,
+    )
+    db.session.commit()
+    flash('Your cancellation request was sent for coordinator review.', 'success')
+    return redirect(url_for('events.external_registration_manage', token=token))

@@ -136,8 +136,9 @@ class ExternalParticipant(db.Model):
 
     The manuscript treats outsiders as event participants, not system users:
     they are linked to event registrations via a separate record rather than
-    being given a privileged (or even login) User account. Only the ID number
-    is mandatory; personal details are optional.
+    being given a privileged (or even login) User account. Public registrations
+    receive an internal reference automatically; coordinators may still encode
+    legacy or walk-in records with an ID number.
     """
     __tablename__ = 'external_participants'
 
@@ -178,6 +179,8 @@ class Registration(db.Model):
     policy_version = db.Column(db.String(30), nullable=True)
     nda_accepted_at = db.Column(db.DateTime, nullable=True)
     nda_version = db.Column(db.String(30), nullable=True)
+    external_privacy_accepted_at = db.Column(db.DateTime, nullable=True)
+    external_privacy_version = db.Column(db.String(30), nullable=True)
     attendance_record = db.relationship(
         'Attendance', back_populates='registration', uselist=False,
         passive_deletes=True)

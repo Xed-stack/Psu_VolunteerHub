@@ -109,7 +109,8 @@ def analytics():
     live_end = request.args.get('end_date', '').strip()
     live_category = request.args.get('category', '').strip()
     live_sex = request.args.get('sex', '').strip().lower()
-    live_sex = live_sex if live_sex in ('male', 'female', 'unrecorded') else None
+    live_sex = live_sex if live_sex in (
+        'male', 'female', 'prefer_not_to_say', 'unrecorded') else None
     live_sdg_id = request.args.get('sdg_id', type=int)
     if live_sdg_id and db.session.get(SdgGoal, live_sdg_id) is None:
         live_sdg_id = None
@@ -314,7 +315,8 @@ def _university_report_payload():
     sdg = db.session.get(SdgGoal, sdg_id) if sdg_id else None
     rows, summary = build_events_report(
         campus_id=campus_id, start_date=start, end_date=end,
-        category=category, sex=sex if sex in ('male', 'female', 'unrecorded') else None,
+        category=category, sex=sex if sex in (
+            'male', 'female', 'prefer_not_to_say', 'unrecorded') else None,
         sdg_id=sdg.id if sdg else None)
     scope = _report_scope_label(campus_id)
     role_label = 'Administration' if current_user.role == 'admin' else 'Director'

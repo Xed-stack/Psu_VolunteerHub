@@ -835,19 +835,20 @@ def add_external_participant(event_id):
             email=request.form.get('email', '').strip())
         existing = Registration.query.filter_by(
             external_participant_id=participant.id, event_id=event.id).first()
-    if existing is None:
-        db.session.add(Registration(
-            external_participant_id=participant.id, event_id=event.id,
-            status='confirmed'))
-        db.session.commit()
-        notify_campus_coordinators(
-            event.campus_id,
-            title=f'New external volunteer: {event.title}',
-            message=f'An external volunteer ({participant.name or participant.id_number}) '
-                    f'was added to "{event.title}" by a coordinator.',
-            notification_type='external_registration',
-            related_event_id=event.id)
-    flash('External volunteer added to the activity.', 'success')
-    return redirect(url_for('coordinator.attendance', event_id=event.id))
+        if existing is None:
+            db.session.add(Registration(
+                external_participant_id=participant.id, event_id=event.id,
+                status='confirmed'))
+            db.session.commit()
+            notify_campus_coordinators(
+                event.campus_id,
+                title=f'New external volunteer: {event.title}',
+                message=f'An external volunteer ({participant.name or participant.id_number}) '
+                        f'was added to "{event.title}" by a coordinator.',
+                notification_type='external_registration',
+                related_event_id=event.id)
+            db.session.commit()
+        flash('External volunteer added to the activity.', 'success')
+        return redirect(url_for('coordinator.attendance', event_id=event.id))
 
     return render_template('coordinator/add_external.html', event=event)

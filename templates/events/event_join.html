@@ -19,7 +19,10 @@
           {% endfor %}
         </section>
       {% endif %}
-      {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
+      {% if availability_error %}
+        <p class="form-error" role="alert">{{ availability_error }}</p>
+        <a class="button button--primary" href="{{ url_for('events.opportunities') }}">View other opportunities</a>
+      {% elif current_user.is_authenticated and current_user.role == 'volunteer' %}
         <dl class="event-facts event-facts--dialog">
           <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'PSU' }}</dd></div>
           <div><dt>Location</dt><dd>{{ event.location or 'Contact the campus coordinator' }}</dd></div>
@@ -31,16 +34,16 @@
         </dl>
         <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Review and join</a>
       {% elif not external_form %}
-        <p class="question">Are you currently from PSU?</p>
+        <p class="question">Choose how you want to join.</p>
         <div class="join-options">
           <a
-            class="button button--primary"
+            class="join-option"
             href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id)) }}"
-          >Yes, sign in with my PSU account</a>
+          ><strong>PSU volunteer</strong><span>Sign in with your PSU account.</span></a>
           <a
-            class="button button--secondary"
+            class="join-option"
             href="{{ url_for('events.event_join', event_id=event.id, external='1') }}"
-          >No, I'm an external / outsider volunteer</a>
+          ><strong>Community volunteer</strong><span>Register without a PSU account.</span></a>
         </div>
       {% else %}
         <form
@@ -50,21 +53,35 @@
           <input type="hidden" name="from_psu" value="no">
           {% include 'partials/csrf_field.html' %}
           <label class="field">
-            ID Number (required)<input class="input" type="text" name="id_number" required>
+            Full name
+            <input class="input" type="text" name="name" maxlength="100" value="{{ request.form.get('name', '') }}" autocomplete="name" required>
           </label>
           <label class="field">
-            Name (optional)<input class="input" type="text" name="name">
+            Email address
+            <input class="input" type="email" name="email" maxlength="120" value="{{ request.form.get('email', '') }}" autocomplete="email" required>
           </label>
           <label class="field">
-            Contact Number (optional)<input class="input" type="text" name="contact_number">
+            Phone number <span class="field-label">(optional)</span>
+            <input class="input" type="tel" name="contact_number" maxlength="50" value="{{ request.form.get('contact_number', '') }}" autocomplete="tel">
           </label>
-          <label class="field">
-            Address (optional)<input class="input" type="text" name="address">
-          </label>
-          <label class="field">
-            Email Address (optional)<input class="input" type="email" name="email">
-          </label>
-          {% if agreement %}<section class="policy-panel"><h2>{{ agreement.title }}</h2><div class="policy-copy">{{ agreement.body }}</div><label class="check-row"><input type="checkbox" name="accept_agreement" value="yes" required><span>I accept the Participation Agreement.</span></label>{% if event.nda_required %}<h2>Non-Disclosure Agreement</h2><div class="policy-copy">{{ event.nda_text }}</div><label class="check-row"><input type="checkbox" name="accept_nda" value="yes" required><span>I accept the NDA.</span></label>{% endif %}</section>{% else %}<p class="form-error">This activity is not accepting registrations until its agreement is published.</p>{% endif %}
+          <p class="guest-registration__intro">No PSU account is required. We will email your confirmation and a secure link to manage this registration.</p>
+          {% if agreement %}
+            <section class="policy-panel">
+              <h2>{{ agreement.title }}</h2>
+              <div class="policy-copy">{{ agreement.body }}</div>
+              <label class="check-row"><input type="checkbox" name="accept_agreement" value="yes" required><span>I accept the Participation Agreement.</span></label>
+              {% if event.nda_required %}
+                <h2>Non-Disclosure Agreement</h2>
+                <div class="policy-copy">{{ event.nda_text }}</div>
+                <label class="check-row"><input type="checkbox" name="accept_nda" value="yes" required><span>I accept the NDA.</span></label>
+              {% endif %}
+              <h2>{{ privacy.title }}</h2>
+              <div class="policy-copy">{{ privacy.body }}</div>
+              <label class="check-row"><input type="checkbox" name="accept_privacy" value="yes" required><span>I acknowledge this Privacy Notice.</span></label>
+            </section>
+          {% else %}
+            <p class="form-error">This activity is not accepting registrations until its agreement is published.</p>
+          {% endif %}
           <div class="form-actions">
             <button class="button button--primary" type="submit" {{ 'disabled' if not agreement }}>Join as external volunteer</button>
             <a

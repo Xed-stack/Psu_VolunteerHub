@@ -19,19 +19,18 @@
           {% for item in interests_data %}
             {% set interest = item.interest %}
             <fieldset class="choice-group">
-              <label class="choice-group__hit" for="interest-{{ interest.id }}">
-                <span class="sr-only">Select {{ interest.name }}</span>
-              </label>
-
               <legend>
-                <label class="choice">
+                <label class="choice choice--interest">
                   <input
                     id="interest-{{ interest.id }}"
                     type="checkbox"
                     name="interests"
                     value="{{ interest.id }}"
                   >
-                  <strong>{{ interest.name }}</strong>
+                  <span class="choice__text">
+                    <strong>{{ interest.name }}</strong>
+                    <span class="choice__state">Selected</span>
+                  </span>
                 </label>
               </legend>
 
@@ -40,6 +39,7 @@
                   class="related-skills"
                   aria-label="Skills related to {{ interest.name }}"
                 >
+                  <p class="related-skills__hint">Select the skills you can contribute.</p>
                   {% for skill in item.skills %}
                     <label class="choice choice--compact">
                       <input

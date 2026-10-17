@@ -63,7 +63,10 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     id_number = db.Column(db.String(50), nullable=True, unique=True, index=True)
     volunteer_type = db.Column(db.String(20), nullable=True)
-    sex = db.Column(db.Enum('male', 'female', name='user_sexes'), nullable=True)
+    sex = db.Column(
+        db.Enum('male', 'female', 'prefer_not_to_say', name='user_sexes'),
+        nullable=True,
+    )
     college_affiliation = db.Column(db.String(150), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.Enum('volunteer', 'coordinator', 'director',

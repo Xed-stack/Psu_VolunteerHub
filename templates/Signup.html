@@ -35,6 +35,8 @@
   type="email"
   name="email"
   value="{{ request.form.get('email', '') }}"
+  placeholder="00ur0000@psu.edu.ph"
+  autocomplete="email"
   required
 >
           </label>
@@ -69,6 +71,7 @@
               <option value="">Select sex</option>
               <option value="male" {{ 'selected' if request.form.get('sex') == 'male' }}>Male</option>
               <option value="female" {{ 'selected' if request.form.get('sex') == 'female' }}>Female</option>
+              <option value="prefer_not_to_say" {{ 'selected' if request.form.get('sex') == 'prefer_not_to_say' }}>Prefer Not to Say</option>
             </select>
           </label>
           <label class="field">

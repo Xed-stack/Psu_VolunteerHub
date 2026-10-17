@@ -172,7 +172,20 @@
           </select>
         </label>
         {% if current_user.role == 'director' %}
-        <label class="field">Sex<select name="sex"><option value="">All recorded statuses</option><option value="female" {{ 'selected' if selected_sex == 'female' }}>Female</option><option value="male" {{ 'selected' if selected_sex == 'male' }}>Male</option><option value="unrecorded" {{ 'selected' if selected_sex == 'unrecorded' }}>Not recorded</option></select></label>
+        <label class="field">
+          Sex
+          <select name="sex">
+            <option value="">All statuses</option>
+            <option value="female" {{ 'selected' if selected_sex == 'female' }}>Female</option>
+            <option value="male" {{ 'selected' if selected_sex == 'male' }}>Male</option>
+            <option value="prefer_not_to_say" {{ 'selected' if selected_sex == 'prefer_not_to_say' }}>
+              Prefer Not to Say
+            </option>
+            <option value="unrecorded" {{ 'selected' if selected_sex == 'unrecorded' }}>
+              Not recorded
+            </option>
+          </select>
+        </label>
         <label class="field">SDG<select name="sdg_id"><option value="">All SDGs</option>{% for sdg in sdgs %}<option value="{{ sdg.id }}" {{ 'selected' if selected_sdg_id == sdg.id }}>SDG {{ sdg.number }} — {{ sdg.name }}</option>{% endfor %}</select></label>
         {% endif %}
         <label class="field">Participant affiliation<select name="department"><option value="">All affiliations</option>{% for department in departments %}<option value="{{ department }}" {{ 'selected' if selected_department == department }}>{{ department }}</option>{% endfor %}</select><small>Options are limited to the selected campus when one is selected.</small></label>
