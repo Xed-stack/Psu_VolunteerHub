@@ -4,7 +4,7 @@ PSU Volunteer Hub is a centralized volunteer-management platform for Pangasinan 
 
 ## What it does
 
-- Public landing page, featured activities, opportunity search/filtering, event details, external-volunteer joining, help guide, and 2020–2025 historical activity directory.
+- Public landing page, featured activities, opportunity search with multi-campus include/exclude filters, event details, external-volunteer joining, help guide, and 2020–2025 historical activity directory.
 - Volunteer profiles with controlled interests and skills, cosine-similarity recommendations, image upload, a first-use guide, registration calendar, filtered history, and cancellation requests.
 - Coordinator event creation and editing, agreements and optional NDAs, cancellation deadlines, announcements, attendance, external participants, milestones, reports, campus analytics, cancellation review, and campus calendar.
 - Director cross-campus dashboard, activity accomplishments, target-versus-verified attendance, monthly calendars, descriptive analytics, ten-row paginated Live Activity Reports, and CSV/PDF exports.
@@ -125,10 +125,24 @@ The historical import and demo seed are idempotent. Historical imports remain se
 ## Tests
 
 ```powershell
-python -m pytest -q tests\test_app.py
+python -m pytest tests -q
 ```
 
-The latest full local verification completed with `170 passed` before the final documentation update.
+The latest full local verification on 18 October 2026 completed with `277 passed`,
+zero failures, using isolated SQLite test databases. This includes the Admin
+password-reset/session checks and the recent joining, redirect, homepage timing,
+dashboard, and profile regressions.
+
+The subsequent campus-filter enhancement passed 49 focused checks plus isolated
+desktop/mobile browser checks with scripts blocked. See `CAMPUS_FILTER_QA.md`;
+the full suite has not been rerun since that enhancement.
+
+Subsequent analytics search/multi-campus work passed 68 reporting/analytics/UI
+regression checks plus 3 final-code follow-ups. The actual MariaDB database passed
+18 read-only report checks. A four-role browser review used a disposable copy of
+actual data and found two unresolved issues: cancellation approval loses its
+submit-button decision, and future attendance can produce premature completion
+and certificate eligibility. See `ROLE_BROWSER_QA.md` for evidence and scope.
 
 ## Production security checklist
 

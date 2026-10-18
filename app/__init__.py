@@ -74,8 +74,8 @@ def create_app(config_name='development'):
     def require_current_terms():
         """Keep authenticated users on the active Terms revision."""
         if current_user.is_authenticated and session.get('auth_version') != current_user.auth_version:
-            logout_user()
             session.clear()
+            logout_user()
             flash('Your session expired because your password was changed. Sign in again.', 'info')
             return redirect(url_for('auth.login'))
         if (not current_user.is_authenticated
@@ -94,6 +94,7 @@ def create_app(config_name='development'):
             PrivacyRevision.published_at.desc()).first()
         if privacy and not PrivacyAcknowledgement.query.filter_by(
                 user_id=current_user.id, revision_id=privacy.id).first():
+            session['privacy_next'] = request.full_path if request.query_string else request.path
             return redirect(url_for('auth.accept_privacy'))
         if current_user.role == 'volunteer' and not current_user.sex:
             return redirect(url_for('auth.complete_sex'))
@@ -147,12 +148,13 @@ def create_app(config_name='development'):
 
         now = datetime.now()
         featured_events = Event.query.filter(
-            Event.date >= now,
+            Event.date > now,
             Event.slots > 0,
         ).order_by(Event.date.asc()).limit(6).all()
+        completed_at = db.func.coalesce(Event.end_date, Event.date)
         completed_events = Event.query.filter(
-            Event.date < now,
-        ).order_by(Event.date.desc()).limit(3).all()
+            completed_at <= now,
+        ).order_by(completed_at.desc(), Event.id.desc()).limit(3).all()
         historical_summary = {
             'activities': HistoricalActivity.query.count(),
             'participants': int(db.session.query(db.func.sum(

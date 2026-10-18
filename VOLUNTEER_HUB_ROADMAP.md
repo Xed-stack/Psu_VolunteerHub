@@ -8,6 +8,72 @@ The working tagline is: **“Serve with purpose. See the impact.”**
 
 Use clear Filipino-English wording where it improves comprehension, but retain English labels for institutional reports and data fields. Replace the volunteer-facing word **Register** with **Join Now**; keep `Registration` as the internal data term.
 
+## Latest delivery status (18 October 2026)
+
+This section records the work completed in this chat. The phases below retain
+their broader requirements; a phase is not fully complete merely because one
+of its screens was repaired. Items without an explicit completion status are
+requirements to verify, not new claims of implementation.
+
+| Workstream | Status | Delivered evidence |
+| --- | --- | --- |
+| Director and Coordinator dashboards | Completed | Shared PSU role shell, consistent headings/metrics, scoped comparisons, target progress, and real workspace links. |
+| Director and Coordinator analytics | Completed for the redesign scope | Shared filtered report rows power live KPIs, comparisons, trends, pagination, and exports; historical and independently scoped evidence remain labelled. |
+| Shared information tips | Completed | Reusable native disclosure macro explains KPIs, charts, reports, forecasts, recognition, and filter scopes without adding icons to every cell. |
+| First-use walkthroughs for all four roles | Completed | Shared modal/spotlight tour, mobile coach sheet, keyboard controls, account-specific dismissal, Help replay, and safe handling of unavailable anchors. |
+| Volunteer profile repair | Completed | Read-only identity, bounded photo, independent interest/skill choices, truthful participation counts, informational milestones, linked recommendations, and five-row history. |
+| Profile validation and photo recovery | Completed | Inline errors preserve submitted choices; full validation precedes preference changes; failed saves roll back and clean new files; old photos are deleted only after successful commits. |
+| Continuation documentation and UI/UX workflow | Completed | HANDOFF.md contains the current workspace, required skills, preservation rules, verification results, and instructions for a new chat. |
+| GitHub delivery | Published | Commit `8745ec4` on `main` includes dashboards, walkthroughs, profile repair, tests, and handoff. This roadmap refresh is a subsequent local documentation update until committed. |
+| Follow-up correctness and session fixes | Completed locally, uncommitted | Joining consent/start-time checks, safe sign-in/policy return destinations, homepage completion timing, and separate self/other Admin reset handling. Full isolated suite: 277 passed. |
+| Opportunities campus filtering | Completed locally, uncommitted | Alphabetized include/exclude campus checkboxes, retained query filters and pagination, native no-JavaScript operation, and recoverable validation. 49 focused checks passed; see CAMPUS_FILTER_QA.md. |
+
+### Verification recorded in this chat
+
+- [x] Existing volunteer feature tests: **9 passed**.
+- [x] Final-code profile tests: **19 passed**. Coverage includes selected values,
+  missing/unknown catalog choices, validation-state preservation, unavailable
+  catalogs, role isolation, JPEG/PNG/WebP, size/content/dimension rejection,
+  replacement/removal, failed-commit recovery, safe cleanup, and milestone eligibility.
+- [x] Earlier baseline full suite: **227 passed, 1 known failure** (228 collected). The separate
+  final-code profile run includes additional edge cases added during verification.
+- [x] Full suite after follow-up fixes: **277 passed, zero failures** (277 collected).
+  Includes the final profile edge cases and new joining, safe redirect,
+  completion-time, and Admin reset/session regression cases. Test data remained
+  isolated SQLite; Windows temporary-folder permissions required an unsandboxed
+  run with a dedicated test directory. No live MySQL data was changed.
+- [x] Desktop, tablet, and 390px mobile inspected; keyboard controls, information
+  tips, real links, long account names, and contained history scrolling exercised.
+- [x] Contrast checked for new selection, checkbox-edge, error, and muted-text pairs.
+- [x] Preview/test data stayed in isolated SQLite databases and temporary upload
+  directories. No live MySQL data was seeded or changed by this repair.
+- [x] No profile migration, framework, runtime dependency, or profile JavaScript added.
+- [x] Resolve the former `TestAdminUserManagement.test_admin_reset_password`
+  failure. Self-reset now signs out explicitly and explains that the new password
+  is required. Separate self/other reset tests preserve session invalidation and
+  verify remember-cookie cleanup, audit actors, validation, and CSRF.
+
+Detailed evidence and limitations: `DASHBOARD_REDESIGN_QA.md` and
+`PROFILE_REPAIR_QA.md`. Native OS screen-reader output, actual browser 200% zoom,
+and a physical mobile keyboard were not independently verified. A narrow CSS
+viewport reflow check must not be described as actual browser zoom verification.
+
+### Required UI/UX workflow for subsequent work
+
+- Read `HANDOFF.md` first and inspect actual local changes before editing.
+- Read and apply **Ponytail (full)** for minimal, maintainable implementation.
+- Apply **Anti Slop** and **antislop-ui** during implementation; complete the
+  delivery gate with concrete evidence.
+- Use **frontend-design** for deliberate hierarchy, typography, spacing, and composition.
+- Use **antislop-human** for contrast, semantic controls, keyboard focus, and states.
+- Use **antislop-layoutmobile** for responsive reflow, 44px targets, and overflow.
+- Use **web-design-guidelines** to review the completed interface and report limits.
+- Reuse Bare CSS, the single `base.css`, `role-shell.css`, role stylesheets,
+  shared sidebar, and local PSU assets. Retain ENERGY 1 / RHYTHM 2 / MOTION 1.
+- Preserve existing dashboard/profile improvements, Flask routes, CSRF, role/campus
+  boundaries, MySQL schema, and cosine recommendations unless a new request
+  explicitly changes them. New chats must not automatically push or alter live data.
+
 ## Phase 1 — Landing page, discovery, and joining
 
 Implementation update, 18 October 2026: the first-use guide is now a shared role-aware spotlight tour for Volunteer, Coordinator, Director, and Admin. Completion, Skip, and Escape persist per account; Help can replay the appropriate dashboard guide using `?tour=1`.
@@ -17,13 +83,35 @@ Implementation update, 18 October 2026: the first-use guide is now a shared role
 - Add a featured-events carousel from the nearest upcoming activities. Each slide shows cover image, title, campus, category, start and end date/time, remaining slots, and a **Join Now** action.
 - Add event preview modals for public and signed-in users. The modal contains the complete event information, dates, location, required skills, cancellation deadline, and the Join Now action. A signed-in volunteer submits the normal registration form; a guest is offered sign-in and then returns to the selected event. The existing outsider join path remains available.
 - Rework the opportunities list with a banner, image cards, start/end dates, specific campus/category dropdown filters, alphabetical campus ordering, keyword search, and a multi-select campus filter that supports excluding campuses. Keep the listing paginated and accessible without JavaScript.
+- [x] Campus-filter portion: alphabetized native checkboxes support multiple
+  campuses with include/exclude modes, retain search/category selections through
+  pagination, and work with scripts blocked. No selection shows all campuses;
+  original single-campus URLs remain valid. This does not claim completion of
+  every other discovery-page enhancement in the broader requirement above.
 - Make the homepage’s historical-activity summary clickable. It opens a paginated historical-activity list with title, unit/campus, activity type, year, aggregate participant count, source information, and any available details. Historical aggregates remain separate from live events.
 - Add completed-event story cards below the upcoming section. They are generated from finished live events and their milestone uploads, showing the event date range, completion status, featured image, and a details modal/page; no separate editorial article workflow is introduced in this phase.
 - Add an application-wide loading state for form submissions and data-driven navigation: disable the submitting control, show a labeled spinner, retain keyboard focus, and restore controls after validation errors. Do not use an indefinite blocking overlay for ordinary page loads.
-- Add a lightweight, dismissible first-use guide for new users. It highlights profile completion, recommendation results, event browsing, and the Join Now action. Store dismissal per account so it does not recur.
+- [x] Replace the static guide with a shared role-aware first-use walkthrough for Volunteer, Coordinator, Director, and Admin. Native modal dialog, spotlight, step controls, mobile coach sheet, and stable real-section anchors explain the relevant workflow. Finish, Skip, and Escape persist dismissal per account. Help replays the role dashboard tour with `?tour=1` without clearing saved state. No new migration is required beyond the existing first-use timestamp field.
 - Add an always-visible Help link to the public navigation and role sidebar. The help page explains signing up, profile interests/skills, joining, cancelling, attendance, recommendations, and who to contact for account issues.
 
 ## Phase 2 — profile, registration, and coordinator controls
+
+Profile repair completed in this chat:
+
+- [x] Reuse shared role header, spacing, buttons, information tips, and table components.
+- [x] Show actual name, email, campus, and volunteer type; keep account details read-only and remove the unconditional verification claim.
+- [x] Bound the profile photo to 96px with consistent cropping and the local `temp_profile.jpg` fallback.
+- [x] Separate labelled interests and skills into native checkbox grids with visible checked/focus states and at least 44px targets. Preserve independent catalog choices and stored selections.
+- [x] Keep one primary Save profile action; show separate photo removal only when an image exists. Disable saving and explain when a required catalog is unavailable.
+- [x] Validate all choices and the optional image before changing stored selections. Invalid submissions retain submitted choices and show relevant inline errors.
+- [x] Preserve the 3 MB JPEG/PNG/WebP rules, verify image content, reject unsafe dimensions, roll back failed database saves, and safely remove new failed-upload files. Delete previous photos only after successful commits.
+- [x] Label all registration records as Registrations. Show verified present attendance separately from completed participation, which requires completed status plus present attendance.
+- [x] Keep existing level/badge thresholds, using verified completed participation for count-based milestones. Explain that profile milestones are not Director recognition. Category history remains based on verified present attendance.
+- [x] Remove the duplicate read-only skills panel. Make cosine recommendations navigable and link the five-row recent history to the registrations dashboard.
+- [x] Keep profile CSS in `volunteer.css`, without another foundation stylesheet or additional profile JavaScript. No database migration is required.
+
+Remaining or previously specified Phase 2 requirements follow; the profile repair
+does not claim to complete every coordinator or account-management feature here.
 
 - Convert volunteer skills and interests to controlled multi-select choices backed by the existing `Skill` and `Interest` catalogs. Require at least one interest and one skill at account creation and profile update; do not create free-text categories from volunteer input. Display an explanation that recommendation quality depends on profile and participation data and that results are decision support, not guarantees.
 - Improve password entry with a show/hide control, a strength checklist, confirmation field during account creation or password reset, and server-side validation. Preserve the administrator-configured minimum length and reject passwords that fail the chosen policy.
@@ -41,18 +129,34 @@ Implementation update, 18 October 2026: Director and Coordinator dashboards/anal
 
 Current implementation note: descriptive analytics, PDF/CSV reporting, historical aggregate views, and an idempotent local `seed-demo-analytics` fixture are implemented. The fixture supplies representative live events, registrations, and attendance for panel demonstrations; it does not alter deployment data unless the command is explicitly run against that database.
 
-Director demographics, SDG tagging, and annual recognition are also implemented locally. Apply `migrations/20261016_director_demographics_sdgs.sql` to an existing MySQL database before enabling them there. The implementation records volunteer sex as `Male` or `Female`, sends legacy volunteers to a one-time profile-completion screen, uses the fixed official 17-SDG catalogue on activities, and keeps historical aggregates out of demographic and recognition calculations.
+Director demographics, SDG tagging, and annual recognition were already implemented. Apply the applicable documented migrations to an existing MySQL database before enabling those features; do not blindly rerun migrations that are already applied. Declared sex values are `Male`, `Female`, and `Prefer Not to Say`; legacy missing data remains `Not recorded`. The implementation uses the official 17-SDG catalogue and keeps historical aggregates out of demographic and recognition calculations. This chat's dashboard/profile repair introduces no schema change.
+
+Dashboard and analytics redesign completed in this chat:
+
+- [x] Reuse shared Jinja heading/KPI/chart macros and the existing PSU sidebar/top bar, with a skip-to-content link.
+- [x] Director dashboard: university summary, campus comparison, scoped target evidence, and real analytics/calendar links.
+- [x] Coordinator dashboard: Create Activity action, campus summary, upcoming workspace, targets, pending cancellations, and recent registrations.
+- [x] Director/Coordinator analytics: consolidated filters/exports and a single filtered live KPI strip; compatible comparisons, composition/trends, and supporting operational evidence remain role-appropriate.
+- [x] Use `app/dashboard.py` and the existing report rows to align live metrics/charts with the filtered report. Preserve filter query parameters in pagination and CSV/PDF downloads.
+- [x] Retain the ten-row paginated Director live activity report. Keep historical source panels separate rather than silently treating aggregate participants as unique accounts or verified live registrations.
+- [x] Label independently scoped recognition, profile-demographic/affiliation, readiness, and snapshot evidence rather than implying it all shares the live report filter scope.
+- [x] Add accessible information tips and text/table chart fallbacks; preserve existing Plotly behavior, routes, authorization, and campus isolation.
+
+The original analytics enhancements below remain a requirements checklist, not a
+claim that every drill-down, search, multi-select, or multi-year feature was added.
 
 - Keep analytics limited to descriptive reporting defined by the manuscript: counts, percentages, means, attendance/sign-up conversion, participation by campus/category/demographic, activity performance, and weekly/monthly trends. Do not expose K-means segmentation or ANOVA in the user interface.
 - Move role-appropriate KPI summaries to the top of analytics pages. Make each event-count KPI clickable and route it to the corresponding filtered event/report list; for example, a summary of 50 events opens that 50-event filtered list.
-- Add a search field to the Live Activity Report and initially display ten rows. Provide **View all** to expand/paginate without losing the active filters.
+- [x] Display the Director Live Activity Report in ten-row numbered pages while retaining filters.
+- [x] Add literal case-insensitive activity-name search to Director/Admin and Coordinator live reports, aligned with live metrics, charts, pagination, and PDF/CSV exports. Coordinator campus isolation is retained. See ACTIVITY_SEARCH_QA.md.
+- [ ] Separately assess the proposed additional View all interaction; existing Director pagination remains ten rows per page and exports already contain all matching rows.
 - Add date range plus multi-year comparison controls. A user may choose one or more years; comparisons use the same selected campus, category, and activity-name criteria. If a same-named activity has no comparable data, show an explicit empty state rather than inventing a match.
-- Add the existing campus filter as a multi-select include/exclude control, alphabetize the options, and keep it restricted to the role’s permitted campus scope. “School of Graduate Studies” is treated as a selectable campus only if it exists in the existing campus catalog; no new academic-unit data model is added.
+- [x] Director/Admin live analytics: alphabetized multi-campus include/exclude control with consistent totals, charts, pagination, and exports. Coordinators remain restricted to their own campus. Historical/affiliation scopes remain separate; only existing catalog campuses are selectable. See ANALYTICS_CAMPUS_QA.md. No academic-unit data model was added.
 - Let users change supported visualizations where the metric is compatible: line for time series, bar for comparisons, and pie/donut for composition. Preserve a text/table equivalent for accessibility.
 - Add Plotly chart controls for zoom, reset, and exporting the active chart image. Retain current PDF/CSV report exports for the filtered report as a whole; do not attempt browser screenshots as official reports.
 - Label historical imports as aggregate records and show a short data-quality note: historical counts cannot produce individual attendance, demographics, or precise event dates not recorded in the source. Add the same limitation to analytics export metadata.
 - Keep the repeatable `seed-demo-analytics` fixture for local development and panel demonstrations. It creates representative events, registrations, and attendance without modifying real deployment data unless explicitly run there. Historical aggregate imports remain separate through `import-historical-activities`.
-- Director Analytics includes a sex filter/table based on verified PSU attendance and an SDG filter for live activity reports. `Not recorded` is shown separately for pre-existing accounts until they complete the required value.
+- Director Analytics includes a sex filter/table based on verified PSU attendance and an SDG filter for live activity reports. `Prefer Not to Say` is a declared response; `Not recorded` is a separate legacy missing-data state.
 - Coordinators select one or more applicable official SDGs while creating or editing an activity; Director PDF/CSV exports and the live report display those tags.
 - Director Analytics includes an informational calendar-year Top 5 for volunteers and campuses. Volunteer order is verified present attendance then completed activities; campus order is verified attendance rate then verified present attendance. Equal scores share a displayed rank. This is decision support only and excludes outsiders, cancellations, absences, unverified records, and historical aggregates.
 
@@ -106,4 +210,4 @@ Current status: implemented locally. The policy lifecycle migration, authorizati
 - Images are PSU-approved or system-uploaded only; placeholders remain until approved images exist.
 - Event stories are derived from completed events and milestone uploads, not manually authored news articles.
 - Cancellation is controlled per event by an explicit deadline, with a quick two-day preset available to coordinators.
-- QR attendance, automated certificate generation, email/SMS, SIS integration, GIS, financial features, and automated account purging remain out of scope.
+- QR attendance, automated certificate generation, additional email/SMS integrations, SIS integration, GIS, financial features, and automated account purging remain outside this chat's delivery scope. This exclusion does not remove existing email-dependent registration or password-reset behavior.

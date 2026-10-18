@@ -80,27 +80,35 @@ def report_invalid():
 
 
 def build_events_report(campus_id=None, start_date=None, end_date=None,
-                        category=None, sex=None, sdg_id=None):
+                        category=None, sex=None, sdg_id=None, activity_name=None,
+                        campus_ids=None):
     """Return (rows, summary) for the filtered event dataset.
 
     campus_id=None means all campuses. Coordinators must pass their own
     campus id; this function never derives a scope from the request.
+    campus_ids adds an intersecting allow-list: None is unrestricted, [] is
+    empty, and a None entry includes activities without an assigned campus.
     """
     start, end = parse_date_range(start_date, end_date)
 
     query = Event.query
     if campus_id:
         query = query.filter(Event.campus_id == campus_id)
+    if campus_ids is not None:
+        query = query.filter(Event.campus_id.in_(campus_ids) |
+                             (Event.campus_id.is_(None) if None in campus_ids else db.false()))
     if start:
         query = query.filter(Event.date >= start)
     if end:
         query = query.filter(Event.date < end + timedelta(days=1))
     if category:
         query = query.filter(Event.category == category)
+    if activity_name and activity_name.strip():
+        query = query.filter(Event.title.icontains(activity_name.strip(), autoescape=True))
     if sdg_id:
         query = query.filter(Event.sdgs.any(SdgGoal.id == sdg_id))
 
-    events = query.order_by(Event.date.desc()).all()
+    events = query.order_by(Event.date.desc(), Event.id.desc()).all()
 
     rows = []
     total_reg = 0
@@ -198,6 +206,8 @@ def render_csv(rows, summary, meta):
     writer.writerow([f"Scope: {meta['scope']}"])
     writer.writerow([f"Date range: {meta['date_range']}"])
     writer.writerow([f"Category: {meta['category']}"])
+    if meta.get('activity_name'):
+        writer.writerow([f"Activity name contains: {meta['activity_name']}"])
     writer.writerow([f"Generated: {meta['generated']}"])
     writer.writerow([])
     writer.writerow(['Activity', 'Date', 'Campus', 'Category', 'SDGs',
@@ -221,6 +231,7 @@ def render_csv(rows, summary, meta):
 
 def render_pdf(rows, summary, meta):
     import io
+    from xml.sax.saxutils import escape
 
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
@@ -246,11 +257,15 @@ def render_pdf(rows, summary, meta):
         f"PSU Volunteer Hub &middot; {meta['title']}", title_style))
     role_line = f" ({meta['role_label']})" if meta.get('role_label') else ''
     story.append(Paragraph(
-        f"Report scope{role_line}: {meta['scope']}<br/>"
+        f"Report scope{role_line}: {escape(meta['scope'])}<br/>"
         f"Date range: {meta['date_range']}<br/>"
         f"Category: {meta['category']}<br/>"
         f"Generated: {meta['generated']}", small))
     story.append(Spacer(1, 4 * mm))
+    if meta.get('activity_name'):
+        story.append(Paragraph(
+            f"Activity name contains: {escape(meta['activity_name'])}", small))
+        story.append(Spacer(1, 4 * mm))
 
     data = [['Activity', 'Date', 'Campus', 'Category', 'SDGs', 'Reg.', 'PSU', 'Ext.',
              'Actual', 'Cancelled', 'Completed', 'Target', 'Progress']]

@@ -573,6 +573,10 @@ button:focus-visible,
     align-items: center;
 }
 
+.card-actions > .button:focus-visible {
+    outline-color: var(--primary);
+}
+
 .card-actions form {
     margin: 0;
 }

@@ -452,6 +452,130 @@ body.sidebar-open {
   margin: 0;
 }
 
+.opportunities-filters {
+  --outline-variant: #526477;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.opportunities-filters :is(.input, .select) {
+  min-height: 44px;
+}
+
+.opportunities-filters .field {
+  min-width: 0;
+}
+
+.opportunities-filters .campus-filter,
+.opportunities-filters .form-actions {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.campus-filter summary {
+  min-height: 44px;
+  padding: .65rem;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.analytics-campus-filter {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.analytics-campus-filter .campus-filter__mode {
+  max-width: 28rem;
+  margin-top: .75rem;
+}
+
+.analytics-campus-filter summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.campus-filter summary:hover {
+  background: var(--surface-low);
+}
+
+.opportunities-filters .campus-filter__mode {
+  max-width: 28rem;
+  margin-top: .75rem;
+}
+
+.campus-filter p {
+  margin-block: .75rem;
+  color: var(--on-surface-variant);
+}
+
+.campus-filter .campus-filter__error {
+  color: #98201c;
+  font-weight: 600;
+}
+
+.campus-filter__choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.campus-filter__choices legend {
+  margin-bottom: .5rem;
+  font-weight: 600;
+}
+
+.campus-filter__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: .5rem;
+}
+
+.campus-filter__choice {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: .65rem;
+  border: 1px solid #526477;
+  border-radius: var(--radius);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.campus-filter__choice input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.campus-filter__choice:has(input:checked) {
+  color: var(--primary);
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.campus-filter__choice:hover {
+  border-color: var(--primary);
+}
+
+.opportunities-filters :focus-visible,
+.campus-filter__choice:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .opportunities-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .field--inline {
   min-width: 160px;
   margin: 0;

@@ -8,7 +8,7 @@ import csv
 import io
 from calendar import Calendar
 from datetime import datetime
-from flask import Blueprint, render_template, Response, current_app, request, flash, redirect, url_for
+from flask import Blueprint, render_template, Response, current_app, request, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 from app.utils.decorators import roles_required
 from app.recommendation.analytics import AnalyticsAggregator
@@ -21,6 +21,33 @@ from app.reports import (
     ReportError, _build_meta, parse_date_range)
 
 director_bp = Blueprint('director', __name__, url_prefix='')
+
+
+def _live_campuses(campuses):
+    """Resolve only the live scope; legacy campus_id remains compatible."""
+    mode = request.args.get('campus_mode', 'include')
+    raw = [value.strip() for value in request.args.getlist('campus') if value.strip()]
+    values = request.args.getlist('campus', type=int)
+    available = {campus.id for campus in campuses}
+    selected = set(values) & available
+    error = None
+    if len(values) != len(raw) or not set(values) <= available:
+        error = 'Some campus choices are unavailable. Choose campuses from the list and apply filters again.'
+    if mode not in ('include', 'exclude'):
+        error = 'Choose whether to show only or exclude selected campuses, then apply filters again.'
+        mode = 'include'
+    if 'campus' not in request.args and 'campus_mode' not in request.args:
+        legacy = resolve_campus(request.args.get('campus_id'))
+        selected = {legacy} if legacy else set()
+    if error:
+        allowed = []
+    elif not selected:
+        allowed = None
+    elif mode == 'exclude':
+        allowed = sorted(available - selected) + [None]
+    else:
+        allowed = sorted(selected)
+    return sorted(selected), mode, allowed, error
 
 
 def _historical_filters():
@@ -100,13 +127,13 @@ def analytics():
     historical_summary = AnalyticsAggregator.historical_summary(**filters)
     historical_campus_data = AnalyticsAggregator.historical_campus_stats(**filters)
     from app.models.event import HistoricalActivity
-    campuses = Campus.query.order_by(Campus.name).all()
+    campuses = Campus.query.order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
     activity_types = [row[0] for row in db.session.query(
         HistoricalActivity.activity_type).filter(
             HistoricalActivity.activity_type.isnot(None)).distinct().all()]
 
     # Live event-based report (date / campus / category filters)
-    live_campus = resolve_campus(request.args.get('campus_id'))
+    selected_campuses, campus_mode, live_campus_ids, campus_error = _live_campuses(campuses)
     live_start = request.args.get('start_date', '').strip()
     live_end = request.args.get('end_date', '').strip()
     live_category = request.args.get('category', '').strip()
@@ -118,9 +145,9 @@ def analytics():
         live_sdg_id = None
     try:
         live_rows, live_summary = build_events_report(
-            campus_id=live_campus, start_date=live_start,
+            campus_ids=live_campus_ids, start_date=live_start,
             end_date=live_end, category=live_category, sex=live_sex,
-            sdg_id=live_sdg_id)
+            sdg_id=live_sdg_id, activity_name=request.args.get('activity_name', ''))
     except ReportError:
         live_rows, live_summary = [], {
             'event_count': 0, 'total_registrations': 0,
@@ -145,14 +172,16 @@ def analytics():
         User.college_affiliation).all()]
 
     # Supplementary profile evidence retains its independently labelled scope.
-    live_campus_filter = live_campus
+    live_campus_filter = resolve_campus(request.args.get('campus_id'))
     top_skills = AnalyticsAggregator.skill_distribution(limit=8)
     top_interests = AnalyticsAggregator.interest_distribution(limit=8)
     department_participants = AnalyticsAggregator.department_participants(
         campus_id=live_campus_filter, department=department or None)
     sex_participation = AnalyticsAggregator.sex_participation(
-        campus_id=live_campus_filter, start_date=live_start, end_date=live_end,
-        category=live_category, sex=live_sex)
+        start_date=live_start, end_date=live_end,
+        category=live_category, sex=live_sex,
+        activity_name=request.args.get('activity_name', ''),
+        event_ids=[row['event_id'] for row in live_rows])
     award_years = sorted({event.date.year for event in Event.query.with_entities(Event.date).all()}, reverse=True)
     award_year = request.args.get('award_year', type=int)
     if award_year not in award_years:
@@ -165,6 +194,12 @@ def analytics():
                             historical_summary=historical_summary,
                             historical_campus_data=historical_campus_data,
                             campuses=campuses, activity_types=activity_types,
+                            selected_campuses=selected_campuses, campus_mode=campus_mode,
+                            campus_error=campus_error,
+                            live_query=(request.args.to_dict(flat=False) if campus_error else
+                                        dict(request.args.to_dict(flat=False),
+                                            campus=[str(cid) for cid in selected_campuses],
+                                            campus_mode=[campus_mode])),
                             categories=categories,
                             sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
                             selected_sex=live_sex, selected_sdg_id=live_sdg_id,
@@ -178,7 +213,7 @@ def analytics():
                             department_participants=department_participants,
                             sex_participation=sex_participation,
                             award_years=award_years, award_year=award_year,
-                            leaderboards=leaderboards)
+                            leaderboards=leaderboards), (400 if campus_error else 200)
 
 
 @director_bp.route('/reports/campus.csv')
@@ -284,7 +319,10 @@ def _university_report_payload():
     may request any single campus or all campuses; the campus is validated and
     never trusted blindly. Invalid dates raise ReportError -> caller redirects.
     """
-    campus_id = resolve_campus(request.args.get('campus_id'))
+    campuses = Campus.query.order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
+    selected, mode, allowed, error = _live_campuses(campuses)
+    if error:
+        abort(400, description=error)
     start = request.args.get('start_date', '').strip()
     end = request.args.get('end_date', '').strip()
     category = request.args.get('category', '').strip()
@@ -292,16 +330,20 @@ def _university_report_payload():
     sdg_id = request.args.get('sdg_id', type=int)
     sdg = db.session.get(SdgGoal, sdg_id) if sdg_id else None
     rows, summary = build_events_report(
-        campus_id=campus_id, start_date=start, end_date=end,
+        campus_ids=allowed, start_date=start, end_date=end,
         category=category, sex=sex if sex in (
             'male', 'female', 'prefer_not_to_say', 'unrecorded') else None,
-        sdg_id=sdg.id if sdg else None)
-    scope = _report_scope_label(campus_id)
+        sdg_id=sdg.id if sdg else None,
+        activity_name=request.args.get('activity_name', ''))
+    names = [campus.name for campus in campuses if campus.id in selected]
+    scope = ('All Campuses' if not selected else
+             ('All campuses except: ' if mode == 'exclude' else 'Selected campuses: ') + ', '.join(names))
     role_label = 'Administration' if current_user.role == 'admin' else 'Director'
     meta = _build_meta(
         title='University-wide Activity Report', scope=scope,
         start_date=start, end_date=end, category=category,
         role_label=role_label)
+    meta['activity_name'] = request.args.get('activity_name', '').strip()
     return rows, summary, meta
 
 

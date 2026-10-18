@@ -15,7 +15,7 @@
     <section class="auth-form">
       <h1>Sign in</h1>
       <p>Access your university volunteer portal.</p>
-      <form action="{{ url_for('auth.login') }}" method="post">
+      <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post">
         <label class="field">
           Email or ID number
           <input

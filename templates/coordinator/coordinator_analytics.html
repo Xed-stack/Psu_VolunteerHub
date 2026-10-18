@@ -23,9 +23,15 @@
   >
     <div class="heading-with-tip">
       <h2 id="filter-heading">Filters and reports</h2>
-      {{ info_tip('Report filters', 'Dates and category scope the KPI strip, comparison charts, engagement trend, and filtered activity report. Forecast and attendance snapshot have their own labelled campus scope.') }}
+      {{ info_tip('Report filters', 'Activity name, dates, and category scope the KPI strip, comparison charts, engagement trend, and filtered activity report. Forecast and attendance snapshot have their own labelled campus scope.') }}
     </div>
     <form class="filter-row" method="get">
+      <label class="field">Activity name
+        <input type="search" name="activity_name" autocomplete="off"
+          value="{{ request.args.get('activity_name', '') }}"
+          aria-describedby="activity-name-help">
+        <small id="activity-name-help">Matches any part of the activity title, ignoring case.</small>
+      </label>
       <label class="field">
         Start date<input
   type="date"
@@ -74,7 +80,7 @@
     class="summary-strip"
     aria-label="Filtered campus activity totals"
   >
-    {{ metric('Activities', report_summary.event_count, 'Activities at your campus matching the selected dates and category.') }}
+    {{ metric('Activities', report_summary.event_count, 'Activities at your campus matching the selected activity name, dates, and category.') }}
     {{ metric('Registrations', report_summary.total_registrations, 'Non-cancelled campus registrations in the report scope. Each activity sign-up is counted separately.') }}
     {{ metric('Verified attendance', report_summary.total_attended, 'Present attendance records in the filtered campus activities. Repeat participation counts per activity.') }}
     {{ metric('Completed participations', report_summary.total_completed, 'Participation records marked completed within the filtered campus activities.') }}
@@ -226,7 +232,7 @@
   </section>
 
   <section class="panel" id="filtered-report">
-    {{ heading('Filtered Activity Report', 'Activity-level counts matching the selected campus report dates and category. PDF and CSV downloads contain these same rows.', 'Restricted to ' ~ campus_name ~ ' Campus') }}
+    {{ heading('Filtered Activity Report', 'Activity-level counts matching the selected activity name, campus report dates, and category. PDF and CSV downloads contain these same rows.', 'Restricted to ' ~ campus_name ~ ' Campus') }}
     <div
       class="table-scroll"
       tabindex="0"

@@ -211,22 +211,38 @@ def _upsert_external_participant(id_number, name=None, contact_number=None,
 def opportunities():
     page = request.args.get('page', 1, type=int)
     per_page = 9
-    campus_id = request.args.get('campus', type=int)
+    campuses = Campus.query.order_by(func.lower(Campus.name), Campus.name, Campus.id).all()
+    available_campuses = {campus.id for campus in campuses}
+    raw_campuses = [value.strip() for value in request.args.getlist('campus') if value.strip()]
+    requested_campuses = request.args.getlist('campus', type=int)
+    selected_campuses = set(requested_campuses) & available_campuses
+    campus_mode = request.args.get('campus_mode', 'include')
+    filter_error = None
+    if len(requested_campuses) != len(raw_campuses) or not set(requested_campuses) <= available_campuses:
+        filter_error = 'Some campus choices are unavailable. Choose campuses from the list and apply filters again.'
+    if campus_mode not in ('include', 'exclude'):
+        filter_error = 'Choose whether to show only or exclude the selected campuses, then apply filters again.'
+        campus_mode = 'include'
     category = request.args.get('category', type=str) or None
     search = request.args.get('search', type=str) or None
     query = Event.query.filter(Event.date >= datetime.now(), Event.slots > 0)
-    if campus_id:
-        query = query.filter(Event.campus_id == campus_id)
+    if filter_error:
+        query = query.filter(db.false())
+    elif selected_campuses:
+        if campus_mode == 'exclude':
+            query = query.filter(db.or_(Event.campus_id.is_(None),
+                                       Event.campus_id.notin_(selected_campuses)))
+        else:
+            query = query.filter(Event.campus_id.in_(selected_campuses))
     if category:
         query = query.filter(Event.category == category)
     if search:
         like = f'%{search}%'
         query = query.filter(Event.title.ilike(
             like) | Event.description.ilike(like))
-    query = query.order_by(Event.date.asc())
+    query = query.order_by(Event.date.asc(), Event.id.asc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     events = pagination.items
-    campuses = Campus.query.all()
     # Data-driven category filter: distinct categories actually in use,
     # so the dropdown never offers options that return zero results.
     categories = [row[0] for row in db.session.query(
@@ -245,11 +261,13 @@ def opportunities():
                            current_page=pagination.page,
                            total_pages=pagination.pages,
                            total_count=pagination.total,
-                           selected_campus=campus_id,
+                           selected_campuses=sorted(selected_campuses),
+                           campus_mode=campus_mode,
+                           filter_error=filter_error,
                            selected_category=category,
                            selected_status='upcoming',
                            search_query=search,
-                           registered_event_ids=registered_event_ids)
+                           registered_event_ids=registered_event_ids), 400 if filter_error else 200
 
 
 @events_bp.route('/opportunities/register/<int:event_id>', methods=['GET', 'POST'])
@@ -259,6 +277,9 @@ def register_for_event(event_id):
     event = db.session.get(Event, event_id)
     if event is None:
         abort(404)
+    if event.date <= datetime.now():
+        flash('This activity has already started and cannot accept registrations.', 'error')
+        return redirect(url_for('events.opportunities'))
     agreement = _agreement_for(event)
     if agreement is None:
         flash('This activity cannot accept registrations until its participation agreement is published.', 'error')

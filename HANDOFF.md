@@ -39,6 +39,13 @@ The user can say: **Read HANDOFF.md and continue from the current local files.**
 
 ## Repository and local run
 
+Publication note, 18 October 2026: this follow-up revision includes the joining,
+authentication/session, homepage timing, campus-filter, and activity-search
+improvements plus their QA reports and the preserved roadmap refresh. Earlier
+"local and uncommitted" statements below describe their delivery-time snapshots.
+The two findings in ROLE_BROWSER_QA.md remain unfixed. Copied databases, uploads,
+diagnostic scripts, screenshots, and downloaded reports are not included in Git.
+
 - Repository: `https://github.com/Xed-stack/Psu_VolunteerHub`
 - Branch: `main`
 - Current local workspace: `C:\Users\arlro\Desktop\PSU VOLUNTEER\Psu_VolunteerHub`
@@ -51,6 +58,154 @@ The user can say: **Read HANDOFF.md and continue from the current local files.**
 - The expected local URL is `http://127.0.0.1:5000`.
 
 ## Completed local work
+
+### Four-role browser QA on an actual-data copy (18 October 2026)
+
+- User approved a disposable local MariaDB copy and dedicated role test accounts.
+  `psu_volunteer_browserqa_20261018_a14c` matched all 31 source tables / 1,156 rows
+  before fixtures. Server used localhost, CSRF, suppressed email, and copied uploads.
+- Volunteer, Coordinator, Director, and Admin core browser workflows were exercised.
+  **Two confirmed issues remain unfixed:** cancellation approval loses its named
+  submit-button decision through the shared submit-state script; future activity
+  attendance can immediately produce Completed/certificate-eligible participation.
+- See ROLE_BROWSER_QA.md for reproduction steps, code evidence, role-by-role
+  coverage, sampled authorization checks, evidence, and untested workflows.
+- Original database connections were read-only. Post-review original counts and
+  all 18 read-only report checks still passed; no QA accounts/activities existed
+  there. No source migration, seed, password reset, or application-code fix.
+- Test server stopped and browser closed. The disposable database and copied
+  files remain locally for reproduction; do not publish copied personal data.
+  No commit or push. Fixes require the user's next approval.
+
+### Director live multi-campus filtering (18 October 2026)
+
+- Director/Admin live analytics uses alphabetized native campus checkboxes with
+  include/exclude modes. No choices means all campuses; exclusion retains
+  unassigned activities. New live choices use repeated `campus` parameters.
+- Live totals, comparisons, trends, SDG mapping, report pagination, downloads,
+  and sex-disaggregated attendance use the selected live activity scope.
+  CSV/PDF metadata names the selection and mode. Historical/award forms retain
+  every repeated live choice when submitted.
+- Historical reports and all-time home-campus affiliation evidence keep their
+  separate single `campus_id` selection. Existing URLs using only `campus_id`
+  still scope the live report; new `campus_mode`/`campus` parameters take
+  precedence. Clear restores the unrestricted page.
+- Invalid new campus choices/modes return an inline recoverable HTTP 400 with
+  no live rows. Invalid CSV/PDF requests return HTTP 400, never a broader report.
+- Coordinator routes remain account-campus scoped and ignore the new inputs.
+  No new campus records, migration, dependency, foundation stylesheet, or JS.
+- Isolated SQLite browser checks covered native keyboard inclusion/exclusion,
+  invalid-choice recovery, desktop and 390px mobile. All campus targets were
+  44px high; page widths matched the viewport. See ANALYTICS_CAMPUS_QA.md.
+- Everything remains local and uncommitted; no live database change or push.
+  Reporting/analytics/UI regression rerun: **68 passed**; final-code follow-up:
+  **3 passed**, including an additional all-excluded/legacy-link case.
+
+### Live activity-name search (18 October 2026)
+
+- Director/Admin and Coordinator analytics now have a native GET search field.
+  It matches a literal, case-insensitive title substring; surrounding whitespace
+  is ignored. Blank search retains the existing report scope.
+- The shared report builder applies search before totals, chart summaries,
+  ten-row Director pagination, and CSV/PDF exports. Downloads record the search
+  in metadata. Date ties use record ID for stable paging.
+- Coordinator scope still comes from the authenticated account, never the URL.
+  Director sex-disaggregated attendance also honors the title search. Historical
+  source reports, annual recognition, and independently scoped profile/readiness
+  evidence retain their existing scopes. No new View all interaction was added.
+- Browser verification used isolated in-memory SQLite with CSRF enabled:
+  desktop and 390px mobile, Enter submission, empty result, and Clear recovery.
+  Mobile input height was 44px; page client/scroll widths both 375px.
+- See ACTIVITY_SEARCH_QA.md for automated evidence and verification limits.
+  Reporting/analytics/UI regression run: **57 passed**; final-code follow-up
+  after attendance-table alignment: **3 passed** (including one additional case).
+  All previous work is preserved. No migration, dependency, live database write,
+  commit, or push.
+
+### Opportunities campus filtering (18 October 2026)
+
+- Public and signed-in Opportunities support alphabetized native campus
+  checkboxes with include/exclude modes. No selection means all campuses.
+- Repeated `campus` query parameters preserve selected campuses with search,
+  category, mode, and pagination. Existing single-campus URLs remain supported.
+  Exclusion keeps unassigned activities visible. Invalid/stale choices show a
+  recoverable error and do not silently broaden results.
+- Native disclosure, 44px controls, blue keyboard focus, mobile reflow, and a
+  guest skip link reuse the existing role shell and base.css. No filter JavaScript,
+  dependency, migration, or new stylesheet was added.
+- Final focused verification: **49 passed**. Guest/volunteer desktop, tablet,
+  mobile, long-name, and script-blocked browser checks passed. See
+  `CAMPUS_FILTER_QA.md` for evidence and limits. The last full suite (277 passed)
+  predates this enhancement; it was not rerun for this scoped change.
+- All work remains local and uncommitted. No live database change or push.
+
+### Admin password-reset repair (18 October 2026)
+
+- Self-reset commits the password and audit entry, clears the active session,
+  expires the remember cookie, and redirects to sign-in with an explicit success
+  message explaining that the new password is required.
+- Resetting another account preserves the acting admin's session and increments
+  only the target's authentication version. Old target sessions expire on their
+  next request, including remembered sessions in other browsers.
+- Session clearing now precedes Flask-Login logout so its remember-cookie
+  deletion flag survives. Existing authentication-version enforcement remains.
+- The former failing assertion is replaced by separate self/other reset tests.
+  **Six focused cases passed**, covering volunteer/admin targets, old/new
+  passwords, remembered sessions, audit actors, short passwords, and CSRF.
+- Final full suite: **277 passed, zero failures** in 728.56 seconds. This includes
+  all recent joining, redirect, homepage timing, dashboard, analytics, and profile
+  regression checks. Run with `python -m pytest tests -q -p no:cacheprovider` and
+  a dedicated temporary test directory; Windows sandbox temp-folder permissions
+  required running outside the sandbox. Test databases remained isolated SQLite.
+- `git diff --check` passed. No migration, runtime dependency, live database
+  change, commit, or push. Previous QA documents retain their historical results;
+  the former Admin reset failure is resolved by this follow-up.
+
+### Homepage completed-activity timing (18 October 2026)
+
+- Completed story cards use the scheduled end time when recorded, falling back
+  to the start time for legacy activities without an end. This is schedule-based
+  classification and does not change verified participation or recognition.
+- An activity qualifies at its effective end time. The three cards are ordered
+  by latest effective end, with a stable record-ID tie-break. Featured activities
+  must start strictly in the future, avoiding overlap at the exact start boundary.
+- The ongoing-activity regression failed before the fix. Final verification:
+  **32 public-experience, homepage joining, and UI-structure checks passed** in
+  isolated SQLite, including eight new schedule/order cases. Existing layouts,
+  assets, empty states, and historical/live data separation are unchanged.
+- No migration, dependency, live database change, commit, or push. Full suite and
+  browser visual checks were not rerun for this query-only change.
+
+### Authentication return destinations (18 October 2026)
+
+- Login and every Terms/Privacy continuation validate return destinations through
+  one `_safe_next_url` helper. Only root-relative paths are accepted; external
+  URLs, protocol-relative URLs, backslashes, and control characters (including
+  encoded variants) fall back to the authenticated account's role dashboard.
+- The login form retains `next` when submitting. A required Privacy Notice
+  preserves the requested activity path/query after Terms acceptance.
+- Verification: **41 authentication/return-flow tests and 16 compatibility tests
+  passed** in isolated SQLite. The final URL guard also passed a separate attack
+  vector rerun. Coverage includes all four role fallbacks, real rendered form
+  submission, CSRF, policy acceptance branches, and return to agreement review.
+- `git diff --check` passed. No visible UI redesign, migration, dependency, live
+  database change, commit, or push. Full suite was not rerun; the existing Admin
+  self-password-reset assertion remains outside this change.
+
+### Joining flow repair (18 October 2026)
+
+- Homepage featured-card and activity-dialog `Join Now` links open the existing
+  agreement/NDA review screen before registration is submitted.
+- The PSU registration route rejects both GET and POST requests at or after the
+  activity start, including a submission from a previously opened review screen.
+  A rejected request cannot restore a cancelled registration or replace its
+  recorded agreement/NDA acceptance.
+- Changed homepage action controls use PSU blue keyboard focus outlines.
+- Verification: **19 volunteer-flow tests and 55 compatibility checks passed**
+  using isolated SQLite. Desktop/mobile browser review and a successful preview
+  registration were checked with CSRF enabled. See `JOINING_FLOW_QA.md`.
+- No migration or live database change. Changes remain local and uncommitted;
+  the pre-existing roadmap refresh is preserved.
 
 ### Volunteer profile repair (18 October 2026)
 

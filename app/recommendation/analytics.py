@@ -473,12 +473,16 @@ class AnalyticsAggregator:
 
     @staticmethod
     def sex_participation(campus_id=None, start_date=None, end_date=None,
-                          category=None, sex=None):
+                          category=None, sex=None, activity_name=None, event_ids=None):
         """Verified PSU attendance grouped by recorded sex for Director use."""
         query = db.session.query(User.sex, db.func.count(Attendance.id)).join(
             Attendance, Attendance.user_id == User.id).join(
             Event, Event.id == Attendance.event_id).filter(
                 User.role == 'volunteer', Attendance.status == 'present')
+        if event_ids is not None:
+            query = query.filter(Event.id.in_(event_ids))
+        if activity_name and activity_name.strip():
+            query = query.filter(Event.title.icontains(activity_name.strip(), autoescape=True))
         if campus_id:
             query = query.filter(Event.campus_id == campus_id)
         if start_date:

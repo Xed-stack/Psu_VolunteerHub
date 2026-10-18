@@ -86,7 +86,7 @@
                 <div class="card-actions">
                   <button class="button button--secondary" type="button" data-open-event="event-{{ event.id }}">View details</button>
                   {% if current_user.is_authenticated and current_user.role == 'volunteer' %}
-                    <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">{% include 'partials/csrf_field.html' %}<button class="button button--primary" type="submit">Join Now</button></form>
+                    <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Join Now</a>
                   {% else %}<a class="button button--primary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join Now</a>{% endif %}
                 </div>
               </div>
@@ -133,7 +133,7 @@
       <dl class="event-facts event-facts--dialog">
         <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'PSU' }}</dd></div><div><dt>Location</dt><dd>{{ event.location or 'Contact the campus coordinator' }}</dd></div><div><dt>Starts</dt><dd>{{ event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>{% if event.end_date %}<div><dt>Ends</dt><dd>{{ event.end_date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>{% endif %}<div><dt>Cancellation deadline</dt><dd>{{ (event.cancellation_deadline or event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div><div><dt>Required skills</dt><dd>{{ event.required_skills or 'No specific skill required' }}</dd></div><div><dt>Capacity</dt><dd>{{ event.slots_remaining() }} slots remaining</dd></div>
       </dl>
-      <div class="card-actions">{% if current_user.is_authenticated and current_user.role == 'volunteer' %}<form method="post" action="{{ url_for('events.register_for_event', event_id=event.id) }}">{% include 'partials/csrf_field.html' %}<button class="button button--primary" type="submit">Join Now</button></form>{% else %}<a class="button button--primary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join Now</a>{% endif %}</div>
+      <div class="card-actions">{% if current_user.is_authenticated and current_user.role == 'volunteer' %}<a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Join Now</a>{% else %}<a class="button button--primary" href="{{ url_for('events.event_join', event_id=event.id) }}">Join Now</a>{% endif %}</div>
     </dialog>
   {% endfor %}
 

@@ -8,6 +8,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime, timedelta
 from hashlib import sha256
+from urllib.parse import unquote
 import secrets
 from app.models.user import (User, Interest, Skill, SystemSetting,
                              AuthSecurityEvent, PasswordResetToken)
@@ -83,6 +84,17 @@ def _dashboard_endpoint(user):
     }.get(user.role, 'dashboard')
 
 
+def _safe_next_url(target):
+    """Allow only root-relative paths; reject encoded external URL variants."""
+    if isinstance(target, str) and target.startswith('/'):
+        decoded = unquote(target)
+        if (decoded.startswith('/') and not decoded.startswith('//')
+                and '\\' not in decoded
+                and not any(ord(char) < 32 or ord(char) == 127 for char in decoded)):
+            return target
+    return url_for(_dashboard_endpoint(current_user))
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle login form submission and display login page."""
@@ -119,15 +131,13 @@ def login():
         login_user(user, remember=remember)
         session['auth_version'] = user.auth_version
 
-        next_page = request.args.get('next')
+        next_page = _safe_next_url(request.args.get('next'))
         active_terms = _active_terms()
         if active_terms and not TermsAcceptance.query.filter_by(
                 user_id=user.id, revision_id=active_terms.id).first():
-            session['terms_next'] = next_page or url_for(_dashboard_endpoint(user))
+            session['terms_next'] = next_page
             return redirect(url_for('auth.accept_terms'))
-        if next_page:
-            return redirect(next_page)
-        return redirect(url_for(_dashboard_endpoint(user)))
+        return redirect(next_page)
 
     return render_template('login.html')
 
@@ -449,16 +459,16 @@ def reset_password(token):
 def accept_privacy():
     revision = _active_privacy()
     if revision is None:
-        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+        return redirect(_safe_next_url(session.pop('privacy_next', None)))
     accepted = PrivacyAcknowledgement.query.filter_by(
         user_id=current_user.id, revision_id=revision.id).first()
     if accepted:
-        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+        return redirect(_safe_next_url(session.pop('privacy_next', None)))
     if request.method == 'POST' and request.form.get('acknowledge_privacy') == 'on':
         db.session.add(PrivacyAcknowledgement(user_id=current_user.id, revision_id=revision.id))
         db.session.commit()
         flash('Privacy Notice acknowledged.', 'success')
-        return redirect(session.pop('privacy_next', url_for(_dashboard_endpoint(current_user))))
+        return redirect(_safe_next_url(session.pop('privacy_next', None)))
     if request.method == 'POST':
         flash('You must acknowledge the Privacy Notice to continue.', 'error')
     return render_template('auth/privacy_acceptance.html', revision=revision)
@@ -470,12 +480,11 @@ def accept_terms():
     """Require acceptance of the current published terms before proceeding."""
     revision = _active_terms()
     if revision is None:
-        return redirect(url_for(_dashboard_endpoint(current_user)))
+        return redirect(_safe_next_url(session.pop('terms_next', None)))
     accepted = TermsAcceptance.query.filter_by(
         user_id=current_user.id, revision_id=revision.id).first()
     if accepted:
-        return redirect(session.pop(
-            'terms_next', url_for(_dashboard_endpoint(current_user))))
+        return redirect(_safe_next_url(session.pop('terms_next', None)))
     if request.method == 'POST':
         if request.form.get('accept_terms') != 'on':
             flash('You must accept the Terms of Use to continue.', 'error')
@@ -484,8 +493,7 @@ def accept_terms():
                 user_id=current_user.id, revision_id=revision.id))
             db.session.commit()
             flash('Terms of Use accepted.', 'success')
-            return redirect(session.pop(
-                'terms_next', url_for(_dashboard_endpoint(current_user))))
+            return redirect(_safe_next_url(session.pop('terms_next', None)))
     return render_template('auth/terms_acceptance.html', revision=revision)
 
 

@@ -1,7 +1,9 @@
 import pytest
 import re
 import io
+from html import unescape
 from hashlib import sha256
+from urllib.parse import parse_qs, urlsplit
 from app import create_app
 from app.models import db
 from app.models.user import (User, VolunteerProfile, SystemSetting, Skill, Interest,
@@ -11,7 +13,8 @@ from app.models.event import (Event, EventAnnouncement, Registration,
                               CancellationRequest)
 from app.models.notification import Notification
 from app.models.audit import AuditLog
-from app.models.policy import TermsRevision, TermsAcceptance
+from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
+                               PrivacyAcknowledgement)
 from app.recommendation.engine import (
     _cosine_similarity,
     bootstrap_from_event,
@@ -369,6 +372,144 @@ class TestAuth:
 # C. Role-based Access
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+class TestLoginReturnDestinations:
+    def test_login_rejects_external_and_browser_normalized_targets(self, client, app):
+        _create_user(app, email='redirect@test.com')
+        unsafe_targets = (
+            'https://example.org/phishing', 'http://localhost/volunteer_dash',
+            '//example.org', '///example.org', '\\\\example.org', '/\\example.org',
+            'javascript:alert(1)', 'data:text/html,unsafe', 'volunteer_dash',
+            ' https://example.org', '\t//example.org', '/\n/example.org',
+            '/%2fexample.org', '%2f%2fexample.org', '%2fopportunities', '/%5cexample.org',
+            '/%09/example.org', '/%0d%0aLocation:https://example.org',
+            '/\x00example.org', '/%7fexample.org',
+        )
+        for target in unsafe_targets:
+            response = client.post('/auth/login', query_string={'next': target}, data={
+                'identifier': 'redirect@test.com', 'password': 'password123'})
+            assert response.status_code == 302
+            assert response.headers['Location'] == '/volunteer_dash', repr(target)
+            client.post('/auth/logout')
+
+    def test_login_form_preserves_local_paths_queries_and_fragments(self, client, app):
+        _create_user(app, email='return@test.com')
+        targets = (
+            '/opportunities/register/1', '/',
+            '/opportunities?search=Community%20Food&campus=2#results',
+            '/opportunities?search=%E6%9C%8D%E5%8A%A1',
+        )
+        for target in targets:
+            body = client.get('/auth/login', query_string={'next': target}).get_data(as_text=True)
+            action = unescape(re.search(r'<form action="([^"]+)" method="post">', body).group(1))
+            response = client.post(action, data={
+                'identifier': 'return@test.com', 'password': 'password123'})
+            assert response.status_code == 302
+            assert response.headers['Location'] == target
+            if target == '/opportunities/register/1':
+                review = client.get(response.headers['Location'])
+                assert review.status_code == 200
+                assert 'name="accept_agreement"' in review.get_data(as_text=True)
+                with app.app_context():
+                    assert Registration.query.count() == 0
+            client.post('/auth/logout')
+
+    @pytest.mark.parametrize('role,dashboard', [
+        ('volunteer', '/volunteer_dash'), ('coordinator', '/coordinator_dash'),
+        ('director', '/director_dash'), ('admin', '/admin_dash'),
+    ])
+    def test_unsafe_next_uses_role_dashboard(self, client, app, role, dashboard):
+        _create_user(app, email='role-return@test.com', role=role, campus_id=1)
+        for target in ('https://example.org', ''):
+            response = client.post('/auth/login', query_string={'next': target}, data={
+                'identifier': 'role-return@test.com', 'password': 'password123'})
+            assert response.status_code == 302
+            assert response.headers['Location'] == dashboard
+            client.post('/auth/logout')
+
+    @pytest.mark.parametrize('policy', ['terms', 'privacy'])
+    @pytest.mark.parametrize('state', ['not-published', 'accepted', 'pending'])
+    @pytest.mark.parametrize('target', [
+        '//example.org', '/opportunities/register/1?source=return',
+    ])
+    def test_policy_returns_revalidate_saved_destinations(
+            self, client, app, policy, state, target):
+        uid = _create_user(app, email='policy-return@test.com')
+        revision_model = TermsRevision if policy == 'terms' else PrivacyRevision
+        acceptance_model = TermsAcceptance if policy == 'terms' else PrivacyAcknowledgement
+        if state != 'not-published':
+            with app.app_context():
+                revision = revision_model(title='Preview policy', body='Test policy.', version='1')
+                db.session.add(revision)
+                db.session.flush()
+                if state == 'accepted':
+                    db.session.add(acceptance_model(user_id=uid, revision_id=revision.id))
+                db.session.commit()
+        _login_as(client, uid)
+        with client.session_transaction() as saved_session:
+            saved_session[f'{policy}_next'] = target
+        data = {'accept_terms': 'on'} if policy == 'terms' else {'acknowledge_privacy': 'on'}
+        if state == 'pending':
+            response = client.post(f'/auth/{policy}', data=data)
+        else:
+            response = client.get(f'/auth/{policy}')
+        assert response.status_code == 302
+        expected = target if target.startswith('/opportunities/') else '/volunteer_dash'
+        assert response.headers['Location'] == expected
+        with client.session_transaction() as saved_session:
+            assert f'{policy}_next' not in saved_session
+        if state == 'pending':
+            with app.app_context():
+                assert acceptance_model.query.filter_by(user_id=uid).count() == 1
+
+    @pytest.mark.parametrize('target', [
+        '/opportunities/register/1?source=login', 'https://example.org',
+    ])
+    def test_login_returns_after_required_terms_and_privacy(self, client, app, target):
+        uid = _create_user(app, email='policy-chain@test.com')
+        with app.app_context():
+            db.session.add(TermsRevision(title='Terms', body='Test terms.', version='1'))
+            db.session.add(PrivacyRevision(title='Privacy', body='Test notice.', version='1'))
+            db.session.commit()
+        body = client.get('/auth/login', query_string={'next': target}).get_data(as_text=True)
+        action = unescape(re.search(r'<form action="([^"]+)" method="post">', body).group(1))
+        response = client.post(action, data={
+            'identifier': 'policy-chain@test.com', 'password': 'password123'})
+        assert response.headers['Location'] == '/auth/terms'
+        expected = target if target.startswith('/opportunities/') else '/volunteer_dash'
+        with client.session_transaction() as saved_session:
+            assert saved_session['terms_next'] == expected
+        # Missing consent keeps the destination pending and records no acceptance.
+        assert client.post('/auth/terms', data={}).status_code == 200
+        with app.app_context():
+            assert TermsAcceptance.query.filter_by(user_id=uid).count() == 0
+        response = client.post('/auth/terms', data={'accept_terms': 'on'})
+        assert response.headers['Location'] == expected
+        response = client.get(response.headers['Location'])
+        assert response.headers['Location'] == '/auth/privacy'
+        assert client.post('/auth/privacy', data={}).status_code == 200
+        response = client.post('/auth/privacy', data={'acknowledge_privacy': 'on'})
+        assert response.headers['Location'] == expected
+        destination = client.get(response.headers['Location'])
+        assert destination.status_code == 200
+        with app.app_context():
+            assert TermsAcceptance.query.filter_by(user_id=uid).count() == 1
+            assert PrivacyAcknowledgement.query.filter_by(user_id=uid).count() == 1
+            assert Registration.query.count() == 0
+
+    def test_return_form_keeps_csrf_protection(self, client, app):
+        _create_user(app, email='csrf-return@test.com')
+        app.config['WTF_CSRF_ENABLED'] = True
+        target = '/opportunities/register/1'
+        body = client.get('/auth/login', query_string={'next': target}).get_data(as_text=True)
+        action = unescape(re.search(r'<form action="([^"]+)" method="post">', body).group(1))
+        data = {'identifier': 'csrf-return@test.com', 'password': 'password123'}
+        assert client.post(action, data=data).status_code == 400
+        data['csrf_token'] = re.search(r'const token = "([^"]+)"', body).group(1)
+        response = client.post(action, data=data)
+        assert response.status_code == 302
+        assert response.headers['Location'] == target
+
+
 class TestPhaseOnePublicExperience:
     def test_coordinator_target_progress_matches_workspace_status(self, client, app):
         user_id = _create_user(app, email='target-scope@test.com', role='coordinator', campus_id=1)
@@ -422,6 +563,63 @@ class TestPhaseOnePublicExperience:
         assert 'Institutional record' in body
         assert '/historical-activities' in body
         assert '/help' in body
+
+    @pytest.mark.parametrize('start_hours,end_hours,completed', [
+        pytest.param(-2, 1, False, id='ongoing'),
+        pytest.param(-2, -1, True, id='ended'),
+        pytest.param(-2, 0, True, id='ends-now'),
+        pytest.param(1, 2, False, id='upcoming'),
+        pytest.param(-1, None, True, id='legacy-past-start'),
+        pytest.param(1, None, False, id='legacy-future-start'),
+        pytest.param(0, None, True, id='legacy-starts-now'),
+    ])
+    def test_home_completed_activities_use_effective_end_time(
+            self, client, app, monkeypatch, start_hours, end_hours, completed):
+        now = datetime.now().replace(microsecond=0)
+        with app.app_context():
+            db.session.add(Event(
+                title='Schedule boundary activity', description='Schedule boundary check.',
+                date=now + timedelta(hours=start_hours),
+                end_date=now + timedelta(hours=end_hours) if end_hours is not None else None,
+                slots=10, campus_id=1))
+            db.session.commit()
+
+        class FrozenDatetime(datetime):
+            @classmethod
+            def now(cls):
+                return now
+
+        monkeypatch.setattr('datetime.datetime', FrozenDatetime)
+        response = client.get('/')
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        stories = re.findall(r'<article class="story-card">.*?<h3>(.*?)</h3>', body, re.S)
+        assert ('Schedule boundary activity' in stories) == completed
+        featured = re.findall(r'<article class="featured-card">.*?<h3>(.*?)</h3>', body, re.S)
+        assert not (completed and 'Schedule boundary activity' in featured)
+        if not completed:
+            assert not stories
+            assert 'Completed activities will appear here' in body
+
+    def test_home_completed_stories_show_latest_three_finishes(self, client, app):
+        now = datetime.now()
+        with app.app_context():
+            for title, start_hours, end_hours in (
+                ('Latest finish', -4, -0.5),
+                ('Long-running activity', -240, -1),
+                ('Legacy start fallback', -2, None),
+                ('More recent start, earlier finish', -4, -3),
+                ('Same finish, later record', -72, -1),
+            ):
+                db.session.add(Event(
+                    title=title, description='Completion ordering check.',
+                    date=now + timedelta(hours=start_hours),
+                    end_date=now + timedelta(hours=end_hours) if end_hours is not None else None,
+                    slots=10, campus_id=1))
+            db.session.commit()
+        body = client.get('/').get_data(as_text=True)
+        stories = re.findall(r'<article class="story-card">.*?<h3>(.*?)</h3>', body, re.S)
+        assert stories == ['Latest finish', 'Same finish, later record', 'Long-running activity']
 
     def test_historical_activity_directory_renders(self, client):
         response = client.get('/historical-activities')
@@ -581,6 +779,133 @@ class TestVolunteerFeatures:
             r = Registration.query.filter_by(user_id=uid).first()
             assert r is not None
             assert r.event_id == eid
+
+    def test_home_join_links_review_agreements_before_registering(self, client, app):
+        uid = _create_user(app, email='home-join@test.com')
+        _login_as(client, uid)
+        with app.app_context():
+            event = db.session.get(Event, 1)
+            event.participation_agreement_text = 'Activity participation terms.'
+            event.participation_agreement_version = 'activity-1'
+            event.nda_required = True
+            event.nda_text = 'Keep activity materials confidential.'
+            event.nda_version = 'nda-1'
+            db.session.commit()
+        body = client.get('/').get_data(as_text=True)
+        join_links = re.findall(
+            r'<a\b[^>]*href="(/opportunities/register/\d+)"[^>]*>Join Now</a>', body)
+        # Both the featured card and its details dialog must use agreement review.
+        assert join_links.count('/opportunities/register/1') == 2
+        assert not re.search(r'<form\b[^>]*action="/opportunities/register/', body)
+        for link in join_links:
+            response = client.get(link)
+            assert response.status_code == 200
+            assert 'name="accept_agreement"' in response.get_data(as_text=True)
+        consent = client.get('/opportunities/register/1').get_data(as_text=True)
+        assert 'Activity participation terms.' in consent
+        assert 'name="accept_nda"' in consent
+        with app.app_context():
+            assert Registration.query.filter_by(user_id=uid).count() == 0
+        response = client.post('/opportunities/register/1', data={
+            'accept_agreement': 'yes', 'accept_nda': 'yes'}, follow_redirects=True)
+        assert response.status_code == 200
+        with app.app_context():
+            registration = Registration.query.filter_by(user_id=uid, event_id=1).one()
+            assert registration.status == 'confirmed'
+            assert registration.policy_version == 'activity-1'
+            assert registration.policy_accepted_at is not None
+            assert registration.nda_version == 'nda-1'
+            assert registration.nda_accepted_at is not None
+
+    @pytest.mark.parametrize('method', ['get', 'post'])
+    @pytest.mark.parametrize('seconds_before_start', [-1, 0, 1])
+    def test_join_enforces_start_time_boundary(
+            self, client, app, monkeypatch, method, seconds_before_start):
+        from app.routes import events as events_routes
+
+        start = datetime(2030, 6, 10, 9)
+
+        class FrozenDatetime(datetime):
+            @classmethod
+            def now(cls):
+                return start - timedelta(seconds=seconds_before_start)
+
+        monkeypatch.setattr(events_routes, 'datetime', FrozenDatetime)
+        uid = _create_user(app, email='join-boundary@test.com')
+        _login_as(client, uid)
+        with app.app_context():
+            db.session.get(Event, 1).date = start
+            db.session.commit()
+        response = getattr(client, method)(
+            '/opportunities/register/1', data={'accept_agreement': 'yes'})
+        if seconds_before_start > 0:
+            assert response.status_code == (200 if method == 'get' else 302)
+        else:
+            assert response.status_code == 302
+            assert response.headers['Location'].endswith('/opportunities')
+            with client.session_transaction() as session:
+                assert ('error', 'This activity has already started and cannot accept registrations.') in session['_flashes']
+        with app.app_context():
+            expected_count = int(seconds_before_start > 0 and method == 'post')
+            assert Registration.query.filter_by(user_id=uid, event_id=1).count() == expected_count
+
+    @pytest.mark.parametrize('cancelled', [False, True])
+    def test_join_rechecks_start_after_review_without_changing_registration(
+            self, client, app, cancelled):
+        uid = _create_user(app, email='join-stale@test.com')
+        _login_as(client, uid)
+        accepted_at = datetime(2026, 1, 1)
+        with app.app_context():
+            if cancelled:
+                db.session.add(Registration(
+                    user_id=uid, event_id=1, status='cancelled',
+                    policy_version='original', policy_accepted_at=accepted_at,
+                    nda_version='original-nda', nda_accepted_at=accepted_at))
+                db.session.commit()
+            audit_count = AuditLog.query.count()
+            notification_count = Notification.query.count()
+        assert client.get('/opportunities/register/1').status_code == 200
+        with app.app_context():
+            db.session.get(Event, 1).date = datetime.now() - timedelta(seconds=1)
+            db.session.commit()
+        response = client.post('/opportunities/register/1',
+                               data={'accept_agreement': 'yes'}, follow_redirects=True)
+        assert response.status_code == 200
+        assert 'already started and cannot accept registrations' in response.get_data(as_text=True)
+        with app.app_context():
+            registrations = Registration.query.filter_by(user_id=uid, event_id=1).all()
+            assert len(registrations) == int(cancelled)
+            if cancelled:
+                registration = registrations[0]
+                assert registration.status == 'cancelled'
+                assert registration.policy_version == 'original'
+                assert registration.policy_accepted_at == accepted_at
+                assert registration.nda_version == 'original-nda'
+                assert registration.nda_accepted_at == accepted_at
+            assert AuditLog.query.count() == audit_count
+            assert Notification.query.count() == notification_count
+
+    def test_join_still_requires_agreement_nda_and_csrf(self, client, app):
+        uid = _create_user(app, email='join-consent@test.com')
+        _login_as(client, uid)
+        with app.app_context():
+            event = db.session.get(Event, 1)
+            event.nda_required = True
+            event.nda_text = 'Keep activity materials confidential.'
+            event.nda_version = 'nda-1'
+            db.session.commit()
+        for data in ({}, {'accept_agreement': 'yes'}, {'accept_nda': 'yes'}):
+            assert client.post('/opportunities/register/1', data=data).status_code == 400
+        app.config['WTF_CSRF_ENABLED'] = True
+        data = {'accept_agreement': 'yes', 'accept_nda': 'yes'}
+        assert client.post('/opportunities/register/1', data=data).status_code == 400
+        with app.app_context():
+            assert Registration.query.filter_by(user_id=uid).count() == 0
+        body = client.get('/opportunities/register/1').get_data(as_text=True)
+        data['csrf_token'] = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', body).group(1)
+        assert client.post('/opportunities/register/1', data=data).status_code == 302
+        with app.app_context():
+            assert Registration.query.filter_by(user_id=uid, event_id=1).one().status == 'confirmed'
 
     def test_volunteer_can_request_future_registration_cancellation(self, client, app):
         uid = _create_user(app, email='cancel@test.com', campus_id=1)
@@ -1198,6 +1523,122 @@ class TestNotifications:
 
 class TestSearchFilterPagination:
 
+    @pytest.mark.parametrize('signed_in', [False, True])
+    @pytest.mark.parametrize('mode', ['include', 'exclude'])
+    def test_multiple_campuses_for_guests_and_volunteers(self, client, app, signed_in, mode):
+        if signed_in:
+            _login_as(client, _create_user(app, email='multi-campus@test.com', campus_id=1))
+        response = client.get('/opportunities', query_string={
+            'campus': ['1', '2'], 'campus_mode': mode})
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        titles = set(re.findall(r'<h2>(.*?)</h2>', body))
+        included = {'Youth Coding Mentor', 'Green Campus Initiative', 'Community Food Drive',
+                    'Rural Literacy Program', 'Coastal Cleanup Drive'}
+        excluded = {'Disaster Response Training', 'Community IT Support Workshop',
+                    'Community Wellness Fair', 'Sustainable Farming Demo'}
+        assert titles == (included if mode == 'include' else excluded)
+        assert 'name="campus" value="1" checked' in body
+        assert 'name="campus" value="2" checked' in body
+        assert f'value="{mode}" selected' in body
+        assert 'method="get"' in body
+
+    @pytest.mark.parametrize('mode', ['include', 'exclude'])
+    def test_no_campus_selection_means_all(self, client, mode):
+        response = client.get('/opportunities', query_string={
+            'campus': ['', ' '], 'campus_mode': mode})
+        assert response.status_code == 200
+        assert 'Showing 9 active opportunities' in response.get_data(as_text=True)
+
+    def test_campuses_are_alphabetical_and_duplicates_are_one_choice(self, client):
+        body = client.get('/opportunities?campus=1&campus=1').get_data(as_text=True)
+        names = re.findall(r'name="campus" value="\d+"[^>]*>\s*<span>(.*?)</span>', body)
+        assert len(names) == 9
+        assert names == sorted(names, key=str.casefold)
+        assert 'Showing 4 active opportunities' in body
+        assert body.count('name="campus" value="1" checked') == 1
+        assert 'Campuses: 1 selected' in body
+
+    def test_excluding_all_campuses_shows_empty_results(self, client):
+        body = client.get('/opportunities', query_string={
+            'campus': [str(value) for value in range(1, 10)],
+            'campus_mode': 'exclude',
+        }).get_data(as_text=True)
+        assert 'Showing 0 active opportunities' in body
+        assert 'No opportunities match these filters.' in body
+
+    def test_excluding_named_campuses_keeps_unassigned_activities(self, client, app):
+        with app.app_context():
+            db.session.add(Event(title='Unassigned activity', description='No campus.',
+                                 date=datetime.now() + timedelta(days=2), slots=10))
+            db.session.commit()
+        for mode in ('include', 'exclude'):
+            body = client.get('/opportunities', query_string={
+                'campus': ['1', '2'], 'campus_mode': mode}).get_data(as_text=True)
+            assert ('<h2>Unassigned activity</h2>' in body) == (mode == 'exclude')
+
+    @pytest.mark.parametrize('invalid', ['oops', '999999', '-1', '0', '9' * 5000])
+    def test_invalid_campuses_do_not_broaden_results(self, client, invalid):
+        response = client.get('/opportunities', query_string={'campus': ['1', invalid]})
+        assert response.status_code == 400
+        body = response.get_data(as_text=True)
+        assert 'Some campus choices are unavailable.' in body
+        assert 'Showing 0 active opportunities' in body
+        assert 'name="campus" value="1" checked' in body
+
+    def test_invalid_mode_shows_recoverable_error(self, client):
+        response = client.get('/opportunities?campus=1&campus_mode=invalid')
+        assert response.status_code == 400
+        body = response.get_data(as_text=True)
+        assert 'Choose whether to show only or exclude' in body
+        assert 'name="campus" value="1" checked' in body
+        assert 'Showing 0 active opportunities' in body
+
+    @pytest.mark.parametrize('mode', ['include', 'exclude'])
+    def test_multi_campus_pagination_preserves_every_filter(self, client, app, mode):
+        selected = ['1', '2'] if mode == 'include' else ['3', '4']
+        with app.app_context():
+            for index in range(13):
+                db.session.add(Event(
+                    title=f'Filter paging {index:02}', description='Paging check.',
+                    date=datetime.now() + timedelta(days=100 + index),
+                    slots=10, campus_id=1 if index % 2 else 2, category='Environment'))
+            db.session.add(Event(
+                title='Filter paging outside selected campuses', description='Must be omitted.',
+                date=datetime.now() + timedelta(days=80), slots=10,
+                campus_id=3, category='Environment'))
+            db.session.commit()
+        filters = {'campus': selected, 'campus_mode': mode,
+                   'category': 'Environment', 'search': 'Filter paging'}
+        response = client.get('/opportunities', query_string=filters)
+        body = response.get_data(as_text=True)
+        assert 'Showing 13 active opportunities' in body
+        assert 'outside selected campuses' not in body
+        next_url = unescape(re.search(r'href="([^"]+)"\s*>Next</a>', body).group(1))
+        query = parse_qs(urlsplit(next_url).query)
+        assert query == {**{key: value if isinstance(value, list) else [value]
+                            for key, value in filters.items()}, 'page': ['2']}
+        second_page = client.get(next_url).get_data(as_text=True)
+        first_titles = re.findall(r'<h2>(.*?)</h2>', body)
+        second_titles = re.findall(r'<h2>(.*?)</h2>', second_page)
+        assert len(first_titles) == 9
+        assert len(second_titles) == 4
+        assert not set(first_titles) & set(second_titles)
+        previous_url = unescape(re.search(r'href="([^"]+)"\s*>Previous</a>', second_page).group(1))
+        assert parse_qs(urlsplit(previous_url).query) == {**query, 'page': ['1']}
+        for campus_id in selected:
+            assert f'name="campus" value="{campus_id}" checked' in second_page
+
+    def test_empty_campus_catalog_keeps_search_available(self, client, app):
+        with app.app_context():
+            Campus.query.delete()
+            db.session.commit()
+        response = client.get('/opportunities?search=literacy')
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert 'No campuses are available to filter.' in body
+        assert '<h2>Rural Literacy Program</h2>' in body
+
     def test_filter_by_campus(self, client, app):
         uid = _create_user(app, email='campusfilt@test.com')
         _login_as(client, uid)
@@ -1577,23 +2018,115 @@ class TestAdminUserManagement:
             assert u.role == 'director'
             assert u.campus_id == 2
 
-    def test_admin_reset_password(self, client, app):
+    @pytest.mark.parametrize('remember', [False, True])
+    def test_admin_reset_own_password_requires_sign_in(self, client, app, remember):
+        admin_id = _create_user(app, email='reset@test.com', password='oldpass123',
+                                role='admin', name='ResetAdmin')
+        assert client.post('/auth/login', data={
+            'identifier': 'reset@test.com', 'password': 'oldpass123',
+            'remember': 'on' if remember else '',
+        }).status_code == 302
+        if remember:
+            assert client.get_cookie('remember_token') is not None
+        other_session = app.test_client()
         with app.app_context():
-            admin = User(name='ResetAdmin', email='reset@test.com', role='admin')
-            admin.set_password('oldpass')
-            db.session.add(admin)
-            db.session.commit()
-            target_id = admin.id
-        _login_as(client, target_id)
-        resp = client.post(f'/admin/users/{target_id}/reset-password', data={
+            assert other_session.post('/auth/login', data={
+                'identifier': 'reset@test.com', 'password': 'oldpass123',
+                'remember': 'on',
+            }).status_code == 302
+        resp = client.post(f'/admin/users/{admin_id}/reset-password', data={
             'new_password': 'newpass123',
         }, follow_redirects=True)
         assert resp.status_code == 200
-        assert b'Password reset for ResetAdmin' in resp.data
+        assert resp.request.path == '/auth/login'
+        assert b'Your password was reset. Sign in again with your new password.' in resp.data
+        with client.session_transaction() as saved_session:
+            assert '_user_id' not in saved_session
+            assert 'auth_version' not in saved_session
+        assert client.get_cookie('remember_token') is None
+        # Simulate another browser restoring only its old remember cookie.
+        with other_session.session_transaction() as saved_session:
+            saved_session.clear()
         with app.app_context():
-            u = db.session.get(User, target_id)
-            assert u.check_password('oldpass') is False
-            assert u.check_password('newpass123') is True
+            expired = other_session.get('/admin_dash', follow_redirects=True)
+        assert expired.request.path == '/auth/login'
+        assert b'Your session expired because your password was changed. Sign in again.' in expired.data
+        assert other_session.get_cookie('remember_token') is None
+        with app.app_context():
+            user = db.session.get(User, admin_id)
+            assert user.auth_version == 2
+            assert not user.check_password('oldpass123')
+            assert user.check_password('newpass123')
+            entry = AuditLog.query.filter_by(action='user_password_reset', target_id=admin_id).one()
+            assert entry.actor_id == admin_id
+        with app.app_context():
+            rejected = client.post('/auth/login', data={
+                'identifier': 'reset@test.com', 'password': 'oldpass123'})
+            assert b'Invalid email/ID or password.' in rejected.data
+            signed_in = client.post('/auth/login', data={
+                'identifier': 'reset@test.com', 'password': 'newpass123'})
+            assert signed_in.headers['Location'] == '/admin_dash'
+        with client.session_transaction() as saved_session:
+            assert saved_session['auth_version'] == 2
+
+    @pytest.mark.parametrize('target_role', ['volunteer', 'admin'])
+    def test_admin_reset_other_password_expires_target_sessions(self, client, app, target_role):
+        admin_id = _create_user(app, email='reset-actor@test.com', role='admin')
+        target_id = _create_user(app, email='reset-target@test.com', role=target_role,
+                                 name='Reset Target')
+        target_sessions = [app.test_client(), app.test_client()]
+        for index, target_session in enumerate(target_sessions):
+            with app.app_context():
+                assert target_session.post('/auth/login', data={
+                    'identifier': 'reset-target@test.com', 'password': 'password123',
+                    'remember': 'on' if index else '',
+                }).status_code == 302
+        assert target_sessions[1].get_cookie('remember_token') is not None
+        _login_as(client, admin_id)
+        response = client.post(f'/admin/users/{target_id}/reset-password', data={
+            'new_password': 'replacement123'}, follow_redirects=True)
+        assert response.status_code == 200
+        assert response.request.path == '/admin_dash'
+        assert b'Password reset for Reset Target.' in response.data
+        with client.session_transaction() as saved_session:
+            assert saved_session['_user_id'] == str(admin_id)
+            assert saved_session['auth_version'] == 1
+        target_dashboard = '/admin_dash' if target_role == 'admin' else '/volunteer_dash'
+        for target_session in target_sessions:
+            with app.app_context():
+                expired = target_session.get(target_dashboard, follow_redirects=True)
+            assert expired.request.path == '/auth/login'
+            assert b'Your session expired because your password was changed. Sign in again.' in expired.data
+            assert target_session.get_cookie('remember_token') is None
+            with target_session.session_transaction() as saved_session:
+                assert '_user_id' not in saved_session
+                assert 'auth_version' not in saved_session
+        assert client.get('/admin_dash').status_code == 200
+        with app.app_context():
+            target = db.session.get(User, target_id)
+            assert target.auth_version == 2
+            assert not target.check_password('password123')
+            assert target.check_password('replacement123')
+            assert db.session.get(User, admin_id).auth_version == 1
+            entry = AuditLog.query.filter_by(action='user_password_reset', target_id=target_id).one()
+            assert entry.actor_id == admin_id
+
+    @pytest.mark.parametrize('rejection', ['too-short', 'csrf'])
+    def test_rejected_admin_reset_preserves_password_and_session(self, client, app, rejection):
+        admin_id = _create_user(app, email='reset-rejected@test.com', role='admin')
+        _login_as(client, admin_id)
+        app.config['WTF_CSRF_ENABLED'] = rejection == 'csrf'
+        response = client.post(f'/admin/users/{admin_id}/reset-password', data={
+            'new_password': 'replacement123' if rejection == 'csrf' else 'short'})
+        assert response.status_code == (400 if rejection == 'csrf' else 302)
+        with app.app_context():
+            user = db.session.get(User, admin_id)
+            assert user.auth_version == 1
+            assert user.check_password('password123')
+            assert AuditLog.query.filter_by(action='user_password_reset').count() == 0
+        with client.session_transaction() as saved_session:
+            assert saved_session['_user_id'] == str(admin_id)
+            assert saved_session['auth_version'] == 1
 
 
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1601,6 +2134,180 @@ class TestAdminUserManagement:
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestReportingSystem:
+
+    @pytest.mark.parametrize('mode, expected', [('include', 6), ('exclude', 4)])
+    def test_director_multiple_campuses(self, app, client, monkeypatch, mode, expected):
+        from flask import template_rendered
+        self._director(app, client)
+        self._add_event(app, 'Unassigned fixture', datetime(2026, 10, 20), campus_id=None)
+        volunteer = _create_user(app, email='multi-attendance@test.com', sex='female')
+        self._participate(app, volunteer, 1)
+        self._participate(app, volunteer, 5)
+        captured = []
+        def record(sender, template, context, **extra):
+            captured.append(context)
+        query = [('campus', '1'), ('campus', '2'), ('campus', '1'), ('campus', '4'),
+                 ('campus_mode', mode), ('campus_id', '9')]
+        with template_rendered.connected_to(record, app):
+            response = client.get('/analytics', query_string=query)
+        assert response.status_code == 200
+        context = captured[-1]
+        assert context['selected_campuses'] == [1, 2, 4]
+        assert context['live_summary']['event_count'] == expected
+        assert context['live_summary']['total_attended'] == 1
+        assert sum(row['actual_participants'] for row in context['sex_participation']) == 1
+        assert len(context['dashboard_data']['activities']) == expected
+        body = response.get_data(as_text=True)
+        csv = client.get('/reports/university.csv', query_string=query).get_data(as_text=True)
+        assert ('Youth Coding Mentor' in csv) == (mode == 'include')
+        assert ('Unassigned fixture' in csv) == (mode == 'exclude')
+        assert ('All campuses except:' if mode == 'exclude' else 'Selected campuses:') in csv
+        labels = re.findall(r'<span>([^<]+)</span>', body.split('campus-filter__grid', 1)[1].split('</fieldset>', 1)[0])
+        assert labels == sorted(labels, key=str.lower)
+        def pdf(rows, summary, meta):
+            assert summary['event_count'] == expected
+            assert len(rows) == expected
+            assert 'Lingayen' in meta['scope']
+            return b'%PDF-scope'
+        monkeypatch.setattr('app.routes.director.render_pdf', pdf)
+        assert client.get('/reports/university.pdf', query_string=query).data == b'%PDF-scope'
+
+    @pytest.mark.parametrize('query', [
+        [('campus', '1'), ('campus', '9999')], [('campus', 'bad')],
+        [('campus', '9' * 5000)], [('campus_mode', 'invalid')],
+    ])
+    def test_director_invalid_campus_selection(self, app, client, query):
+        self._director(app, client)
+        page = client.get('/analytics', query_string=query)
+        assert page.status_code == 400
+        body = page.get_data(as_text=True)
+        assert 'role="alert"' in body and 'No activities match the current filters.' in body
+        for extension in ('csv', 'pdf'):
+            assert client.get('/reports/university.' + extension, query_string=query).status_code == 400
+
+    def test_director_campus_paging_and_supplementary_forms(self, app, client):
+        self._director(app, client)
+        for index in range(13):
+            self._add_event(app, f'Multi-campus fixture {index}', datetime(2026, 10, 20),
+                            campus_id=1 if index % 2 else 2)
+        query = [('campus', '1'), ('campus', '2'), ('campus_mode', 'include'),
+                 ('activity_name', 'Multi-campus fixture'), ('category', 'Environment'),
+                 ('start_date', '2026-10-01'), ('end_date', '2026-10-31')]
+        body = client.get('/analytics', query_string=query).get_data(as_text=True)
+        links = [unescape(link) for link in re.findall(r'href="([^"]+)"', body)]
+        next_page = next(link for link in links if 'page=2' in link)
+        for link in [next_page] + [link for link in links if '/reports/university.' in link]:
+            parsed = parse_qs(urlsplit(link).query)
+            assert parsed['campus'] == ['1', '2']
+            assert parsed['activity_name'] == ['Multi-campus fixture']
+        report = body.split('aria-label="Live activity report table"', 1)[1].split('</tbody>', 1)[0]
+        assert report.count('Multi-campus fixture ') == 10
+        second = client.get(next_page).get_data(as_text=True)
+        report = second.split('aria-label="Live activity report table"', 1)[1].split('</tbody>', 1)[0]
+        assert report.count('Multi-campus fixture ') == 3
+        # Historical and award forms preserve every repeated live campus value.
+        assert body.count('type="hidden" name="campus" value="1"') == 2
+        assert body.count('type="hidden" name="campus" value="2"') == 2
+
+    @pytest.mark.parametrize('mode', ['include', 'exclude'])
+    def test_director_blank_campus_selection_means_all(self, app, client, mode):
+        self._director(app, client)
+        csv = client.get('/reports/university.csv', query_string={'campus_mode': mode}).get_data(as_text=True)
+        assert 'Youth Coding Mentor' in csv and 'Community Food Drive' in csv
+
+    def test_coordinator_ignores_multiple_campus_query(self, app, client):
+        self._coord(app, client, 1)
+        query = [('campus', '2'), ('campus_mode', 'exclude'), ('campus_id', '2')]
+        csv = client.get('/reports/events.csv', query_string=query).get_data(as_text=True)
+        assert 'Youth Coding Mentor' in csv and 'Community Food Drive' not in csv
+
+    def test_director_all_campuses_excluded_and_legacy_links(self, app, client):
+        self._director(app, client)
+        self._add_event(app, 'Unassigned fixture', datetime(2026, 10, 20), campus_id=None)
+        query = [('campus', str(cid)) for cid in range(1, 10)] + [('campus_mode', 'exclude')]
+        csv = client.get('/reports/university.csv', query_string=query).get_data(as_text=True)
+        assert 'Unassigned fixture' in csv and 'Youth Coding Mentor' not in csv
+        legacy = client.get('/reports/university.csv?campus_id=1').get_data(as_text=True)
+        assert 'Youth Coding Mentor' in legacy and 'Community Food Drive' not in legacy
+        # Explicit empty live selection does not inherit the historical campus.
+        all_rows = client.get('/reports/university.csv?campus_id=1&campus_mode=include').get_data(as_text=True)
+        assert 'Community Food Drive' in all_rows and 'Unassigned fixture' in all_rows
+
+    def test_activity_search_participation_and_literal_symbols(self, app):
+        from app.reports import build_events_report, render_pdf, _build_meta
+        from app.dashboard import summarize_report
+        uid = _create_user(app, email='searched-attendance@test.com', sex='female')
+        event_id = self._add_event(app, '100%_Clean <campus>', datetime(2026, 10, 20))
+        self._participate(app, uid, event_id)
+        with app.app_context():
+            rows, summary = build_events_report(
+                activity_name='%_clean', campus_id=1, category='Environment',
+                start_date='2026-10-01', end_date='2026-10-31')
+            assert [row['event_id'] for row in rows] == [event_id]
+            assert summary['total_registrations'] == summary['total_attended'] == 1
+            assert summarize_report(rows)['monthly']['primary'] == [1]
+            assert sum(row['actual_participants'] for row in
+                       AnalyticsAggregator.sex_participation(activity_name='no-match')) == 0
+            assert sum(row['actual_participants'] for row in
+                       AnalyticsAggregator.sex_participation(activity_name='%_CLEAN')) == 1
+            meta = _build_meta('Search report', 'All Campuses', '', '', '')
+            meta['activity_name'] = '<campus> & %_Clean'
+            assert render_pdf(rows, summary, meta).startswith(b'%PDF-')
+
+    @pytest.mark.parametrize('term, expected', [
+        ('  cLeAnUp  ', ['Coastal Cleanup Drive']),
+        ('%', []), ('_', []), ('not-an-activity', []),
+        ('   ', None),
+    ])
+    def test_activity_name_literal_search(self, app, term, expected):
+        from app.reports import build_events_report
+        with app.app_context():
+            rows, summary = build_events_report(activity_name=term)
+            assert summary['event_count'] == len(rows)
+            if expected is None:
+                assert len(rows) == 9
+            else:
+                assert [row['title'] for row in rows] == expected
+
+    @pytest.mark.parametrize('role', ['director', 'coordinator'])
+    def test_activity_search_page_charts_and_exports(self, app, client, monkeypatch, role):
+        from flask import template_rendered
+        uid = _create_user(app, email=f'search-{role}@test.com', role=role, campus_id=1)
+        _login_as(client, uid)
+        captured = []
+
+        def record(sender, template, context, **extra):
+            captured.append(context)
+
+        query = {'activity_name': '  cLeAnUp  ', 'campus_id': '2'}
+        path = '/analytics' if role == 'director' else '/coordinator_analytics'
+        with template_rendered.connected_to(record, app):
+            response = client.get(path, query_string=query)
+        assert response.status_code == 200
+        context = captured[-1]
+        summary = context['live_summary'] if role == 'director' else context['report_summary']
+        assert summary['event_count'] == (0 if role == 'director' else 1)
+        assert len(context['dashboard_data']['activities']) == summary['event_count']
+        assert sum(context['dashboard_data']['monthly']['primary']) == summary['total_registrations']
+        body = response.get_data(as_text=True)
+        assert 'name="activity_name"' in body
+        assert 'value="  cLeAnUp  "' in body
+        prefix = '/reports/university' if role == 'director' else '/reports/events'
+        csv = client.get(prefix + '.csv', query_string=query)
+        assert csv.status_code == 200
+        assert ('Coastal Cleanup Drive' in csv.get_data(as_text=True)) == (role == 'coordinator')
+        assert 'Youth Coding Mentor' not in csv.get_data(as_text=True)
+        assert 'Activity name contains: cLeAnUp' in csv.get_data(as_text=True)
+
+        def fake_pdf(rows, report_summary, meta):
+            assert report_summary == summary
+            assert len(rows) == summary['event_count']
+            assert meta['activity_name'] == 'cLeAnUp'
+            return b'%PDF-test'
+
+        monkeypatch.setattr(f'app.routes.{role}.render_pdf', fake_pdf)
+        assert client.get(prefix + '.pdf', query_string=query).data == b'%PDF-test'
+
 
     # â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -2525,7 +3232,8 @@ class TestAnalytics:
         filters = {'start_date': '2026-10-01', 'end_date': '2026-12-31',
                    'campus_id': '1', 'category': 'Environment',
                    'sex': 'prefer_not_to_say', 'start_year': '2020',
-                   'end_year': '2025', 'award_year': '2026'}
+                   'end_year': '2025', 'award_year': '2026',
+                   'activity_name': 'Filtered Activity'}
         body = client.get('/analytics', query_string=filters).get_data(as_text=True)
         links = [unescape(link) for link in re.findall(r'href="([^"]+)"', body)]
         page_link = next(link for link in links if 'page=2' in link)

@@ -11,8 +11,8 @@ import zipfile
 from datetime import date, datetime, timedelta
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
-                   flash, abort, Response, current_app)
-from flask_login import login_required, current_user
+                   flash, abort, Response, current_app, session)
+from flask_login import login_required, current_user, logout_user
 from app.models import db
 from app.models.user import User, SystemSetting, VolunteerProfile
 from app.models.event import ActivityCategory, Campus, Event
@@ -364,6 +364,11 @@ def reset_password(user_id):
     user.auth_version += 1
     log_activity('user_password_reset', user)
     db.session.commit()
+    if user.id == current_user.id:
+        session.clear()
+        logout_user()
+        flash('Your password was reset. Sign in again with your new password.', 'success')
+        return redirect(url_for('auth.login'))
     flash(f'Password reset for {user.name}.', 'success')
     return redirect(url_for('admin.admin_dash'))
 

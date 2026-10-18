@@ -698,7 +698,8 @@ def export_events_csv():
     try:
         rows, summary = build_events_report(
             campus_id=_coordinator_campus_id(), start_date=start_date,
-            end_date=end_date, category=category)
+            end_date=end_date, category=category,
+            activity_name=request.args.get('activity_name', ''))
     except ReportError:
         abort(400)
     campus_name = current_user.campus.name if current_user.campus else 'Campus'
@@ -710,6 +711,7 @@ def export_events_csv():
         'generated': datetime.now().strftime('%Y-%m-%d %H:%M'),
         'role_label': 'Coordinator',
     }
+    meta['activity_name'] = request.args.get('activity_name', '').strip()
     csv_data = render_csv(rows, summary, meta)
     return Response(csv_data, mimetype='text/csv', headers={
         'Content-Disposition': 'attachment;filename=campus_events.csv'})
@@ -726,7 +728,8 @@ def export_events_pdf():
     try:
         rows, summary = build_events_report(
             campus_id=_coordinator_campus_id(), start_date=start_date,
-            end_date=end_date, category=category)
+            end_date=end_date, category=category,
+            activity_name=request.args.get('activity_name', ''))
     except ReportError:
         abort(400)
     campus_name = current_user.campus.name if current_user.campus else 'Campus'
@@ -735,6 +738,7 @@ def export_events_pdf():
         scope=f'{campus_name} Campus (Coordinator)',
         start_date=start_date, end_date=end_date, category=category,
         role_label='Coordinator')
+    meta['activity_name'] = request.args.get('activity_name', '').strip()
     pdf_data = render_pdf(rows, summary, meta)
     return Response(pdf_data, mimetype='application/pdf', headers={
         'Content-Disposition': 'attachment;filename=campus_events.pdf'})
@@ -770,7 +774,8 @@ def analytics():
     category = request.args.get('category', '').strip()
     report_rows, report_summary = build_events_report(
         campus_id=_coordinator_campus_id(), start_date=start_date,
-        end_date=end_date, category=category)
+        end_date=end_date, category=category,
+        activity_name=request.args.get('activity_name', ''))
 
     return render_template('coordinator/coordinator_analytics.html',
                             campus_name=campus_name,
