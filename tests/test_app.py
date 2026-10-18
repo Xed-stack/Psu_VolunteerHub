@@ -110,9 +110,16 @@ def _seed_events():
 # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _create_user(app, email='test@example.com', password='password123',
-                 role='volunteer', name='Test User', campus_id=None):
+                 role='volunteer', name='Test User', campus_id=None,
+                 sex='prefer_not_to_say'):
     with app.app_context():
-        user = User(name=name, email=email, role=role, campus_id=campus_id)
+        user = User(
+            name=name,
+            email=email,
+            role=role,
+            campus_id=campus_id,
+            sex=sex,
+        )
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -252,7 +259,7 @@ class TestAuth:
 
     def test_complete_sex_accepts_prefer_not_to_say(self, client, app):
         user_id = _create_user(app, email='complete-sex@test.com',
-                               role='volunteer', campus_id=1)
+                               role='volunteer', campus_id=1, sex=None)
         _login_as(client, user_id)
         response = client.post(
             '/auth/complete-sex', data={'sex': 'prefer_not_to_say'})
@@ -363,6 +370,48 @@ class TestAuth:
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class TestPhaseOnePublicExperience:
+    def test_coordinator_target_progress_matches_workspace_status(self, client, app):
+        user_id = _create_user(app, email='target-scope@test.com', role='coordinator', campus_id=1)
+        with app.app_context():
+            db.session.add_all([
+                Event(title='Past scope check', description='Scope check',
+                      date=datetime.now() - timedelta(days=3), slots=10, campus_id=1),
+                Event(title='Upcoming scope check', description='Scope check',
+                      date=datetime.now() + timedelta(days=3), slots=10, campus_id=1),
+            ])
+            db.session.commit()
+        _login_as(client, user_id)
+        body = client.get('/coordinator_dash').get_data(as_text=True)
+        assert 'Upcoming scope check' in body
+        assert 'Past scope check' not in body
+
+    @pytest.mark.parametrize('role,path', [
+        ('coordinator', '/coordinator_analytics'), ('director', '/analytics'),
+    ])
+    def test_invalid_analytics_date_range_shows_a_recovery_message(self, client, app, role, path):
+        user_id = _create_user(app, email=f'dates-{role}@test.com', role=role, campus_id=1)
+        _login_as(client, user_id)
+        response = client.get(path + '?start_date=2026-10-18&end_date=2020-01-01', follow_redirects=True)
+        assert response.status_code == 200
+        assert 'Use valid report dates' in response.get_data(as_text=True)
+
+    @pytest.mark.parametrize('role,path', [
+        ('volunteer', '/volunteer_dash'),
+        ('coordinator', '/coordinator_dash'),
+        ('director', '/director_dash'),
+        ('admin', '/admin_dash'),
+    ])
+    def test_first_dashboard_starts_its_role_guide(self, client, app, role, path):
+        user_id = _create_user(app, email=f'tour-{role}@test.com', role=role, campus_id=1)
+        _login_as(client, user_id)
+        response = client.get(path)
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert f'data-tour-role="{role}"' in body
+        assert 'data-tour-first-use="true"' in body
+        assert client.post('/guide/dismiss').status_code == 302
+        assert 'data-tour-first-use="false"' in client.get(path).get_data(as_text=True)
+
     def test_home_shows_live_opportunities_and_institutional_summary(self, client):
         response = client.get('/')
         body = response.get_data(as_text=True)
@@ -392,12 +441,74 @@ class TestPhaseOnePublicExperience:
 
     def test_volunteer_can_dismiss_first_use_guide(self, client, app):
         user_id = _create_user(app, email='guide@test.com')
+        with app.app_context():
+            db.session.get(User, user_id).sex = 'prefer_not_to_say'
+            db.session.commit()
         _login_as(client, user_id)
 
-        assert 'Make your first activity count' in client.get('/volunteer_dash').get_data(as_text=True)
-        assert client.post('/volunteer_dash/guide/dismiss').status_code == 302
+        dashboard = client.get('/volunteer_dash').get_data(as_text=True)
+        assert 'data-tour-first-use="true"' in dashboard
+        assert 'first-use-tour.js' in dashboard
+        assert client.post('/guide/dismiss').status_code == 302
         with app.app_context():
             assert db.session.get(User, user_id).first_use_guide_dismissed_at is not None
+
+    def test_dashboard_guide_replays_without_resetting_first_use_state(self, client, app):
+        user_id = _create_user(app, email='replay-guide@test.com', role='coordinator', campus_id=1)
+        dismissed_at = datetime.utcnow()
+        with app.app_context():
+            db.session.get(User, user_id).first_use_guide_dismissed_at = dismissed_at
+            db.session.commit()
+        _login_as(client, user_id)
+
+        body = client.get('/coordinator_dash?tour=1').get_data(as_text=True)
+        assert 'data-tour-first-use="false"' in body
+        assert 'data-tour-replay="true"' in body
+        assert 'data-tour-id="activity-workspace"' in body
+        with app.app_context():
+            assert db.session.get(User, user_id).first_use_guide_dismissed_at == dismissed_at
+
+    def test_anonymous_user_cannot_dismiss_an_account_guide(self, client):
+        response = client.post('/guide/dismiss')
+        assert response.status_code == 302
+        assert '/auth/login' in response.headers['Location']
+
+    def test_management_dashboards_render_info_tips(self, client, app):
+        coordinator_id = _create_user(
+            app, email='tips-coordinator@test.com', role='coordinator', campus_id=1)
+        _login_as(client, coordinator_id)
+        coordinator_body = client.get('/coordinator_dash').get_data(as_text=True)
+        assert 'class="info-tip"' in coordinator_body
+        assert 'About attendance rate' in coordinator_body
+
+    def test_director_analytics_renders_info_tips(self, client, app):
+        director_id = _create_user(app, email='tips-director@test.com', role='director', campus_id=1)
+        _login_as(client, director_id)
+        director_body = client.get('/analytics').get_data(as_text=True)
+        assert 'class="info-tip"' in director_body
+        assert 'About live activity report' in director_body
+
+    def test_guide_dismissal_only_updates_the_authenticated_user(self, client, app):
+        current_id = _create_user(app, email='guide-current@test.com', role='coordinator', campus_id=1)
+        other_id = _create_user(app, email='guide-other@test.com', role='director', campus_id=1)
+        _login_as(client, current_id)
+
+        assert client.post('/guide/dismiss', data={'user_id': other_id}).status_code == 302
+        with app.app_context():
+            assert db.session.get(User, current_id).first_use_guide_dismissed_at is not None
+            assert db.session.get(User, other_id).first_use_guide_dismissed_at is None
+
+    def test_guide_dismissal_requires_csrf_and_accepts_a_valid_token(self, client, app):
+        user_id = _create_user(app, email='guide-csrf@test.com', role='director')
+        _login_as(client, user_id)
+        app.config['WTF_CSRF_ENABLED'] = True
+        assert client.post('/guide/dismiss').status_code == 400
+        body = client.get('/director_dash').get_data(as_text=True)
+        token = re.search(r'name="csrf-token" content="([^"]+)"', body).group(1)
+        response = client.post('/guide/dismiss', headers={
+            'X-CSRFToken': token, 'Accept': 'application/json'})
+        assert response.status_code == 200
+        assert response.json == {'dismissed': True}
 
 
 class TestRoleAccess:
@@ -2334,6 +2445,7 @@ class TestAnalytics:
         legacy_user_id = self._vol(app, 'legacy-demographics@test.com')
         with app.app_context():
             db.session.get(User, private_user_id).sex = 'prefer_not_to_say'
+            db.session.get(User, legacy_user_id).sex = None
             db.session.commit()
         self._reg(app, user_id=private_user_id, event_id=event_id)
         self._reg(app, user_id=legacy_user_id, event_id=event_id)
@@ -2396,6 +2508,34 @@ class TestAnalytics:
         assert 'Page 1' in first_page and 'Page 2' in first_page
         assert 'Coastal Cleanup Drive' not in first_page
         assert 'Coastal Cleanup Drive' in second_page
+
+    def test_report_pagination_and_exports_preserve_all_selected_filters(self, app, client):
+        from html import unescape
+        from urllib.parse import parse_qs, urlparse
+
+        director_id = _create_user(app, email='filtered-pages@test.com', role='director')
+        with app.app_context():
+            for index in range(12):
+                db.session.add(Event(
+                    title=f'Filtered Activity {index}', description='Filter persistence',
+                    date=datetime(2026, 10, 20), slots=10, campus_id=1,
+                    category='Environment'))
+            db.session.commit()
+        _login_as(client, director_id)
+        filters = {'start_date': '2026-10-01', 'end_date': '2026-12-31',
+                   'campus_id': '1', 'category': 'Environment',
+                   'sex': 'prefer_not_to_say', 'start_year': '2020',
+                   'end_year': '2025', 'award_year': '2026'}
+        body = client.get('/analytics', query_string=filters).get_data(as_text=True)
+        links = [unescape(link) for link in re.findall(r'href="([^"]+)"', body)]
+        page_link = next(link for link in links if 'page=2' in link)
+        export_link = next(link for link in links if '/reports/university.csv?' in link)
+        for link in (page_link, export_link):
+            query = parse_qs(urlparse(link).query)
+            assert all(query[key] == [value] for key, value in filters.items())
+        report = body.split('aria-label="Live activity report table"', 1)[1]
+        report = report.split('</tbody>', 1)[0]
+        assert report.count('Filtered Activity ') <= 10
 
     def test_admin_accesses_university_analytics(self, app, client):
         aid = _create_user(app, email='admin_an@t.com', role='admin')

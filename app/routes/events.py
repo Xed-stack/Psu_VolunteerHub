@@ -440,7 +440,6 @@ def volunteer_dash():
     return render_template('volunteer/Volunteer_dash.html',
                            recommendations=recommendations,
                            user_stats=user_stats,
-                           show_first_use_guide=current_user.first_use_guide_dismissed_at is None,
                            recent_activity=recent_activity,
                            registration_items=registration_items,
                            registration_total=len(filtered_registrations), shown_registrations=shown,
@@ -457,13 +456,33 @@ def volunteer_dash():
                            certification=certification)
 
 
+def _dismiss_first_use_guide():
+    current_user.first_use_guide_dismissed_at = datetime.utcnow()
+    db.session.commit()
+    if request.accept_mimetypes.best == 'application/json':
+        return {'dismissed': True}
+    dashboards = {
+        'volunteer': 'events.volunteer_dash',
+        'coordinator': 'coordinator.coordinator_dash',
+        'director': 'director.director_dash',
+        'admin': 'admin.admin_dash',
+    }
+    return redirect(url_for(dashboards.get(current_user.role, 'events.volunteer_dash')))
+
+
+@events_bp.route('/guide/dismiss', methods=['POST'])
+@login_required
+def dismiss_first_use_guide():
+    """Persist an authenticated user's decision to skip or finish the guide."""
+    return _dismiss_first_use_guide()
+
+
 @events_bp.route('/volunteer_dash/guide/dismiss', methods=['POST'])
 @login_required
 @role_required('volunteer')
-def dismiss_first_use_guide():
-    current_user.first_use_guide_dismissed_at = datetime.utcnow()
-    db.session.commit()
-    return redirect(url_for('events.volunteer_dash'))
+def dismiss_volunteer_first_use_guide():
+    """Compatibility route for the former volunteer-only guide."""
+    return _dismiss_first_use_guide()
 
 
 @events_bp.route('/event/<int:event_id>/join', methods=['GET', 'POST'])

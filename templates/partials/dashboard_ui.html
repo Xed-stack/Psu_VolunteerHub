@@ -1,0 +1,45 @@
+{% from 'partials/info_tip.html' import info_tip %}
+
+{% macro heading(title, explanation, context='') -%}
+  <header class="panel__header">
+    <div class="panel__heading">
+      <div class="heading-with-tip">
+        <h2>{{ title }}</h2>
+        {{ info_tip(title, explanation) }}
+      </div>
+      {% if context %}<p class="panel__context">{{ context }}</p>{% endif %}
+    </div>
+  </header>
+{%- endmacro %}
+
+{% macro metric(label, value, explanation) -%}
+  <article class="summary-stat">
+    <div class="metric-label"><span>{{ label }}</span>{{ info_tip(label, explanation) }}</div>
+    <strong class="metric-value">{{ value }}</strong>
+  </article>
+{%- endmacro %}
+
+{% macro chart(title, explanation, context, chart_id, data, kind='bar') -%}
+  <section class="panel chart-panel">
+    {{ heading(title, explanation, context) }}
+    <div
+      id="{{ chart_id }}"
+      class="chart"
+      data-chart="{{ kind }}"
+      data-source="{{ chart_id }}-data"
+      role="img"
+      aria-label="{{ title }} chart"
+    ></div>
+    <script id="{{ chart_id }}-data" type="application/json">{{ data|tojson }}</script>
+    <details class="chart-fallback">
+      <summary>View {{ title|lower }} data</summary>
+      <ul class="chart-values">
+        {% for label in data.labels %}
+          <li><span>{{ label }}</span><strong>{{ data['values'][loop.index0] }}</strong></li>
+        {% else %}
+          <li>No records match this scope.</li>
+        {% endfor %}
+      </ul>
+    </details>
+  </section>
+{%- endmacro %}

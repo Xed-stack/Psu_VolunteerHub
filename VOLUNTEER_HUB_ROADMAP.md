@@ -10,6 +10,8 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Phase 1 — Landing page, discovery, and joining
 
+Implementation update, 18 October 2026: the first-use guide is now a shared role-aware spotlight tour for Volunteer, Coordinator, Director, and Admin. Completion, Skip, and Escape persist per account; Help can replay the appropriate dashboard guide using `?tour=1`.
+
 - Rebuild the public home page as a content-driven landing page with: a PSU volunteer image hero, the tagline, clear sign-in and Browse Opportunities calls to action, a small feature section, upcoming events, recent completed activities, and help/contact links for non-technical users.
 - Use approved PSU images when supplied. Until then, show existing coordinator-uploaded event cover images and milestone photos; cards without an image use the present accessible fallback artwork. Do not add unlicensed stock photos.
 - Add a featured-events carousel from the nearest upcoming activities. Each slide shows cover image, title, campus, category, start and end date/time, remaining slots, and a **Join Now** action.
@@ -34,6 +36,8 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 - Keep QR attendance as a documented standby item only; do not add QR generation, scanning, or check-in flows in this roadmap release.
 
 ## Phase 3 — descriptive analytics and reports
+
+Implementation update, 18 October 2026: Director and Coordinator dashboards/analytics now use shared institutional components and accessible info tips. Live comparison charts, trends, summary metrics, pagination, and downloads share the filtered report rows. Historical aggregates remain in a labelled source section; supplemental recognition, profile, and readiness panels state their own scope. The Director live activity table retains ten rows per page.
 
 Current implementation note: descriptive analytics, PDF/CSV reporting, historical aggregate views, and an idempotent local `seed-demo-analytics` fixture are implemented. The fixture supplies representative live events, registrations, and attendance for panel demonstrations; it does not alter deployment data unless the command is explicitly run against that database.
 

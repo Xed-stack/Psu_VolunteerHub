@@ -8,6 +8,7 @@ preferred categories, and event recommendations).
 from collections import Counter
 import os
 import uuid
+from pathlib import Path
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, current_app)
@@ -17,7 +18,7 @@ from werkzeug.utils import secure_filename
 from app.models import db
 from app.models.user import VolunteerProfile, Skill, Interest
 from app.models.event import Registration, Event, Attendance
-from app.recommendation.analytics import AnalyticsAggregator
+from sqlalchemy.exc import SQLAlchemyError
 from app.recommendation.engine import get_recommendations
 from app.utils.decorators import role_required
 
@@ -25,8 +26,28 @@ volunteer_bp = Blueprint('volunteer', __name__, url_prefix='')
 
 
 def _selected_records(model, values):
-    ids = {int(value) for value in values if str(value).isdigit()}
-    return model.query.filter(model.id.in_(ids)).all() if ids else []
+    if not values:
+        raise ValueError('Select at least one choice.')
+    if any(not str(value).isascii() or not str(value).isdigit() for value in values):
+        raise ValueError('Choose only the available options.')
+    ids = {int(value) for value in values}
+    records = model.query.filter(model.id.in_(ids)).all()
+    if len(records) != len(ids):
+        raise ValueError('An option is no longer available. Review your choices.')
+    return records
+
+
+def _delete_profile_image(path):
+    if not path:
+        return
+    directory = (Path(current_app.static_folder) / 'uploads' / 'profiles').resolve()
+    target = (Path(current_app.static_folder) / path).resolve()
+    if target.parent != directory:
+        return
+    try:
+        target.unlink(missing_ok=True)
+    except OSError:
+        current_app.logger.warning('Could not remove profile image: %s', target)
 
 
 def _save_profile_image(file):
@@ -41,16 +62,23 @@ def _save_profile_image(file):
     file.stream.seek(0)
     try:
         with Image.open(file.stream) as image:
+            if image.format not in {'JPEG', 'PNG', 'WEBP'}:
+                raise ValueError('Profile image must be JPEG, PNG, or WebP.')
             image.verify()
-    except (UnidentifiedImageError, OSError):
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
         raise ValueError('Profile image is not a valid image file.')
     finally:
         file.stream.seek(0)
     directory = os.path.join(current_app.static_folder, 'uploads', 'profiles')
     os.makedirs(directory, exist_ok=True)
     filename = f'{uuid.uuid4().hex}.{extension}'
-    file.save(os.path.join(directory, filename))
-    return f'uploads/profiles/{filename}'
+    path = f'uploads/profiles/{filename}'
+    try:
+        file.save(os.path.join(directory, filename))
+    except OSError:
+        _delete_profile_image(path)
+        raise
+    return path
 
 
 def _level_progress(total_activities):
@@ -99,55 +127,80 @@ def _preferred_categories(user_id, top_n=3):
 @role_required('volunteer')
 def profile_page():
     profile = VolunteerProfile.query.filter_by(user_id=current_user.id).first()
+    errors = {}
+    selected_skills = [str(skill.id) for skill in current_user.skills]
+    selected_interests = [str(interest.id) for interest in current_user.interests]
 
     if request.method == 'POST':
-        if not profile:
-            profile = VolunteerProfile(user_id=current_user.id)
-            db.session.add(profile)
-
-        skills = _selected_records(Skill, request.form.getlist('skills'))
-        interests = _selected_records(Interest, request.form.getlist('interests'))
-        if not skills or not interests:
-            flash('Select at least one skill and one interest.', 'error')
-            return redirect(url_for('volunteer.profile_page'))
-        current_user.skills = skills
-        current_user.interests = interests
-
+        selected_skills = request.form.getlist('skills')
+        selected_interests = request.form.getlist('interests')
+        selections = {}
+        for name, model, values in (
+            ('skills', Skill, selected_skills),
+            ('interests', Interest, selected_interests),
+        ):
+            try:
+                selections[name] = _selected_records(model, values)
+            except ValueError as exc:
+                errors[name] = str(exc)
         image = request.files.get('profile_image')
-        try:
-            image_path = _save_profile_image(image)
-        except ValueError as exc:
-            flash(str(exc), 'error')
-            return redirect(url_for('volunteer.profile_page'))
-        if image_path:
+        image_path = None
+        if not errors:
+            try:
+                image_path = _save_profile_image(image)
+            except ValueError as exc:
+                errors['profile_image'] = str(exc)
+            except OSError:
+                current_app.logger.exception('Profile photo upload failed')
+                errors['profile_image'] = 'Photo could not be saved. Choose it again and retry.'
+        if not errors:
             old_path = current_user.profile_image_path
-            current_user.profile_image_path = image_path
-            current_user.profile_image_name = secure_filename(image.filename)
-            if old_path:
-                old_file = os.path.join(current_app.static_folder, old_path)
-                if os.path.isfile(old_file):
-                    os.remove(old_file)
-
-        db.session.commit()
-        flash('Profile updated successfully!', 'success')
-        return redirect(url_for('volunteer.profile_page'))
+            try:
+                if not profile:
+                    profile = VolunteerProfile(user_id=current_user.id)
+                    db.session.add(profile)
+                current_user.skills = selections['skills']
+                current_user.interests = selections['interests']
+                if image_path:
+                    current_user.profile_image_path = image_path
+                    current_user.profile_image_name = secure_filename(image.filename)
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                _delete_profile_image(image_path)
+                profile = VolunteerProfile.query.filter_by(user_id=current_user.id).first()
+                current_app.logger.exception('Profile save failed')
+                errors['save'] = 'Profile was not saved. Please retry. If you chose a photo, choose it again.'
+            else:
+                if image_path:
+                    _delete_profile_image(old_path)
+                flash('Profile updated successfully!', 'success')
+                return redirect(url_for('volunteer.profile_page'))
 
     # ── Analytics: impact stats ─────────────────────────────────────────
     total_activities = Registration.query.filter_by(
         user_id=current_user.id).count()
 
-    level = _level_progress(total_activities)
+    verified_attendance = Attendance.query.filter_by(
+        user_id=current_user.id, status='present').count()
+    completed_participation = Registration.query.join(
+        Registration.attendance_record
+    ).filter(Registration.user_id == current_user.id,
+             Registration.status == 'completed', Attendance.status == 'present').count()
+    level = _level_progress(completed_participation)
 
     distinct_categories = db.session.query(Event.category).join(
         Attendance, Attendance.event_id == Event.id
     ).filter(Attendance.user_id == current_user.id, Attendance.status == 'present')\
      .distinct().count()
 
-    badges = _compute_badges(total_activities, distinct_categories)
+    badges = _compute_badges(completed_participation, distinct_categories)
     preferred_categories = _preferred_categories(current_user.id)
 
     user_stats = {
         'total_activities': total_activities,
+        'verified_attendance': verified_attendance,
+        'completed_participation': completed_participation,
         'cert_level': level['cert_level'],
         'level_label': level['label'],
         'level_percent': level['percent'],
@@ -158,8 +211,15 @@ def profile_page():
         .order_by(Registration.registered_at.desc()).limit(5).all()
 
     # ── Analytics: cosine-similarity recommendations ────────────────────
-    recommendations = get_recommendations(
-        profile, top_n=3, campus_id=current_user.campus_id)
+    recommendations_error = None
+    try:
+        recommendations = get_recommendations(
+            profile, top_n=3, campus_id=current_user.campus_id)
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception('Profile recommendations unavailable')
+        recommendations = []
+        recommendations_error = 'Recommendations could not be loaded. Please retry later.'
 
     return render_template(
         'volunteer/Volunteer_Profile.html',
@@ -169,9 +229,13 @@ def profile_page():
         preferred_categories=preferred_categories,
         registrations=registrations,
         recommendations=recommendations,
+        recommendations_error=recommendations_error,
+        errors=errors,
+        selected_skills=selected_skills,
+        selected_interests=selected_interests,
         skill_catalog=Skill.query.order_by(Skill.name).all(),
         interest_catalog=Interest.query.order_by(Interest.name).all(),
-    )
+    ), (422 if errors else 200)
 
 
 @volunteer_bp.route('/profile/image/remove', methods=['POST'])
@@ -181,11 +245,14 @@ def remove_profile_image():
     path = current_user.profile_image_path
     current_user.profile_image_path = None
     current_user.profile_image_name = None
-    db.session.commit()
-    if path:
-        file_path = os.path.join(current_app.static_folder, path)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception('Profile photo removal failed')
+        flash('Photo was not removed. Please retry.', 'error')
+        return redirect(url_for('volunteer.profile_page'))
+    _delete_profile_image(path)
     flash('Profile image removed.', 'success')
     return redirect(url_for('volunteer.profile_page'))
 

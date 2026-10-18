@@ -1,4 +1,5 @@
 {% extends 'layouts/role_base.html' %}
+{% set tour_page = true %}
 {% block title %}Admin Dashboard · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}System and user management{% endblock %}
@@ -27,198 +28,309 @@
       </select>
     </form>
   </header>
-  <section class="summary-strip" aria-label="Administration summary">
+  <section
+    class="summary-strip"
+    aria-label="Administration summary"
+    data-tour-id="summary"
+  >
     <div class="summary-stat"><small>Database</small><strong>{{ server_status.database }}</strong></div>
     <div class="summary-stat"><small>Active Users</small><strong>{{ active_users }}</strong></div>
     <div class="summary-stat"><small>Volunteer Accounts</small><strong>{{ pending_approvals }}</strong></div>
     <div class="summary-stat"><small>Displayed Users</small><strong>{{ users|length }}</strong></div>
   </section>
   <nav class="admin-tabs" aria-label="Administration sections">
-    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'users' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='users') }}">Active Users</a>
-    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'deactivated' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='deactivated') }}">Deactivated Users ({{ deactivated_users|length }})</a>
-    <a class="btn btn--sm {{ 'btn--primary' if active_tab == 'audit' else 'btn--ghost' }}" href="{{ url_for('admin.admin_dash', tab='audit') }}">Activity Log</a>
+    <a
+      class="btn btn--sm {{ 'btn--primary' if active_tab == 'users' else 'btn--ghost' }}"
+      href="{{ url_for('admin.admin_dash', tab='users') }}"
+    >Active Users</a>
+    <a
+      class="btn btn--sm {{ 'btn--primary' if active_tab == 'deactivated' else 'btn--ghost' }}"
+      href="{{ url_for('admin.admin_dash', tab='deactivated') }}"
+    >Deactivated Users ({{ deactivated_users|length }})</a>
+    <a
+      class="btn btn--sm {{ 'btn--primary' if active_tab == 'audit' else 'btn--ghost' }}"
+      href="{{ url_for('admin.admin_dash', tab='audit') }}"
+    >Activity Log</a>
   </nav>
   {% if active_tab == 'users' %}
-  <section class="panel" id="user-management">
-    <header class="panel__header">
-      <h2>User Management</h2>
-      <a
-        class="btn btn--primary"
-        href="{{ url_for('admin.create_user') }}"
-      >Add User</a>
-    </header>
-    <div
-      class="table-scroll"
-      tabindex="0"
-      aria-label="User management table"
+    <section
+      class="panel"
+      id="user-management"
+      data-tour-id="user-management"
     >
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Role</th>
-            <th>Campus</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for user in users %}
+      <header class="panel__header">
+        <h2>User Management</h2>
+        <a
+          class="btn btn--primary"
+          href="{{ url_for('admin.create_user') }}"
+        >Add User</a>
+      </header>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        aria-label="User management table"
+      >
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>
-                <strong>{{ user.name }}</strong>
-                <br>
-                <small>{{ user.email }}</small>
-              </td>
-              <td>
-                <form
-                  method="post"
-                  action="{{ url_for('admin.change_role', user_id=user.id) }}"
-                >
-                  <select
-                    class="select"
-                    name="role"
-                    onchange="this.form.submit()"
-                    aria-label="Change role for {{ user.name }}"
+              <th>User</th>
+              <th>Role</th>
+              <th>Campus</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+              <tr>
+                <td>
+                  <strong>{{ user.name }}</strong>
+                  <br>
+                  <small>{{ user.email }}</small>
+                </td>
+                <td>
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.change_role', user_id=user.id) }}"
                   >
-                    {% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}
-                      <option value="{{ role }}" {{ 'selected' if user.role == role }}>{{ role|title }}</option>
-                    {% endfor %}
-                  </select>
-                </form>
-              </td>
-              <td>{{ user.campus.name if user.campus else '—' }}</td>
-              <td><span
+                    <select
+                      class="select"
+                      name="role"
+                      onchange="this.form.submit()"
+                      aria-label="Change role for {{ user.name }}"
+                    >
+                      {% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}
+                        <option value="{{ role }}" {{ 'selected' if user.role == role }}>{{ role|title }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
+                </td>
+                <td>{{ user.campus.name if user.campus else '—' }}</td>
+                <td><span
   class="badge {{ 'badge--primary' if user.is_active else 'badge--neutral' }}"
 >{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
-              <td class="table-actions">
-                <a
-                  class="btn btn--sm btn--ghost"
-                  href="{{ url_for('admin.edit_user', user_id=user.id) }}"
-                >Edit</a>
-                <form
-                  method="post"
-                  action="{{ url_for('admin.deactivate_user', user_id=user.id) }}"
-                  class="inline-form"
-                >
-                  <button
-                    class="btn btn--sm btn--danger"
-                    type="submit"
-                    onclick="return confirm('Deactivate {{ user.name }}? They will be unable to sign in.')"
+                <td class="table-actions">
+                  <a
+                    class="btn btn--sm btn--ghost"
+                    href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                  >Edit</a>
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.deactivate_user', user_id=user.id) }}"
+                    class="inline-form"
                   >
-                    Deactivate
-                  </button>
-                </form>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="5">
-                <div class="empty-state">No users found.</div>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <section class="panel">
-    <header class="panel__header"><div><h2>Activity Categories</h2><small>Categories available when coordinators create or edit activities.</small></div></header>
-    <form class="filter-row" method="post" action="{{ url_for('admin.create_category') }}">
-      <label class="field">New category<input class="input" name="name" maxlength="50" required></label>
-      <button class="btn btn--primary" type="submit">Add Category</button>
-    </form>
-    <div class="tag-list">
-      {% for category in categories %}
-        <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="inline-form"><button class="icon-button icon-button--danger" type="submit" title="Remove {{ category.name }}" aria-label="Remove {{ category.name }}" onclick="return confirm('Remove {{ category.name }}? Affected activities will become General.')">×</button></form>{% endif %}</span>
-      {% endfor %}
-    </div>
-  </section>
-  <section class="panel">
-    <header class="panel__header">
-      <h2>Administrative Controls</h2>
-    </header>
-    <div class="admin-actions">
-      <a class="admin-action" href="{{ url_for('admin.manage_policy', document='privacy') }}"><span class="material-symbols-outlined">privacy_tip</span><strong>Privacy Notice</strong><small>Publish separate privacy revisions</small></a>
-      <a class="admin-action" href="{{ url_for('admin.manage_policy', document='participation-agreement') }}"><span class="material-symbols-outlined">handshake</span><strong>Default Agreement</strong><small>Set the fallback for existing activities</small></a>
-      <a
-        class="admin-action"
-        href="{{ url_for('admin.create_campus') }}"
-      ><span class="material-symbols-outlined">domain_add</span><strong>Add Campus</strong><small>Configure a new PSU campus</small></a>
-      <a class="admin-action" href="{{ url_for('admin.import_users_csv') }}">
-        <span class="material-symbols-outlined">upload_file</span>
-        <strong>Import Users</strong>
-        <small>Validate and add accounts from CSV</small>
-      </a>
-      <a class="admin-action" href="{{ url_for('admin.export_users_csv') }}">
-        <span class="material-symbols-outlined">download</span>
-        <strong>Export Users</strong>
-        <small>Download non-sensitive account data</small>
-      </a>
-      <a class="admin-action" href="{{ url_for('admin.manage_terms') }}">
-        <span class="material-symbols-outlined">gavel</span>
-        <strong>Terms of Use</strong>
-        <small>Publish and version policy revisions</small>
-      </a>
-      <a
-        class="admin-action"
-        href="{{ url_for('notifications.list_notifications') }}"
-      ><span class="material-symbols-outlined">campaign</span><strong>Notifications</strong><small>Review system activity</small></a>
-      <a class="admin-action" href="{{ url_for('admin.backup') }}">
-        <span class="material-symbols-outlined">download</span>
-        <strong>Backup</strong>
-        <small>Download portable data archive</small>
-      </a>
-      <a class="admin-action" href="{{ url_for('admin.settings') }}">
-        <span class="material-symbols-outlined">settings</span>
-        <strong>System Settings</strong>
-        <small>Operational defaults</small>
-      </a>
-    </div>
-  </section>
+                    <button
+                      class="btn btn--sm btn--danger"
+                      type="submit"
+                      onclick="return confirm('Deactivate {{ user.name }}? They will be unable to sign in.')"
+                    >
+                      Deactivate
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">No users found.</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Activity Categories</h2>
+          <small>Categories available when coordinators create or edit activities.</small>
+        </div>
+      </header>
+      <form
+        class="filter-row"
+        method="post"
+        action="{{ url_for('admin.create_category') }}"
+      >
+        <label class="field">
+          New category<input class="input" name="name" maxlength="50" required>
+        </label>
+        <button class="btn btn--primary" type="submit">Add Category</button>
+      </form>
+      <div class="tag-list">
+        {% for category in categories %}
+          <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form
+  method="post"
+  action="{{ url_for('admin.delete_category', category_id=category.id) }}"
+  class="inline-form"
+><button
+  class="icon-button icon-button--danger"
+  type="submit"
+  title="Remove {{ category.name }}"
+  aria-label="Remove {{ category.name }}"
+  onclick="return confirm('Remove {{ category.name }}? Affected activities will become General.')"
+>×</button></form>{% endif %}</span>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="panel" data-tour-id="admin-controls">
+      <header class="panel__header">
+        <h2>Administrative Controls</h2>
+      </header>
+      <div class="admin-actions">
+        <a
+          class="admin-action"
+          href="{{ url_for('admin.manage_policy', document='privacy') }}"
+        ><span class="material-symbols-outlined">privacy_tip</span><strong>Privacy Notice</strong><small>Publish separate privacy revisions</small></a>
+        <a
+          class="admin-action"
+          href="{{ url_for('admin.manage_policy', document='participation-agreement') }}"
+        ><span class="material-symbols-outlined">handshake</span><strong>Default Agreement</strong><small>Set the fallback for existing activities</small></a>
+        <a
+          class="admin-action"
+          href="{{ url_for('admin.create_campus') }}"
+        ><span class="material-symbols-outlined">domain_add</span><strong>Add Campus</strong><small>Configure a new PSU campus</small></a>
+        <a
+          class="admin-action"
+          href="{{ url_for('admin.import_users_csv') }}"
+        >
+          <span class="material-symbols-outlined">upload_file</span>
+          <strong>Import Users</strong>
+          <small>Validate and add accounts from CSV</small>
+        </a>
+        <a
+          class="admin-action"
+          data-tour-id="internal-reporting"
+          href="{{ url_for('admin.export_users_csv') }}"
+        >
+          <span class="material-symbols-outlined">download</span>
+          <strong>Export Users</strong>
+          <small>Download non-sensitive account data</small>
+        </a>
+        <a
+          class="admin-action"
+          href="{{ url_for('admin.manage_terms') }}"
+        >
+          <span class="material-symbols-outlined">gavel</span>
+          <strong>Terms of Use</strong>
+          <small>Publish and version policy revisions</small>
+        </a>
+        <a
+          class="admin-action"
+          href="{{ url_for('notifications.list_notifications') }}"
+        ><span class="material-symbols-outlined">campaign</span><strong>Notifications</strong><small>Review system activity</small></a>
+        <a class="admin-action" href="{{ url_for('admin.backup') }}">
+          <span class="material-symbols-outlined">download</span>
+          <strong>Backup</strong>
+          <small>Download portable data archive</small>
+        </a>
+        <a class="admin-action" href="{{ url_for('admin.settings') }}">
+          <span class="material-symbols-outlined">settings</span>
+          <strong>System Settings</strong>
+          <small>Operational defaults</small>
+        </a>
+      </div>
+    </section>
   {% elif active_tab == 'deactivated' %}
-  <section class="panel" id="deactivated-users">
-    <header class="panel__header"><div><h2>Deactivated Users</h2><small>Accounts become eligible for permanent deletion 30 days after deactivation.</small></div></header>
-    <div class="table-scroll" tabindex="0" aria-label="Deactivated users table">
-      <table class="data-table">
-        <thead><tr><th>User</th><th>Role</th><th>Campus</th><th>Deactivated</th><th>Reactivation</th><th>Deletion</th><th>Actions</th></tr></thead>
-        <tbody>
-          {% for user in deactivated_users %}
-          <tr>
-            <td><strong>{{ user.name }}</strong><br><small>{{ user.email }}</small></td>
-            <td>{{ user.role|title }}</td><td>{{ user.campus.name if user.campus else '—' }}</td>
-            <td>{{ (user.deactivated_at or user.created_at).strftime('%b %d, %Y') }}</td>
-            <td>{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
-            <td><span class="badge {{ 'badge--neutral' if user.deletion_expired else 'badge--primary' }}">{{ 'Expired' if user.deletion_expired else user.deletion_days_left ~ ' days left' }}</span></td>
-            <td class="table-actions">
-              <form method="post" action="{{ url_for('admin.reactivate_user', user_id=user.id) }}" class="inline-form"><button class="btn btn--sm btn--primary" type="submit">Reactivate</button></form>
-              {% if user.deletion_expired %}<form method="post" action="{{ url_for('admin.delete_expired_user', user_id=user.id) }}" class="inline-form"><button class="btn btn--sm btn--danger" type="submit" onclick="return confirm('Permanently delete {{ user.name }} and their account data? This cannot be undone.')">Delete</button></form>{% endif %}
-            </td>
-          </tr>
-          {% else %}<tr><td colspan="7"><div class="empty-state">No deactivated users.</div></td></tr>{% endfor %}
-        </tbody>
-      </table>
+    <section class="panel" id="deactivated-users">
+      <header class="panel__header">
+        <div>
+          <h2>Deactivated Users</h2>
+          <small>Accounts become eligible for permanent deletion 30 days after deactivation.</small>
+        </div>
+      </header>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        aria-label="Deactivated users table"
+      >
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Campus</th>
+              <th>Deactivated</th>
+              <th>Reactivation</th>
+              <th>Deletion</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in deactivated_users %}
+              <tr>
+                <td>
+                  <strong>{{ user.name }}</strong>
+                  <br>
+                  <small>{{ user.email }}</small>
+                </td>
+                <td>{{ user.role|title }}</td>
+                <td>{{ user.campus.name if user.campus else '—' }}</td>
+                <td>{{ (user.deactivated_at or user.created_at).strftime("%b %d, %Y") }}</td>
+                <td>{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
+                <td><span
+  class="badge {{ 'badge--neutral' if user.deletion_expired else 'badge--primary' }}"
+>{{ 'Expired' if user.deletion_expired else user.deletion_days_left ~ ' days left' }}</span></td>
+                <td class="table-actions">
+                  <form
+                    method="post"
+                    action="{{ url_for('admin.reactivate_user', user_id=user.id) }}"
+                    class="inline-form"
+                  >
+                    <button class="btn btn--sm btn--primary" type="submit">Reactivate</button>
+                  </form>
+                  {% if user.deletion_expired %}<form
+  method="post"
+  action="{{ url_for('admin.delete_expired_user', user_id=user.id) }}"
+  class="inline-form"
+><button
+  class="btn btn--sm btn--danger"
+  type="submit"
+  onclick="return confirm('Permanently delete {{ user.name }} and their account data? This cannot be undone.')"
+>Delete</button></form>{% endif %}
+                </td>
+              </tr>
+  {% else %}<tr><td colspan="7"><div class="empty-state">No deactivated users.</div></td></tr>{% endfor %}
+    </tbody>
+    </table>
     </div>
-  </section>
+    </section>
   {% else %}
-  <section class="panel" id="activity-log">
-    <header class="panel__header"><div><h2>Activity Log</h2><small>Most recent administrative changes. Entries are retained when a related account is removed.</small></div></header>
-    <div class="table-scroll" tabindex="0" aria-label="Administrative activity log">
-      <table class="data-table">
-        <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
-        <tbody>
-          {% for entry in audit_logs %}
-          <tr>
-            <td>{{ entry.created_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-            <td>{{ entry.actor.name if entry.actor else 'System / removed user' }}</td>
-            <td>{{ entry.action.replace('_', ' ')|title }}</td>
-            <td>{{ entry.target_type }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
-            <td><small>{{ entry.details or '—' }}</small></td>
-          </tr>
-          {% else %}<tr><td colspan="5"><div class="empty-state">No administrative activity has been recorded yet.</div></td></tr>{% endfor %}
-        </tbody>
-      </table>
+    <section class="panel" id="activity-log">
+      <header class="panel__header">
+        <div>
+          <h2>Activity Log</h2>
+          <small>Most recent administrative changes. Entries are retained when a related account is removed.</small>
+        </div>
+      </header>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        aria-label="Administrative activity log"
+      >
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Target</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in audit_logs %}
+              <tr>
+                <td>{{ entry.created_at.strftime("%b %d, %Y %I:%M %p") }}</td>
+                <td>{{ entry.actor.name if entry.actor else 'System / removed user' }}</td>
+                <td>{{ entry.action.replace('_', ' ') |title }}</td>
+                <td>{{ entry.target_type }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
+                <td><small>{{ entry.details or '—' }}</small></td>
+              </tr>
+  {% else %}<tr><td colspan="5"><div class="empty-state">No administrative activity has been recorded yet.</div></td></tr>{% endfor %}
+    </tbody>
+    </table>
     </div>
-  </section>
+    </section>
   {% endif %}
 {% endblock %}

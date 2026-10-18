@@ -1,5 +1,5 @@
 (() => {
-  const colors = ['#00408b', '#f6bf22', '#2f8f5b', '#8b5cf6', '#e66b2e', '#3b82f6', '#ba1a1a'];
+  const colors = ['#00408b', '#526477', '#0057b8', '#34475c'];
   const baseLayout = {
     autosize: true,
     margin: { t: 16, r: 16, b: 48, l: 48 },
@@ -37,7 +37,7 @@
       ];
       layout = { ...layout, yaxis: { rangemode: 'tozero', gridcolor: '#e5e7eb' } };
     }
-    if (!data.values?.some(Number) && !data.primary?.some(Number)) {
+    if (!data.values?.some(Number) && !data.primary?.some(Number) && !data.secondary?.some(Number)) {
       node.innerHTML = '<div class="empty-state">No chart data available.</div>';
       return;
     }

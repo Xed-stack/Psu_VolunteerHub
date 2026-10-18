@@ -14,6 +14,38 @@ body.sidebar-open {
   overflow: hidden;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 300;
+  top: 12px;
+  left: 12px;
+  padding: 10px 14px;
+  border-radius: var(--control-radius);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-150%);
+}
+
+.skip-link:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+  transform: translateY(0);
+}
+
 .role-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -635,19 +667,353 @@ body.sidebar-open {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--outline-variant);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 
 .rank-list li:last-child {
   border-bottom: 0;
 }
 
-.chart-data summary {
+.chart-data summary,
+.chart-fallback summary {
   min-height: 44px;
   display: flex;
   align-items: center;
   cursor: pointer;
   color: var(--primary);
   font-weight: 700;
+}
+
+/* Info tips explain real reporting terms without adding a second UI system. */
+.heading-with-tip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.heading-with-tip h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.panel__heading {
+  min-width: 0;
+  width: 100%;
+}
+
+.panel__context,
+.section-heading p {
+  margin: 4px 0 0;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}
+
+/* PSU blue identifies the reporting hierarchy; quiet surfaces keep evidence primary. */
+.dashboard-filters {
+  border-top: 3px solid var(--primary);
+}
+
+.dashboard-filters .filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: end;
+  margin-top: 16px;
+}
+
+.role-content .filter-row .field :is(input, select),
+.role-content .field--inline select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--control-radius);
+  background: var(--surface-lowest);
+  color: var(--on-surface);
+  font: inherit;
+}
+
+.role-content .filter-row .field :is(input, select):focus-visible,
+.role-content .field--inline select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.role-content .filter-row .field > small {
+  max-width: 32ch;
+  line-height: 1.4;
+}
+
+.dashboard-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.metric-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--on-surface-variant);
+  font-size: .875rem;
+  line-height: 1.4;
+}
+
+.summary-stat {
+  position: relative;
+}
+
+.summary-stat .metric-value {
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Collapse occasional row actions so the activity schedule stays readable. */
+.workspace-table {
+  min-width: 640px;
+}
+
+.workspace-table td:first-child {
+  min-width: 180px;
+}
+
+.activity-controls > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.activity-controls .table-actions {
+  width: 240px;
+  padding: 12px 0;
+}
+
+.dashboard-links > a {
+  padding: 20px;
+  border: 1px solid var(--outline-variant);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--control-radius);
+  background: var(--surface-lowest);
+  text-decoration: none;
+}
+
+.dashboard-links > a:hover {
+  border-color: var(--primary);
+  background: var(--surface-container-low);
+}
+
+.role-content :is(section[id], h2[id]) {
+  scroll-margin-top: 88px;
+}
+
+.dashboard-links strong,
+.dashboard-links span {
+  display: block;
+}
+
+.dashboard-links span {
+  margin-top: 6px;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}
+
+.section-heading {
+  margin: 36px 0 20px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: var(--primary);
+}
+
+.chart-values {
+  padding: 0;
+  list-style: none;
+}
+
+.chart-values li {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--outline-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.info-tip {
+  position: static;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.info-tip summary {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--control-radius);
+  color: var(--primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.info-tip summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-tip summary:hover {
+  background: var(--primary-light);
+}
+
+.info-tip summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.info-tip__content {
+  position: absolute;
+  z-index: 70;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(22rem, 100%);
+  padding: 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  color: var(--on-surface);
+  overflow-wrap: anywhere;
+}
+
+.info-tip__content strong,
+.info-tip__content p {
+  display: block;
+  margin: 0;
+  font-size: .875rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.info-tip__content p {
+  margin-top: 4px;
+  color: var(--on-surface-variant);
+  line-height: 1.45;
+}
+
+/* The tour uses a native dialog so focus and Escape behavior remain reliable. */
+.first-use-tour {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--on-surface);
+  overflow: hidden;
+}
+
+.first-use-tour::backdrop {
+  background: transparent;
+}
+
+.first-use-tour [hidden] {
+  display: none !important;
+}
+
+.first-use-tour__spotlight {
+  position: fixed;
+  top: var(--tour-y, 8px);
+  left: var(--tour-x, 8px);
+  width: var(--tour-width, 1px);
+  height: var(--tour-height, 1px);
+  border: 3px solid var(--gold);
+  border-radius: var(--control-radius);
+  box-shadow: 0 0 0 2px var(--primary), 0 0 0 100vmax rgba(17, 28, 44, .68);
+  pointer-events: none;
+}
+
+.first-use-tour__card {
+  position: fixed;
+  width: min(26rem, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.first-use-tour__count {
+  margin: 0 0 8px;
+  color: var(--on-surface-variant);
+  font-size: .875rem;
+  font-weight: 700;
+}
+
+.first-use-tour__card h2 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 1.35rem;
+}
+
+.first-use-tour__card > p:not(.first-use-tour__count) {
+  margin: 10px 0 0;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+}
+
+.first-use-tour__actions,
+.first-use-tour__navigation {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.first-use-tour__actions {
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .first-use-tour::backdrop,
+  .first-use-tour__spotlight {
+    transition: opacity .16s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-sidebar,
+  .first-use-tour__spotlight,
+  .first-use-tour__card {
+    transition: none;
+  }
 }
 
 /* Shared utilities */
@@ -698,6 +1064,24 @@ body.sidebar-open {
 }
 
 @media (max-width: 1050px) {
+  .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summary-strip > .summary-stat,
+  .summary-strip > article {
+    padding: 14px 20px;
+    border-left: 0;
+  }
+
+  .summary-strip > :nth-child(n+3) {
+    border-top: 1px solid var(--outline-variant);
+  }
+
+  .summary-strip > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .metric-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -810,10 +1194,58 @@ body.sidebar-open {
   .chart {
     min-height: 260px;
   }
+
+  .info-tip {
+    display: inline-block;
+  }
+
+  .info-tip summary {
+    margin-top: 4px;
+  }
+
+  .info-tip__content {
+    position: static;
+    width: auto;
+    margin-top: 4px;
+    box-shadow: none;
+  }
+
+  .heading-with-tip:has(.info-tip[open]) .info-tip {
+    width: 100%;
+  }
+
+  .metric-label:has(.info-tip[open]) {
+    flex-wrap: wrap;
+  }
+
+  .metric-label .info-tip[open] {
+    width: 100%;
+  }
+
+  .first-use-tour__card {
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .first-use-tour__navigation {
+    margin-left: auto;
+  }
 }
 
 @media print {
 
+  .info-tip,
+  .first-use-tour,
   .role-sidebar,
   .role-topbar,
   .role-footer,

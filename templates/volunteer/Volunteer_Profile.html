@@ -1,140 +1,200 @@
 {% extends 'layouts/role_base.html' %}
+{% from 'partials/dashboard_ui.html' import heading, metric %}
 {% set active_page = "profile" %}
 {% block title %}Profile | PSU Volunteer Hub{% endblock %}
-{% block page_label %}Volunteer Profile{% endblock %}
+{% block header_title %}Volunteer profile{% endblock %}
+{% block header_subtitle %}Your details, matching preferences, and participation{% endblock %}
 {% block content %}
-  <header class="profile-summary panel">
-    <img
-      src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
-      alt="Profile of {{ current_user.name }}"
+  <div class="profile-page stack">
+    <section
+      class="panel profile-identity"
+      aria-labelledby="profile-name"
     >
-    <div>
-      <span class="badge">Verified volunteer</span>
-      <h1>{{ current_user.name }}</h1>
-      <p>{{ current_user.email }}</p>
-    </div>
-    <span class="status-label">Profile active</span>
-  </header>
-  <section class="metric-grid">
-    <article class="metric-card">
-      <small>Activities</small>
-      <strong>{{ user_stats.total_activities or 0 }}</strong>
-    </article>
-    <article class="metric-card">
-      <small>Level</small>
-      <strong>{{ user_stats.level_label }}</strong>
-    </article>
-    <article class="metric-card">
-      <small>Progress</small>
-      <strong>{{ user_stats.level_percent }}%</strong>
-    </article>
-  </section>
-  <div class="content-grid">
-    <div class="stack">
-      <section class="panel">
-        <header class="panel__header">
-          <h2>Edit matching profile</h2>
-        </header>
-        <p class="help-text">Choose at least one interest and skill. Better profile data improves recommendations, but matches are decision support rather than guarantees.</p>
-        <form method="post" enctype="multipart/form-data">
-          <fieldset class="choice-fieldset"><legend>Interests</legend>{% for interest in interest_catalog %}<label><input type="checkbox" name="interests" value="{{ interest.id }}" {{ 'checked' if interest in current_user.interests }}> {{ interest.name }}</label>{% endfor %}</fieldset>
-          <fieldset class="choice-fieldset"><legend>Skills</legend>{% for skill in skill_catalog %}<label><input type="checkbox" name="skills" value="{{ skill.id }}" {{ 'checked' if skill in current_user.skills }}> {{ skill.name }}</label>{% endfor %}</fieldset>
-          <label class="field">Profile image<input class="input" name="profile_image" type="file" accept="image/jpeg,image/png,image/webp"><small>Optional JPEG, PNG, or WebP, up to 3 MB.</small></label>
-          <button class="btn btn--primary" type="submit">Save profile</button>
-        </form>
-        {% if current_user.profile_image_path %}<form method="post" action="{{ url_for('volunteer.remove_profile_image') }}"><button class="btn btn--ghost" type="submit">Remove profile image</button></form>{% endif %}
-      </section>
-      <section class="panel">
-        <header class="panel__header">
-          <h2>Skills</h2>
-        </header>
-        <div class="tag-list">
-          {% if profile and profile.skill_list %}
-            {% for skill in profile.skill_list %}<span class="badge">{{ skill }}</span>{% endfor %}
-          {% else %}
-            <span class="status-label">No skills added yet</span>
-          {% endif %}
+      <img
+        class="profile-photo"
+        width="96"
+        height="96"
+        src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
+        alt="{{ 'Profile photo' if current_user.profile_image_path else 'Placeholder profile photo' }}"
+      >
+      <div class="profile-identity__details">
+        <h1 id="profile-name">{{ current_user.name }}</h1>
+        <p>{{ current_user.email }}</p>
+        <dl class="profile-facts">
+          <div>
+            <dt>Campus</dt>
+            <dd>
+              {{ current_user.campus.name if current_user.campus else 'Not recorded' }}
+            </dd>
+          </div>
+          <div>
+            <dt>Volunteer type</dt>
+            <dd>
+              {{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}
+            </dd>
+          </div>
+        </dl>
+        <p class="help-text">Account details are read-only on this screen.</p>
+      </div>
+      <div class="profile-photo-controls">
+        <label for="profile-image">Change profile photo</label>
+        <input
+          class="input"
+          id="profile-image"
+          form="profile-form"
+          name="profile_image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          aria-describedby="photo-help{% if errors.profile_image %} photo-error{% endif %}"
+          {% if errors.profile_image %}aria-invalid="true"{% endif %}
+        >
+        <small id="photo-help">Optional JPEG, PNG, or WebP, up to 3 MB. Saved with your profile.</small>
+        {% if errors.profile_image %}<p class="profile-error" id="photo-error">{{ errors.profile_image }}</p>{% endif %}
+        {% if current_user.profile_image_path %}
+          <form
+            method="post"
+            action="{{ url_for('volunteer.remove_profile_image') }}"
+          >
+            {% include 'partials/csrf_field.html' %}
+            <button class="btn btn--ghost" type="submit">Remove profile photo</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+    <section aria-label="Participation summary" class="summary-strip">
+      {{ metric('Registrations', user_stats.total_activities, 'All your registration records, including pending and cancelled registrations. This is not a completed-service count.') }}
+      {{ metric('Verified attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
+      {{ metric('Completed participation', user_stats.completed_participation, 'Registrations marked completed with attendance marked present. This is also the certificate eligibility rule.') }}
+    </section>
+    <section
+      class="panel profile-editor"
+      aria-labelledby="matching-title"
+    >
+      <header class="panel__header">
+        <h2 id="matching-title">Interests and skills</h2>
+      </header>
+      <p class="help-text">Select at least one of each to support your cosine-similarity recommendations. Skills and interests can be selected independently.</p>
+      {% if errors %}<p class="profile-error" role="alert">{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p>{% endif %}
+      <form
+        id="profile-form"
+        method="post"
+        enctype="multipart/form-data"
+        action="{{ url_for('volunteer.profile_page') }}"
+      >
+        {% include 'partials/csrf_field.html' %}
+        {% for name, label, catalog, selected in [('interests', 'Interests', interest_catalog, selected_interests), ('skills', 'Skills', skill_catalog, selected_skills)] %}
+          <fieldset
+            class="profile-choices"
+            {% if errors.get(name) %}aria-describedby="{{ name }}-error" aria-invalid="true"{% endif %}
+          >
+            <legend>{{ label }}</legend>
+            {% if errors.get(name) %}<p id="{{ name }}-error" class="profile-error">{{ errors[name] }}</p>{% endif %}
+            <div class="profile-choice-grid">
+              {% for choice in catalog %}
+                <label class="profile-choice">
+                  <input
+                    type="checkbox"
+                    name="{{ name }}"
+                    value="{{ choice.id }}"
+                    {% if choice.id|string in selected %}checked{% endif %}
+                  >
+                  <span>{{ choice.name }}</span>
+                </label>
+              {% else %}
+                <p>No {{ name }} are available. Contact your coordinator before saving.</p>
+              {% endfor %}
+            </div>
+          </fieldset>
+        {% endfor %}
+        <div class="profile-save">
+          <button
+            class="btn btn--primary"
+            type="submit"
+            {% if not skill_catalog or not interest_catalog %}disabled{% endif %}
+          >Save profile</button>
+          <span class="help-text">Your choices are saved together with any new photo.</span>
         </div>
-      </section>
-      <section class="panel">
-        <header class="panel__header">
-          <h2>Recommended for you</h2>
-        </header>
-        <ul class="clean-list">
-          {% for rec in recommendations %}
-            <li><strong>{{ rec.event.title }}</strong><small>{{ rec.percentage }}% match</small></li>
-          {% else %}
-            <li>Add skills and interests to receive recommendations.</li>
+      </form>
+    </section>
+    <section class="panel">
+      {{ heading('Profile milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
+      <div class="profile-milestone">
+        <div>
+          <strong>{{ user_stats.cert_level }}: {{ user_stats.level_label }}</strong>
+          <p class="help-text">Based on {{ user_stats.completed_participation }} completed participation records. Separate from Director recognition.</p>
+          <label for="profile-progress">Progress within this level: {{ user_stats.level_percent }}%</label>
+          <progress
+            id="profile-progress"
+            value="{{ user_stats.level_percent }}"
+            max="100"
+          >{{ user_stats.level_percent }}%</progress>
+        </div>
+        <ul class="profile-badges">
+          {% for badge in badges %}
+            <li>
+              <strong>{{ badge.name }}</strong>
+              <span>{{ 'Earned' if badge.earned else 'Not yet earned' }}</span>
+            </li>
           {% endfor %}
+        </ul>
+      </div>
+    </section>
+    <div class="profile-support">
+      <section class="panel">
+        {{ heading('Recommended for you', 'Cosine similarity compares your saved skills and interests with available activities. Match scores support your choice and do not guarantee eligibility or acceptance.') }}
+        <ul class="profile-recommendations">
+          {% if recommendations_error %}
+            <li role="status">{{ recommendations_error }}</li>
+          {% else %}
+            {% for rec in recommendations %}
+              <li>
+                <a href="{{ url_for('events.opportunities', search=rec.event.title) }}">{{ rec.event.title }}</a>
+                <span>{{ rec.percentage }}% match</span>
+              </li>
+            {% else %}
+              <li>No matching activities are available. Review your preferences or <a href="{{ url_for('events.opportunities') }}">browse opportunities</a>.</li>
+            {% endfor %}
+          {% endif %}
         </ul>
       </section>
       <section class="panel">
-        <header class="panel__header">
-          <h2>Preferred categories</h2>
-        </header>
-        <div class="tag-list">
+        {{ heading('Categories you’ve attended', 'Your three most frequent activity categories from attendance records marked present. This includes verified attendance even when the registration has not yet been marked completed.') }}
+        <ul class="profile-categories">
           {% for category in preferred_categories %}
-            <span class="badge">{{ category }}</span>
+            <li>{{ category }}</li>
           {% else %}
-            <span class="status-label">No category history yet</span>
+            <li>No verified category history yet.</li>
           {% endfor %}
-        </div>
+        </ul>
       </section>
     </div>
-    <div class="stack">
-      <section class="panel">
-        <header class="panel__header">
-          <h2>Achievement badges</h2>
-        </header>
-        <div class="badge-grid">
-          {% for badge in badges %}
-            <article
-              class="achievement {% if not badge.earned %}is-locked{% endif %}"
-            >
-              <span class="material-symbols-outlined">{{ badge.icon }}</span>
-              <strong>{{ badge.name }}</strong>
-            </article>
-          {% endfor %}
-        </div>
-      </section>
-      <section class="panel">
-        <header class="panel__header">
-          <h2>Activity history</h2>
-          <a href="{{ url_for('events.opportunities') }}">Browse opportunities</a>
-        </header>
-        <div class="table-scroll">
-          <table class="data-table">
-            <thead>
+    <section class="panel">
+      {{ heading('Recent registrations', 'Your five most recent registration records. Pending, cancelled, and absent records do not earn completed-participation milestones. Certificate eligibility requires completed status and present attendance.') }}
+      <a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">View registrations</a>
+      <div class="table-scroll" role="region" aria-label="Recent registrations" tabindex="0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Activity</th>
+              <th scope="col">Registered</th>
+              <th scope="col">Status</th>
+              <th scope="col">Certificate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reg in registrations %}
               <tr>
-                <th>Activity</th>
-                <th>Registered</th>
-                <th>Status</th>
-                <th>Certificate</th>
+                <td>{{ reg.event.title if reg.event else 'Not available' }}</td>
+                <td>{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else 'Not available' }}</td>
+                <td>{{ reg.status|title }}</td>
+                <td>{{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}</td>
               </tr>
-            </thead>
-            <tbody>
-              {% for reg in registrations %}
-                <tr>
-                  <td>{{ reg.event.title if reg.event else 'Not available' }}</td>
-                  <td>{{ reg.registered_at.strftime("%b %d, %Y") if reg.registered_at else 'Not available' }}</td>
-                  <td><span class="badge">{{ reg.status|title }}</span></td>
-                  <td>
-                    <span
-                      class="badge {{ 'badge--primary' if reg.certificate_eligible else 'badge--neutral' }}"
-                    >
-                      {{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}
-                    </span>
-                  </td>
-                </tr>
-              {% else %}
-                <tr>
-                  <td colspan="4">No activities yet.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+            {% else %}
+              <tr><td colspan="4">No registrations yet. Browse opportunities to find an activity.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 {% endblock %}

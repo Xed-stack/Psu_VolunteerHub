@@ -21,8 +21,9 @@ from app.models.notification import notify
 from app.utils.audit import log_activity
 from app.models.user import SystemSetting
 from app.recommendation.analytics import AnalyticsAggregator
+from app.dashboard import summarize_report
 from app.reports import (
-    build_events_report, render_csv, render_pdf, ReportError)
+    build_events_report, render_csv, render_pdf, ReportError, parse_date_range)
 from datetime import datetime, timedelta
 
 coordinator_bp = Blueprint('coordinator', __name__, url_prefix='')
@@ -189,7 +190,10 @@ def coordinator_dash():
         campus_id=current_user.campus_id)
     accomplishments = AnalyticsAggregator.activity_accomplishments(
         campus_id=current_user.campus_id, start_date=start_date,
-        end_date=end_date, category=category)
+        end_date=end_date, category=category, limit=None)
+    visible_event_ids = {event.id for event in events}
+    accomplishments = [row for row in accomplishments
+                       if row['event'].id in visible_event_ids]
     pending_cancellations = CancellationRequest.query.join(Registration).join(Event).filter(
         Event.campus_id == current_user.campus_id,
         CancellationRequest.status == 'pending').count()
@@ -745,14 +749,14 @@ def _date_range_label(start_date, end_date):
 @login_required
 @role_required('coordinator')
 def analytics():
+    try:
+        parse_date_range(request.args.get('start_date'), request.args.get('end_date'))
+    except ReportError:
+        flash('Use valid report dates, with the start date on or before the end date.', 'error')
+        return redirect(url_for('coordinator.analytics'))
     # All aggregations scoped to the coordinator's own campus so the page
     # reflects the coordinator's reality, not the whole university.
     campus_name = current_user.campus.name if current_user.campus else 'Campus'
-    kpi_cards = AnalyticsAggregator.kpi_summary(campus_id=current_user.campus_id)
-    campus_data = AnalyticsAggregator.campus_stats()
-    demographics = AnalyticsAggregator.role_demographics()
-    trend_data = AnalyticsAggregator.trend_data(campus_id=current_user.campus_id)
-    heatmap_data = AnalyticsAggregator.heatmap_data()
     forecast_data = AnalyticsAggregator.forecast_turnout(
         campus_id=current_user.campus_id)
     attendance_summary = AnalyticsAggregator.attendance_summary(
@@ -768,42 +772,14 @@ def analytics():
         campus_id=_coordinator_campus_id(), start_date=start_date,
         end_date=end_date, category=category)
 
-    # Phase 18: campus-scoped descriptive analytics (no cross-campus leakage).
-    participation = AnalyticsAggregator.participation_summary(
-        campus_id=_coordinator_campus_id(), start_date=start_date,
-        end_date=end_date, category=category)
-    category_breakdown = AnalyticsAggregator.category_distribution(
-        campus_id=_coordinator_campus_id(), start_date=start_date,
-        end_date=end_date)
-    activity_breakdown = AnalyticsAggregator.activity_performance(
-        campus_id=_coordinator_campus_id(), start_date=start_date,
-        end_date=end_date, category=category)
-    monthly = AnalyticsAggregator.monthly_engagement(
-        campus_id=_coordinator_campus_id())
-    weekly = AnalyticsAggregator.weekly_engagement(
-        campus_id=_coordinator_campus_id())
-    type_split = AnalyticsAggregator.psu_vs_outsider(
-        campus_id=_coordinator_campus_id(), start_date=start_date,
-        end_date=end_date, category=category)
-
     return render_template('coordinator/coordinator_analytics.html',
                             campus_name=campus_name,
-                            kpi_cards=kpi_cards,
-                            campus_data=campus_data,
-                            demographics=demographics,
-                            trend_data=trend_data,
-                            heatmap_data=heatmap_data,
                             forecast_data=forecast_data,
                             attendance_summary=attendance_summary,
                             categories=categories,
                             report_rows=report_rows,
                             report_summary=report_summary,
-                            participation=participation,
-                            category_breakdown=category_breakdown,
-                            activity_breakdown=activity_breakdown,
-                            monthly=monthly,
-                            weekly=weekly,
-                            type_split=type_split)
+                            dashboard_data=summarize_report(report_rows))
 
 
 # ── Outsider (External Volunteer) manual encoding ───────────────────────────────

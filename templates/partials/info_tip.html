@@ -1,0 +1,11 @@
+{% macro info_tip(label, text) -%}
+  <details class="info-tip">
+    <summary aria-label="About {{ label|lower }}">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+    </summary>
+    <div class="info-tip__content" role="note">
+      <strong>{{ label }}</strong>
+      <p>{{ text }}</p>
+    </div>
+  </details>
+{%- endmacro %}

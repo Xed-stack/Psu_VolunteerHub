@@ -15,9 +15,10 @@ from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
 from app.models.event import Event, Campus, SdgGoal
 from app.models.user import User
+from app.dashboard import summarize_report
 from app.reports import (
     build_events_report, render_csv, render_pdf, resolve_campus,
-    ReportError, _build_meta)
+    ReportError, _build_meta, parse_date_range)
 
 director_bp = Blueprint('director', __name__, url_prefix='')
 
@@ -40,6 +41,7 @@ def director_dash():
     total_activities = sum(c['activities'] for c in campus_stats)
     top_campuses = campus_stats[:3]
     live_summary = AnalyticsAggregator.participation_summary()
+    live_campuses = AnalyticsAggregator.campus_comparison()
     accomplishments = AnalyticsAggregator.activity_accomplishments(limit=5)
     return render_template('director/Director_Dash.html',
                            campus_stats=campus_stats,
@@ -47,6 +49,7 @@ def director_dash():
                            total_activities=total_activities,
                            top_campuses=top_campuses,
                            live_summary=live_summary,
+                           live_campuses=live_campuses,
                            accomplishments=accomplishments)
 
 
@@ -87,16 +90,15 @@ def activity_calendar():
 @login_required
 @roles_required('director', 'admin')
 def analytics():
+    try:
+        parse_date_range(request.args.get('start_date'), request.args.get('end_date'))
+    except ReportError:
+        flash('Use valid report dates, with the start date on or before the end date.', 'error')
+        return redirect(url_for('director.analytics'))
     filters = _historical_filters()
-    kpi_cards = AnalyticsAggregator.kpi_summary()
-    campus_data = AnalyticsAggregator.campus_stats()
     demographics = AnalyticsAggregator.role_demographics()
-    trend_data = AnalyticsAggregator.trend_data()
-    heatmap_data = AnalyticsAggregator.heatmap_data()
     historical_summary = AnalyticsAggregator.historical_summary(**filters)
     historical_campus_data = AnalyticsAggregator.historical_campus_stats(**filters)
-    historical_category_data = (
-        AnalyticsAggregator.historical_activity_type_stats(**filters))
     from app.models.event import HistoricalActivity
     campuses = Campus.query.order_by(Campus.name).all()
     activity_types = [row[0] for row in db.session.query(
@@ -122,7 +124,10 @@ def analytics():
     except ReportError:
         live_rows, live_summary = [], {
             'event_count': 0, 'total_registrations': 0,
-            'total_attended': 0, 'total_completed': 0}
+            'total_attended': 0, 'total_completed': 0,
+            'total_psu': 0, 'total_external': 0}
+        flash('Use a valid date range for the activity report.', 'error')
+    dashboard_data = summarize_report(live_rows)
     report_page = max(request.args.get('page', 1, type=int), 1)
     report_page_size = 10
     report_total_pages = max(1, (len(live_rows) + report_page_size - 1) // report_page_size)
@@ -139,24 +144,8 @@ def analytics():
     departments = [row[0] for row in department_query.distinct().order_by(
         User.college_affiliation).all()]
 
-    # Phase 18: centralized descriptive analytics (university-wide for Director/Admin).
+    # Supplementary profile evidence retains its independently labelled scope.
     live_campus_filter = live_campus
-    participation = AnalyticsAggregator.participation_summary(
-        campus_id=live_campus_filter, start_date=live_start, end_date=live_end,
-        category=live_category)
-    campus_comparison = AnalyticsAggregator.campus_comparison()
-    category_breakdown = AnalyticsAggregator.category_distribution(
-        campus_id=live_campus_filter, start_date=live_start, end_date=live_end)
-    activity_breakdown = AnalyticsAggregator.activity_performance(
-        campus_id=live_campus_filter, start_date=live_start, end_date=live_end,
-        category=live_category)
-    monthly = AnalyticsAggregator.monthly_engagement(
-        campus_id=live_campus_filter)
-    weekly = AnalyticsAggregator.weekly_engagement(
-        campus_id=live_campus_filter)
-    type_split = AnalyticsAggregator.psu_vs_outsider(
-        campus_id=live_campus_filter, start_date=live_start, end_date=live_end,
-        category=live_category)
     top_skills = AnalyticsAggregator.skill_distribution(limit=8)
     top_interests = AnalyticsAggregator.interest_distribution(limit=8)
     department_participants = AnalyticsAggregator.department_participants(
@@ -172,28 +161,17 @@ def analytics():
                     if current_user.role == 'director' else None)
 
     return render_template('director/Director_impact_anlaytics_dash.html',
-                            kpi_cards=kpi_cards,
-                            campus_data=campus_data,
                             demographics=demographics,
-                            trend_data=trend_data,
-                            heatmap_data=heatmap_data,
                             historical_summary=historical_summary,
                             historical_campus_data=historical_campus_data,
-                            historical_category_data=historical_category_data,
                             campuses=campuses, activity_types=activity_types,
                             categories=categories,
                             sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
                             selected_sex=live_sex, selected_sdg_id=live_sdg_id,
                             selected_filters=filters,
                             live_rows=report_rows, live_summary=live_summary,
+                            dashboard_data=dashboard_data,
                             report_page=report_page, report_total_pages=report_total_pages,
-                            participation=participation,
-                            campus_comparison=campus_comparison,
-                            category_breakdown=category_breakdown,
-                            activity_breakdown=activity_breakdown,
-                            monthly=monthly,
-                            weekly=weekly,
-                            type_split=type_split,
                             top_skills=top_skills,
                             top_interests=top_interests,
                             departments=departments, selected_department=department,

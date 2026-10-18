@@ -187,7 +187,18 @@ def create_app(config_name='development'):
     @app.route('/help')
     def help_page():
         from flask import render_template
-        return render_template('help.html')
+        dashboard_url = None
+        if current_user.is_authenticated:
+            dashboard_routes = {
+                'volunteer': 'events.volunteer_dash',
+                'coordinator': 'coordinator.coordinator_dash',
+                'director': 'director.director_dash',
+                'admin': 'admin.admin_dash',
+            }
+            endpoint = dashboard_routes.get(current_user.role)
+            if endpoint:
+                dashboard_url = url_for(endpoint, tour=1)
+        return render_template('help.html', dashboard_url=dashboard_url)
 
     @app.route('/favicon.ico')
     def favicon():

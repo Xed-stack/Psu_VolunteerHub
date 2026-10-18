@@ -1,5 +1,208 @@
 @import url("role-shell.css");
 
+/* Identity leads; preferences are the editing focal point. PSU blue marks
+   checked choices, with native checkboxes providing a non-color cue.
+   ENERGY 1 / RHYTHM 2 / MOTION 1. */
+.profile-page {
+  gap: 1.5rem;
+}
+
+.profile-page>*,
+.profile-identity>*,
+.profile-support>* {
+  min-width: 0;
+}
+
+.profile-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.profile-photo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+
+.profile-identity__details {
+  flex: 1 1 18rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-identity h1 {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  margin: 0 0 .5rem;
+}
+
+.profile-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-block: 1rem;
+}
+
+.profile-facts dt {
+  color: var(--on-surface-variant);
+  font-size: .85rem;
+}
+
+.profile-facts dd {
+  margin: .25rem 0 0;
+  font-weight: 600;
+}
+
+.profile-photo-controls {
+  flex: 1 1 18rem;
+  max-width: 26rem;
+  display: grid;
+  gap: .65rem;
+}
+
+.profile-photo-controls input {
+  width: 100%;
+  min-width: 0;
+}
+
+.profile-choices {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.profile-choices legend {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: .75rem;
+}
+
+.profile-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: .65rem;
+}
+
+.profile-choice {
+  min-height: 48px;
+  padding: .75rem;
+  display: flex;
+  align-items: start;
+  gap: .75rem;
+  border: 1px solid #526477;
+  border-radius: var(--radius);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.profile-choice input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.profile-choice:has(input:checked) {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.profile-choice:focus-within,
+.profile-page :focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.profile-save {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.profile-error {
+  color: #98201c;
+  font-weight: 600;
+}
+
+.profile-milestone,
+.profile-support {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.profile-milestone progress {
+  display: block;
+  width: 100%;
+  height: .85rem;
+  margin-top: .65rem;
+  accent-color: var(--primary);
+}
+
+.profile-badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .75rem;
+}
+
+.profile-badges li {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+  padding-bottom: .65rem;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.profile-badges span {
+  color: var(--on-surface-variant);
+}
+
+.profile-recommendations {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-recommendations li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+  padding-block: .5rem;
+}
+
+.profile-recommendations a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+
+.profile-categories {
+  padding-left: 1.25rem;
+  line-height: 1.8;
+}
+
+@media (min-width: 1100px) {
+  .profile-milestone {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  .profile-support {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
 .recommendation-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -25,26 +228,123 @@
     grid-template-columns: 1fr
   }
 }
+
 /* Personal schedule: the dense month grid helps volunteers spot commitments;
    the list below remains the readable source for full registration details. */
-.calendar-nav { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
-.calendar-grid { border: 1px solid var(--outline-variant); border-radius: var(--radius); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); overflow: hidden; }
-.calendar-weekdays { background: var(--surface-container-low); color: var(--on-surface-variant); display: contents; font-size: .8rem; font-weight: 700; text-align: center; }
-.calendar-weekdays span { background: var(--surface-container-low); }
-.calendar-weekdays span { padding: .55rem .25rem; }
-.calendar-day { border-right: 1px solid var(--outline-variant); border-top: 1px solid var(--outline-variant); min-height: 7rem; padding: .45rem; }
-.calendar-day > strong { display: block; font-size: .85rem; }
-.calendar-day--empty { background: var(--surface-low); }
-.calendar-entry { background: var(--primary-light); color: var(--primary); display: block; font-size: .76rem; font-weight: 700; margin-top: .3rem; padding: .3rem; text-decoration: none; }
-.calendar-entry small, .registration-row small { display: block; font-weight: 400; margin-top: .2rem; }
-.registration-filters { align-items: end; margin-block: 1rem; }
-.registration-list { display: grid; gap: .75rem; margin-bottom: 1rem; }
-.registration-row { align-items: center; border-top: 1px solid var(--outline-variant); display: grid; gap: .75rem; grid-template-columns: minmax(0, 1fr) auto auto; padding: .85rem 0; }
+.calendar-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.calendar-grid {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.calendar-weekdays {
+  background: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  display: contents;
+  font-size: .8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-weekdays span {
+  background: var(--surface-container-low);
+}
+
+.calendar-weekdays span {
+  padding: .55rem .25rem;
+}
+
+.calendar-day {
+  border-right: 1px solid var(--outline-variant);
+  border-top: 1px solid var(--outline-variant);
+  min-height: 7rem;
+  padding: .45rem;
+}
+
+.calendar-day>strong {
+  display: block;
+  font-size: .85rem;
+}
+
+.calendar-day--empty {
+  background: var(--surface-low);
+}
+
+.calendar-entry {
+  background: var(--primary-light);
+  color: var(--primary);
+  display: block;
+  font-size: .76rem;
+  font-weight: 700;
+  margin-top: .3rem;
+  padding: .3rem;
+  text-decoration: none;
+}
+
+.calendar-entry small,
+.registration-row small {
+  display: block;
+  font-weight: 400;
+  margin-top: .2rem;
+}
+
+.registration-filters {
+  align-items: end;
+  margin-block: 1rem;
+}
+
+.registration-list {
+  display: grid;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+
+.registration-row {
+  align-items: center;
+  border-top: 1px solid var(--outline-variant);
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: .85rem 0;
+}
+
 @media (max-width: 760px) {
-  .calendar-weekdays span { font-size: .68rem; padding-inline: .1rem; }
-  .calendar-day { min-height: 5rem; padding: .25rem; }
-  .calendar-entry { font-size: .65rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .calendar-entry small { display: none; }
-  .registration-row { align-items: start; grid-template-columns: 1fr; }
-  .calendar-nav { width: 100%; }
+  .calendar-weekdays span {
+    font-size: .68rem;
+    padding-inline: .1rem;
+  }
+
+  .calendar-day {
+    min-height: 5rem;
+    padding: .25rem;
+  }
+
+  .calendar-entry {
+    font-size: .65rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .calendar-entry small {
+    display: none;
+  }
+
+  .registration-row {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-nav {
+    width: 100%;
+  }
 }
