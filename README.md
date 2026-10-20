@@ -48,6 +48,36 @@ flask run --port 5000
 
 For production, set a non-default `SECRET_KEY` and a MySQL `DATABASE_URL`. Do not commit either value.
 
+## Production startup (not deployed)
+
+Use `wsgi:app`, which explicitly selects production configuration, rather than
+`app:app` or the development server. For Linux/WSL hosting with the installed
+Gunicorn dependency, after securely configuring environment variables:
+
+```sh
+gunicorn --bind 127.0.0.1:8000 wsgi:app
+```
+
+Gunicorn does not run natively on Windows. Choose the actual hosting platform
+before finalizing its service and reverse-proxy configuration. This command is
+not a complete HTTPS deployment; keep the WSGI port private behind the proxy.
+
+- Production requires `SECRET_KEY` and `DATABASE_URL`, enables secure session
+  cookies, and uses `TRUSTED_PROXY_COUNT` for the real trusted proxy topology.
+- Production startup performs no `create_all` or automatic catalogue/demo/account
+  seeding. Prepare schema, reference data, and a uniquely secured first Admin
+  through an approved provisioning procedure before serving requests. Existing
+  accounts and data are not deleted or repaired by this startup change.
+- `APP_ENV=production` also selects production for the default factory used by
+  Flask CLI and `app.py`; explicit factory arguments take precedence. Unknown
+  environment names fail instead of falling back to development.
+- `python app.py` is development-only and refuses to run with production settings.
+  Local development defaults and explicit `create_app('testing')` keep their
+  existing initialization behavior. Demo commands remain explicit operator actions,
+  not production startup steps.
+- Initial provisioning, tracked SQL exposure/history cleanup, full recovery
+  backups, HTTPS, persistent uploads and real SMTP verification remain release gates.
+
 ## Demo accounts
 
 Fresh demo databases create these accounts with password `password`.
@@ -193,3 +223,16 @@ verified repairs, tests, roadmap and QA documents in the 20 October publication.
 ## Repository hygiene
 
 Do not commit database exports, `.env` files, virtual environments, or uploaded user files. In particular, keep `Database/psu_volunteer_hub_after_policy_lifecycle.sql` local because it can contain real account data.
+
+This revision removes the two previously tracked full SQL dumps from source
+tracking; local copies are preserved and ignored by `Database/*.sql`.
+Earlier commits will continue to contain them even after an ordinary removal
+commit. History cleanup and any exposed-account response require separate review.
+
+For development, use an isolated empty database and the existing synthetic demo
+initialization, never a real account export. For existing production databases,
+use reviewed scripts under `migrations/`, applying only missing migrations on a
+backup/staging copy first. These incremental scripts are not a complete fresh
+production bootstrap. A reviewed schema-only baseline and explicit first-Admin/
+reference-data provisioning are still needed for a new deployment. See
+`Database/README.md`; do not use the local full dumps as a production setup artifact.

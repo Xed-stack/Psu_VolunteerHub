@@ -10,6 +10,22 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Latest delivery status (20 October 2026)
 
+Publication revision: production startup safety, tests and SQL tracking removal
+are approved for commit/push. The local/staged notes immediately below are prior
+implementation snapshots. Local dumps retained; history remains unchanged.
+
+SQL export cleanup, local only: the two full dumps are staged for removal from
+Git tracking, with byte-identical local copies preserved and ignored. README
+and Database/README.md document safer setup and remaining schema/provisioning
+work. No history rewrite, commit, push, account changes or live database changes.
+
+Latest local deployment-safety work (not committed/pushed): production startup
+now skips schema creation and automatic seeding. Explicit `wsgi:app` selects
+production; default factory respects APP_ENV; direct app.py rejects production
+development-server use. 12 startup/app-init checks passed in isolated SQLite.
+Existing databases unchanged. Provisioning, tracked SQL/history exposure,
+backup/restore and actual hosting verification remain release gates.
+
 Publication revision: the user approved commit/push of both verified repairs,
 tests and documentation. Earlier pending/uncommitted statements below are dated
 implementation snapshots; final verification is recorded in REPAIR_RELEASE_QA.md.

@@ -63,6 +63,44 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 
 ## Completed local work
 
+Publication revision, 20 October 2026: the user approved commit/push of production
+startup safety, its regression tests, documentation and the SQL tracking removals.
+Local/staged/uncommitted statements below describe the implementation snapshots.
+The SQL files remain locally ignored; no history rewrite or database changes.
+Fresh production provisioning, historical dump exposure and hosting/recovery
+verification remain unfinished. Startup/app-init checks rerun: 12 passed.
+
+### SQL dump tracking cleanup (latest local work, 20 October 2026)
+
+- Removed Database/psu_volunteer_hub.sql and Database/psu_volunteer_hub_latest.sql
+  from the Git index only. Both local files preserved; existing Database/*.sql
+  ignore rule retained. Removal is staged, not committed/pushed.
+- Verified both files still exist with identical before/after SHA-256 hashes,
+  neither remains in git ls-files, and git check-ignore covers both.
+- No history rewrite, live database changes, or account/password changes. Prior
+  commits and current GitHub main still expose the dumps until separately handled.
+- README and Database/README.md explain synthetic development setup, incremental
+  migrations, and the remaining fresh-production schema/provisioning requirement.
+  Preserve the pending production-startup work alongside this staged removal.
+
+### Production startup safety (latest local work, 20 October 2026)
+
+- `wsgi.py` explicitly selects production; default factory respects `APP_ENV`
+  (development when unset) and rejects unknown names. Direct `app.py` refuses
+  production development-server use and no longer forces debug on.
+- Production factory skips `create_all` and all automatic seeds, including demo
+  privileged accounts. Existing accounts are not changed. Development/testing
+  initialization retained. No database migration or actual provisioning performed.
+- Initial schema/reference-data/Admin provisioning is now a mandatory explicit
+  deployment step, not a silently seeded production account. See README startup
+  section and tests/test_production_startup.py. No deploy/commit/push authorized.
+- Verification: production-startup tests plus existing app-init tests: **12 passed**
+  in isolated SQLite. Production tests trap all initialization/seed calls and
+  confirm no tables created. Development still creates 6 demo users / 9 events.
+  Full suite and actual Linux/WSL Gunicorn/HTTPS deployment not rerun for this change.
+- Remaining audit gates: tracked SQL dumps/history exposure, actual host/HTTPS/
+  proxy/SMTP/uploads configuration, and full backup/restore verification.
+
 ### Release verification follow-up (20 October 2026)
 
 Both local repairs now passed browser retesting on the existing disposable
@@ -347,7 +385,7 @@ For a local panel/demo dashboard with live registration and attendance charts:
 .\.venv\Scripts\flask.exe seed-demo-analytics
 ```
 
-The command is safe to rerun. It creates records titled `[Demo Analytics] ...` only when they do not already exist. To move the exact current local database to another laptop, import `database/psu_volunteer_hub_latest.sql` into the configured `psu_volunteer_hub` MySQL/MariaDB database; Git transfers the seed command and SQL file, not a running database server.
+The command is safe to rerun. It creates records titled `[Demo Analytics] ...` only when they do not already exist. Run it only on a deliberately isolated development/demo database. Git transfers source, migrations and synthetic fixture code, not private SQL exports or a running database. If authorized data transfer is required, use an access-controlled encrypted backup outside Git and verify restoration separately; do not publish local full dumps.
 
 ## Recommended first checks
 

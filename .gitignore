@@ -5,7 +5,7 @@ venv/
 # ignore opencode config
 .opencode/
 
-# ignore database
+# Local database exports must never be tracked; keep versioned schema changes in migrations/.
 instance/
 Database/*.sql
 

@@ -3,6 +3,7 @@ Flask Application Factory for PSU Volunteer Hub
 =================================================
 Creates and configures the Flask application instance.
 """
+import os
 from flask import Flask, request, redirect, url_for, flash, session
 from flask_login import LoginManager, current_user, logout_user
 from flask_wtf.csrf import CSRFProtect
@@ -18,8 +19,11 @@ from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
 from config import config
 
 
-def create_app(config_name='development'):
+def create_app(config_name=None):
     """Create and return a configured Flask application instance."""
+    config_name = config_name or os.environ.get('APP_ENV', 'development')
+    if config_name not in config:
+        raise ValueError('APP_ENV must be development, production, or testing')
     app = Flask(
         __name__,
         template_folder='../templates',
@@ -130,14 +134,15 @@ def create_app(config_name='development'):
     from app.commands import register_commands
     register_commands(app)
 
-    # Create tables and seed data on first run
-    with app.app_context():
-        db.create_all()
-        _seed_campuses(app)
-        _seed_interests_skills(app)
-        _seed_sdgs(app)
-        _seed_events(app)
-        _seed_users(app)
+    # Production schema and account provisioning are explicit deployment steps.
+    if config_name != 'production':
+        with app.app_context():
+            db.create_all()
+            _seed_campuses(app)
+            _seed_interests_skills(app)
+            _seed_sdgs(app)
+            _seed_events(app)
+            _seed_users(app)
 
     # Register root routes
     @app.route('/')

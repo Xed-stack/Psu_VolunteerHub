@@ -10,4 +10,6 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    if not app.debug:
+        raise SystemExit('Use a production WSGI server with wsgi:app; app.py is development-only.')
+    app.run(debug=app.debug)
