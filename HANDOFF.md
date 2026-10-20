@@ -63,6 +63,43 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 
 ## Completed local work
 
+### Explicit production initialization (latest local work)
+
+Publication follow-up: user approved commit/push after the 352-test full run and
+actual disposable MariaDB verification. Local/pending-publication notes below
+are prior snapshots. No deployment or original database changes authorized.
+
+Final regression follow-up: **352 passed in 885.51s**, one uninterrupted full
+run with approved execution permission and fresh private QA temp directory.
+No code/assertion edits required; scoped diff reviewed and diff check passed.
+Ready for user commit/push approval. No publication or database changes in this
+regression turn. See PRODUCTION_INIT_QA.md; earlier full-suite-pending notes below
+are superseded. Hosting/recovery and historical exposure gates remain open.
+
+MariaDB follow-up: verified on new disposable
+`psu_volunteer_initqa_20261020_bfdd5f4c`: 31 tables, one working Admin, reference
+catalogues only, no events/participation. Wrong target/decline/repeat refused.
+HTTPS-scheme CSRF test-client login and Admin dashboard passed (not hosted TLS).
+All original 31 table fingerprints unchanged, 1,167 rows. Test database retained;
+no credentials saved. See PRODUCTION_INIT_QA.md. This supersedes the earlier
+MariaDB-pending note below; full suite and deployment still pending.
+
+- Added `flask --app wsgi:app init-production --database EXACT_EMPTY_NAME`.
+  Production-only, exact configured database match, empty table/view guard,
+  interactive confirmation and private password/confirmation (minimum 12 chars).
+- Creates current model schema, existing institutional reference catalogues and
+  exactly one Admin, no demo users/events. Existing reference helpers optionally
+  defer commit so provisioning data commits together. Normal dev/test behavior
+  retained. Production startup itself still performs no automatic writes.
+- Failure rolls back data but may leave MySQL/MariaDB DDL; no automatic drop,
+  retry or existing-schema resume. Requires one offline operator on a new target.
+- Tested only isolated SQLite, including first-Admin login and fail-closed cases.
+  Final provisioning/startup/app-init/historical-import selection: **24 passed**.
+  Full suite not rerun. `git diff --check` passed (line-ending notices only).
+  No actual database initialized, migration applied, commit/push or deploy.
+  See tests/test_production_init.py and README. Actual MariaDB fresh-target
+  verification remains required before deployment; historical dump issue deferred.
+
 Publication revision, 20 October 2026: the user approved commit/push of production
 startup safety, its regression tests, documentation and the SQL tracking removals.
 Local/staged/uncommitted statements below describe the implementation snapshots.

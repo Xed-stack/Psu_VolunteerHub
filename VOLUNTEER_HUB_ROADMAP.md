@@ -10,6 +10,25 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Latest delivery status (20 October 2026)
 
+Publication follow-up: verified production initialization, tests and QA documents
+are approved for commit/push. Earlier local/publication-pending notes below
+describe implementation snapshots. Deployment gates remain open.
+
+Production initialization release gate: full suite **352 passed in 885.51s**
+in one run; scoped diff reviewed. Actual disposable MariaDB setup/login/repeat
+checks already passed. Ready for commit/push approval, not yet published.
+See PRODUCTION_INIT_QA.md. No live database changes or deployment.
+
+Latest local work: explicit production initialization command now creates the
+current schema, reference data and first Admin in a confirmed empty target only.
+No demo users/events, no startup auto-writes, no existing-database modification.
+SQLite regression coverage added; actual MariaDB provisioning, full regression,
+hosting/recovery checks and publication remain pending. See README and HANDOFF.
+Focused provisioning/startup/app-init/historical-import verification: 24 passed.
+MariaDB follow-up completed on a new disposable target: reference data and one
+working Admin only, repeat refused, original all-table fingerprints unchanged.
+See PRODUCTION_INIT_QA.md. Full suite, publication and hosting gates still pending.
+
 Publication revision: production startup safety, tests and SQL tracking removal
 are approved for commit/push. The local/staged notes immediately below are prior
 implementation snapshots. Local dumps retained; history remains unchanged.

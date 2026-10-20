@@ -33,6 +33,7 @@ def create_app(config_name=None):
 
     # App configuration
     app.config.from_object(config[config_name])
+    app.config['APP_ENV'] = config_name
 
     if config_name == 'production':
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
@@ -238,7 +239,7 @@ def create_app(config_name=None):
     return app
 
 
-def _seed_interests_skills(app):
+def _seed_interests_skills(app, commit=True):
     """Seed interest and skill lookup tables from config category lists."""
     from app.models.user import Interest, Skill
     from app.models.event import ActivityCategory
@@ -253,10 +254,11 @@ def _seed_interests_skills(app):
     for name in getattr(Config, 'SKILL_CATEGORIES', []):
         if name and not Skill.query.filter_by(name=name).first():
             db.session.add(Skill(name=name))
-    db.session.commit()
+    if commit:
+        db.session.commit()
 
 
-def _seed_sdgs(app):
+def _seed_sdgs(app, commit=True):
     """Seed the fixed UN SDG catalogue used by activity forms and reports."""
     goals = (
         'No Poverty', 'Zero Hunger', 'Good Health and Well-Being',
@@ -274,10 +276,11 @@ def _seed_sdgs(app):
             db.session.add(SdgGoal(number=number, name=name))
         elif goal.name != name:
             goal.name = name
-    db.session.commit()
+    if commit:
+        db.session.commit()
 
 
-def _seed_campuses(app):
+def _seed_campuses(app, commit=True):
     """Seed campus data on first run."""
     from app.models.event import Campus
     if Campus.query.count() == 0:
@@ -294,7 +297,8 @@ def _seed_campuses(app):
         ]
         for campus in campuses:
             db.session.add(campus)
-        db.session.commit()
+        if commit:
+            db.session.commit()
 
 
 def _seed_events(app):

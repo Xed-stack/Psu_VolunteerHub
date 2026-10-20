@@ -78,6 +78,39 @@ not a complete HTTPS deployment; keep the WSGI port private behind the proxy.
 - Initial provisioning, tracked SQL exposure/history cleanup, full recovery
   backups, HTTPS, persistent uploads and real SMTP verification remain release gates.
 
+### Explicit fresh-database provisioning (not yet deployed)
+
+After a database administrator creates a **new, empty** target database, configure
+`DATABASE_URL` and `SECRET_KEY` securely for that target. Do not point this command
+at your existing Volunteer Hub database. While the application is offline, run:
+
+```sh
+flask --app wsgi:app init-production --database YOUR_NEW_EMPTY_DATABASE
+```
+
+Replace the placeholder with the exact database name in `DATABASE_URL`. Review
+the displayed host/database, then confirm interactively. Enter the first Admin's
+name, email and a unique password of at least 12 characters; password entry and
+confirmation are hidden. There is no password command-line option or default.
+The command refuses non-production configuration, mismatched names and any
+existing table/view. It creates the current model schema, campuses, categories,
+interests, skills, SDGs and one Admin, never demo events or extra users.
+
+Run only one provisioner with exclusive access to the empty target. MySQL/MariaDB
+DDL is not transactional: if setup fails, data writes are rolled back but schema
+may remain. The command refuses a rerun on that schema; inspect and recover the
+disposable target manually, rather than dropping tables automatically. Existing
+databases still require reviewed incremental migrations. Do not apply old ALTER
+migrations to the fresh current-model schema without comparing it first.
+
+This command passed isolated SQLite checks and actual MariaDB provisioning on a
+new disposable database, including first-Admin login and second-run refusal.
+See `PRODUCTION_INIT_QA.md`; this is not hosted-deployment approval.
+The subsequent full regression run passed all 352 tests in one run; the user
+approved publishing this verified feature, tests and documentation.
+Policies, SMTP, uploads, backups and HTTPS still need
+operator configuration/verification before opening the system to users.
+
 ## Demo accounts
 
 Fresh demo databases create these accounts with password `password`.

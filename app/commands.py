@@ -3,13 +3,61 @@ import csv
 from pathlib import Path
 
 import click
+from flask import current_app
 from flask.cli import with_appcontext
+from email_validator import validate_email, EmailNotValidError
+from sqlalchemy import inspect
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, timedelta
 
 from app.models import db
 from app.models.event import (Campus, HistoricalActivity, Event, Registration,
                               Attendance)
 from app.models.user import User
+
+
+@click.command('init-production')
+@click.option('--database', required=True, help='Exact name of the empty database already created by the operator.')
+@with_appcontext
+def init_production(database):
+    """Initialize an EMPTY database with reference data and one administrator."""
+    if current_app.config.get('APP_ENV') != 'production':
+        raise click.ClickException('Use production configuration: flask --app wsgi:app init-production.')
+    if not database or database != db.engine.url.database:
+        raise click.ClickException('Database name does not match the configured target; no changes made.')
+    inspector = inspect(db.engine)
+    if inspector.get_table_names() or inspector.get_view_names():
+        raise click.ClickException('Database is not empty. Refusing initialization; use reviewed migrations for existing databases.')
+    click.echo(f'Target: {db.engine.url.host or "local"} / {database}')
+    click.confirm('Create the schema, reference data, and first Admin in this empty database?', abort=True)
+    name = click.prompt('Admin name').strip()
+    email = click.prompt('Admin email').strip()
+    if not name or len(name) > 100:
+        raise click.ClickException('Admin name must contain 1 to 100 characters.')
+    try:
+        email = validate_email(email, check_deliverability=False).normalized
+    except EmailNotValidError:
+        raise click.ClickException('Enter a valid administrator email address.') from None
+    if len(email) > 120:
+        raise click.ClickException('Admin email must be at most 120 characters.')
+    password = click.prompt('Admin password (at least 12 characters)', hide_input=True, confirmation_prompt=True)
+    if len(password) < 12 or not password.strip():
+        raise click.ClickException('Administrator password must contain at least 12 characters.')
+    administrator = User(name=name, email=email, role='admin')
+    administrator.set_password(password)
+    # Only run once, offline: MariaDB/MySQL schema DDL cannot be rolled back.
+    from app import _seed_campuses, _seed_interests_skills, _seed_sdgs
+    try:
+        db.create_all()
+        _seed_campuses(current_app, commit=False)
+        _seed_interests_skills(current_app, commit=False)
+        _seed_sdgs(current_app, commit=False)
+        db.session.add(administrator)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise click.ClickException('Initialization failed. Schema may remain; inspect it manually before any recovery. No automatic retry or table deletion performed.') from None
+    click.echo('Production initialized: reference data and one Admin; no demo users or activities.')
 
 
 def _optional_int(value, field, line_number):
@@ -178,5 +226,6 @@ def seed_demo_analytics():
 
 
 def register_commands(app):
+    app.cli.add_command(init_production)
     app.cli.add_command(import_historical_activities)
     app.cli.add_command(seed_demo_analytics)

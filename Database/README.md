@@ -19,10 +19,13 @@ all historical exposure.
 - Existing production database: use reviewed incremental scripts in `migrations/`
   after backup/staging validation. Do not blindly rerun migrations or import a
   private full dump as a schema update.
-- Fresh production database: a reviewed schema-only baseline and explicit
-  reference-data/first-Admin provisioning remain unfinished deployment work.
-  Production startup intentionally does not create schema or seed accounts.
-  The development seed path is not a production bootstrap procedure.
+- Fresh production database: the explicit `init-production` command builds the
+  current model schema plus reference data and one Admin only in an empty,
+  exactly named target. See README for confirmation, password and failure-safety
+  details. Actual disposable MariaDB provisioning passed; see PRODUCTION_INIT_QA.md.
+  This is not hosted-deployment approval. Production
+  startup itself still does not create schema or seed accounts; the development
+  seed path is not a production bootstrap procedure.
 - Backups/data transfers: keep outside Git with encryption and restricted access,
   include required uploads, and test restore. The Admin CSV export alone is not
   a complete recoverable system backup.
