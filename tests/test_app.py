@@ -986,6 +986,198 @@ class TestVolunteerFeatures:
 # E. Coordinator Features
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
+class TestAttendanceTiming:
+    NOW = datetime(2040, 6, 10, 12)
+
+    def _setup(self, app, client, monkeypatch, has_end=True, offset=-1):
+        import app.routes.coordinator as coordinator
+        now = self.NOW
+        class FrozenDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return now
+        monkeypatch.setattr(coordinator, 'datetime', FrozenDatetime)
+        reviewer = _create_user(app, email='timing-coord@test.com', role='coordinator', campus_id=1)
+        owner = _create_user(app, email='timing-vol@test.com', campus_id=1)
+        with app.app_context():
+            event = db.session.get(Event, 1)
+            event.date = now - timedelta(hours=2) if has_end else now + timedelta(seconds=offset)
+            event.end_date = now + timedelta(seconds=offset) if has_end else None
+            registration = Registration(user_id=owner, event_id=1, status='confirmed')
+            db.session.add(registration)
+            db.session.commit()
+            registration_id = registration.id
+        _login_as(client, reviewer)
+        return registration_id
+
+    @pytest.mark.parametrize('has_end', [True, False])
+    @pytest.mark.parametrize('offset', [-1, 0, 1])
+    def test_effective_end_boundary_and_ui(self, app, client, monkeypatch, has_end, offset):
+        rid = self._setup(app, client, monkeypatch, has_end, offset)
+        body = client.get('/attendance?event_id=1').get_data(as_text=True)
+        button = re.search(r'<button[^>]*class="[^"]*attendance-save[^>]*>.*?</button>', body).group(0)
+        assert 'disabled' not in button
+        assert 'Check-in opens 30 minutes before' in body
+        response = client.post('/attendance', data={
+            'event_id': 1, 'registration_id': rid, 'status': 'present'}, follow_redirects=True)
+        assert response.status_code == 200
+        with app.app_context():
+            registration = db.session.get(Registration, rid)
+            assert registration.status == ('confirmed' if offset > 0 else 'completed')
+            assert registration.certificate_eligible == (offset <= 0)
+            assert Attendance.query.filter_by(registration_id=rid).count() == 1
+        if offset > 0:
+            assert 'Check-in saved.' in response.get_data(as_text=True)
+
+    @pytest.mark.parametrize('status', ['absent', 'excused'])
+    def test_all_status_writes_are_blocked_before_checkin(self, app, client, monkeypatch, status):
+        rid = self._setup(app, client, monkeypatch, offset=3600)
+        with app.app_context():
+            db.session.get(Event, 1).date = self.NOW + timedelta(hours=1)
+            db.session.commit()
+        client.post('/attendance', data={'event_id': 1, 'registration_id': rid, 'status': status})
+        with app.app_context():
+            assert db.session.get(Registration, rid).status == 'confirmed'
+            assert Attendance.query.filter_by(registration_id=rid).count() == 0
+
+    def test_stale_page_rechecks_current_schedule(self, app, client, monkeypatch):
+        rid = self._setup(app, client, monkeypatch)
+        assert 'Check-in is not open yet.' not in client.get('/attendance?event_id=1').get_data(as_text=True)
+        with app.app_context():
+            db.session.get(Event, 1).date = self.NOW + timedelta(hours=1)
+            db.session.get(Event, 1).end_date = self.NOW + timedelta(hours=1)
+            db.session.commit()
+        client.post('/attendance', data={'event_id': 1, 'registration_id': rid, 'status': 'present'})
+        with app.app_context():
+            assert not db.session.get(Registration, rid).certificate_eligible
+            assert Attendance.query.filter_by(registration_id=rid).count() == 0
+
+    def test_locked_existing_records_are_not_rewritten(self, app, client, monkeypatch):
+        rid = self._setup(app, client, monkeypatch, offset=3600)
+        with app.app_context():
+            db.session.get(Event, 1).date = self.NOW + timedelta(hours=1)
+            registration = db.session.get(Registration, rid)
+            registration.status = 'completed'
+            db.session.add(Attendance(registration_id=rid, event_id=1,
+                                      user_id=registration.user_id, status='present'))
+            db.session.commit()
+        client.post('/attendance', data={'event_id': 1, 'registration_id': rid, 'status': 'absent'})
+        with app.app_context():
+            assert db.session.get(Registration, rid).status == 'completed'
+            assert Attendance.query.filter_by(registration_id=rid).one().status == 'present'
+
+    def test_open_attendance_requires_csrf(self, app, client, monkeypatch):
+        rid = self._setup(app, client, monkeypatch)
+        app.config['WTF_CSRF_ENABLED'] = True
+        body = client.get('/attendance?event_id=1').get_data(as_text=True)
+        token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', body).group(1)
+        data = {'event_id': 1, 'registration_id': rid, 'status': 'present'}
+        assert client.post('/attendance', data=data).status_code == 400
+        with app.app_context():
+            assert Attendance.query.filter_by(registration_id=rid).count() == 0
+        data['csrf_token'] = token
+        assert client.post('/attendance', data=data).status_code == 302
+        with app.app_context():
+            assert db.session.get(Registration, rid).certificate_eligible
+
+    def test_external_checkin_does_not_complete_participation(self, app, client, monkeypatch):
+        rid = self._setup(app, client, monkeypatch, offset=3600)
+        with app.app_context():
+            external = ExternalParticipant(id_number='QA-TIMING-EXTERNAL')
+            db.session.add(external)
+            db.session.flush()
+            registration = db.session.get(Registration, rid)
+            registration.user_id = None
+            registration.external_participant_id = external.id
+            db.session.commit()
+        client.post('/attendance', data={'event_id': 1, 'registration_id': rid, 'status': 'present'})
+        with app.app_context():
+            assert db.session.get(Registration, rid).status == 'confirmed'
+            assert not db.session.get(Registration, rid).certificate_eligible
+            assert Attendance.query.filter_by(registration_id=rid).one().status == 'present'
+
+    @pytest.mark.parametrize('seconds_before_start, allowed', [(1801, False), (1800, True), (1799, True)])
+    def test_early_checkin_boundary_and_finalization(self, app, client, monkeypatch, seconds_before_start, allowed):
+        rid = self._setup(app, client, monkeypatch, offset=7200)
+        with app.app_context():
+            db.session.get(Event, 1).date = self.NOW + timedelta(seconds=seconds_before_start)
+            db.session.commit()
+        body = client.get('/attendance?event_id=1').get_data(as_text=True)
+        button = re.search(r'<button[^>]*>Save check-in</button>', body).group(0)
+        assert ('disabled' not in button) == allowed
+        data = {'event_id': 1, 'registration_id': rid, 'status': 'present'}
+        client.post('/attendance', data=data)
+        with app.app_context():
+            registration = db.session.get(Registration, rid)
+            assert registration.status == 'confirmed'
+            assert not registration.certificate_eligible
+            assert Attendance.query.filter_by(registration_id=rid).count() == int(allowed)
+            event = db.session.get(Event, 1)
+            event.date = self.NOW - timedelta(hours=2)
+            event.end_date = self.NOW
+            db.session.commit()
+        client.post('/attendance', data=data)
+        with app.app_context():
+            assert db.session.get(Registration, rid).certificate_eligible
+            assert Attendance.query.filter_by(registration_id=rid).count() == 1
+
+
+class TestCancellationReview:
+    def _request(self, app, client, reviewer_role='coordinator', reviewer_campus=1):
+        owner = _create_user(app, email='review-owner@test.com', campus_id=1)
+        reviewer = _create_user(app, email='reviewer@test.com', role=reviewer_role,
+                                campus_id=reviewer_campus)
+        with app.app_context():
+            registration = Registration(user_id=owner, event_id=1, status='confirmed')
+            db.session.add(registration)
+            db.session.flush()
+            request = CancellationRequest(registration_id=registration.id,
+                                          reason='Other', details='Test-only request')
+            db.session.add(request)
+            db.session.commit()
+            request_id, registration_id = request.id, registration.id
+        _login_as(client, reviewer)
+        return owner, reviewer, request_id, registration_id
+
+    @pytest.mark.parametrize('decision, expected', [('approved', 'cancelled'), ('rejected', 'confirmed')])
+    def test_decision_retains_csrf_audit_notification_and_finality(self, app, client, decision, expected):
+        owner, reviewer, request_id, registration_id = self._request(app, client)
+        app.config['WTF_CSRF_ENABLED'] = True
+        body = client.get('/coordinator/cancellation-requests').get_data(as_text=True)
+        token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', body).group(1)
+        data = {'request_id': request_id, 'decision': decision, 'review_note': 'Reviewed safely'}
+        assert client.post('/coordinator/cancellation-requests', data=data).status_code == 400
+        with app.app_context():
+            assert db.session.get(CancellationRequest, request_id).status == 'pending'
+        data['csrf_token'] = token
+        response = client.post('/coordinator/cancellation-requests', data=data, follow_redirects=True)
+        assert response.status_code == 200
+        assert f'Cancellation request {decision}.' in response.get_data(as_text=True)
+        with app.app_context():
+            request = db.session.get(CancellationRequest, request_id)
+            assert request.status == decision and request.reviewed_by_id == reviewer
+            assert request.reviewed_at is not None and request.review_note == 'Reviewed safely'
+            assert db.session.get(Registration, registration_id).status == expected
+            assert AuditLog.query.filter_by(action=f'cancellation_{decision}').count() == 1
+            assert Notification.query.filter_by(user_id=owner, notification_type=f'cancellation_{decision}').count() == 1
+        data['decision'] = 'rejected' if decision == 'approved' else 'approved'
+        client.post('/coordinator/cancellation-requests', data=data)
+        with app.app_context():
+            assert db.session.get(CancellationRequest, request_id).status == decision
+            assert db.session.get(Registration, registration_id).status == expected
+            assert AuditLog.query.filter_by(action=f'cancellation_{decision}').count() == 1
+            assert Notification.query.filter_by(user_id=owner, notification_type=f'cancellation_{decision}').count() == 1
+
+    @pytest.mark.parametrize('role, campus', [('coordinator', 2), ('volunteer', 1)])
+    def test_decision_cannot_cross_role_or_campus(self, app, client, role, campus):
+        _, _, request_id, registration_id = self._request(app, client, role, campus)
+        assert client.post('/coordinator/cancellation-requests', data={
+            'request_id': request_id, 'decision': 'approved'}).status_code == 403
+        with app.app_context():
+            assert db.session.get(CancellationRequest, request_id).status == 'pending'
+            assert db.session.get(Registration, registration_id).status == 'confirmed'
+
+
 class TestCoordinatorFeatures:
     def test_coordinator_dash_renders(self, client, app):
         uid = _create_user(app, email='cdash@test.com', role='coordinator', campus_id=1)
@@ -1790,6 +1982,7 @@ class TestMissingFeatures:
         volunteer_id = _create_user(
             app, email='certvol@test.com', role='volunteer', campus_id=1)
         with app.app_context():
+            db.session.get(Event, 1).date = datetime.now() - timedelta(days=1)
             registration = Registration(
                 user_id=volunteer_id, event_id=1, status='confirmed')
             db.session.add(registration)
@@ -1814,6 +2007,7 @@ class TestMissingFeatures:
         volunteer_id = _create_user(
             app, email='certrevokevol@test.com', role='volunteer', campus_id=1)
         with app.app_context():
+            db.session.get(Event, 1).date = datetime.now() - timedelta(days=1)
             registration = Registration(
                 user_id=volunteer_id, event_id=1, status='completed')
             db.session.add(registration)
@@ -2834,6 +3028,7 @@ class TestOutsiderVolunteers:
         self._coordinator(app, client, 1)
         eid = self._event_id(app)
         with app.app_context():
+            db.session.get(Event, eid).date = datetime.now() - timedelta(days=1)
             ep = ExternalParticipant(id_number='EXT-ATT')
             db.session.add(ep)
             db.session.commit()
@@ -2859,6 +3054,7 @@ class TestOutsiderVolunteers:
         self._coordinator(app, client, 1)
         eid = self._event_id(app)
         with app.app_context():
+            db.session.get(Event, eid).date = datetime.now() - timedelta(days=1)
             ep = ExternalParticipant(id_number='EXT-DUP')
             db.session.add(ep)
             db.session.commit()
@@ -2880,6 +3076,7 @@ class TestOutsiderVolunteers:
         self._coordinator(app, client, 1)
         eid = self._event_id(app)
         with app.app_context():
+            db.session.get(Event, eid).date = datetime.now() - timedelta(days=1)
             ep = ExternalParticipant(id_number='EXT-CERT')
             db.session.add(ep)
             db.session.commit()

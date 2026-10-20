@@ -39,6 +39,7 @@
     </form>
   </section>
   <form class="panel" method="post">
+    {% include 'partials/csrf_field.html' %}
     <input
       type="hidden"
       name="event_id"
@@ -48,7 +49,23 @@
       <h2>Registered Volunteers</h2>
       <span class="badge badge--neutral">{{ registrations|length }}</span>
     </div>
-    <div class="table-scroll" tabindex="0">
+    {% if selected_event %}
+      <p id="attendance-timing">
+        {% if attendance_locked %}Check-in is not open yet. {% endif %}
+        Check-in opens 30 minutes before the activity starts:
+        <time datetime="{{ attendance_opens_at.isoformat() }}">{{ attendance_opens_at.strftime('%b %d, %Y at %I:%M %p') }}</time>.
+        {% if attendance_locked %}Existing attendance records are read-only until then.{% endif %}
+        {% if not activity_ended %}
+          Check-in does not confirm completion or certificate eligibility.
+          Save final attendance after
+          <time datetime="{{ (selected_event.end_date or selected_event.date).isoformat() }}">{{ (selected_event.end_date or selected_event.date).strftime('%b %d, %Y at %I:%M %p') }}</time>
+          {{ '(scheduled end).' if selected_event.end_date else '(scheduled start, no end time recorded).' }}
+        {% else %}
+          Saving Present confirms completed participation and certificate eligibility.
+        {% endif %}
+      </p>
+    {% endif %}
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Registered volunteer attendance">
       <table class="data-table">
         <thead>
           <tr>
@@ -75,7 +92,8 @@
                 {% endif %}
               </td>
               <td>
-                <select class="select" name="status">
+                <select class="select attendance-status" name="status" aria-label="Attendance status for registration {{ reg.id }}"
+                  aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>
                   {% for value in ['present', 'absent', 'excused'] %}
                     <option
                       value="{{ value }}"
@@ -90,7 +108,7 @@
           {% else %}
             <tr>
               <td colspan="2">
-                <div class="empty-state">Choose an activity to view registrations.</div>
+                <div class="empty-state">{{ 'No active registrations for this activity.' if selected_event else 'Choose an activity to view registrations.' }}</div>
               </td>
             </tr>
           {% endfor %}
@@ -99,7 +117,7 @@
     </div>
     {% if registrations %}
       <div class="form-actions">
-        <button class="btn btn--primary" type="submit">Save Attendance</button>
+        <button class="btn btn--primary attendance-save" type="submit" aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>{{ 'Save final attendance' if activity_ended else 'Save check-in' }}</button>
       </div>
     {% endif %}
   </form>

@@ -43,7 +43,11 @@ Publication note, 18 October 2026: this follow-up revision includes the joining,
 authentication/session, homepage timing, campus-filter, and activity-search
 improvements plus their QA reports and the preserved roadmap refresh. Earlier
 "local and uncommitted" statements below describe their delivery-time snapshots.
-The two findings in ROLE_BROWSER_QA.md remain unfixed. Copied databases, uploads,
+Publication revision, 20 October 2026: includes the verified cancellation and
+early-check-in/final-attendance repairs, tests, and QA documents. The user approved
+commit and push after release verification. Earlier local/uncommitted/pending
+statements are delivery-time snapshots; see REPAIR_RELEASE_QA.md for final results.
+Copied databases, uploads,
 diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 
 - Repository: `https://github.com/Xed-stack/Psu_VolunteerHub`
@@ -58,6 +62,65 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 - The expected local URL is `http://127.0.0.1:5000`.
 
 ## Completed local work
+
+### Release verification follow-up (20 October 2026)
+
+Both local repairs now passed browser retesting on the existing disposable
+MariaDB copy, with CSRF enabled and current repository static files. Early
+check-in stayed Confirmed/Present; final attendance changed that same record to
+Completed/Present without duplication. Desktop cancellation approval and mobile
+keyboard rejection persisted correct decisions, notes, reviewers, audit entries
+and notifications. Original database access was read-only; before/after counts
+matched (31 tables / 1,167 rows), with no QA fixtures in the original.
+See REPAIR_RELEASE_QA.md for automated results and isolation limits.
+Automated: 334 collected; full run 328 passed plus six environment-blocked
+outcomes, then Node/profile rerun 20 passed (14 overlapping), resolving all six.
+All 334 have passing outcomes across runs, not one uninterrupted green run.
+This supersedes earlier copied-MariaDB-pending notes below. No commit or push.
+
+### Attendance timing repair (20 October 2026)
+
+Latest approved refinement: check-in now opens exactly 30 minutes before start.
+Before effective end, Present records attendance but leaves registration Confirmed
+and certificate-ineligible. Coordinator must save final attendance at/after end;
+legacy no-end activities retain the start fallback. This supersedes the original
+end-only locking policy below. See the early-check-in follow-up in
+ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
+
+- Attendance writes now require the scheduled end to have arrived, falling back
+  to the start for legacy activities without an end. Exact-boundary saves are
+  allowed. The server rechecks every POST before any attendance mutation.
+- Upcoming/ongoing activities show the opening time and disabled native controls.
+  Existing records are preserved; no retrospective data correction was performed.
+- Verification: 56 broader attendance/external-participant/UI checks passed,
+  one added external timing case passed, then the final timing/cancellation/UI
+  run passed 22 checks. Browser confirmed future/ongoing locks and ended/legacy
+  saves in isolated CSRF-enabled SQLite, plus contained 390px mobile layout.
+- No migration, new dependency, commit, push, or source database writes.
+  MariaDB was stopped; copied-MariaDB rerun and full suite remain pending.
+  See ATTENDANCE_TIMING_QA.md. Next: verify both repairs on the disposable
+  MariaDB copy and run the full regression suite before publication.
+
+### Cancellation decision submission repair (20 October 2026)
+
+- Fixed the shared form loading-state script, not the cancellation route.
+  The clicked submit button retains its native name/value; `aria-disabled`
+  marks the loading button while a form-level busy guard blocks repeat submits,
+  including the other decision and implicit Enter. Existing spinner/busy feedback
+  and pageshow restoration remain. Already-cancelled submits and opt-outs are left alone.
+- Approval/rejection retain CSRF, campus/role checks, review notes, reviewer/time,
+  registration state, audit entries, notifications, and final-decision safeguards.
+- Verification: **18 backend/coordinator/UI checks passed**, plus **6 JavaScript
+  behavior checks**, also passing through their pytest wrapper (**1 passed**).
+  The JavaScript checks reproduced the bug before the fix. No new runtime dependency.
+- Actual browser: desktop Approve and 390px keyboard Reject succeeded; both notes
+  persisted and pending queue became empty. No console errors or mobile overflow.
+- MariaDB was stopped (connection refused), including outside the sandbox.
+  Browser verification therefore used an isolated CSRF-enabled in-memory SQLite
+  preview, not the existing MariaDB copy. MariaDB-copy retest and full suite remain
+  pending; no source database was started or changed. Preview was stopped/closed.
+- Local/uncommitted, no push or migration. See CANCELLATION_REPAIR_QA.md.
+  The future-attendance/certificate-eligibility issue is not part of this fix.
 
 ### Four-role browser QA on an actual-data copy (18 October 2026)
 

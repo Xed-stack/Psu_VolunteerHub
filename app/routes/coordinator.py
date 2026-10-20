@@ -578,6 +578,7 @@ def attendance():
     events = Event.query.filter_by(
         campus_id=current_user.campus_id).order_by(Event.date.desc()).all()
     selected_event_id = request.args.get('event_id', type=int)
+    selected_event = None
     registrations = []
     if selected_event_id:
         selected_event = Event.query.filter_by(
@@ -611,12 +612,17 @@ def attendance():
         }
         if len(registrations_by_id) != len(registration_ids):
             abort(403)
+        now = datetime.now()
+        if now < selected_event.date - timedelta(minutes=30):
+            flash('Check-in is not open yet. It opens 30 minutes before the activity starts.', 'error')
+            return redirect(url_for('coordinator.attendance', event_id=selected_event.id))
+        activity_ended = now >= (selected_event.end_date or selected_event.date)
         for i, reg_id in enumerate(reg_ids):
             reg = registrations_by_id[int(reg_id)]
             status = statuses[i] if i < len(statuses) else 'present'
             if status not in {'present', 'absent', 'excused'}:
                 abort(400)
-            reg.status = 'completed' if status == 'present' else 'confirmed'
+            reg.status = 'completed' if status == 'present' and activity_ended else 'confirmed'
             existing = Attendance.query.filter_by(
                 registration_id=reg.id).first()
             if existing:
@@ -625,9 +631,16 @@ def attendance():
                 db.session.add(Attendance(registration_id=reg.id, user_id=reg.user_id,
                                event_id=reg.event_id, status=status))
         db.session.commit()
-        flash('Attendance updated successfully!', 'success')
+        flash('Attendance updated successfully!' if activity_ended else
+              'Check-in saved. Save final attendance after the activity ends to confirm completion and certificate eligibility.', 'success')
         return redirect(url_for('coordinator.attendance', event_id=event_id))
-    return render_template('coordinator/attendance_MnGmt.html', events=events, registrations=registrations)
+    now = datetime.now()
+    attendance_opens_at = selected_event.date - timedelta(minutes=30) if selected_event else None
+    return render_template('coordinator/attendance_MnGmt.html', events=events,
+                           registrations=registrations, selected_event=selected_event,
+                           attendance_opens_at=attendance_opens_at,
+                           attendance_locked=bool(attendance_opens_at and now < attendance_opens_at),
+                           activity_ended=bool(selected_event and now >= (selected_event.end_date or selected_event.date)))
 
 
 @coordinator_bp.route('/events/<int:event_id>/milestones', methods=['POST'])

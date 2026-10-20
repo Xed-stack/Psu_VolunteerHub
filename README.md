@@ -144,6 +144,33 @@ actual data and found two unresolved issues: cancellation approval loses its
 submit-button decision, and future attendance can produce premature completion
 and certificate eligibility. See `ROLE_BROWSER_QA.md` for evidence and scope.
 
+Local follow-up, 20 October 2026: the shared form-submit loading script now
+preserves cancellation decisions and prevents duplicate submits. 18 focused
+backend/UI checks and 6 Node.js behavioral checks passed; the Node checks also
+run through pytest when Node.js is installed (otherwise explicitly skipped).
+Browser Approve/Reject passed with CSRF in isolated SQLite. MariaDB-copy retest
+remains pending because MariaDB was stopped. See `CANCELLATION_REPAIR_QA.md`.
+Attendance follow-up, 20 October 2026: server-side timing checks now prevent
+attendance writes before the scheduled end (start fallback for legacy no-end
+activities), with an explanatory notice and disabled controls. Final focused
+timing/cancellation/UI run: 22 passed; broader attendance/UI run: 56 passed,
+plus one added external-participant timing case. Browser checks used isolated
+CSRF-enabled SQLite. Existing records were not rewritten. Both repairs remain
+local/uncommitted; full suite and copied-MariaDB rerun remain pending.
+See `ATTENDANCE_TIMING_QA.md`.
+
+Latest approved refinement: check-in opens 30 minutes before start. Early Present
+saves remain Confirmed and certificate-ineligible; the coordinator saves final
+attendance at/after the scheduled end (legacy start fallback) to confirm completion.
+This replaces the end-only attendance lock described above. No automatic finalization.
+
+Release verification follow-up: both repairs passed copied-MariaDB browser checks
+on 20 October 2026, including the same registration's early check-in to final
+attendance transition. See `REPAIR_RELEASE_QA.md` for the full automated run,
+environment-related reruns, and source-isolation checks. Earlier pending notes
+above are delivery-time snapshots. The user subsequently approved including these
+verified repairs, tests, roadmap and QA documents in the 20 October publication.
+
 ## Production security checklist
 
 - Set strong, unique `SECRET_KEY` and `DATABASE_URL` environment variables; the app refuses to start in production without both.

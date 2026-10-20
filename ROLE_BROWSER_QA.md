@@ -4,6 +4,19 @@ Date: 18 October 2026. Outcome: **core workflows exercised; two confirmed findin
 This is not a claim that every feature, boundary, or destructive action passed.
 No application fix, commit, or push was performed during this review.
 
+Follow-up, 20 October 2026: cancellation submission is repaired locally and
+verified in an isolated CSRF-enabled SQLite browser preview. See
+CANCELLATION_REPAIR_QA.md. MariaDB was stopped, so a copied-MariaDB rerun remains
+pending. The original observations below are retained as historical evidence;
+the future-attendance finding is also repaired locally, with isolated SQLite
+browser verification and regression tests (see ATTENDANCE_TIMING_QA.md).
+Neither repair has yet been rechecked on the MariaDB copy.
+
+Later verification, 20 October 2026: both repairs now passed retesting on that
+MariaDB copy. See REPAIR_RELEASE_QA.md for the scoped browser workflows,
+persisted-state checks, source isolation, and automated results. This supersedes
+the pending-retest statement above, not the original dated observations below.
+
 ## Isolation and original database
 
 - User approved a disposable local copy of the actual database and test accounts.

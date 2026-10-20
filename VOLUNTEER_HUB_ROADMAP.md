@@ -8,7 +8,32 @@ The working tagline is: **“Serve with purpose. See the impact.”**
 
 Use clear Filipino-English wording where it improves comprehension, but retain English labels for institutional reports and data fields. Replace the volunteer-facing word **Register** with **Join Now**; keep `Registration` as the internal data term.
 
-## Latest delivery status (18 October 2026)
+## Latest delivery status (20 October 2026)
+
+Publication revision: the user approved commit/push of both verified repairs,
+tests and documentation. Earlier pending/uncommitted statements below are dated
+implementation snapshots; final verification is recorded in REPAIR_RELEASE_QA.md.
+
+Follow-up, 20 October 2026: cancellation Approve/Reject submission repaired locally
+in the shared loading-state script. 18 backend/UI checks and 6 JavaScript checks
+passed; browser desktop approval/mobile keyboard rejection passed in isolated
+SQLite with CSRF. MariaDB-copy rerun is pending (server stopped).
+Future-attendance completion is now also repaired locally: server timing guard,
+opening-time notice, and disabled controls before end (legacy start fallback).
+Final timing/cancellation/UI run: 22 passed; broader attendance/UI run: 56 passed,
+plus one added external timing case. Full suite and copied-MariaDB verification
+are the next unfinished gate. Neither repair is committed/pushed.
+See CANCELLATION_REPAIR_QA.md and ATTENDANCE_TIMING_QA.md.
+
+Approved refinement, 20 October: allow check-in from 30 minutes before start,
+but keep participation Confirmed and certificate-ineligible until the coordinator
+saves final attendance at/after effective end (start fallback for legacy no-end
+activities). This replaces the end-only attendance-write rule above.
+
+Release verification follow-up, 20 October: copied-MariaDB browser gate completed
+for both repairs, including early check-in to final attendance on one registration.
+See REPAIR_RELEASE_QA.md for automated results and environment-related reruns.
+Original database connections read-only; no source QA records. No commit/push.
 
 This section records the work completed in this chat. The phases below retain
 their broader requirements; a phase is not fully complete merely because one

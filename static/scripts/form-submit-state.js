@@ -3,7 +3,7 @@
 
   const restoreButtons = () => {
     trackedButtons.forEach((button) => {
-      button.disabled = false;
+      button.removeAttribute('aria-disabled');
       button.classList.remove('is-submitting');
       button.removeAttribute('aria-busy');
       if (button.dataset.originalLabel) {
@@ -17,7 +17,12 @@
 
   document.addEventListener('submit', (event) => {
     const form = event.target;
-    if (!(form instanceof HTMLFormElement) || form.dataset.noSubmitState !== undefined) {
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.dataset.noSubmitState !== undefined) {
+      return;
+    }
+
+    if (form.getAttribute('aria-busy') === 'true') {
+      event.preventDefault();
       return;
     }
 
@@ -27,7 +32,9 @@
     }
 
     button.dataset.originalLabel = button.innerHTML;
-    button.disabled = true;
+    // Native disabled submitters lose their name/value (for example, decision).
+    // Keep the submitter successful; the busy-form guard prevents repeat submits.
+    button.setAttribute('aria-disabled', 'true');
     button.classList.add('is-submitting');
     button.setAttribute('aria-busy', 'true');
     button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Working…</span>';

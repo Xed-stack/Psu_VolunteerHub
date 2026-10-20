@@ -42,3 +42,15 @@
 .choice-fieldset { border: 1px solid var(--border, #cbd5e1); border-radius: .5rem; padding: 1rem; }
 .choice-fieldset legend { font-weight: 700; padding: 0 .25rem; }
 .check-grid { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: .75rem; }
+
+.attendance-save:disabled {
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
+  border-color: var(--outline-variant);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.attendance-status {
+  min-width: 8rem;
+}
