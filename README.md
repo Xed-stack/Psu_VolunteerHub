@@ -189,10 +189,24 @@ Public activity joining requires PSU sign-in. The former public guest form is
 retired; its legacy entry URL redirects to sign-in. Coordinators can still record
 external participants for an activity, and existing signed management links remain.
 
+Activity details are publicly readable at `GET /opportunities/<event_id>` without
+exposing consent bodies or participant records. Listing titles, View details and
+homepage featured-details links open this page. Volunteers review agreements in
+the existing authenticated joining step; successful joining returns to details
+with database-backed status and a My registrations link. Only existing listing
+filter/page keys are carried through Back links and sign-in. See
+`OPPORTUNITY_JOURNEY_QA.md` for isolated verification and browser-check limits.
+
 - Admins publish versioned Terms of Use, Privacy Notice, and default Participation Agreement revisions.
 - New users acknowledge active Terms and Privacy revisions. Existing users are prompted after a newly published revision.
 - Every event registration stores the accepted participation-agreement version; events may have their own agreement and optional NDA.
 - Volunteers request cancellation before the event deadline. A campus coordinator approves or rejects the request; approval changes the registration to cancelled.
+- My registrations links to activity details and shows the effective cancellation
+  deadline, request outcome and private review notes. PSU volunteers can submit
+  one cancellation request per registration; rejection does not enable another
+  request. A restored registration retains its previous decision. Recorded attendance
+  and deadline/status restrictions are enforced consistently on the dashboard and
+  server. See `REGISTRATION_CANCELLATION_UI_QA.md` for isolated verification.
 
 ## Reports and analytics
 

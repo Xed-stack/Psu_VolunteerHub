@@ -89,20 +89,28 @@
 ></label><div class="form-actions"><button class="btn btn--primary" type="submit">Apply filters</button><a
   class="btn btn--ghost"
   href="{{ url_for('events.volunteer_dash') }}"
->Clear</a></div></form>
+>Clear filters</a></div></form>
     {% if registration_items %}<div class="registration-list">{% for item in registration_items %}{% set registration = item.registration %}<article
   class="registration-row"
   id="registration-{{ registration.id }}"
-><div><strong>{{ registration.event.title }}</strong><small>{{ registration.event.date.strftime("%b %d, %Y · %I:%M %p") }} · {{ registration.event.campus.name if registration.event.campus else 'PSU' }} · {{ registration.event.category or 'General' }}</small></div><div><span class="badge">{{ registration.status|title }}</span>{% if item.cancellation_status %}<span class="badge badge--neutral">Cancellation {{ item.cancellation_status|title }}</span>{% endif %}</div><div>{% if item.can_cancel %}<a
-  class="btn btn--sm btn--danger"
-  href="{{ url_for('events.cancel_registration', registration_id=registration.id) }}"
->Request cancellation</a>{% else %}<span class="muted">{% if item.cancellation_status == 'pending' %}Coordinator review pending{% elif registration.status == 'cancelled' %}Registration cancelled{% else %}Cancellation unavailable after deadline or attendance{% endif %}</span>{% endif %}</div></article>{% endfor %}</div>{% if shown_registrations < registration_total %}<a
+>
+  <div class="registration-record__facts">
+    <h3><a href="{{ url_for('events.opportunity_detail', event_id=registration.event_id) }}">{{ registration.event.title }}</a></h3>
+    <dl><div><dt>Starts</dt><dd>{{ registration.event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div><div><dt>Campus</dt><dd>{{ registration.event.campus.name if registration.event.campus else 'Campus not specified' }}</dd></div><div><dt>Cancellation deadline</dt><dd>{{ item.cancellation_state.deadline.strftime('%B %d, %Y at %I:%M %p') }}{% if not registration.event.cancellation_deadline %} (activity start){% endif %}</dd></div></dl>
+  </div>
+  <div class="registration-record__status"><p><strong>Registration:</strong> {{ registration.status|title }}</p>
+    {% if item.cancellation_status %}<p><strong>{{ 'Previous cancellation decision' if item.cancellation_status == 'approved' and registration.status != 'cancelled' else 'Cancellation request' }}:</strong> {{ item.cancellation_status|title }}</p>{% endif %}
+    <p>{{ item.cancellation_state.message }}</p>
+    {% if registration.cancellation_request %}{% include 'partials/cancellation_decision.html' %}{% endif %}
+    {% if item.cancellation_state.can_request %}<a class="btn btn--danger" href="{{ url_for('events.cancel_registration', registration_id=registration.id, **dashboard_query) }}">Request cancellation</a>{% endif %}
+  </div>
+</article>{% endfor %}</div>{% if shown_registrations < registration_total %}<a
   class="btn btn--outline"
   href="{{ url_for('events.volunteer_dash', show=shown_registrations + 5, **registration_filters) }}"
 >Show 5 more</a>{% endif %}{% if shown_registrations > 5 %}<a
   class="btn btn--ghost"
   href="{{ url_for('events.volunteer_dash', **registration_filters) }}"
->Show less</a>{% endif %}{% else %}<div class="empty-state">No registrations match these filters. Clear filters or browse opportunities.</div>{% endif %}
+>Show less</a>{% endif %}{% else %}<div class="empty-state">{% if has_registrations %}<h3>No registrations match these filters</h3><p>Clear the filters to see your registrations.</p><a class="button button--secondary" href="{{ url_for('events.volunteer_dash') }}">Clear filters</a>{% else %}<h3>No registrations yet</h3><p>Browse upcoming activities and choose an opportunity to join.</p><a class="button button--primary" href="{{ url_for('events.opportunities') }}">Browse opportunities</a>{% endif %}</div>{% endif %}
   </section>
   <div class="content-grid">
     <section class="panel" data-tour-id="opportunities">
@@ -126,7 +134,7 @@
               </div>
               <a
                 class="button button--secondary"
-                href="{{ url_for('events.opportunities', search=event.title) }}"
+                href="{{ url_for('events.opportunity_detail', event_id=event.id) }}"
               >Details</a>
             </article>
           {% endfor %}
@@ -144,7 +152,7 @@
           <ul class="clean-list">
             {% for item in upcoming_schedule %}
               <li>
-                <strong>{{ item.event.title }}</strong>
+                <strong><a class="registration-activity-link" href="{{ url_for('events.opportunity_detail', event_id=item.event.id) }}">{{ item.event.title }}</a></strong>
                 <small>{{ item.date.strftime("%b %d, %Y at %I:%M %p") }}</small>
               </li>
             {% endfor %}

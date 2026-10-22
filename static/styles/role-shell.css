@@ -632,6 +632,77 @@ body.sidebar-open {
   margin-top: 2rem;
 }
 
+/* Opportunity decisions share PSU type and blue actions, without decorative motion. */
+.activity-page {
+  width: min(100%, 72rem);
+  margin-inline: auto;
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.public-page .activity-page { width: min(calc(100% - 2rem), 72rem); padding-block: 2rem 3rem; }
+.activity-page .page-heading { margin: 0; }
+.activity-page h1 { font-size: clamp(1.7rem, 3vw, 2.5rem); line-height: 1.2; text-wrap: balance; }
+.activity-page h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+.activity-page h3 { font-size: 1.1rem; margin: 1rem 0 .5rem; }
+.activity-back { display: inline-flex; align-items: center; min-height: 44px; color: var(--primary); font-weight: 600; }
+.activity-category { color: var(--primary); font-weight: 600; margin: 0 0 .5rem; }
+.activity-layout { display: grid; grid-template-areas: 'facts' 'join' 'body'; gap: 1.5rem; min-width: 0; }
+.activity-key-facts { grid-area: facts; }
+.activity-join { grid-area: join; align-self: start; }
+.activity-description { grid-area: body; }
+.activity-layout > * { min-width: 0; }
+.activity-page .panel { padding: clamp(1rem, 3vw, 1.75rem); }
+.activity-facts { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: 0; }
+.activity-facts dt { font-weight: 600; color: var(--primary); }
+.activity-facts dd { margin: .25rem 0 0; }
+.activity-copy, .activity-page .policy-copy { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.activity-cover { width: 100%; height: auto; max-height: 22rem; object-fit: cover; border-radius: .5rem; margin-bottom: 1.5rem; }
+.activity-description h2:not(:first-child) { margin-top: 1.75rem; }
+.activity-sdgs { padding-left: 1.25rem; line-height: 1.7; }
+.activity-join p { line-height: 1.6; }
+.activity-join .button { width: 100%; min-height: 44px; white-space: normal; text-align: center; }
+.opportunity-status { color: var(--primary); font-weight: 700; margin: 1rem 0; }
+.opportunity-status--full, .opportunity-status--closed { color: var(--on-surface); }
+.opportunity-applied { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding-block: 1rem; overflow-wrap: anywhere; }
+.opportunity-applied > * { min-width: 0; max-width: 100%; }
+.opportunities-page .event-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem; }
+.opportunities-page .opportunity-card__body { min-width: 0; gap: .5rem; }
+.opportunities-page .opportunity-card__body h2 { margin: .25rem 0; overflow-wrap: anywhere; }
+.opportunities-page .opportunity-card__body h2 a { display: inline-flex; align-items: center; min-height: 44px; color: var(--primary); text-decoration: none; }
+.opportunities-page .opportunity-card__body h2 a:hover { text-decoration: underline; }
+.opportunities-page .opportunity-card__body p { overflow-wrap: anywhere; line-height: 1.6; }
+.opportunities-page .meta-list { gap: .5rem; line-height: 1.5; overflow-wrap: anywhere; }
+.opportunities-page .meta-list li { display: block; }
+.opportunities-page .meta-list strong { display: block; font-size: .875rem; }
+.opportunities-page .opportunity-card__fallback { background: var(--primary-light); }
+.activity-review { max-width: 54rem; }
+.activity-review .check-row { min-height: 44px; padding-block: .625rem; align-items: start; gap: .75rem; }
+.activity-review input[type='checkbox'] { margin-top: .25rem; width: 1.25rem; height: 1.25rem; flex: 0 0 1.25rem; accent-color: var(--primary); }
+.activity-errors { border: 2px solid #ba1a1a; padding: 1rem; margin-bottom: 1.5rem; }
+.activity-errors a, .activity-field-error { color: #ba1a1a; }
+.activity-errors a { display: inline-flex; align-items: center; min-height: 44px; }
+.activity-field-error { margin: 0; font-weight: 600; }
+.cancellation-reasons { min-width: 0; margin: 0; padding: 0; border: 0; }
+.cancellation-reasons legend { margin-bottom: .75rem; font-weight: 600; }
+.cancellation-reasons input[type='radio'] { flex: 0 0 1.25rem; width: 1.25rem; height: 1.25rem; margin: .2rem 0 0; accent-color: var(--primary); }
+.cancellation-reasons .check-row { display: flex; cursor: pointer; }
+.cancellation-submit { background: #ba1a1a; color: white; border: 2px solid #ba1a1a; white-space: normal; }
+.cancellation-submit:hover { background: #930f0f; text-decoration: underline; }
+.activity-page :is(a, button, input):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.activity-page .button, .opportunities-page .button { min-height: 44px; }
+body:has(.activity-page) .flash-stack { position: static; width: min(calc(100% - 2rem), 72rem); max-width: none; margin: 1rem auto 0; overflow-wrap: anywhere; }
+body:has(.activity-page) .flash--success { background: var(--primary); }
+@media (min-width: 48rem) {
+  .activity-layout { grid-template-columns: minmax(0, 2fr) minmax(15rem, 1fr); grid-template-areas: 'facts join' 'body join'; }
+  .activity-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 47.999rem) {
+  .activity-review .form-actions { display: grid; grid-template-columns: 1fr; }
+  .activity-review .form-actions .button { width: 100%; }
+}
+
 /* Opportunity and activity cards */
 .event-grid {
   display: grid;

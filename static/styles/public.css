@@ -128,12 +128,10 @@ button:focus-visible,
     border: 1px solid var(--outline-variant);
     border-radius: 16px;
     box-shadow: 0 10px 26px rgba(0, 31, 74, .07);
-    transition: transform .18s ease, box-shadow .18s ease;
 }
 
 .opportunities-page .opportunity-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 16px 30px rgba(0, 31, 74, .12);
+    border-color: var(--primary);
 }
 
 .opportunities-page .opportunity-card__body h2 {

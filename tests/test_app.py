@@ -886,8 +886,11 @@ class TestVolunteerFeatures:
         body = client.get('/').get_data(as_text=True)
         join_links = re.findall(
             r'<a\b[^>]*href="(/opportunities/register/\d+)"[^>]*>Join Now</a>', body)
-        # Both the featured card and its details dialog must use agreement review.
-        assert join_links.count('/opportunities/register/1') == 2
+        # The homepage shortcut and dedicated details page both use agreement review.
+        assert join_links.count('/opportunities/register/1') == 1
+        assert 'href="/opportunities/1"' in body
+        assert 'data-open-event' not in body
+        assert 'href="/opportunities/register/1"' in client.get('/opportunities/1').get_data(as_text=True)
         assert not re.search(r'<form\b[^>]*action="/opportunities/register/', body)
         for link in join_links:
             response = client.get(link)
@@ -934,7 +937,7 @@ class TestVolunteerFeatures:
             assert response.status_code == (200 if method == 'get' else 302)
         else:
             assert response.status_code == 302
-            assert response.headers['Location'].endswith('/opportunities')
+            assert response.headers['Location'].endswith('/opportunities/1')
             with client.session_transaction() as session:
                 assert ('error', 'This activity has already started and cannot accept registrations.') in session['_flashes']
         with app.app_context():
@@ -1875,7 +1878,7 @@ class TestSearchFilterPagination:
             'campus': ['1', '2'], 'campus_mode': mode})
         assert response.status_code == 200
         body = response.get_data(as_text=True)
-        titles = set(re.findall(r'<h2>(.*?)</h2>', body))
+        titles = set(re.findall(r'<h2><a[^>]+>(.*?)</a></h2>', body))
         included = {'Youth Coding Mentor', 'Green Campus Initiative', 'Community Food Drive',
                     'Rural Literacy Program', 'Coastal Cleanup Drive'}
         excluded = {'Disaster Response Training', 'Community IT Support Workshop',
@@ -1891,14 +1894,14 @@ class TestSearchFilterPagination:
         response = client.get('/opportunities', query_string={
             'campus': ['', ' '], 'campus_mode': mode})
         assert response.status_code == 200
-        assert 'Showing 9 active opportunities' in response.get_data(as_text=True)
+        assert 'Showing 1–9 of 9 opportunities' in response.get_data(as_text=True)
 
     def test_campuses_are_alphabetical_and_duplicates_are_one_choice(self, client):
         body = client.get('/opportunities?campus=1&campus=1').get_data(as_text=True)
         names = re.findall(r'name="campus" value="\d+"[^>]*>\s*<span>(.*?)</span>', body)
         assert len(names) == 9
         assert names == sorted(names, key=str.casefold)
-        assert 'Showing 4 active opportunities' in body
+        assert 'Showing 1–4 of 4 opportunities' in body
         assert body.count('name="campus" value="1" checked') == 1
         assert 'Campuses: 1 selected' in body
 
@@ -1907,7 +1910,7 @@ class TestSearchFilterPagination:
             'campus': [str(value) for value in range(1, 10)],
             'campus_mode': 'exclude',
         }).get_data(as_text=True)
-        assert 'Showing 0 active opportunities' in body
+        assert '0 opportunities' in body
         assert 'No opportunities match these filters.' in body
 
     def test_excluding_named_campuses_keeps_unassigned_activities(self, client, app):
@@ -1918,7 +1921,7 @@ class TestSearchFilterPagination:
         for mode in ('include', 'exclude'):
             body = client.get('/opportunities', query_string={
                 'campus': ['1', '2'], 'campus_mode': mode}).get_data(as_text=True)
-            assert ('<h2>Unassigned activity</h2>' in body) == (mode == 'exclude')
+            assert ('>Unassigned activity</a></h2>' in body) == (mode == 'exclude')
 
     @pytest.mark.parametrize('invalid', ['oops', '999999', '-1', '0', '9' * 5000])
     def test_invalid_campuses_do_not_broaden_results(self, client, invalid):
@@ -1926,7 +1929,7 @@ class TestSearchFilterPagination:
         assert response.status_code == 400
         body = response.get_data(as_text=True)
         assert 'Some campus choices are unavailable.' in body
-        assert 'Showing 0 active opportunities' in body
+        assert '0 opportunities' in body
         assert 'name="campus" value="1" checked' in body
 
     def test_invalid_mode_shows_recoverable_error(self, client):
@@ -1935,7 +1938,7 @@ class TestSearchFilterPagination:
         body = response.get_data(as_text=True)
         assert 'Choose whether to show only or exclude' in body
         assert 'name="campus" value="1" checked' in body
-        assert 'Showing 0 active opportunities' in body
+        assert '0 opportunities' in body
 
     @pytest.mark.parametrize('mode', ['include', 'exclude'])
     def test_multi_campus_pagination_preserves_every_filter(self, client, app, mode):
@@ -1955,15 +1958,15 @@ class TestSearchFilterPagination:
                    'category': 'Environment', 'search': 'Filter paging'}
         response = client.get('/opportunities', query_string=filters)
         body = response.get_data(as_text=True)
-        assert 'Showing 13 active opportunities' in body
+        assert 'Showing 1–9 of 13 opportunities' in body
         assert 'outside selected campuses' not in body
         next_url = unescape(re.search(r'href="([^"]+)"\s*>Next</a>', body).group(1))
         query = parse_qs(urlsplit(next_url).query)
         assert query == {**{key: value if isinstance(value, list) else [value]
                             for key, value in filters.items()}, 'page': ['2']}
         second_page = client.get(next_url).get_data(as_text=True)
-        first_titles = re.findall(r'<h2>(.*?)</h2>', body)
-        second_titles = re.findall(r'<h2>(.*?)</h2>', second_page)
+        first_titles = re.findall(r'<h2><a[^>]+>(.*?)</a></h2>', body)
+        second_titles = re.findall(r'<h2><a[^>]+>(.*?)</a></h2>', second_page)
         assert len(first_titles) == 9
         assert len(second_titles) == 4
         assert not set(first_titles) & set(second_titles)
@@ -1980,7 +1983,7 @@ class TestSearchFilterPagination:
         assert response.status_code == 200
         body = response.get_data(as_text=True)
         assert 'No campuses are available to filter.' in body
-        assert '<h2>Rural Literacy Program</h2>' in body
+        assert '>Rural Literacy Program</a></h2>' in body
 
     def test_filter_by_campus(self, client, app):
         uid = _create_user(app, email='campusfilt@test.com')
@@ -2022,7 +2025,7 @@ class TestSearchFilterPagination:
         resp = client.get('/opportunities?page=1')
         assert resp.status_code == 200
         body = resp.data.decode()
-        assert 'Showing 12 active opportunities' in body
+        assert 'Showing 1–9 of 12 opportunities' in body
         assert 'page=2' in body
 
     def test_filter_and_page_combined(self, client, app):
@@ -2945,7 +2948,9 @@ class TestOutsiderVolunteers:
     def test_public_opportunity_card_requires_psu_sign_in(self, client, app):
         eid = self._event_id(app)
         body = client.get('/opportunities').get_data(as_text=True)
-        assert 'Sign in to join' in body
+        assert f'href="/opportunities/{eid}"' in body
+        assert 'View details' in body
+        assert 'Sign in to join' in client.get(f'/opportunities/{eid}').get_data(as_text=True)
         assert 'Register as an external volunteer' not in body
         assert f'/event/{eid}/join?external=1' not in body
 

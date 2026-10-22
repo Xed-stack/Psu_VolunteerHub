@@ -1,17 +1,28 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Review and Join · PSU Volunteer Hub{% endblock %}
+{% block title %}Review and join | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Review and join{% endblock %}
 {% block content %}
-<section class="panel policy-panel">
-  <header class="page-heading"><div><h1>Join {{ event.title }}</h1><p>Review the participation requirements before your registration is confirmed.</p></div></header>
-  <h2>{{ agreement.title }}</h2><div class="policy-copy">{{ agreement.body }}</div>
-  <form method="post" class="stack">
+<div class="activity-page activity-review">
+  <a class="activity-back" href="{{ url_for('events.opportunity_detail', event_id=event.id, **listing_query) }}">Back to activity details</a>
+  <header class="page-heading"><div><h1>Join {{ event.title }}</h1><p>Review the activity and accept its requirements to confirm your registration. No slot is reserved until you finish joining.</p></div></header>
+  <section class="panel" aria-labelledby="review-summary-title"><h2 id="review-summary-title">Activity summary</h2>{% include 'partials/activity_summary.html' %}</section>
+  <section class="panel policy-panel" aria-labelledby="review-requirements-title">
+  <h2 id="review-requirements-title">Participation requirements</h2>
+  {% if errors %}<div class="activity-errors" role="alert" tabindex="-1" data-consent-errors><h3>Please check the following</h3><ul>{% for field, message in errors.items() %}<li><a href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+  <form method="post" action="{{ url_for('events.register_for_event', event_id=event.id, **listing_query) }}" class="stack">
     {% include 'partials/csrf_field.html' %}
-    <label class="check-row"><input type="checkbox" name="accept_agreement" value="yes" required><span>I have read and accept this Participation Agreement.</span></label>
+    <h3>{{ agreement.title }}</h3><div class="policy-copy">{{ agreement.body }}</div>
+    <label class="check-row" for="accept_agreement"><input id="accept_agreement" type="checkbox" name="accept_agreement" value="yes" required{% if accepted_agreement %} checked{% endif %}{% if errors.get('accept_agreement') %} aria-invalid="true" aria-describedby="accept_agreement-error"{% endif %}><span>I have read and accept this Participation Agreement.</span></label>
+    {% if errors.get('accept_agreement') %}<p class="activity-field-error" id="accept_agreement-error">{{ errors.accept_agreement }}</p>{% endif %}
     {% if event.nda_required %}
-      <h2>Non-Disclosure Agreement</h2><div class="policy-copy">{{ event.nda_text }}</div>
-      <label class="check-row"><input type="checkbox" name="accept_nda" value="yes" required><span>I have read and accept the NDA.</span></label>
+      <h3>Non-Disclosure Agreement</h3><div class="policy-copy">{{ event.nda_text or 'No NDA text provided. Contact the campus coordinator before joining.' }}</div>
+      <label class="check-row" for="accept_nda"><input id="accept_nda" type="checkbox" name="accept_nda" value="yes" required{% if accepted_nda %} checked{% endif %}{% if errors.get('accept_nda') %} aria-invalid="true" aria-describedby="accept_nda-error"{% endif %}><span>I have read and accept the NDA.</span></label>
+      {% if errors.get('accept_nda') %}<p class="activity-field-error" id="accept_nda-error">{{ errors.accept_nda }}</p>{% endif %}
     {% endif %}
-    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('events.opportunities') }}">Back</a><button class="btn btn--primary" type="submit">Agree and join</button></div>
+    <p>Your registration will be confirmed after the server checks current availability. Unsaved checkbox choices are not saved if your session expires.</p>
+    <div class="form-actions"><a class="button button--secondary" href="{{ url_for('events.opportunity_detail', event_id=event.id, **listing_query) }}">Back to details</a><button class="button button--primary" type="submit">Agree and join</button></div>
   </form>
-</section>
+  </section>
+</div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/registration-consent.js') }}"></script>{% endblock %}

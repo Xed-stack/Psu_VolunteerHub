@@ -39,6 +39,41 @@ The user can say: **Read HANDOFF.md and continue from the current local files.**
 
 ## Repository and local run
 
+Publication follow-up, 22 October 2026: the user approved committing and pushing
+the opportunity journey and registration/cancellation refinement together, before
+addressing the three baseline test assertions. This revision includes both QA
+reports and their tests. Earlier local/unpublished statements below describe the
+verification-time snapshots; confirm actual publication with HEAD and origin/main.
+No live database, deployment, policy activation or schema change is included.
+
+22 October registration/cancellation refinement (local, unpublished): activity
+links and deadlines now appear in My registrations; cancellation decisions are
+separate, private native disclosures. Shared PSU cancellation checks prevent the
+attendance/action mismatch and repeat requests after any existing decision under
+the user-selected one-request rule. Inline form errors retain values; whitelisted
+dashboard context returns to the affected record. No new routes/schema/dependencies.
+See REGISTRATION_CANCELLATION_UI_QA.md for final tests, screenshots and manual limits.
+Final focused selection: 66 passed in 165.81s, including shared UI structure.
+Final uninterrupted full suite: 450 passed, 3 known baseline failures in 1130.79s.
+The initial sandboxed attempt could not finish its summary; the final run used
+working test-process/temp-folder permissions and had no environment errors.
+No new registration/cancellation failures; the full suite is not yet green.
+The prior uncommitted opportunity journey is retained. No live DB or Git publication.
+
+22 October opportunity journey (local, not committed or pushed): the approved
+listing/details/consent remake is implemented. Public read-only details live at
+`GET /opportunities/<int:event_id>`; authenticated joining retains its existing
+endpoint and redirects to database-backed confirmation on details. Listing query
+keys are whitelisted through Back links and sign-in. Homepage featured details
+now use this page; hero/carousel behavior is retained. See OPPORTUNITY_JOURNEY_QA.md
+for current verification, screenshots and remaining physical-device/zoom limits.
+Final isolated full suite: 413 passed, 3 failed in 1033.25s; all three failures
+reproduce on untouched committed baseline 21a0545 (two Director-filter assertions
+and profile responsive-cell markup). Focused journey/filter run: 43 passed;
+shared UI structure: 6 passed. Do not describe the full suite as green.
+No live database writes, migration, dependencies, deployment or publication.
+Earlier release approval below does not authorize publishing this new work.
+
 22 October release scope: the user approved committing all current application
 changes and requested documentation updates before pushing to GitHub main.
 See RELEASE_2026_10_22.md for scope, current verification and remaining gates.

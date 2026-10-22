@@ -1,12 +1,30 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Request Cancellation · PSU Volunteer Hub{% endblock %}
+{% block title %}Request cancellation | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Request cancellation{% endblock %}
 {% block content %}
-<section class="panel policy-panel"><header class="page-heading"><div><h1>Request cancellation</h1><p>{{ registration.event.title }} · {{ registration.event.date.strftime('%B %d, %Y at %I:%M %p') }}</p></div></header>
-  <p>Your registration remains active until your campus coordinator reviews this request.</p>
-  <form method="post" class="stack">{% include 'partials/csrf_field.html' %}
-    <fieldset class="choice-fieldset"><legend>Cancellation reason</legend>{% for reason in reasons %}<label><input type="radio" name="reason" value="{{ reason }}" required> {{ reason }}</label>{% endfor %}</fieldset>
-    <label class="field">Additional details <textarea class="input" name="details" rows="4" placeholder="Explain if you selected Other; optional for other reasons."></textarea></label>
-    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">Back</a><button class="btn btn--danger" type="submit">Submit cancellation request</button></div>
-  </form>
-</section>
+<div class="activity-page activity-review cancellation-page">
+  <a class="activity-back" href="{{ dashboard_url }}">Back to My registrations</a>
+  <header class="page-heading"><div><h1>Request cancellation</h1><p>Your registration remains active until your campus coordinator approves this request. Only one request is allowed per registration.</p></div></header>
+  <section class="panel" aria-labelledby="cancellation-summary-title">
+    <h2 id="cancellation-summary-title">{{ event.title }}</h2>
+    <dl class="activity-facts"><div><dt>Starts</dt><dd>{{ event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div><div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'Campus not specified' }}</dd></div><div><dt>Cancellation deadline</dt><dd>{{ cancellation_state.deadline.strftime('%B %d, %Y at %I:%M %p') }}{% if not event.cancellation_deadline %} (activity start){% endif %}</dd></div></dl>
+  </section>
+  <section class="panel" aria-labelledby="cancellation-reason-title">
+    <h2 id="cancellation-reason-title">Tell your coordinator why</h2>
+    {% if errors %}<div class="activity-errors" role="alert"><h3>Please check the following</h3><ul>{% for field, message in errors.items() %}<li><a href="#{{ 'reason-0' if field == 'reason' else field }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+    <form method="post" action="{{ url_for('events.cancel_registration', registration_id=registration.id, **dashboard_query) }}" class="stack" data-cancellation-form>
+      {% include 'partials/csrf_field.html' %}
+      <fieldset class="choice-fieldset cancellation-reasons"><legend>Cancellation reason (required)</legend>
+        {% for reason in reasons %}<label class="check-row" for="reason-{{ loop.index0 }}"><input id="reason-{{ loop.index0 }}" type="radio" name="reason" value="{{ reason }}" required{% if selected_reason == reason %} checked{% endif %}{% if errors.get('reason') %} aria-invalid="true" aria-describedby="reason-error"{% endif %}><span>{{ reason }}</span></label>{% endfor %}
+      </fieldset>
+      {% if errors.get('reason') %}<p class="activity-field-error" id="reason-error">{{ errors.reason }}</p>{% endif %}
+      <label class="field" for="details">Additional details <textarea class="input" id="details" name="details" rows="4" autocomplete="off" aria-describedby="details-help{% if errors.get('details') %} details-error{% endif %}"{% if errors.get('details') %} aria-invalid="true"{% endif %}>{{ submitted_details }}</textarea></label>
+      <p id="details-help">Required for Other; optional for other reasons. Include only information needed for your coordinator to review the request.</p>
+      {% if errors.get('details') %}<p class="activity-field-error" id="details-error">{{ errors.details }}</p>{% endif %}
+      <p>Unsaved entries are not saved if your session expires.</p>
+      <div class="form-actions"><a class="button button--secondary" href="{{ dashboard_url }}">Back to My registrations</a><button class="button cancellation-submit" type="submit">Submit cancellation request</button></div>
+    </form>
+  </section>
+</div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/cancellation-form.js') }}"></script>{% endblock %}

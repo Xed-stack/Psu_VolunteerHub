@@ -1,0 +1,50 @@
+{% extends 'layouts/role_base.html' if current_user.is_authenticated else 'layouts/public_base.html' %}
+{% block title %}{{ event.title }} | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Activity details{% endblock %}
+{% block header_subtitle %}Find your next opportunity to serve{% endblock %}
+{% block content %}
+{% if not current_user.is_authenticated %}{% include 'partials/opportunity_public_nav.html' %}<main id="main-content" tabindex="-1">{% endif %}
+<div class="activity-page">
+  <a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Back to opportunities</a>
+  <header class="page-heading"><div><p class="activity-category">{{ event.category or 'General' }}</p><h1>{{ event.title }}</h1><p>Review the schedule and requirements before joining.</p></div></header>
+  <div class="activity-layout">
+    <section class="panel activity-key-facts" aria-labelledby="activity-facts-title">
+      <h2 id="activity-facts-title">At a glance</h2>
+      {% include 'partials/activity_summary.html' %}
+    </section>
+    <aside class="panel activity-join" aria-labelledby="activity-join-title">
+      <h2 id="activity-join-title">Participation</h2>
+      <p class="opportunity-status opportunity-status--{{ opportunity_state.code }}">{{ opportunity_state.label }}</p>
+      {% if opportunity_state.code == 'registered' %}
+        <p>Your registration is {{ registration.status }}. Review your commitments or cancellation options in My registrations.</p>
+        <a class="button button--primary" href="{{ url_for('events.volunteer_dash') }}">My registrations</a>
+      {% elif opportunity_state.code == 'closed' %}
+        <p>This activity has started. It is no longer accepting registrations.</p>
+      {% elif opportunity_state.code == 'full' %}
+        <p>No slots are currently available. Browse other opportunities.</p>
+      {% elif not current_user.is_authenticated %}
+        <p>Sign in with your PSU account to review the agreement and join. Signing in does not reserve a slot.</p>
+        <a class="button button--primary" href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id, **listing_query)) }}">Sign in to join</a>
+      {% elif current_user.role == 'volunteer' %}
+        <p>{% if registration and registration.status == 'cancelled' %}Your previous registration was cancelled. Joining again will restore it after you accept the required agreement(s).{% else %}Review and accept the participation requirements to confirm your registration.{% endif %}</p>
+        <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id, **listing_query) }}">Join Now</a>
+      {% else %}
+        <p>Volunteer accounts can join activities. Your current account can view these details.</p>
+      {% endif %}
+      {% if opportunity_state.code in ['full', 'closed'] %}<a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Browse opportunities</a>{% endif %}
+    </aside>
+    <section class="panel activity-description" aria-labelledby="activity-about-title">
+      {% if event.cover_image_path %}<img class="activity-cover" src="{{ url_for('static', filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" width="960" height="540" loading="lazy">{% endif %}
+      <h2 id="activity-about-title">About this activity</h2>
+      <div class="activity-copy">{{ event.description or 'No description provided.' }}</div>
+      <h2>Required skills</h2>
+      <p>{{ event.required_skills or 'No specific skills listed.' }}</p>
+      <h2>Sustainable Development Goals</h2>
+      <ul class="activity-sdgs">{% for goal in event.sdgs %}<li>SDG {{ goal.number }}: {{ goal.name }}</li>{% else %}<li>No SDGs listed.</li>{% endfor %}</ul>
+      <h2>Before you join</h2>
+      <p>A Participation Agreement is required.{% if event.nda_required %} A Non-Disclosure Agreement is also required.{% endif %} You can read and accept the required agreement(s) in the signed-in review step. Cancellation requests are subject to coordinator review.</p>
+    </section>
+  </div>
+</div>
+{% if not current_user.is_authenticated %}</main>{% endif %}
+{% endblock %}

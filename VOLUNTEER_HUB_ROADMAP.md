@@ -10,6 +10,38 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Latest delivery status (22 October 2026)
 
+Publication follow-up: the user approved commit/push of the opportunity journey
+and registration/cancellation work in this revision. Local/unpublished notes below
+are delivery-time snapshots. The 450-pass/3-baseline-failure result remains the
+latest full verification; publication does not resolve those failures or the
+manual zoom/device checks. No deployment or live-database change is included.
+
+Latest local refinement: My registrations now links to activity details and shows
+effective cancellation deadlines, distinct request/registration states and private
+decision disclosures. Shared PSU guards align dashboard actions with attendance,
+deadlines and the approved one-request rule. Form validation retains values and
+supports no-script recovery; context returns to the registration record. See
+REGISTRATION_CANCELLATION_UI_QA.md for current verification. No publication, new
+routes/schema/dependencies or live database changes; prior journey work preserved.
+Final focused verification: **66 passed in 165.81s**, including shared UI structure.
+Final uninterrupted full suite: **450 passed, 3 known baseline failures in
+1130.79s**, without sandbox/process/temp-file errors. All 37 new registration UI
+cases passed. The existing two Director assertions and profile-cell assertion
+remain a separate release gate; the full suite is not yet green.
+
+Earlier opportunity-only iteration: public dedicated details, filtered listing counts
+and Back links, plain registration states, authenticated review summary, inline
+consent errors and activity-specific confirmation are implemented. Existing
+joining/restoration, agreement versions and server guards remain authoritative.
+Focused journey/filter checks: **43 passed in 111.42s**. See
+OPPORTUNITY_JOURNEY_QA.md for full regression results and browser evidence.
+Full suite: **413 passed, 3 failed in 1033.25s**. The same three failures reproduce
+on committed baseline 21a0545: two Director report-filter assertions and one
+profile responsive-cell markup assertion. No new journey failures were observed;
+the full release is not yet green. Six shared UI checks also pass.
+Not committed/pushed; no original-database writes or deployment. Prior publication
+approval applies to the earlier release, not this newly requested implementation.
+
 Consolidated release: all current application changes are approved for commit
 and push after documentation updates. See RELEASE_2026_10_22.md for the exact
 scope, focused checks and exclusions. Current isolated publication selection:
@@ -20,9 +52,11 @@ PSU-sign-in-only public joining, signed-in Help, Director view context, policy
 source files, Docker preparation and backup/restore documentation. No live policy
 publication, database changes or Railway deployment is included.
 
-Next unfinished verification: full suite for the combined release, plus actual
-browser zoom/screen-reader/physical-mobile checks. The 393-pass full run is the
-21 October snapshot; do not relabel it as today's combined-revision full run.
+Next unfinished verification: reconcile the three baseline report/profile
+assertions, plus actual browser zoom/screen-reader/physical-mobile checks. The
+393-pass full run is the 21 October snapshot; do not relabel it as today's
+combined-revision full run. The latest 413-pass/3-failure result above supersedes
+the previously pending combined-suite check.
 
 22 October Coordinator operations refinement: authenticated record tables now
 reflow into labelled mobile records while dense reports use labelled internal
@@ -194,8 +228,8 @@ Implementation update, 18 October 2026: the first-use guide is now a shared role
 - Rebuild the public home page as a content-driven landing page with: a PSU volunteer image hero, the tagline, clear sign-in and Browse Opportunities calls to action, a small feature section, upcoming events, recent completed activities, and help/contact links for non-technical users.
 - Use approved PSU images when supplied. Until then, show existing coordinator-uploaded event cover images and milestone photos; cards without an image use the present accessible fallback artwork. Do not add unlicensed stock photos.
 - Add a featured-events carousel from the nearest upcoming activities. Each slide shows cover image, title, campus, category, start and end date/time, remaining slots, and a **Join Now** action.
-- Add event preview modals for public and signed-in users. The modal contains the complete event information, dates, location, required skills, cancellation deadline, and the Join Now action. A signed-in volunteer submits the normal registration form; a guest is offered sign-in and then returns to the selected event. The existing outsider join path remains available.
-- Rework the opportunities list with a banner, image cards, start/end dates, specific campus/category dropdown filters, alphabetical campus ordering, keyword search, and a multi-select campus filter that supports excluding campuses. Keep the listing paginated and accessible without JavaScript.
+- [x] Replace the earlier preview-modal proposal with the approved dedicated public activity-details page. Show schedule, location, skills, SDGs, capacity, cancellation deadline and requirement notices; keep agreement bodies in authenticated consent. Joining returns to details with confirmed registration state and My registrations. Retired public guest joining stays retired; coordinator external-participant records remain unchanged.
+- [x] Refine opportunities into compact image cards with linked titles, accurate filtered counts, wrapping filter summaries and distinct empty states. Preserve chronological ordering, nine-item pages, category/search and native campus inclusion/exclusion; show secondary facts on details. No card-lift motion or JavaScript-only filtering.
 - [x] Campus-filter portion: alphabetized native checkboxes support multiple
   campuses with include/exclude modes, retain search/category selections through
   pagination, and work with scripts blocked. No selection shows all campuses;
@@ -208,6 +242,11 @@ Implementation update, 18 October 2026: the first-use guide is now a shared role
 - Add an always-visible Help link to the public navigation and role sidebar. The help page explains signing up, profile interests/skills, joining, cancelling, attendance, recommendations, and who to contact for account issues.
 
 ## Phase 2 — profile, registration, and coordinator controls
+
+- [x] Refine My registrations and cancellation without replacing the dashboard:
+  linked activity titles/recommendations/schedule, effective deadlines, separate
+  decision states, private notes, consistent availability, accessible error recovery
+  and one request per PSU registration. See REGISTRATION_CANCELLATION_UI_QA.md.
 
 Profile repair completed in this chat:
 

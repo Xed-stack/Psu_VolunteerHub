@@ -1,0 +1,8 @@
+<dl class="activity-facts">
+  <div><dt>Starts</dt><dd>{{ event.date.strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+  <div><dt>Ends</dt><dd>{{ event.end_date.strftime('%B %d, %Y at %I:%M %p') if event.end_date else 'End time not provided' }}</dd></div>
+  <div><dt>Campus</dt><dd>{{ event.campus.name if event.campus else 'Campus not specified' }}</dd></div>
+  <div><dt>Location</dt><dd>{{ event.location or 'Location not provided. Contact the campus coordinator.' }}</dd></div>
+  <div><dt>Capacity</dt><dd>{% if event.slots > 0 %}{{ event.slots_remaining() }} of {{ event.slots }} slots remaining{% else %}Capacity not specified{% endif %}</dd></div>
+  <div><dt>Cancellation deadline</dt><dd>{{ (event.cancellation_deadline or event.date).strftime('%B %d, %Y at %I:%M %p') }}</dd></div>
+</dl>

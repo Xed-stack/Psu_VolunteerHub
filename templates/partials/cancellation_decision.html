@@ -1,0 +1,11 @@
+{% set cancellation = registration.cancellation_request %}
+<details class="cancellation-decision">
+  <summary>Request and decision details</summary>
+  <dl>
+    <div><dt>Requested</dt><dd>{{ cancellation.requested_at.strftime('%B %d, %Y at %I:%M %p') }} UTC</dd></div>
+    <div><dt>Your reason</dt><dd>{{ cancellation.reason }}</dd></div>
+    {% if cancellation.details %}<div><dt>Your details</dt><dd class="cancellation-copy">{{ cancellation.details }}</dd></div>{% endif %}
+    {% if cancellation.reviewed_at %}<div><dt>Reviewed</dt><dd>{{ cancellation.reviewed_at.strftime('%B %d, %Y at %I:%M %p') }} UTC</dd></div>{% endif %}
+    {% if cancellation.review_note %}<div><dt>Coordinator review note</dt><dd class="cancellation-copy">{{ cancellation.review_note }}</dd></div>{% endif %}
+  </dl>
+</details>

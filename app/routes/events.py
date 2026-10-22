@@ -8,6 +8,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
 from flask_login import login_required, current_user
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from app.models import db
 from app.models.user import VolunteerProfile
 from app.models.event import (Event, Registration, Attendance, Campus,
@@ -28,6 +29,61 @@ CANCELLATION_REASONS = (
     'Personal Emergency', 'Other',
 )
 EXTERNAL_LINK_MAX_AGE = 60 * 60 * 24 * 30
+
+
+def _listing_query():
+    """Carry only existing listing filters, never a caller-supplied return URL."""
+    return {key: request.args.getlist(key)
+            for key in ('page', 'search', 'category', 'campus', 'campus_mode')
+            if key in request.args}
+
+
+def _registration_query():
+    return {key: request.args.getlist(key)
+            for key in ('status', 'campus', 'category', 'start_date', 'end_date',
+                        'show', 'calendar_year', 'calendar_month')
+            if key in request.args}
+
+
+def _cancellation_state(registration, now=None):
+    deadline = registration.event.cancellation_deadline or registration.event.date
+    cancellation = registration.cancellation_request
+    if cancellation:
+        if cancellation.status == 'pending':
+            code = 'pending'
+            message = 'Your cancellation request is awaiting coordinator review.'
+            if registration.status in ('pending', 'confirmed'):
+                message += ' Your registration remains active until approval.'
+        else:
+            code = cancellation.status
+            message = 'One cancellation request is allowed per registration. Another request is unavailable.'
+            if cancellation.status == 'approved' and registration.status != 'cancelled':
+                message = 'Your previous cancellation was approved, and you joined again. ' + message
+    elif registration.status == 'cancelled':
+        code, message = 'cancelled', 'This registration is cancelled.'
+    elif registration.status not in ('pending', 'confirmed'):
+        code, message = 'status', 'Only pending or confirmed registrations can request cancellation.'
+    elif registration.attendance_record is not None:
+        code, message = 'attendance', 'Cancellation is unavailable because attendance has been recorded.'
+    elif deadline <= (now or datetime.now()):
+        code, message = 'deadline', 'The cancellation deadline has passed.'
+    else:
+        code, message = 'available', 'You can request cancellation before the deadline. Coordinator approval is required.'
+    return {'can_request': code == 'available', 'code': code,
+            'message': message, 'deadline': deadline}
+
+
+def _opportunity_state(event, registration=None, now=None):
+    remaining = event.slots_remaining()
+    if registration is not None and registration.status != 'cancelled':
+        code, label = 'registered', 'Registered'
+    elif event.date <= (now or datetime.now()):
+        code, label = 'closed', 'Registration closed'
+    elif event.slots > 0 and remaining <= 0:
+        code, label = 'full', 'Full'
+    else:
+        code, label = 'available', 'Open for joining'
+    return {'code': code, 'label': label, 'remaining': remaining}
 
 
 def _agreement_for(event):
@@ -113,7 +169,9 @@ def opportunities():
         campus_mode = 'include'
     category = request.args.get('category', type=str) or None
     search = request.args.get('search', type=str) or None
-    query = Event.query.filter(Event.date >= datetime.now(), Event.slots > 0)
+    now = datetime.now()
+    query = Event.query.filter(Event.date >= now, Event.slots > 0)
+    upcoming_count = query.count()
     if filter_error:
         query = query.filter(db.false())
     elif selected_campuses:
@@ -135,10 +193,10 @@ def opportunities():
     # so the dropdown never offers options that return zero results.
     categories = [row[0] for row in db.session.query(
         Event.category).distinct().order_by(Event.category).all() if row[0]]
-    registered_event_ids = set()
+    registrations_by_event = {}
     if current_user.is_authenticated and current_user.role == 'volunteer':
-        registered_event_ids = {
-            registration.event_id
+        registrations_by_event = {
+            registration.event_id: registration
             for registration in Registration.query.filter_by(
                 user_id=current_user.id).all()
             if registration.status != 'cancelled'
@@ -155,7 +213,29 @@ def opportunities():
                            selected_category=category,
                            selected_status='upcoming',
                            search_query=search,
-                           registered_event_ids=registered_event_ids), 400 if filter_error else 200
+                           registered_event_ids=set(registrations_by_event),
+                           opportunity_states={event.id: _opportunity_state(
+                               event, registrations_by_event.get(event.id), now)
+                               for event in events},
+                           listing_query=_listing_query(), upcoming_count=upcoming_count,
+                           has_filters=bool(search or category or raw_campuses or filter_error),
+                           first_result=(pagination.page - 1) * per_page + 1 if pagination.total else 0,
+                           last_result=min(pagination.page * per_page, pagination.total)), 400 if filter_error else 200
+
+
+@events_bp.route('/opportunities/<int:event_id>')
+def opportunity_detail(event_id):
+    event = db.session.get(Event, event_id)
+    if event is None:
+        abort(404)
+    registration = None
+    if current_user.is_authenticated and current_user.role == 'volunteer':
+        registration = Registration.query.filter_by(
+            user_id=current_user.id, event_id=event.id).first()
+    return render_template(
+        'events/opportunity_detail.html', event=event, registration=registration,
+        opportunity_state=_opportunity_state(event, registration),
+        listing_query=_listing_query())
 
 
 @events_bp.route('/opportunities/register/<int:event_id>', methods=['GET', 'POST'])
@@ -165,28 +245,36 @@ def register_for_event(event_id):
     event = db.session.get(Event, event_id)
     if event is None:
         abort(404)
+    listing_query = _listing_query()
+    details_url = url_for('events.opportunity_detail', event_id=event.id, **listing_query)
     if event.date <= datetime.now():
         flash('This activity has already started and cannot accept registrations.', 'error')
-        return redirect(url_for('events.opportunities'))
+        return redirect(details_url)
     agreement = _agreement_for(event)
     if agreement is None:
         flash('This activity cannot accept registrations until its participation agreement is published.', 'error')
-        return redirect(url_for('events.opportunities'))
-    if request.method == 'GET':
-        return render_template('events/registration_consent.html', event=event,
-                               agreement=agreement, external=False)
+        return redirect(details_url)
     existing = Registration.query.filter_by(
         user_id=current_user.id, event_id=event_id).first()
     if existing and existing.status != 'cancelled':
         flash('You are already registered for this event.', 'warning')
-        return redirect(url_for('events.opportunities'))
+        return redirect(details_url)
     if event.slots > 0 and event.slots_remaining() <= 0:
         flash('No available slots for this event.', 'error')
-        return redirect(url_for('events.opportunities'))
-    if request.form.get('accept_agreement') != 'yes' or (event.nda_required and request.form.get('accept_nda') != 'yes'):
-        flash('Accept the required agreement(s) before joining.', 'error')
-        return render_template('events/registration_consent.html', event=event,
-                               agreement=agreement, external=False), 400
+        return redirect(details_url)
+    errors = {}
+    accepted_agreement = request.method == 'POST' and request.form.get('accept_agreement') == 'yes'
+    accepted_nda = request.method == 'POST' and request.form.get('accept_nda') == 'yes'
+    if request.method == 'POST':
+        if not accepted_agreement:
+            errors['accept_agreement'] = 'Accept the Participation Agreement to join.'
+        if event.nda_required and not accepted_nda:
+            errors['accept_nda'] = 'Accept the Non-Disclosure Agreement to join.'
+    if request.method == 'GET' or errors:
+        return render_template(
+            'events/registration_consent.html', event=event, agreement=agreement,
+            external=False, errors=errors, accepted_agreement=accepted_agreement,
+            accepted_nda=accepted_nda, listing_query=listing_query), 400 if errors else 200
     if existing:
         existing.status = 'confirmed'
         existing.policy_accepted_at = datetime.utcnow()
@@ -194,7 +282,7 @@ def register_for_event(event_id):
         existing.nda_accepted_at = datetime.utcnow() if event.nda_required else None
         existing.nda_version = event.nda_version if event.nda_required else None
         registration = existing
-        success_message = 'Your registration has been restored.'
+        success_message = f'Your registration has been restored for {event.title}.'
     else:
         registration = Registration(user_id=current_user.id, event_id=event_id,
             status='confirmed', policy_accepted_at=datetime.utcnow(),
@@ -202,7 +290,7 @@ def register_for_event(event_id):
             nda_accepted_at=datetime.utcnow() if event.nda_required else None,
             nda_version=event.nda_version if event.nda_required else None)
         db.session.add(registration)
-        success_message = 'Successfully registered for the event!'
+        success_message = f'You have joined {event.title}. Your registration is confirmed.'
     db.session.flush()
     log_activity('participation_agreement_accepted', registration,
                  {'event_id': event.id, 'version': agreement['version']})
@@ -219,7 +307,7 @@ def register_for_event(event_id):
         related_event_id=event.id)
     db.session.commit()
     flash(success_message, 'success')
-    return redirect(url_for('events.opportunities'))
+    return redirect(details_url)
 
 
 @events_bp.route('/registrations/<int:registration_id>/cancel', methods=['GET', 'POST'])
@@ -233,39 +321,47 @@ def cancel_registration(registration_id):
     if registration.user_id != current_user.id:
         abort(403)
     event = registration.event
-    if (registration.status not in ('pending', 'confirmed')
-            or registration.attendance_record is not None
-            or (event.cancellation_deadline or event.date) <= datetime.now()):
-        flash('Cancellation is unavailable because the activity has started, attendance was recorded, or the deadline passed.', 'error')
-        return redirect(url_for('events.volunteer_dash'))
-    if registration.cancellation_request and registration.cancellation_request.status == 'pending':
-        flash('A cancellation request is already awaiting coordinator review.', 'warning')
-        return redirect(url_for('events.volunteer_dash'))
-    if request.method == 'GET':
+    dashboard_query = _registration_query()
+    dashboard_url = url_for('events.volunteer_dash', _anchor=f'registration-{registration.id}', **dashboard_query)
+    state = _cancellation_state(registration)
+    if not state['can_request']:
+        flash(state['message'], 'warning')
+        return redirect(dashboard_url)
+    reason = request.form.get('reason', '').strip() if request.method == 'POST' else ''
+    details = request.form.get('details', '').strip() if request.method == 'POST' else ''
+    errors = {}
+    if request.method == 'POST':
+        if reason not in CANCELLATION_REASONS:
+            errors['reason'] = 'Choose a cancellation reason.'
+        if reason == 'Other' and not details:
+            errors['details'] = 'Explain your reason when choosing Other.'
+    if request.method == 'GET' or errors:
         return render_template('events/cancellation_request.html', registration=registration,
-                               reasons=CANCELLATION_REASONS)
-    reason = request.form.get('reason', '').strip()
-    details = request.form.get('details', '').strip()
-    if reason not in CANCELLATION_REASONS or (reason == 'Other' and not details):
-        flash('Choose a cancellation reason. Explain Other reasons.', 'error')
-        return render_template('events/cancellation_request.html', registration=registration,
-                               reasons=CANCELLATION_REASONS), 400
+                               event=event, cancellation_state=state, dashboard_query=dashboard_query,
+                               dashboard_url=dashboard_url, reasons=CANCELLATION_REASONS,
+                               selected_reason=reason, submitted_details=details, errors=errors), 400 if errors else 200
     cancellation = CancellationRequest(registration_id=registration.id,
                                        reason=reason, details=details or None)
-    db.session.add(cancellation)
-    db.session.flush()
-    log_activity('cancellation_requested', cancellation,
-                 {'event_id': event.id, 'reason': reason})
-    db.session.commit()
-    notify_campus_coordinators(
-        event.campus_id,
-        title=f'Cancellation request: {event.title}',
-        message=f'{current_user.name or current_user.email} requested cancellation for "{event.title}".',
-        notification_type='cancellation_requested',
-        related_event_id=event.id)
-    db.session.commit()
-    flash('Your cancellation request was sent for coordinator review.', 'success')
-    return redirect(url_for('events.volunteer_dash'))
+    try:
+        db.session.add(cancellation)
+        db.session.flush()
+        log_activity('cancellation_requested', cancellation,
+                     {'event_id': event.id, 'reason': reason})
+        notify_campus_coordinators(
+            event.campus_id,
+            title=f'Cancellation request: {event.title}',
+            message=f'{current_user.name or current_user.email} requested cancellation for "{event.title}".',
+            notification_type='cancellation_requested',
+            related_event_id=event.id)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        if not CancellationRequest.query.filter_by(registration_id=registration.id).first():
+            raise
+        flash('A cancellation request already exists for this registration. Review its status below.', 'warning')
+        return redirect(dashboard_url)
+    flash(f'Your cancellation request for {event.title} was sent for coordinator review. Your registration remains active until approval.', 'success')
+    return redirect(dashboard_url)
 
 
 @events_bp.route('/volunteer_dash')
@@ -321,11 +417,7 @@ def volunteer_dash():
     registration_items = [
         {
             'registration': r,
-            'can_cancel': (
-                r in upcoming_registrations
-                and (r.event.cancellation_deadline or r.event.date) > now
-                and not (r.cancellation_request and r.cancellation_request.status == 'pending')
-            ),
+            'cancellation_state': _cancellation_state(r, now),
             'cancellation_status': r.cancellation_request.status if r.cancellation_request else None,
         }
         for r in filtered_registrations[:shown]]
@@ -352,6 +444,7 @@ def volunteer_dash():
                            recent_activity=recent_activity,
                            registration_items=registration_items,
                            registration_total=len(filtered_registrations), shown_registrations=shown,
+                           has_registrations=bool(registrations), dashboard_query=_registration_query(),
                            registration_filters={'status': status_filter, 'campus': campus_filter,
                                                  'category': category_filter, 'start_date': start_filter,
                                                  'end_date': end_filter},
