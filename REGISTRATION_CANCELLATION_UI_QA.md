@@ -1,5 +1,11 @@
 # My registrations and cancellation UI QA
 
+23 October test-only follow-up: see REGRESSION_RECONCILIATION_QA.md for the
+subsequent repair and verification of the three baseline assertions. Results and
+unpublished/release-gate statements below describe the earlier delivery snapshot;
+they are preserved as history. No cancellation UI or production behavior changed
+in that follow-up. Manual zoom/screen-reader/physical-mobile gates remain open.
+
 Publication follow-up: the user approved commit/push on 22 October 2026, with the
 three baseline failures explicitly remaining open. The local-only statements below
 describe the verification snapshot. See RELEASE_2026_10_22.md and actual Git state.

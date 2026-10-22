@@ -7,9 +7,10 @@ from PIL import Image
 from sqlalchemy.exc import SQLAlchemyError
 
 from tests.test_app import app, client, _create_user, _login_as
+from tests.html_helpers import parse_html
 from app.models import db
 from app.models.user import User, Skill, Interest
-from app.models.event import Registration, Attendance
+from app.models.event import Event, Registration, Attendance
 
 
 @pytest.fixture
@@ -156,20 +157,36 @@ def test_failed_commit_keeps_old_photo(app, client, profile_user, tmp_path, monk
     assert list((tmp_path / 'uploads' / 'profiles').iterdir()) == [tmp_path / original]
 
 
-def test_milestones_require_completed_present(app, client, profile_user):
+@pytest.mark.parametrize('extra_attendance', ['excused', None], ids=['excused', 'missing-attendance'])
+def test_milestones_require_completed_present(app, client, profile_user, extra_attendance):
     uid, _ = profile_user
+    expected = {}
     with app.app_context():
         for event_id, status, attendance in [(1, 'pending', 'present'), (2, 'cancelled', 'present'),
-                                              (3, 'completed', 'absent'), (4, 'completed', 'present')]:
+                                              (3, 'completed', 'absent'), (4, 'completed', 'present'),
+                                              (5, 'completed', extra_attendance)]:
             reg = Registration(user_id=uid, event_id=event_id, status=status)
             db.session.add(reg)
             db.session.flush()
-            db.session.add(Attendance(user_id=uid, event_id=event_id, registration_id=reg.id, status=attendance))
+            if attendance is not None:
+                db.session.add(Attendance(user_id=uid, event_id=event_id, registration_id=reg.id, status=attendance))
+            expected[db.session.get(Event, event_id).title] = (
+                'Eligible' if status == 'completed' and attendance == 'present' else 'Not eligible')
         db.session.commit()
     body = client.get('/profile').get_data(as_text=True)
     assert 'Based on 1 completed participation records' in body
     assert 'Bronze: Newcomer' in body
-    assert body.count('<td>Eligible</td>') == 1
+    region = parse_html(body).one('div', **{'aria-label': 'Recent registrations'})
+    rows = region.one('tbody').all('tr')
+    assert len(rows) == 5
+    certificates = {}
+    for row in rows:
+        assert [cell.attrs.get('data-label') for cell in row.all('td')] == [
+            'Activity', 'Registered', 'Status', 'Certificate']
+        certificates[row.one('td', **{'data-label': 'Activity'}).text] = row.one(
+            'td', **{'data-label': 'Certificate'}).text
+    assert certificates == expected
+    assert list(certificates.values()).count('Eligible') == 1
 
 
 @pytest.mark.parametrize('role', ['coordinator', 'director', 'admin'])

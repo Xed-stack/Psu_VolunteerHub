@@ -39,6 +39,26 @@ The user can say: **Read HANDOFF.md and continue from the current local files.**
 
 ## Repository and local run
 
+23 October publication follow-up: the user approved committing and pushing the
+baseline test reconciliation and its documentation. Local/unpublished and
+no-commit/push statements below describe the verification-time snapshot, not a
+continuing restriction. Verify actual publication with HEAD and GitHub main.
+No production behavior, live database or deployment change is included.
+
+23 October baseline-test reconciliation (local, unpublished): the three failures
+were reproduced before editing (3 failed in 9.86s). Only tests and documentation
+changed: Director assertions now separate live navigation/export context from
+historical forms and verify actual filtered rows; profile assertions identify
+Certificate cells within their activity rows, including all ineligible attendance
+cases. Production files remain unchanged from be44a31. Focused verification:
+97 passed in 233.32s, plus 3 dashboard scope/count checks in 0.35s. Final full
+suite: 458 passed in 1141.90s, zero failures/errors/skips. All three baseline
+assertions are reconciled without production changes; the automated suite is
+green. See REGRESSION_RECONCILIATION_QA.md for evidence.
+Earlier counts below remain historical snapshots. Actual browser zoom,
+screen-reader and physical-mobile checks remain separate release gates.
+No live database access, schema changes, deployment, commits or pushes.
+
 Publication follow-up, 22 October 2026: the user approved committing and pushing
 the opportunity journey and registration/cancellation refinement together, before
 addressing the three baseline test assertions. This revision includes both QA

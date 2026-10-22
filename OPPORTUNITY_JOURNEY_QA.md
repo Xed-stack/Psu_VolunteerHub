@@ -1,5 +1,11 @@
 # Opportunities, details and joining QA
 
+23 October test-only follow-up: REGRESSION_RECONCILIATION_QA.md records the later
+repair and verification of the three baseline assertions. Counts and open-issue
+statements below are the original delivery snapshot, not the current test status.
+No opportunity UI or production behavior changed in that follow-up; actual zoom,
+screen-reader and physical-mobile verification remains a separate release gate.
+
 Publication follow-up: the user approved commit/push on 22 October 2026. The
 local-only statements below describe the verification snapshot, not a permanent
 publication restriction. See RELEASE_2026_10_22.md; verify Git publication separately.

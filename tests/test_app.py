@@ -1,6 +1,7 @@
 import pytest
 import re
 import io
+import csv
 from html import unescape
 from hashlib import sha256
 from urllib.parse import parse_qs, urlsplit
@@ -24,6 +25,7 @@ from app.recommendation.engine import (
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, event
 from sqlalchemy.exc import IntegrityError
+from tests.html_helpers import parse_html, form_with_control, form_values
 
 
 # â”€â”€ Fixtures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2537,29 +2539,109 @@ class TestReportingSystem:
         for extension in ('csv', 'pdf'):
             assert client.get('/reports/university.' + extension, query_string=query).status_code == 400
 
-    def test_director_campus_paging_and_supplementary_forms(self, app, client):
+    def test_director_campus_paging_and_supplementary_forms(self, app, client, monkeypatch):
         self._director(app, client)
         for index in range(13):
             self._add_event(app, f'Multi-campus fixture {index}', datetime(2026, 10, 20),
                             campus_id=1 if index % 2 else 2)
+        self._add_event(app, 'Multi-campus fixture excluded campus', datetime(2026, 10, 20), campus_id=3)
+        self._add_event(app, 'Multi-campus fixture excluded category', datetime(2026, 10, 20), category='Health')
+        self._add_event(app, 'Multi-campus fixture excluded date', datetime(2026, 11, 2))
+        self._add_event(app, 'Different activity name', datetime(2026, 10, 20))
         query = [('campus', '1'), ('campus', '2'), ('campus_mode', 'include'),
                  ('activity_name', 'Multi-campus fixture'), ('category', 'Environment'),
                  ('start_date', '2026-10-01'), ('end_date', '2026-10-31')]
         body = client.get('/analytics', query_string=query).get_data(as_text=True)
-        links = [unescape(link) for link in re.findall(r'href="([^"]+)"', body)]
+        document = parse_html(body)
+        links = [link.attrs['href'] for link in document.all('a')]
         next_page = next(link for link in links if 'page=2' in link)
-        for link in [next_page] + [link for link in links if '/reports/university.' in link]:
+        exports = [link for link in links if '/reports/university.' in link]
+        assert {urlsplit(link).path for link in exports} == {'/reports/university.csv', '/reports/university.pdf'}
+        for link in [next_page] + exports:
             parsed = parse_qs(urlsplit(link).query)
             assert parsed['campus'] == ['1', '2']
+            assert parsed['campus_mode'] == ['include']
             assert parsed['activity_name'] == ['Multi-campus fixture']
-        report = body.split('aria-label="Live activity report table"', 1)[1].split('</tbody>', 1)[0]
-        assert report.count('Multi-campus fixture ') == 10
-        second = client.get(next_page).get_data(as_text=True)
-        report = second.split('aria-label="Live activity report table"', 1)[1].split('</tbody>', 1)[0]
-        assert report.count('Multi-campus fixture ') == 3
-        # Historical and award forms preserve every repeated live campus value.
-        assert body.count('type="hidden" name="campus" value="1"') == 2
-        assert body.count('type="hidden" name="campus" value="2"') == 2
+        def titles(page):
+            region = page.one('div', **{'aria-label': 'Live activity report table'})
+            return [row.all('td')[0].text for row in region.one('tbody').all('tr')]
+        first_titles = titles(document)
+        second_titles = titles(parse_html(client.get(next_page).get_data(as_text=True)))
+        expected = [f'Multi-campus fixture {index}' for index in reversed(range(13))]
+        assert len(first_titles) == 10 and len(second_titles) == 3
+        assert first_titles + second_titles == expected
+
+        award = form_with_control(document, 'award_year', tags=('select',))
+        values = form_values(award)
+        assert values == {**{key: [value] for key, value in query if key != 'campus'},
+                          'campus': ['1', '2'], 'view': ['live'], 'award_year': ['2026']}
+        assert 'Historical Activities' not in body
+        award_page = client.get('/analytics', query_string=values)
+        assert award_page.status_code == 200
+        assert titles(parse_html(award_page.get_data(as_text=True))) == first_titles
+
+        def pdf(rows, summary, meta):
+            assert [row['title'] for row in rows] == expected
+            assert summary['event_count'] == 13
+            return b'%PDF-reconciliation'
+        monkeypatch.setattr('app.routes.director.render_pdf', pdf)
+        for link in exports:
+            response = client.get(link)
+            assert response.status_code == 200
+            if urlsplit(link).path.endswith('.pdf'):
+                assert response.data == b'%PDF-reconciliation'
+            else:
+                rows = list(csv.reader(io.StringIO(response.get_data(as_text=True))))
+                header = next(index for index, row in enumerate(rows) if row and row[0] == 'Activity')
+                assert [row[0] for row in rows[header + 1:] if row and row[0] != 'TOTAL'] == expected
+
+    def test_historical_form_and_exports_keep_their_own_scope(self, app, client, monkeypatch):
+        from app.models.event import HistoricalActivity
+        from reportlab import platypus
+        self._director(app, client)
+        for index, (campus, year, kind, count) in enumerate([
+                (1, 2022, 'Outreach', 7), (1, 2022, 'Outreach', 9),
+                (2, 2022, 'Outreach', 30), (1, 2024, 'Outreach', 40),
+                (1, 2022, 'Training', 50)]):
+            db.session.add(HistoricalActivity(
+                source_key=f'reconciliation-{index}', source_document='Synthetic QA source',
+                source_page=1, source_row=index + 1, unit_name='Synthetic QA unit',
+                title=f'Synthetic historical fixture {index}', campus_id=campus,
+                year_conducted=year, activity_type=kind, volunteer_count=count))
+        db.session.commit()
+        response = client.get('/analytics', query_string={
+            'view': 'historical', 'campus_id': '1', 'start_year': '2022', 'end_year': '2022',
+            'activity_type': 'Outreach', 'campus': ['2', '3'], 'campus_mode': 'exclude',
+            'category': 'Health', 'activity_name': 'Unrelated live selection', 'page': '2'})
+        assert response.status_code == 200
+        document = parse_html(response.get_data(as_text=True))
+        expected = {'view': ['historical'], 'campus_id': ['1'], 'start_year': ['2022'],
+                    'end_year': ['2022'], 'activity_type': ['Outreach']}
+        historical = form_with_control(document, 'start_year')
+        assert form_values(historical) == expected
+        assert not historical.all('input', name='campus')
+        assert not document.all('div', **{'aria-label': 'Live activity report table'})
+        submitted = client.get('/analytics', query_string=form_values(historical))
+        assert submitted.status_code == 200 and b'Historical Activities' in submitted.data
+        links = [link.attrs['href'] for link in document.all('a')
+                 if urlsplit(link.attrs.get('href', '')).path in ('/reports/campus.csv', '/reports/campus.pdf')]
+        assert len(links) == 2
+        rendered_tables = []
+        original_table = platypus.Table
+        def table(data, *args, **kwargs):
+            rendered_tables.append(data)
+            return original_table(data, *args, **kwargs)
+        monkeypatch.setattr(platypus, 'Table', table)
+        for link in links:
+            assert parse_qs(urlsplit(link).query) == expected
+            exported = client.get(link)
+            assert exported.status_code == 200
+            if urlsplit(link).path.endswith('.csv'):
+                rows = list(csv.reader(io.StringIO(exported.get_data(as_text=True))))
+                assert rows[1:] == [['Synthetic QA unit', '2', '16', '0']]
+            else:
+                assert exported.mimetype == 'application/pdf' and exported.data.startswith(b'%PDF-')
+        assert rendered_tables[0][1:] == [['Synthetic QA unit', '2', '16', '0']]
 
     @pytest.mark.parametrize('mode', ['include', 'exclude'])
     def test_director_blank_campus_selection_means_all(self, app, client, mode):
@@ -3447,34 +3529,77 @@ class TestAnalytics:
         assert 'Coastal Cleanup Drive' not in first_page
         assert 'Coastal Cleanup Drive' in second_page
 
-    def test_report_pagination_and_exports_preserve_all_selected_filters(self, app, client):
-        from html import unescape
-        from urllib.parse import parse_qs, urlparse
-
+    @pytest.mark.parametrize('scope', ['include', 'exclude', 'legacy'])
+    def test_report_pagination_and_exports_preserve_all_selected_filters(self, app, client, monkeypatch, scope):
         director_id = _create_user(app, email='filtered-pages@test.com', role='director')
+        campuses = {'include': (1, 2), 'exclude': (1, 4), 'legacy': (1, 1)}[scope]
         with app.app_context():
             for index in range(12):
                 db.session.add(Event(
                     title=f'Filtered Activity {index}', description='Filter persistence',
-                    date=datetime(2026, 10, 20), slots=10, campus_id=1,
+                    date=datetime(2026, 10, 20), slots=10, campus_id=campuses[index % 2],
                     category='Environment'))
+            for title, campus, date, category in [
+                    ('Filtered Activity wrong campus', 3, datetime(2026, 10, 20), 'Environment'),
+                    ('Filtered Activity wrong date', 1, datetime(2027, 1, 1), 'Environment'),
+                    ('Filtered Activity wrong category', 1, datetime(2026, 10, 20), 'Health'),
+                    ('Unrelated name', 1, datetime(2026, 10, 20), 'Environment')]:
+                db.session.add(Event(title=title, description='Excluded fixture', date=date,
+                                     slots=10, campus_id=campus, category=category))
             db.session.commit()
         _login_as(client, director_id)
         filters = {'start_date': '2026-10-01', 'end_date': '2026-12-31',
                    'campus_id': '1', 'category': 'Environment',
                    'sex': 'prefer_not_to_say', 'start_year': '2020',
                    'end_year': '2025', 'award_year': '2026',
-                   'activity_name': 'Filtered Activity'}
+                   'activity_type': 'Outreach', 'department': 'Engineering',
+                   'activity_name': 'Filtered Activity', 'page': '1', 'view': 'live'}
+        selected = ['2', '3'] if scope == 'exclude' else ['1', '2']
+        if scope != 'legacy':
+            filters.update(campus=selected, campus_mode=scope)
         body = client.get('/analytics', query_string=filters).get_data(as_text=True)
-        links = [unescape(link) for link in re.findall(r'href="([^"]+)"', body)]
-        page_link = next(link for link in links if 'page=2' in link)
-        export_link = next(link for link in links if '/reports/university.csv?' in link)
-        for link in (page_link, export_link):
-            query = parse_qs(urlparse(link).query)
-            assert all(query[key] == [value] for key, value in filters.items())
-        report = body.split('aria-label="Live activity report table"', 1)[1]
-        report = report.split('</tbody>', 1)[0]
-        assert report.count('Filtered Activity ') <= 10
+        document = parse_html(body)
+        navigation = document.one('nav', **{'aria-label': 'Live activity report pages'})
+        page_link = next(link.attrs['href'] for link in navigation.all('a')
+                         if parse_qs(urlsplit(link.attrs['href']).query).get('page') == ['2'])
+        live_filters = {key: [value] for key, value in filters.items()
+                        if key not in ('start_year', 'end_year', 'activity_type', 'page', 'view', 'campus')}
+        live_filters.update(campus=['1'] if scope == 'legacy' else selected,
+                            campus_mode=['exclude' if scope == 'exclude' else 'include'])
+        assert parse_qs(urlsplit(page_link).query) == {**live_filters, 'view': ['live'], 'page': ['2']}
+        second = client.get(page_link)
+        assert second.status_code == 200
+        second_document = parse_html(second.get_data(as_text=True))
+        for page in (document, second_document):
+            for link in page.one('nav', **{'aria-label': 'Live activity report pages'}).all('a'):
+                query = parse_qs(urlsplit(link.attrs['href']).query)
+                assert query.pop('page') in (['1'], ['2'])
+                assert query == {**live_filters, 'view': ['live']}
+        def titles(page):
+            region = page.one('div', **{'aria-label': 'Live activity report table'})
+            return [row.all('td')[0].text for row in region.one('tbody').all('tr')]
+        expected = [f'Filtered Activity {index}' for index in reversed(range(12))]
+        assert titles(document) == expected[:10]
+        assert titles(second_document) == expected[10:]
+        def pdf(rows, summary, meta):
+            assert [row['title'] for row in rows] == expected
+            assert summary['event_count'] == 12
+            return b'%PDF-filter-scope'
+        monkeypatch.setattr('app.routes.director.render_pdf', pdf)
+        exports = [link.attrs['href'] for link in document.all('a')
+                   if urlsplit(link.attrs.get('href', '')).path in
+                   ('/reports/university.csv', '/reports/university.pdf')]
+        assert len(exports) == 2
+        for link in exports:
+            assert parse_qs(urlsplit(link).query) == live_filters
+            response = client.get(link)
+            assert response.status_code == 200
+            if urlsplit(link).path.endswith('.csv'):
+                rows = list(csv.reader(io.StringIO(response.get_data(as_text=True))))
+                header = next(index for index, row in enumerate(rows) if row and row[0] == 'Activity')
+                assert [row[0] for row in rows[header + 1:] if row and row[0] != 'TOTAL'] == expected
+            else:
+                assert response.data == b'%PDF-filter-scope'
 
     def test_admin_accesses_university_analytics(self, app, client):
         aid = _create_user(app, email='admin_an@t.com', role='admin')

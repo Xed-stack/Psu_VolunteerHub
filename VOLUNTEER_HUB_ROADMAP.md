@@ -8,7 +8,27 @@ The working tagline is: **“Serve with purpose. See the impact.”**
 
 Use clear Filipino-English wording where it improves comprehension, but retain English labels for institutional reports and data fields. Replace the volunteer-facing word **Register** with **Join Now**; keep `Registration` as the internal data term.
 
-## Latest delivery status (22 October 2026)
+## Latest delivery status (23 October 2026)
+
+Publication follow-up: the user approved commit/push of the test reconciliation
+and documentation. Local/no-publication statements below are verification-time
+snapshots; confirm publication against GitHub main. No deployment or live-database
+change is included.
+
+23 October test-only follow-up: the three baseline failures were reproduced, then
+replaced with scoped form/table assertions and destination-specific filter checks.
+Matching and excluded fixtures verify rendered pages and complete CSV/PDF datasets;
+profile cases cover completed/present versus pending, cancelled, absent, excused
+and missing attendance within the five-record limit. No production UI, report
+behavior or query format changed. Focused checks: **97 passed in 233.32s**, plus
+**3 dashboard checks in 0.35s**. Final full suite: **458 passed in 1141.90s**, zero
+failures/errors/skips. All three baseline assertions are reconciled and the
+automated suite is green. See REGRESSION_RECONCILIATION_QA.md.
+No live database access, deployment, commit or push.
+Actual zoom, screen-reader and physical-device verification remains unfinished.
+All earlier implementation/publication counts below are historical snapshots.
+
+### Earlier delivery snapshots
 
 Publication follow-up: the user approved commit/push of the opportunity journey
 and registration/cancellation work in this revision. Local/unpublished notes below
