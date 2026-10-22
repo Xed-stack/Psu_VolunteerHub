@@ -171,8 +171,8 @@
     <section class="panel">
       {{ heading('Recent registrations', 'Your five most recent registration records. Pending, cancelled, and absent records do not earn completed-participation milestones. Certificate eligibility requires completed status and present attendance.') }}
       <a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">View registrations</a>
-      <div class="table-scroll" role="region" aria-label="Recent registrations" tabindex="0">
-        <table class="data-table">
+      <div class="table-scroll table-scroll--record" role="region" aria-label="Recent registrations" tabindex="0">
+        <table class="data-table data-table--record">
           <thead>
             <tr>
               <th scope="col">Activity</th>
@@ -184,10 +184,10 @@
           <tbody>
             {% for reg in registrations %}
               <tr>
-                <td>{{ reg.event.title if reg.event else 'Not available' }}</td>
-                <td>{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else 'Not available' }}</td>
-                <td>{{ reg.status|title }}</td>
-                <td>{{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}</td>
+                <td data-label="Activity">{{ reg.event.title if reg.event else 'Not available' }}</td>
+                <td data-label="Registered">{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else 'Not available' }}</td>
+                <td data-label="Status">{{ reg.status|title }}</td>
+                <td data-label="Certificate">{{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}</td>
               </tr>
             {% else %}
               <tr><td colspan="4">No registrations yet. Browse opportunities to find an activity.</td></tr>

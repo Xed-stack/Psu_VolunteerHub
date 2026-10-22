@@ -8,7 +8,45 @@ The working tagline is: **“Serve with purpose. See the impact.”**
 
 Use clear Filipino-English wording where it improves comprehension, but retain English labels for institutional reports and data fields. Replace the volunteer-facing word **Register** with **Join Now**; keep `Registration` as the internal data term.
 
-## Latest delivery status (20 October 2026)
+## Latest delivery status (22 October 2026)
+
+22 October Coordinator operations refinement: authenticated record tables now
+reflow into labelled mobile records while dense reports use labelled internal
+horizontal scrolling. The Coordinator activity workspace prioritizes attendance,
+groups routine secondary actions in a native disclosure, and keeps removal
+separate. Attendance has a quick activity picker, timing guidance, roster totals,
+native-confirmed bulk controls, and a mobile save bar. Create Activity now stages
+core details and volunteer requirements before optional settings. No route, schema,
+dependency, authorization, export, or live-database change was made. Focused
+responsive-table checks passed 4 tests; focused Create Activity checks passed 5.
+Temporary local previews verified desktop, 390px mobile, and a 200%-equivalent
+narrow viewport.
+
+21 October local inactivity work: user selected 30 minutes / 1-minute warning.
+Shared server expiry and native warning added across role/public/auth layouts,
+with CSRF-protected renewal and an explicit inactivity sign-in message. Final
+20 focused checks and 7 Node checks passed, plus isolated role/mobile/keyboard/
+multi-tab browser checks. Final uninterrupted full suite: **393 passed in
+986.10s**, zero failures. See SESSION_IDLE_QA.md for evidence and limitations.
+No migration, live DB write, cloud change or publication.
+The prior uncommitted login/signup remake and deployment preparation are retained.
+
+21 October Railway follow-up: local image build, network-isolated Gunicorn and
+synthetic SQLite/public/private file persistence passed; 18 Linux tests passed.
+See DOCKER_DEMO_QA.md. Actual Railway allowance/services/MySQL/HTTPS checks and
+publication remain pending. Original database never accessed by container tests.
+
+Railway thesis-demo preparation (local): Dockerfile/context allowlist and deployment
+checklist added; 20 focused checks passed. No Docker engine running locally, so
+image build/runtime and actual Railway deployment remain unverified. Trial account
+allowance and two persistent volumes must be checked before creation. No cloud
+writes, publication, original database changes or paid upgrade.
+
+Latest local recovery work: native MariaDB backup/restoration passed on a new
+disposable target, all 31 schema/1,167 row hashes and 2 public upload hashes
+matched. Original unchanged. See BACKUP_RESTORE_RUNBOOK.md and BACKUP_RESTORE_QA.md.
+Not complete production DR: private files absent, no encrypted off-site copy,
+independent-host recovery or scheduled backup/alert verification. No publication.
 
 Publication follow-up: verified production initialization, tests and QA documents
 are approved for commit/push. Earlier local/publication-pending notes below
@@ -87,6 +125,7 @@ requirements to verify, not new claims of implementation.
 | GitHub delivery | Published | Commit `8745ec4` on `main` includes dashboards, walkthroughs, profile repair, tests, and handoff. This roadmap refresh is a subsequent local documentation update until committed. |
 | Follow-up correctness and session fixes | Completed locally, uncommitted | Joining consent/start-time checks, safe sign-in/policy return destinations, homepage completion timing, and separate self/other Admin reset handling. Full isolated suite: 277 passed. |
 | Opportunities campus filtering | Completed locally, uncommitted | Alphabetized include/exclude campus checkboxes, retained query filters and pagination, native no-JavaScript operation, and recoverable validation. 49 focused checks passed; see CAMPUS_FILTER_QA.md. |
+| Coordinator operations and responsive tables | Completed locally, uncommitted | Staged Create Activity form, attendance workspace, separated activity actions, labelled mobile record tables, and contained report tables. No schema or route change; 9 focused checks passed across the two feature sets. |
 
 ### Verification recorded in this chat
 
@@ -172,6 +211,13 @@ Profile repair completed in this chat:
 
 Remaining or previously specified Phase 2 requirements follow; the profile repair
 does not claim to complete every coordinator or account-management feature here.
+
+Coordinator workflow refinement completed locally, 22 October 2026:
+
+- [x] Stage Create Activity into operational details, volunteer requirements, and optional settings without changing form contracts, server validation, or campus ownership.
+- [x] Keep routine activity actions in a native More actions disclosure and retain a separately labelled removal action with confirmation.
+- [x] Make attendance an activity-first coordinator workspace with timing guidance, roster counts, browser-confirmed bulk status changes, and a safe mobile save bar.
+- [x] Reflow authenticated operational tables into labelled records on small screens while preserving dense report tables inside labelled scroll regions.
 
 - Convert volunteer skills and interests to controlled multi-select choices backed by the existing `Skill` and `Interest` catalogs. Require at least one interest and one skill at account creation and profile update; do not create free-text categories from volunteer input. Display an explanation that recommendation quality depends on profile and participation data and that results are decision support, not guarantees.
 - Improve password entry with a show/hide control, a strength checklist, confirmation field during account creation or password reset, and server-side validation. Preserve the administrator-configured minimum length and reject passwords that fail the chosen policy.

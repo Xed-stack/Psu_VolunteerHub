@@ -30,7 +30,7 @@
     {{ metric('Verified attendance', live_summary.attended, 'Present attendance records across live activities. Repeat participation is counted once per activity.') }}
     {{ metric('Completed participations', live_summary.completed, 'Live participation records marked completed after an activity.') }}
     {{ metric('Live registrations', live_summary.registrations, 'Non-cancelled sign-ups for live activities. Each activity registration is counted separately.') }}
-    {{ metric('Historical reporting units', campus_stats|length, 'Campus or reporting units represented in the imported 2020–2025 source records.') }}
+    {{ metric('Attendance rate', ((live_summary.attended / live_summary.registrations * 100)|round(1) if live_summary.registrations else 0) ~ '%', 'Present attendance divided by non-cancelled live registrations.') }}
   </section>
   <section class="panel chart-panel" data-tour-id="campus-comparison">
     <header class="panel__header">
@@ -46,6 +46,7 @@
         href="{{ url_for('director.analytics') }}"
       >Full Analytics</a>
     </header>
+    <p class="table-scroll__hint" id="director-target-progress-scroll-hint">Swipe horizontally to view remaining columns.</p>
     <div
       id="director-campus-chart"
       class="chart"
@@ -94,10 +95,11 @@
       </div>
     </header>
     <div
-      class="table-scroll"
+      class="table-scroll table-scroll--report"
       tabindex="0"
       aria-label="Recent target progress table"
-    ><table class="data-table"><thead><tr><th>Activity</th><th>Campus</th><th>Actual</th><th>Target</th><th>Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.event.campus.code if row.event.campus else 'PSU' }}<span class="sr-only">{{ row.event.campus.name if row.event.campus else '' }}</span></td><td>{{ row.actual }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="5"><div class="empty-state">No live activity progress is available.</div></td></tr>{% endfor %}</tbody></table></div>
+      aria-describedby="director-target-progress-scroll-hint"
+    ><table class="data-table data-table--report"><thead><tr><th scope="col">Activity</th><th scope="col">Campus</th><th scope="col">Actual</th><th scope="col">Target</th><th scope="col">Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.event.campus.code if row.event.campus else 'PSU' }}<span class="sr-only">{{ row.event.campus.name if row.event.campus else '' }}</span></td><td>{{ row.actual }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="5"><div class="empty-state">No live activity progress is available.</div></td></tr>{% endfor %}</tbody></table></div>
   </section>
 
   <nav
@@ -105,13 +107,16 @@
     aria-label="Director evidence workspaces"
   >
     <a
-      href="{{ url_for('director.analytics') }}#recognition"
+      href="{{ url_for('director.analytics', view='live') }}#supporting-insights"
       data-tour-id="recognition"
     ><strong>Recognition and demographics</strong><span>Review verified PSU participation and internal demographic responses.</span></a>
     <a
-      href="{{ url_for('director.analytics') }}#filters"
+      href="{{ url_for('director.analytics', view='live') }}#filters"
       data-tour-id="reports"
     ><strong>Reports and exports</strong><span>Choose a reporting scope and download CSV or PDF.</span></a>
+    <a
+      href="{{ url_for('director.analytics', view='historical') }}"
+    ><strong>Historical Source Records</strong><span>Review imported 2020–2025 aggregate participations separately from live outcomes.</span></a>
   </nav>
 {% endblock %}
 {% block scripts %}

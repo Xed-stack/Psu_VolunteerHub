@@ -9,110 +9,129 @@
       <p>Publish a structured volunteer opportunity for your campus.</p>
     </div>
   </header>
-  <form class="panel" method="post" enctype="multipart/form-data">
-    <div class="form-grid">
-      <label class="field field--wide">
-        Activity title
-        <input
-          class="input"
-          name="title"
-          value="{{ request.form.get('title', '') }}"
-          required
-        >
-      </label>
-      <label class="field field--wide">
-        Description<textarea class="input" name="description" required>{{ request.form.get('description', '') }}</textarea>
-      </label>
-      <label class="field">
-        Start date and time
-        <input
-          class="input"
-          name="date"
-          type="datetime-local"
-          value="{{ request.form.get('date', '') }}"
-          required
-        >
-      </label>
-      <label class="field">
-        End date and time
-        <input class="input" name="end_date" type="datetime-local" value="{{ request.form.get('end_date', '') }}">
-      </label>
-      <label class="field">
-        Cancellation closes
-        <input class="input" name="cancellation_days" type="number" min="0" max="365" step="1" value="{{ request.form.get('cancellation_days', 2) }}" required>
-        <small>Whole days before the activity. Use 0 to allow cancellation until the start time.</small>
-      </label>
-      <label class="field">
-        Location
-        <input
-          class="input"
-          name="location"
-          value="{{ request.form.get('location', '') }}"
-        >
-      </label>
-      <label class="field">
-        Category
-        <select class="select" name="category" required>
-          {% for category in categories %}
-            <option value="{{ category }}" {{ 'selected' if request.form.get('category', 'General') == category }}>{{ category }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label class="field">
-        Volunteer slots
-        <input
-          class="input"
-          name="slots"
-          type="number"
-          min="1"
-          max="{{ max_slots or 100 }}"
-          value="{{ request.form.get('slots', 20) }}"
-        >
-        <small>Maximum {{ max_slots or 100 }}.</small>
-      </label>
-      <div class="field">
-        <span class="field__label">Campus</span>
-        <output class="input field__readonly" aria-label="Assigned campus">
-          {{ campuses[0].name if campuses else 'Not assigned' }}
-        </output>
-        <small>Activities are always assigned to your campus.</small>
-      </div>
-      <label class="field">
-        Required skills
-        <input
-          class="input"
-          name="required_skills"
-          value="{{ request.form.get('required_skills', '') }}"
-          placeholder="Teaching/Tutoring, Communication/Public Speaking"
-        >
-      </label>
-      <fieldset class="field field--wide choice-fieldset">
-        <legend>Sustainable Development Goals</legend>
-        <small>Select every goal this activity can contribute to.</small>
-        <div class="check-grid">
-          {% for sdg in sdgs %}
-            <label class="check-row"><input type="checkbox" name="sdg_ids" value="{{ sdg.id }}" {{ 'checked' if sdg.id|string in request.form.getlist('sdg_ids') }}> <span>SDG {{ sdg.number }} — {{ sdg.name }}</span></label>
-          {% endfor %}
+  <form class="panel activity-form" method="post" enctype="multipart/form-data">
+    <fieldset class="activity-form__section">
+      <legend>Activity details</legend>
+      <p class="activity-form__guidance">Start with the details volunteers need to decide whether they can join.</p>
+      <div class="form-grid">
+        <label class="field field--wide">
+          Activity title
+          <input
+            class="input"
+            name="title"
+            value="{{ request.form.get('title', '') }}"
+            required
+          >
+        </label>
+        <label class="field field--wide">
+          Description<textarea class="input" name="description" required>{{ request.form.get('description', '') }}</textarea>
+        </label>
+        <label class="field">
+          Start date and time
+          <input
+            class="input"
+            name="date"
+            type="datetime-local"
+            value="{{ request.form.get('date', '') }}"
+            required
+          >
+        </label>
+        <label class="field">
+          End date and time
+          <input class="input" name="end_date" type="datetime-local" value="{{ request.form.get('end_date', '') }}">
+        </label>
+        <label class="field">
+          Cancellation closes
+          <input class="input" name="cancellation_days" type="number" min="0" max="365" step="1" value="{{ request.form.get('cancellation_days', 2) }}" required>
+          <small>Whole days before the activity. Use 0 to allow cancellation until the start time.</small>
+        </label>
+        <label class="field">
+          Location
+          <input
+            class="input"
+            name="location"
+            value="{{ request.form.get('location', '') }}"
+          >
+        </label>
+        <label class="field">
+          Category
+          <select class="select" name="category" required>
+            {% for category in categories %}
+              <option value="{{ category }}" {{ 'selected' if request.form.get('category', 'General') == category }}>{{ category }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          Volunteer slots
+          <input
+            class="input"
+            name="slots"
+            type="number"
+            min="1"
+            max="{{ max_slots or 100 }}"
+            value="{{ request.form.get('slots', 20) }}"
+          >
+          <small>Maximum {{ max_slots or 100 }}.</small>
+        </label>
+        <div class="field">
+          <span class="field__label">Campus</span>
+          <output class="input field__readonly" aria-label="Assigned campus">
+            {{ campuses[0].name if campuses else 'Not assigned' }}
+          </output>
+          <small>Activities are always assigned to your campus.</small>
         </div>
-      </fieldset>
-      <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
-      <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
-      <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', '') }}"></label>
-      <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') }}> <span>Require an event-specific NDA</span></label>
-      <label class="field field--wide"><span>NDA text</span><textarea class="input" name="nda_text" rows="5">{{ request.form.get('nda_text', '') }}</textarea></label>
-      <label class="field"><span>NDA version</span><input class="input" name="nda_version" value="{{ request.form.get('nda_version', '') }}"></label>
-      <label class="field field--wide">
-        Event cover image
-        <input
-          class="input"
-          name="cover_image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-        >
-        <small>Optional JPEG, PNG, or WebP, up to 5 MB.</small>
-      </label>
-    </div>
-    <div class="form-actions">
+      </div>
+    </fieldset>
+
+    <fieldset class="activity-form__section">
+      <legend>Volunteer requirements</legend>
+      <p class="activity-form__guidance">Add the skills and Sustainable Development Goals that guide volunteer matching and reporting.</p>
+      <div class="form-grid">
+        <label class="field">
+          Required skills
+          <input
+            class="input"
+            name="required_skills"
+            value="{{ request.form.get('required_skills', '') }}"
+            placeholder="Teaching/Tutoring, Communication/Public Speaking"
+          >
+        </label>
+        <fieldset class="field field--wide choice-fieldset">
+          <legend>Sustainable Development Goals</legend>
+          <small>Select every goal this activity can contribute to.</small>
+          <div class="check-grid">
+            {% for sdg in sdgs %}
+              <label class="check-row"><input type="checkbox" name="sdg_ids" value="{{ sdg.id }}" {{ 'checked' if sdg.id|string in request.form.getlist('sdg_ids') }}> <span>SDG {{ sdg.number }}: {{ sdg.name }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
+    </fieldset>
+
+    {% set show_additional = request.form.get('target_participants') or request.form.get('participation_agreement_text') or request.form.get('participation_agreement_version') or request.form.get('nda_required') or request.form.get('nda_text') or request.form.get('nda_version') %}
+    <details class="activity-form__additional" {{ 'open' if show_additional }}>
+      <summary>Additional settings<span>Optional agreement, target, NDA, and cover image details.</span></summary>
+      <div class="form-grid">
+        <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
+        <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
+        <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', '') }}"></label>
+        <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') }}> <span>Require an event-specific NDA</span></label>
+        <label class="field field--wide"><span>NDA text</span><textarea class="input" name="nda_text" rows="5">{{ request.form.get('nda_text', '') }}</textarea></label>
+        <label class="field"><span>NDA version</span><input class="input" name="nda_version" value="{{ request.form.get('nda_version', '') }}"></label>
+        <label class="field field--wide">
+          Event cover image
+          <input
+            class="input"
+            name="cover_image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          >
+          <small>Optional JPEG, PNG, or WebP, up to 5 MB.</small>
+        </label>
+      </div>
+    </details>
+
+    <div class="form-actions activity-form__actions">
       <a
         class="btn btn--ghost"
         href="{{ url_for('coordinator.coordinator_dash') }}"

@@ -4,9 +4,9 @@ PSU Volunteer Hub is a centralized volunteer-management platform for Pangasinan 
 
 ## What it does
 
-- Public landing page, featured activities, opportunity search with multi-campus include/exclude filters, event details, external-volunteer joining, help guide, and 2020–2025 historical activity directory.
+- Public landing page, featured activities, opportunity search with multi-campus include/exclude filters, PSU volunteer joining, help guide, and 2020–2025 historical activity directory.
 - Volunteer profiles with controlled interests and skills, cosine-similarity recommendations, image upload, a first-use guide, registration calendar, filtered history, and cancellation requests.
-- Coordinator event creation and editing, agreements and optional NDAs, cancellation deadlines, announcements, attendance, external participants, milestones, reports, campus analytics, cancellation review, and campus calendar.
+- Coordinator event creation and editing, agreements and optional NDAs, cancellation deadlines, announcements, attendance, external participants, milestones, reports, campus analytics, cancellation review, and campus calendar. The Coordinator console uses a staged Create Activity form, an operational attendance workspace, and compact secondary actions for activity management.
 - Director cross-campus dashboard, activity accomplishments, target-versus-verified attendance, monthly calendars, descriptive analytics, ten-row paginated Live Activity Reports, and CSV/PDF exports.
 - Admin user/campus/category management, deactivation/reactivation safeguards, validated CSV import/export, audit log, backups, Terms of Use, Privacy Notice, and default participation-agreement publishing.
 
@@ -49,6 +49,11 @@ flask run --port 5000
 For production, set a non-default `SECRET_KEY` and a MySQL `DATABASE_URL`. Do not commit either value.
 
 ## Production startup (not deployed)
+
+For the planned synthetic Railway thesis demo, see `RAILWAY_DEMO_DEPLOYMENT.md`.
+Local Docker build/startup/persistence checks passed; see `DOCKER_DEMO_QA.md`.
+Actual cloud deployment remains unverified; do not upload local database exports
+or existing user files. Confirm trial credit/volume limits first.
 
 Use `wsgi:app`, which explicitly selects production configuration, rather than
 `app:app` or the development server. For Linux/WSL hosting with the installed
@@ -185,6 +190,24 @@ The historical import and demo seed are idempotent. Historical imports remain se
 - Director Live Activity Reports display ten rows per page while CSV/PDF exports include every activity matching the active filters.
 - Filters and campus boundaries apply to reports. Coordinators are restricted to their campus; Directors are read-only across campuses.
 
+## Coordinator workspace and responsive tables
+
+- Create Activity keeps operational details and volunteer requirements visible, while optional targets, agreements, NDAs, and cover images are grouped in a native Additional settings disclosure. Submitted optional values reopen that disclosure after a validation error.
+- Attendance starts with today's and upcoming campus activities, shows its timing state and roster totals, and retains individual, bulk, and final-save controls within the existing authorization and timing rules.
+- The Coordinator activity workspace keeps attendance as the primary action; editing, milestone uploads, and announcements are grouped in More actions, while activity removal stays separate with its existing confirmation.
+- On small screens, operational record tables reflow into labelled records. Dense reports remain inside labelled horizontal scroll regions so the page itself does not scroll sideways.
+
+## Inactivity timeout
+
+All four roles time out after 30 minutes without acknowledged activity, with a
+1-minute browser warning and a Stay signed in action. Expiry is checked on the
+server before protected route actions; an expired session cannot be renewed.
+Status reads and static files do not keep a session alive. Sign-in remains
+session-only, without a persistent remember cookie. Unsaved work is not saved
+automatically. See `SESSION_IDLE_QA.md` for verification and signed-cookie limits.
+Final local regression on 21 October 2026: 393 passed in 986.10s using isolated
+SQLite, plus focused browser checks. No live data or deployment changes.
+
 ## Tests
 
 ```powershell
@@ -234,6 +257,12 @@ environment-related reruns, and source-isolation checks. Earlier pending notes
 above are delivery-time snapshots. The user subsequently approved including these
 verified repairs, tests, roadmap and QA documents in the 20 October publication.
 
+Coordinator UI refinement, 22 October 2026: responsive table, activity-action,
+attendance-workspace, and Create Activity form checks were run against isolated
+tests and temporary local previews. The Create Activity regression set passed
+five checks; the responsive-table regression set passed four checks. These are
+focused local checks, not a new full-suite or deployment claim.
+
 ## Production security checklist
 
 - Set strong, unique `SECRET_KEY` and `DATABASE_URL` environment variables; the app refuses to start in production without both.
@@ -241,6 +270,9 @@ verified repairs, tests, roadmap and QA documents in the 20 October publication.
 - Use a dedicated MySQL application account with only the database privileges the app needs; never deploy with MySQL `root` credentials.
 - Configure a working SMTP server (`MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_DEFAULT_SENDER`) before enabling public password resets.
 - Back up MySQL regularly, encrypt backups, and test restoration before each release. Apply migrations to a backup/staging copy first.
+  See `BACKUP_RESTORE_RUNBOOK.md` and the scoped local results in
+  `BACKUP_RESTORE_QA.md`. The local drill passed for database and existing public
+  files, not encrypted off-site recovery or private-file restoration.
 - Keep `PRIVATE_UPLOAD_FOLDER` outside the web root. New milestone uploads are private and are downloaded only through role-checked routes.
 
 ## Technology

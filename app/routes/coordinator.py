@@ -71,6 +71,29 @@ def _activity_form_context(**context):
     return context
 
 
+def _attendance_state(event, now):
+    """Describe the current attendance action for an event without changing it."""
+    opens_at = event.date - timedelta(minutes=30)
+    ends_at = event.end_date or event.date
+    if now < opens_at:
+        return {
+            'kind': 'locked',
+            'label': 'Check-in Opens',
+            'time': opens_at,
+        }
+    if now >= ends_at:
+        return {
+            'kind': 'final',
+            'label': 'Final Attendance Due',
+            'time': ends_at,
+        }
+    return {
+        'kind': 'active',
+        'label': 'Check-in Active',
+        'time': ends_at,
+    }
+
+
 def _save_event_cover(file):
     if not file or not file.filename:
         return None
@@ -576,7 +599,14 @@ def publish_announcement(event_id):
 @role_required('coordinator')
 def attendance():
     events = Event.query.filter_by(
-        campus_id=current_user.campus_id).order_by(Event.date.desc()).all()
+        campus_id=current_user.campus_id).order_by(Event.date.asc()).all()
+    now = datetime.now()
+    today_events = [event for event in events if event.date.date() == now.date()]
+    future_events = [event for event in events if event.date.date() > now.date()][:3]
+    quick_activities = [
+        {'event': event, 'state': _attendance_state(event, now)}
+        for event in [*today_events, *future_events]
+    ]
     selected_event_id = request.args.get('event_id', type=int)
     selected_event = None
     registrations = []
@@ -619,7 +649,9 @@ def attendance():
         activity_ended = now >= (selected_event.end_date or selected_event.date)
         for i, reg_id in enumerate(reg_ids):
             reg = registrations_by_id[int(reg_id)]
-            status = statuses[i] if i < len(statuses) else 'present'
+            status = statuses[i] if i < len(statuses) else ''
+            if not status:
+                continue
             if status not in {'present', 'absent', 'excused'}:
                 abort(400)
             reg.status = 'completed' if status == 'present' and activity_ended else 'confirmed'
@@ -634,10 +666,18 @@ def attendance():
         flash('Attendance updated successfully!' if activity_ended else
               'Check-in saved. Save final attendance after the activity ends to confirm completion and certificate eligibility.', 'success')
         return redirect(url_for('coordinator.attendance', event_id=event_id))
-    now = datetime.now()
     attendance_opens_at = selected_event.date - timedelta(minutes=30) if selected_event else None
+    attendance_counts = {'registered': len(registrations), 'present': 0,
+                         'absent': 0, 'excused': 0, 'unmarked': 0}
+    for registration in registrations:
+        status = registration.attendance_record.status if registration.attendance_record else 'unmarked'
+        attendance_counts[status] += 1
     return render_template('coordinator/attendance_MnGmt.html', events=events,
                            registrations=registrations, selected_event=selected_event,
+                           quick_activities=quick_activities,
+                           attendance_state=(_attendance_state(selected_event, now)
+                                             if selected_event else None),
+                           attendance_counts=attendance_counts,
                            attendance_opens_at=attendance_opens_at,
                            attendance_locked=bool(attendance_opens_at and now < attendance_opens_at),
                            activity_ended=bool(selected_event and now >= (selected_event.end_date or selected_event.date)))

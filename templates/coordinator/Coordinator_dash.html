@@ -28,18 +28,20 @@
       >Analytics and reports</a>
     </div>
   </header>
-  <section
-    class="summary-strip"
-    aria-label="Campus activity summary"
-    data-tour-id="summary"
-  >
-    {{ metric('Campus volunteers', total_volunteers, 'Distinct PSU accounts with activity registrations at this campus, across all dates and registration statuses.') }}
-    {{ metric('Upcoming in view', upcoming_count, 'Future activities matching the current workspace filters.') }}
-    {{ metric('Attendance rate', attendance_rate ~ '%', 'Present attendance divided by non-cancelled campus registrations, across all dates.') }}
-    {{ metric('Verified attendance', campus_total_attended, 'Present attendance records at this campus across all dates. Repeat participation counts per activity.') }}
-    {{ metric('Pending cancellations', pending_cancellations, 'Campus cancellation requests awaiting a coordinator decision.') }}
+  <section class="dashboard-attention" aria-labelledby="attention-heading" data-tour-id="summary">
+    <header class="section-heading section-heading--compact">
+      <div class="heading-with-tip"><h2 id="attention-heading">Needs Attention</h2>{{ info_tip('Attendance rate', 'Present attendance divided by non-cancelled campus registrations, across all dates.') }}</div>
+      <p>Start with the operational work that may need a decision today.</p>
+    </header>
+    <div class="dashboard-attention__grid">
+      <a href="{{ url_for('coordinator.cancellation_requests') }}"><span>Pending cancellations</span><strong>{{ pending_cancellations }}</strong><small>Review requests</small></a>
+      <a href="#activity-workspace"><span>Upcoming in view</span><strong>{{ upcoming_count }}</strong><small>Open the Activity Workspace</small></a>
+      <a href="{{ url_for('coordinator.attendance') }}"><span>Verified attendance</span><strong>{{ campus_total_attended }}</strong><small>Track attendance</small></a>
+    </div>
   </section>
-  <section class="panel" data-tour-id="filters"><header class="panel__header"><div><div class="heading-with-tip"><h2>Activity filters</h2>{{ info_tip('Activity filters', 'Filters change the activity workspace and target-progress view for this campus. The default view shows upcoming activities.') }}</div><small>Default view shows upcoming activities.</small></div></header><form class="filter-row" method="get"><label class="field">Status<select class="select" name="status">{% for value in ['upcoming', 'completed', 'cancelled', 'all'] %}<option
+  <section class="dashboard-workspace" id="activity-workspace">
+    <header class="section-heading section-heading--compact"><h2>Activity Workspace</h2><p>Filter and manage the activities owned by {{ campus_name }}.</p></header>
+  <section class="panel" data-tour-id="filters"><header class="panel__header"><div><div class="heading-with-tip"><h3>Activity filters</h3>{{ info_tip('Activity filters', 'Filters change the activity workspace and target-progress view for this campus. The default view shows upcoming activities.') }}</div><small>Default view shows upcoming activities.</small></div></header><form class="filter-row" method="get"><label class="field">Status<select class="select" name="status">{% for value in ['upcoming', 'completed', 'cancelled', 'all'] %}<option
   value="{{ value }}"
   {{ 'selected' if selected_status == value }}
 >{{ value|title }}</option>{% endfor %}</select></label><label class="field">Category<select class="select" name="category"><option value="">All categories</option>{% for value in categories %}<option
@@ -78,79 +80,88 @@
         </div>
       </header>
       <div
-        class="table-scroll"
+        class="table-scroll table-scroll--record"
         tabindex="0"
         aria-label="Campus activities table"
       >
-        <table class="data-table workspace-table">
+        <table class="data-table data-table--record workspace-table">
           <thead>
             <tr>
-              <th>Activity</th>
-              <th>Date</th>
-              <th>Location</th>
-              <th>Slots</th>
-              <th>Actions</th>
+              <th scope="col">Activity</th>
+              <th scope="col">Date</th>
+              <th scope="col">Location</th>
+              <th scope="col">Slots</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for event in events %}
               <tr>
-                <td>
+                <td data-label="Activity">
                   <strong>{{ event.title }}</strong>
                   <br>
                   <small>{{ event.category or 'General' }}{% if event.sdgs %} · {% for sdg in event.sdgs %}SDG {{ sdg.number }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</small>
                 </td>
-                <td>{{ event.date.strftime("%b %d, %Y") }}</td>
-                <td>{{ event.location or campus_name }}</td>
-                <td>{{ event.slots_remaining() }} / {{ event.slots }}</td>
-                <td>
+                <td data-label="Date">{{ event.date.strftime("%b %d, %Y") }}</td>
+                <td data-label="Location">{{ event.location or campus_name }}</td>
+                <td data-label="Slots">{{ event.slots_remaining() }} / {{ event.slots }}</td>
+                <td class="table-actions" data-label="Actions">
+                  <a
+                    class="btn btn--outline"
+                    href="{{ url_for('coordinator.attendance', event_id=event.id) }}"
+                  >Record Attendance<span class="sr-only"> for {{ event.title }}</span></a>
                   <details class="activity-controls">
-                    <summary>Manage activity<span class="sr-only">: {{ event.title }}</span></summary>
-                    <div class="table-actions">
-                    <a
-                      class="btn btn--sm btn--ghost"
-                      href="{{ url_for('coordinator.edit_activity', event_id=event.id) }}"
-                    >Edit</a>
-                    <form
-                      method="post"
-                      action="{{ url_for('coordinator.delete_activity', event_id=event.id) }}"
-                      onsubmit="return confirm({{ ('Remove ' ~ event.title ~ '? This permanently deletes the activity and cancels all registrations.')|tojson }});"
-                    >
-                      <button class="btn btn--sm btn--danger" type="submit">Remove</button>
-                    </form>
-                    <form
-                      method="post"
-                      action="{{ url_for('coordinator.upload_milestone', event_id=event.id) }}"
-                      enctype="multipart/form-data"
-                    >
-                      <input
-                        class="input"
-                        type="file"
-                        name="file"
-                        required
-                        aria-label="Milestone file for {{ event.title }}"
-                      >
-                      <button class="btn btn--sm btn--outline" type="submit">Upload</button>
-                    </form>
-                    <details class="event-announcement">
-                      <summary>Announcement</summary>
-                      <form
-                        method="post"
-                        action="{{ url_for('coordinator.publish_announcement', event_id=event.id) }}"
-                      >
-                        <label class="field">
-                          Type<select name="announcement_type" required>
-                          <option value="event_update">Event update</option>
-                          <option value="last_call">Last call</option>
-                          <option value="cancelled_postponed">Cancelled or postponed</option>
-                          </select>
-                        </label>
-                        <label class="field">
-                          Message<textarea name="message" maxlength="1000" required></textarea>
-                        </label>
-                        <button class="btn btn--sm btn--primary" type="submit">Publish</button>
-                      </form>
-                    </details>
+                    <summary>More actions<span class="sr-only"> for {{ event.title }}</span></summary>
+                    <div class="activity-controls__body">
+                      <div class="activity-controls__secondary">
+                        <a
+                          class="btn btn--sm btn--ghost"
+                          href="{{ url_for('coordinator.edit_activity', event_id=event.id) }}"
+                        >Edit activity</a>
+                        <form
+                          class="activity-milestone-upload"
+                          method="post"
+                          action="{{ url_for('coordinator.upload_milestone', event_id=event.id) }}"
+                          enctype="multipart/form-data"
+                        >
+                          <label class="field"><span>Milestone file</span><input
+                            class="input"
+                            type="file"
+                            name="file"
+                            required
+                          ></label>
+                          <button class="btn btn--sm btn--outline" type="submit">Upload milestone</button>
+                        </form>
+                        <details class="event-announcement">
+                          <summary>Publish announcement</summary>
+                          <form
+                            method="post"
+                            action="{{ url_for('coordinator.publish_announcement', event_id=event.id) }}"
+                          >
+                            <label class="field">
+                              Type<select name="announcement_type" required>
+                              <option value="event_update">Event update</option>
+                              <option value="last_call">Last call</option>
+                              <option value="cancelled_postponed">Cancelled or postponed</option>
+                              </select>
+                            </label>
+                            <label class="field">
+                              Message<textarea name="message" maxlength="1000" required></textarea>
+                            </label>
+                            <button class="btn btn--sm btn--primary" type="submit">Publish</button>
+                          </form>
+                        </details>
+                      </div>
+                      <div class="activity-controls__danger">
+                        <p><strong>Remove activity</strong><small>Permanently deletes the activity and cancels its registrations.</small></p>
+                        <form
+                          method="post"
+                          action="{{ url_for('coordinator.delete_activity', event_id=event.id) }}"
+                          onsubmit="return confirm({{ ('Remove ' ~ event.title ~ '? This permanently deletes the activity and cancels all registrations.')|tojson }});"
+                        >
+                          <button class="btn btn--sm btn--danger" type="submit">Remove activity</button>
+                        </form>
+                      </div>
                     </div>
                   </details>
                 </td>
@@ -215,9 +226,11 @@
       </section>
     </aside>
   </div>
-  <section class="panel" data-tour-id="target-progress"><header class="panel__header"><div><div class="heading-with-tip"><h2>Target progress</h2>{{ info_tip('Target progress', 'Actual participants are verified attendance, not registrations. Completion compares actual participants with the target when one is set.') }}</div><small>Actual participants are verified attendance, not registrations.</small></div></header><div
-  class="table-scroll"
+  </section>
+  <section class="dashboard-evidence" data-tour-id="target-progress"><header class="section-heading section-heading--compact"><h2>Supporting Evidence</h2><p>Use target progress to review outcomes after operational work is complete.</p></header><section class="panel"><header class="panel__header"><div><div class="heading-with-tip"><h2>Target progress</h2>{{ info_tip('Target progress', 'Actual participants are verified attendance, not registrations. Completion compares actual participants with a target when one is set.') }}</div><small>Actual participants are verified attendance, not registrations.</small></div></header><p class="table-scroll__hint" id="target-progress-scroll-hint">Swipe horizontally to view remaining columns.</p><div
+  class="table-scroll table-scroll--report"
   tabindex="0"
   aria-label="Target progress table"
-><table class="data-table"><thead><tr><th>Activity</th><th>Registered</th><th>Actual participants</th><th>Cancelled</th><th>Target</th><th>Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.registrations }}</td><td>{{ row.actual }}</td><td>{{ row.cancelled }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="6"><div class="empty-state">No activities match these filters.</div></td></tr>{% endfor %}</tbody></table></div></section>
+  aria-describedby="target-progress-scroll-hint"
+><table class="data-table data-table--report"><thead><tr><th scope="col">Activity</th><th scope="col">Registered</th><th scope="col">Actual participants</th><th scope="col">Cancelled</th><th scope="col">Target</th><th scope="col">Completion</th></tr></thead><tbody>{% for row in accomplishments %}<tr><td>{{ row.event.title }}</td><td>{{ row.registrations }}</td><td>{{ row.actual }}</td><td>{{ row.cancelled }}</td><td>{{ row.target or 'Not set' }}</td><td>{{ row.completion_percentage ~ '%' if row.completion_percentage is not none else 'Not set' }}</td></tr>{% else %}<tr><td colspan="6"><div class="empty-state">No activities match these filters.</div></td></tr>{% endfor %}</tbody></table></div></section></section>
 {% endblock %}

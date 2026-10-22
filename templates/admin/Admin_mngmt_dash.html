@@ -66,29 +66,29 @@
         >Add User</a>
       </header>
       <div
-        class="table-scroll"
+        class="table-scroll table-scroll--record"
         tabindex="0"
         aria-label="User management table"
       >
-        <table class="data-table">
+        <table class="data-table data-table--record">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Campus</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th scope="col">User</th>
+              <th scope="col">Role</th>
+              <th scope="col">Campus</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for user in users %}
               <tr>
-                <td>
+                <td data-label="User">
                   <strong>{{ user.name }}</strong>
                   <br>
                   <small>{{ user.email }}</small>
                 </td>
-                <td>
+                <td data-label="Role">
                   <form
                     method="post"
                     action="{{ url_for('admin.change_role', user_id=user.id) }}"
@@ -105,11 +105,11 @@
                     </select>
                   </form>
                 </td>
-                <td>{{ user.campus.name if user.campus else '—' }}</td>
-                <td><span
+                <td data-label="Campus">{{ user.campus.name if user.campus else '—' }}</td>
+                <td data-label="Status"><span
   class="badge {{ 'badge--primary' if user.is_active else 'badge--neutral' }}"
 >{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
-                <td class="table-actions">
+                <td class="table-actions" data-label="Actions">
                   <a
                     class="btn btn--sm btn--ghost"
                     href="{{ url_for('admin.edit_user', user_id=user.id) }}"
@@ -240,38 +240,38 @@
         </div>
       </header>
       <div
-        class="table-scroll"
+        class="table-scroll table-scroll--record"
         tabindex="0"
         aria-label="Deactivated users table"
       >
-        <table class="data-table">
+        <table class="data-table data-table--record">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Campus</th>
-              <th>Deactivated</th>
-              <th>Reactivation</th>
-              <th>Deletion</th>
-              <th>Actions</th>
+              <th scope="col">User</th>
+              <th scope="col">Role</th>
+              <th scope="col">Campus</th>
+              <th scope="col">Deactivated</th>
+              <th scope="col">Reactivation</th>
+              <th scope="col">Deletion</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for user in deactivated_users %}
               <tr>
-                <td>
+                <td data-label="User">
                   <strong>{{ user.name }}</strong>
                   <br>
                   <small>{{ user.email }}</small>
                 </td>
-                <td>{{ user.role|title }}</td>
-                <td>{{ user.campus.name if user.campus else '—' }}</td>
-                <td>{{ (user.deactivated_at or user.created_at).strftime("%b %d, %Y") }}</td>
-                <td>{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
-                <td><span
+                <td data-label="Role">{{ user.role|title }}</td>
+                <td data-label="Campus">{{ user.campus.name if user.campus else '—' }}</td>
+                <td data-label="Deactivated">{{ (user.deactivated_at or user.created_at).strftime("%b %d, %Y") }}</td>
+                <td data-label="Reactivation">{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
+                <td data-label="Deletion"><span
   class="badge {{ 'badge--neutral' if user.deletion_expired else 'badge--primary' }}"
 >{{ 'Expired' if user.deletion_expired else user.deletion_days_left ~ ' days left' }}</span></td>
-                <td class="table-actions">
+                <td class="table-actions" data-label="Actions">
                   <form
                     method="post"
                     action="{{ url_for('admin.reactivate_user', user_id=user.id) }}"
@@ -303,19 +303,21 @@
           <small>Most recent administrative changes. Entries are retained when a related account is removed.</small>
         </div>
       </header>
+      <p class="table-scroll__hint" id="admin-activity-log-scroll-hint">Swipe horizontally to view remaining columns.</p>
       <div
-        class="table-scroll"
+        class="table-scroll table-scroll--report"
         tabindex="0"
         aria-label="Administrative activity log"
+        aria-describedby="admin-activity-log-scroll-hint"
       >
-        <table class="data-table">
+        <table class="data-table data-table--report data-table--report-wide">
           <thead>
             <tr>
-              <th>When</th>
-              <th>Actor</th>
-              <th>Action</th>
-              <th>Target</th>
-              <th>Details</th>
+              <th scope="col">When</th>
+              <th scope="col">Actor</th>
+              <th scope="col">Action</th>
+              <th scope="col">Target</th>
+              <th scope="col">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -330,7 +332,7 @@
   {% else %}<tr><td colspan="5"><div class="empty-state">No administrative activity has been recorded yet.</div></td></tr>{% endfor %}
     </tbody>
     </table>
-    </div>
+      </div>
     </section>
   {% endif %}
 {% endblock %}

@@ -85,17 +85,10 @@
           {% elif current_user.is_authenticated and current_user.role == 'volunteer' %}
             <a class="button button--primary" href="{{ url_for('events.register_for_event', event_id=event.id) }}">Review and join</a>
           {% elif not current_user.is_authenticated %}
-            <div class="opportunity-card__join">
-              <a
-                class="button button--primary"
-                href="{{ url_for('events.event_join', event_id=event.id) }}"
-              >Choose how to join</a>
-              <!-- This direct link makes community eligibility visible at the decision point. -->
-              <a
-                class="external-join-link"
-                href="{{ url_for('events.event_join', event_id=event.id, external='1') }}"
-              >Not currently with PSU? Register as an external volunteer.</a>
-            </div>
+            <a
+              class="button button--primary"
+              href="{{ url_for('auth.login', next=url_for('events.register_for_event', event_id=event.id)) }}"
+            >Sign in to join</a>
           {% endif %}
         </div>
       </article>

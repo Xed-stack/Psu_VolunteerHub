@@ -22,7 +22,7 @@
     aria-labelledby="filter-heading"
   >
     <div class="heading-with-tip">
-      <h2 id="filter-heading">Filters and reports</h2>
+      <h2 id="filter-heading">Filters and Reports</h2>
       {{ info_tip('Report filters', 'Activity name, dates, and category scope the KPI strip, comparison charts, engagement trend, and filtered activity report. Forecast and attendance snapshot have their own labelled campus scope.') }}
     </div>
     <form class="filter-row" method="get">
@@ -59,7 +59,7 @@
           {% endfor %}
         </select>
       </label>
-      <button class="btn btn--primary" type="submit">Apply filters</button>
+      <button class="btn btn--primary" type="submit">Apply Filters</button>
       <a
         class="btn btn--ghost"
         href="{{ url_for('coordinator.analytics') }}"
@@ -76,6 +76,10 @@
       >Export CSV</a>
     </div>
   </section>
+  <header class="section-heading section-heading--compact">
+    <h2>Overview</h2>
+    <p>Use the selected report scope to compare participation and verified attendance.</p>
+  </header>
   <section
     class="summary-strip"
     aria-label="Filtered campus activity totals"
@@ -90,6 +94,10 @@
     {{ chart('Participation by Category', 'Registrations grouped by activity category using the selected report dates and category.', 'Selected campus report scope', 'campusCategories', {'labels': dashboard_data.categories|map(attribute='label')|list, 'values': dashboard_data.categories|map(attribute='registrations')|list}) }}
     {{ chart('Participant Type', 'Registrations linked to PSU accounts compared with external community registrations without a PSU account.', 'Selected campus report scope', 'campusComposition', {'labels': ['PSU', 'External'], 'values': [report_summary.total_psu, report_summary.total_external]}, 'donut') }}
   </div>
+  <header class="section-heading section-heading--compact">
+    <h2>Performance</h2>
+    <p>Review activity-level outcomes before opening supplementary campus evidence.</p>
+  </header>
   <section class="panel">
     {{ heading('Engagement Trend', 'Activity-date periods comparing non-cancelled registrations with present attendance for the selected campus report filters.', 'Select a monthly or weekly view. Detailed values remain available without charts.') }}
     <label class="field field--inline">
@@ -101,6 +109,7 @@
       <option value="weekly">Weekly</option>
       </select>
     </label>
+    <p class="table-scroll__hint" id="activity-performance-scroll-hint">Swipe horizontally to view remaining columns.</p>
     <div
       class="chart"
       id="engagementChart"
@@ -125,19 +134,21 @@
         <small>Registration, attendance, and conversion outcomes</small>
       </div>
     </header>
+    <p class="table-scroll__hint" id="activity-performance-scroll-hint">Swipe horizontally to view remaining columns.</p>
     <div
-      class="table-scroll"
+      class="table-scroll table-scroll--report"
       tabindex="0"
       aria-label="Activity performance table"
+      aria-describedby="activity-performance-scroll-hint"
     >
-      <table class="data-table">
+      <table class="data-table data-table--report">
         <thead>
           <tr>
-            <th>Activity</th>
-            <th>Category</th>
-            <th>Registrations</th>
-            <th>Attended</th>
-            <th>Conversion</th>
+            <th scope="col">Activity</th>
+            <th scope="col">Category</th>
+            <th scope="col">Registrations</th>
+            <th scope="col">Attended</th>
+            <th scope="col">Conversion</th>
           </tr>
         </thead>
         <tbody>
@@ -161,6 +172,9 @@
     </div>
   </section>
 
+  <details class="analytics-disclosure">
+    <summary><span>Supporting Insights</span><small>Forecasts and recent attendance that use their own labelled campus scope.</small></summary>
+    <div class="analytics-disclosure__content">
   <section class="analytics-grid">
     <article class="panel">
       <header class="panel__header">
@@ -196,18 +210,20 @@
           <small>Recent campus activities across all report dates and categories</small>
         </div>
       </header>
+      <p class="table-scroll__hint" id="attendance-snapshot-scroll-hint">Swipe horizontally to view remaining columns.</p>
       <div
-        class="table-scroll"
+        class="table-scroll table-scroll--report"
         tabindex="0"
         aria-label="Campus attendance snapshot table"
+        aria-describedby="attendance-snapshot-scroll-hint"
       >
-        <table class="data-table">
+        <table class="data-table data-table--report data-table--report-compact">
           <thead>
             <tr>
-              <th>Event</th>
-              <th>Registered</th>
-              <th>Attended</th>
-              <th>Rate</th>
+              <th scope="col">Event</th>
+              <th scope="col">Registered</th>
+              <th scope="col">Attended</th>
+              <th scope="col">Rate</th>
             </tr>
           </thead>
           <tbody>
@@ -230,25 +246,33 @@
       </div>
     </article>
   </section>
+    </div>
+  </details>
 
+  <header class="section-heading section-heading--compact">
+    <h2>Detailed Report</h2>
+    <p>Rows below match the current filters and the CSV/PDF exports.</p>
+  </header>
   <section class="panel" id="filtered-report">
     {{ heading('Filtered Activity Report', 'Activity-level counts matching the selected activity name, campus report dates, and category. PDF and CSV downloads contain these same rows.', 'Restricted to ' ~ campus_name ~ ' Campus') }}
+    <p class="table-scroll__hint" id="filtered-campus-report-scroll-hint">Swipe horizontally to view remaining columns.</p>
     <div
-      class="table-scroll"
+      class="table-scroll table-scroll--report"
       tabindex="0"
       aria-label="Filtered campus activity report table"
+      aria-describedby="filtered-campus-report-scroll-hint"
     >
-      <table class="data-table">
+      <table class="data-table data-table--report data-table--report-wide">
         <thead>
           <tr>
-            <th>Activity</th>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Registrations</th>
-            <th>PSU</th>
-            <th>External</th>
-            <th>Attended</th>
-            <th>Completed</th>
+            <th scope="col">Activity</th>
+            <th scope="col">Date</th>
+            <th scope="col">Category</th>
+            <th scope="col">Registrations</th>
+            <th scope="col">PSU</th>
+            <th scope="col">External</th>
+            <th scope="col">Attended</th>
+            <th scope="col">Completed</th>
           </tr>
         </thead>
         <tbody>

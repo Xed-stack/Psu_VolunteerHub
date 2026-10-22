@@ -63,6 +63,79 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 
 ## Completed local work
 
+### Coordinator workspace refinement (22 October 2026, local)
+
+- Coordinator management now prioritizes attendance, groups edit, milestone-upload,
+  and announcement work in a native More actions disclosure, and keeps permanent
+  activity removal visibly separate with its existing confirmation.
+- Attendance presents today's activities and the next scheduled activities first,
+  then the full campus picker, plain-language timing guidance, roster totals, and
+  native-confirmed bulk present/absent controls. Save remains the only persistence
+  action; server timing, campus scope, CSRF, and attendance validation are unchanged.
+- Create Activity is staged into Activity details, Volunteer requirements, and a
+  native Additional settings disclosure. Optional values reopen the disclosure
+  after validation errors. The mobile action bar keeps Cancel and Publish Activity
+  reachable with safe-area spacing.
+- Authenticated operational tables reflow to labelled records on mobile. Dense
+  reports keep readable columns in a labelled internal scroll region; desktop
+  tables remain unchanged.
+- Verification: `tests/test_responsive_tables.py` passed 4 focused checks and
+  `tests/test_create_activity_form.py` plus three existing create/scope checks
+  passed 5 focused checks. Compilation and whitespace checks passed. Temporary
+  local previews checked the form at desktop, 390px mobile, and a 200%-equivalent
+  narrow viewport; no live database data was created or changed.
+
+### Inactivity timeout (21 October 2026, local)
+
+- User chose 30-minute inactivity expiry with a 1-minute warning for all roles.
+  Shared server guard, non-renewing GET /auth/session, CSRF-protected renewal,
+  native warning in all three layouts and explicit inactivity sign-in message.
+- Keeps signed-cookie/session-only authentication, auth_version invalidation,
+  policy gates and existing role authorization. No DB migration or live writes.
+  Legacy sessions get first-request grace; no central revocation store added.
+- See SESSION_IDLE_QA.md and tests/test_session_idle.py. Final 20 focused checks
+  and 7 Node checks passed. Browser role/workflow/mobile/keyboard/multi-tab checks
+  completed on isolated SQLite; preview stopped. Final uninterrupted full suite:
+  **393 passed in 986.10s**, zero failures. Syntax and diff checks passed.
+  Preserve the uncommitted login/signup remake and docs/policy files.
+- Railway, live policy publication, commits and pushes remain outside this task.
+
+### Railway thesis-demo preparation (latest local work)
+
+21 October follow-up: Docker image successfully built and tested locally.
+Network-isolated Gunicorn startup, upload symlink and public/private probe plus
+synthetic SQLite data persistence across two containers passed. 18 focused tests
+passed in built Linux environment. Both smoke containers stopped; synthetic
+volume retained. See DOCKER_DEMO_QA.md. Supersedes engine-stopped/build-pending
+notes below. No cloud writes, original DB access, commit/push or paid upgrade.
+Next: inspect actual Railway trial allowance before creating demo services.
+
+- User has Railway account; aim is separate synthetic thesis demonstration, no
+  paid upgrade authorized. Dockerfile/.dockerignore prepared with explicit code
+  allowlist, Python 3.11, existing dependencies, Gunicorn wsgi:app and PORT.
+- App volume design: /data/public via static/uploads symlink, /data/private for
+  milestones. Requires actual mounted /data volume plus separate MySQL volume;
+  trial vs ongoing Free limits must be checked before cloud creation.
+- See RAILWAY_DEMO_DEPLOYMENT.md. 20 focused deployment/startup/provisioning checks
+  passed. Docker CLI installed but Linux engine stopped; no image build or cloud
+  deployment verified. No legacy railway.json (deprecated per current docs).
+- Pending backup documents preserved. No source DB changes, cloud writes, image
+  upload, commit/push or paid upgrade. Next: start Docker Desktop to build/test
+  the image, inspect Railway trial allowance, then approve scoped demo deployment.
+
+### Backup/restore drill (latest local work)
+
+- Added BACKUP_RESTORE_RUNBOOK.md and BACKUP_RESTORE_QA.md. Native MariaDB dump
+  restored into new psu_volunteer_restoreqa_20261020_0bbf28ad: all 31 schemas and
+  1,167 row fingerprints matched; 2 public uploads matched after file restore.
+  Original DB and upload fingerprints unchanged. Private upload root had 0 files.
+- Restored ORM queries and production login-page HTTP test-client smoke passed.
+  No actual user authentication, browser or hosted TLS claim. No app-code change.
+- Restricted plaintext artifacts outside Git retained under visualization folder
+  backup-restore-drill-0bbf28ad; credentials temporary/removed. No commit/push or
+  deletion. Not encrypted off-site recovery; private files, independent-host
+  restore, scheduling/retention/alerts, encryption/key recovery remain gates.
+
 ### Explicit production initialization (latest local work)
 
 Publication follow-up: user approved commit/push after the 352-test full run and
@@ -435,9 +508,12 @@ Then manually check:
 
 1. A volunteer can register, cancel before the event start, and see the registration history.
 2. A campus coordinator can only delete activities from their own campus.
-3. A deactivated user sees the reactivation-request modal after valid credentials.
-4. An admin can review Deactivated Users and categories without an Analytics navigation item.
-5. The sidebar hamburger and red logout action render correctly at a mobile width and remain hidden/compact on desktop.
+3. A coordinator can create an activity using the staged form, expand Additional settings, and retain optional values after an invalid submission.
+4. A coordinator can open More actions, use the activity controls, and see removal separated from routine actions.
+5. A coordinator can open attendance on mobile, review the roster, and reach the final Save action without page-level horizontal scrolling.
+6. A deactivated user sees the reactivation-request modal after valid credentials.
+7. An admin can review Deactivated Users and categories without an Analytics navigation item.
+8. The sidebar hamburger and red logout action render correctly at a mobile width and remain hidden/compact on desktop.
 
 ## Next recommended work
 

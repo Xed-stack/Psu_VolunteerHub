@@ -3,122 +3,134 @@
 {% block header_title %}Coordinator Console{% endblock %}
 {% block header_subtitle %}Attendance management{% endblock %}
 {% block content %}
-  <div class="page-heading">
+  <header class="page-heading">
     <div>
       <h1>Attendance Management</h1>
-      <p>Select an event and record participation.</p>
-    </div>
-    {% if request.args.get('event_id') %}
-      <a
-        class="btn btn--outline"
-        href="{{ url_for('coordinator.add_external_participant', event_id=request.args.get('event_id')) }}"
-      >Add external volunteer</a>
-    {% endif %}
-  </div>
-  <section class="panel">
-    <form class="filter-row" method="get">
-      <div class="field">
-        <label class="field__label" for="event_id">Activity</label>
-        <select
-          class="select"
-          id="event_id"
-          name="event_id"
-          onchange="this.form.submit()"
-        >
-          <option value="">Select an activity</option>
-          {% for event in events %}
-            <option
-              value="{{ event.id }}"
-              {{ 'selected' if request.args.get("event_id") |int == event.id }}
-            >
-              {{ event.title }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-    </form>
-  </section>
-  <form class="panel" method="post">
-    {% include 'partials/csrf_field.html' %}
-    <input
-      type="hidden"
-      name="event_id"
-      value="{{ request.args.get('event_id', '') }}"
-    >
-    <div class="panel__header">
-      <h2>Registered Volunteers</h2>
-      <span class="badge badge--neutral">{{ registrations|length }}</span>
+      <p>Choose an activity, confirm participation, and save the current record.</p>
     </div>
     {% if selected_event %}
-      <p id="attendance-timing">
-        {% if attendance_locked %}Check-in is not open yet. {% endif %}
-        Check-in opens 30 minutes before the activity starts:
-        <time datetime="{{ attendance_opens_at.isoformat() }}">{{ attendance_opens_at.strftime('%b %d, %Y at %I:%M %p') }}</time>.
-        {% if attendance_locked %}Existing attendance records are read-only until then.{% endif %}
-        {% if not activity_ended %}
-          Check-in does not confirm completion or certificate eligibility.
-          Save final attendance after
-          <time datetime="{{ (selected_event.end_date or selected_event.date).isoformat() }}">{{ (selected_event.end_date or selected_event.date).strftime('%b %d, %Y at %I:%M %p') }}</time>
-          {{ '(scheduled end).' if selected_event.end_date else '(scheduled start, no end time recorded).' }}
-        {% else %}
-          Saving Present confirms completed participation and certificate eligibility.
-        {% endif %}
-      </p>
+      <a class="btn btn--outline" href="{{ url_for('coordinator.add_external_participant', event_id=selected_event.id) }}">Add External Volunteer</a>
     {% endif %}
-    <div class="table-scroll" tabindex="0" role="region" aria-label="Registered volunteer attendance">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Volunteer</th>
-            <th>Status</th>
-          </tr>
-        </thead>
+  </header>
+
+  <section class="panel attendance-picker" aria-labelledby="attendance-picker-heading">
+    <header class="panel__header">
+      <div>
+        <h2 id="attendance-picker-heading">Attendance Activities</h2>
+        <p>Start with today’s work, then the next scheduled activities.</p>
+      </div>
+    </header>
+    {% if quick_activities %}
+      <nav class="attendance-picker__list" aria-label="Quick attendance activity selection">
+        {% for item in quick_activities %}
+          <a
+            class="attendance-activity {{ 'is-selected' if selected_event and selected_event.id == item.event.id }}"
+            href="{{ url_for('coordinator.attendance', event_id=item.event.id) }}"
+            {{ 'aria-current="page"' if selected_event and selected_event.id == item.event.id }}
+          >
+            <span class="attendance-activity__schedule"><time datetime="{{ item.event.date.isoformat() }}">{{ item.event.date.strftime('%a, %b %d · %I:%M %p') }}</time></span>
+            <strong>{{ item.event.title }}</strong>
+            <small>{{ item.state.label }}</small>
+          </a>
+        {% endfor %}
+      </nav>
+    {% else %}
+      <div class="empty-state">No activities are scheduled for today or the next three activity dates. Choose a past activity below if you need to review its attendance.</div>
+    {% endif %}
+    <form class="attendance-picker__all" method="get" autocomplete="off">
+      <label class="field" for="event_id">
+        <span class="field__label">All Campus Activities</span>
+        <select class="select" id="event_id" name="event_id">
+          <option value="">Select an activity</option>
+          {% for event in events %}
+            <option value="{{ event.id }}" {{ 'selected' if selected_event and selected_event.id == event.id }}>{{ event.date.strftime('%b %d, %Y · %I:%M %p') }} · {{ event.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn--outline" type="submit">Open Activity</button>
+    </form>
+  </section>
+
+  {% if selected_event %}
+    <section class="attendance-state attendance-state--{{ attendance_state.kind }}" aria-labelledby="attendance-state-heading">
+      <div>
+        <h2 id="attendance-state-heading">{{ attendance_state.label }}</h2>
+        {% if attendance_state.kind == 'locked' %}
+          <p id="attendance-timing">Check-in opens 30 minutes before the activity starts: <time datetime="{{ attendance_opens_at.isoformat() }}">{{ attendance_opens_at.strftime('%b %d, %Y at %I:%M %p') }}</time>. Existing attendance records are read-only until then.</p>
+        {% elif attendance_state.kind == 'active' %}
+          <p id="attendance-timing">Check-in is active until <time datetime="{{ attendance_state.time.isoformat() }}">{{ attendance_state.time.strftime('%b %d, %Y at %I:%M %p') }}</time>. Saving check-in does not confirm completion or certificate eligibility.</p>
+        {% else %}
+          <p id="attendance-timing">This activity ended at <time datetime="{{ attendance_state.time.isoformat() }}">{{ attendance_state.time.strftime('%b %d, %Y at %I:%M %p') }}</time>. Saving Present confirms completed participation and certificate eligibility.</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <form class="panel attendance-workspace" method="post" autocomplete="off" data-attendance-workspace>
+    {% include 'partials/csrf_field.html' %}
+    <input type="hidden" name="event_id" value="{{ selected_event.id if selected_event else '' }}">
+    <header class="panel__header attendance-workspace__header">
+      <div>
+        <h2>Registered Volunteers</h2>
+        {% if selected_event %}<p>Review each participant before saving attendance for {{ selected_event.title }}.</p>{% endif %}
+      </div>
+      <span class="badge badge--neutral">{{ attendance_counts.registered }} registered</span>
+    </header>
+
+    {% if selected_event %}
+      <section class="attendance-summary" aria-label="Attendance status summary">
+        {% for key, label in [('present', 'Present'), ('absent', 'Absent'), ('excused', 'Excused'), ('unmarked', 'Not Marked')] %}
+          <div class="attendance-summary__item">
+            <span>{{ label }}</span>
+            <strong data-attendance-count="{{ key }}">{{ attendance_counts[key] }}</strong>
+          </div>
+        {% endfor %}
+      </section>
+      <div class="attendance-bulk-actions" aria-label="Bulk attendance actions">
+        <button class="btn btn--outline" type="button" data-attendance-bulk="present"{{ ' disabled' if attendance_locked }}>Mark All Present</button>
+        <button class="btn btn--outline" type="button" data-attendance-bulk="absent"{{ ' disabled' if attendance_locked }}>Mark All Absent</button>
+        <p class="attendance-change-status" data-attendance-change-status aria-live="polite"></p>
+      </div>
+    {% endif %}
+
+    <div class="table-scroll table-scroll--record attendance-roster" tabindex="0" role="region" aria-label="Registered volunteer attendance">
+      <table class="data-table data-table--record">
+        <thead><tr><th scope="col">Volunteer</th><th scope="col">Status</th></tr></thead>
         <tbody>
           {% for reg in registrations %}
             {% set attendance = reg.attendance_record %}
             <tr>
-              <td>
+              <td data-label="Volunteer">
                 <input type="hidden" name="registration_id" value="{{ reg.id }}">
                 {% if reg.user %}
-                  <strong>{{ reg.user.name }}</strong>
-                  <br>
-                  <small>{{ reg.user.email }}</small>
+                  <strong>{{ reg.user.name }}</strong><br><small>{{ reg.user.email }}</small>
                 {% elif reg.external_participant %}
-                  <strong>{{ reg.external_participant.name or ('External #' + reg.external_participant.id_number) }}</strong>
-                  <br>
-                  <small>{{ reg.external_participant.email or 'External participant' }}</small>
+                  <strong>{{ reg.external_participant.name or ('External #' + reg.external_participant.id_number) }}</strong><br><small>{{ reg.external_participant.email or 'External participant' }}</small>
                 {% else %}
                   <strong>Unknown</strong>
                 {% endif %}
               </td>
-              <td>
-                <select class="select attendance-status" name="status" aria-label="Attendance status for registration {{ reg.id }}"
-                  aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>
+              <td data-label="Status">
+                <label class="sr-only" for="attendance-status-{{ reg.id }}">Attendance status for {{ reg.participant.name if reg.participant else 'registration ' ~ reg.id }}</label>
+                <select class="select attendance-status" id="attendance-status-{{ reg.id }}" name="status" data-attendance-status aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>
+                  <option value="" {{ 'selected' if not attendance }}>Not Marked</option>
                   {% for value in ['present', 'absent', 'excused'] %}
-                    <option
-                      value="{{ value }}"
-                      {{ 'selected' if attendance and attendance.status == value }}
-                    >
-                      {{ value|title }}
-                    </option>
+                    <option value="{{ value }}" {{ 'selected' if attendance and attendance.status == value }}>{{ value|title }}</option>
                   {% endfor %}
                 </select>
               </td>
             </tr>
           {% else %}
-            <tr>
-              <td colspan="2">
-                <div class="empty-state">{{ 'No active registrations for this activity.' if selected_event else 'Choose an activity to view registrations.' }}</div>
-              </td>
-            </tr>
+            <tr><td colspan="2"><div class="empty-state">{{ 'No active registrations for this activity. Add an external volunteer if a walk-in participant needs to be recorded.' if selected_event else 'Choose an activity to view and record attendance.' }}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% if registrations %}
-      <div class="form-actions">
-        <button class="btn btn--primary attendance-save" type="submit" aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>{{ 'Save final attendance' if activity_ended else 'Save check-in' }}</button>
+      <div class="form-actions attendance-save-bar">
+        <button class="btn btn--primary attendance-save" type="submit" aria-describedby="attendance-timing"{{ ' disabled' if attendance_locked }}>{{ 'Save Final Attendance' if activity_ended else 'Save Check-in' }}</button>
       </div>
     {% endif %}
   </form>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/attendance-workspace.js') }}"></script>{% endblock %}
