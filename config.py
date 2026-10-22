@@ -16,6 +16,8 @@ class Config:
     PRIVATE_UPLOAD_FOLDER = os.environ.get(
         'PRIVATE_UPLOAD_FOLDER', os.path.join(basedir, 'instance', 'uploads'))
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    SESSION_IDLE_TIMEOUT_SECONDS = 30 * 60
+    SESSION_IDLE_WARNING_SECONDS = 60
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = False

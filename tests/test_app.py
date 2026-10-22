@@ -4,6 +4,7 @@ import io
 from html import unescape
 from hashlib import sha256
 from urllib.parse import parse_qs, urlsplit
+from flask_login.utils import encode_cookie
 from app import create_app
 from app.models import db
 from app.models.user import (User, VolunteerProfile, SystemSetting, Skill, Interest,
@@ -312,6 +313,25 @@ class TestAuth:
     def test_login_get(self, client):
         resp = client.get('/auth/login')
         assert resp.status_code == 200
+        assert b'name="remember"' not in resp.data
+        assert b'Remember this device' not in resp.data
+
+    @pytest.mark.parametrize('remember', ['', 'on'])
+    def test_login_uses_session_only_even_with_remember_flag(self, client, app, remember):
+        user_id = _create_user(app, email='session-only@test.com')
+        response = client.post('/auth/login', data={
+            'identifier': 'session-only@test.com', 'password': 'password123',
+            'remember': remember,
+        })
+        assert response.status_code == 302
+        assert response.location == '/volunteer_dash'
+        assert client.get_cookie('remember_token') is None
+        assert client.get_cookie('session').expires is None
+        with client.session_transaction() as saved_session:
+            assert saved_session['_user_id'] == str(user_id)
+            assert saved_session['auth_version'] == 1
+            assert not saved_session.permanent
+        assert client.get('/volunteer_dash').status_code == 200
 
     def test_login_valid_redirects(self, client, app):
         _create_user(app, email='valid@test.com')
@@ -637,6 +657,22 @@ class TestPhaseOnePublicExperience:
         assert 'How to use the Volunteer Hub' in body
         assert 'cosine similarity' in body
 
+    def test_help_guide_shows_the_signed_in_users_dashboard_link(self, client, app):
+        user_id = _create_user(
+            app, email='help-director@test.com', role='director', campus_id=1)
+        _login_as(client, user_id)
+
+        body = client.get('/help').get_data(as_text=True)
+
+        assert 'href="/dashboard"' in body
+        assert '>Dashboard</a>' in body
+        assert 'Use your dashboard' in body
+        assert 'Open dashboard' in body
+        assert 'href="/auth/login"' not in body
+        assert 'href="/auth/interests"' not in body
+        assert 'Create an account' not in body
+        assert 'external-volunteer option' not in body
+
     def test_volunteer_can_dismiss_first_use_guide(self, client, app):
         user_id = _create_user(app, email='guide@test.com')
         with app.app_context():
@@ -685,6 +721,62 @@ class TestPhaseOnePublicExperience:
         director_body = client.get('/analytics').get_data(as_text=True)
         assert 'class="info-tip"' in director_body
         assert 'About live activity report' in director_body
+
+    def test_director_analytics_separates_live_and_historical_views(self, client, app):
+        director_id = _create_user(
+            app, email='analytics-views@test.com', role='director', campus_id=1)
+        _login_as(client, director_id)
+
+        live = client.get('/analytics?view=live').get_data(as_text=True)
+        historical = client.get('/analytics?view=historical').get_data(as_text=True)
+        invalid = client.get('/analytics?view=unsupported').get_data(as_text=True)
+
+        assert 'analytics-view-switcher' in live
+        assert 'Live Activity Report' in live
+        assert 'Historical Activities' not in live
+        assert 'Historical Activities' in historical
+        assert 'Live Activity Report' not in historical
+        assert 'Role demographics' not in historical
+        assert 'Live Activity Report' in invalid
+
+    def test_live_analytics_keeps_advanced_filters_out_of_the_primary_scope(self, client, app):
+        director_id = _create_user(
+            app, email='analytics-filters@test.com', role='director', campus_id=1)
+        _login_as(client, director_id)
+
+        default = client.get('/analytics?view=live').get_data(as_text=True)
+        advanced = client.get(
+            '/analytics?view=live&sex=female&campus_mode=include&campus=1'
+        ).get_data(as_text=True)
+        csv_href = re.search(
+            r'href="([^"]*/reports/university\.csv[^"]*)"', advanced).group(1)
+
+        assert 'Filters and Reports' in default
+        assert '<details class="analytics-advanced-filters">' in default
+        assert 'More Filters (Active)' not in default
+        assert '<details class="analytics-advanced-filters" open>' in advanced
+        assert 'More Filters (Active)' in advanced
+        assert parse_qs(urlsplit(csv_href).query)['sex'] == ['female']
+
+    def test_coordinator_analytics_uses_title_case_filter_heading(self, client, app):
+        coordinator_id = _create_user(
+            app, email='coordinator-filters@test.com', role='coordinator', campus_id=1)
+        _login_as(client, coordinator_id)
+
+        body = client.get('/coordinator_analytics').get_data(as_text=True)
+
+        assert '<h2 id="filter-heading">Filters and Reports</h2>' in body
+
+    def test_coordinator_dashboard_prioritizes_attention_before_evidence(self, client, app):
+        coordinator_id = _create_user(
+            app, email='dashboard-priority@test.com', role='coordinator', campus_id=1)
+        _login_as(client, coordinator_id)
+
+        body = client.get('/coordinator_dash').get_data(as_text=True)
+        assert body.index('Needs Attention') < body.index('Activity Workspace')
+        assert body.index('Activity Workspace') < body.index('Supporting Evidence')
+        assert 'Review requests' in body
+        assert 'Track attendance' in body
 
     def test_guide_dismissal_only_updates_the_authenticated_user(self, client, app):
         current_id = _create_user(app, email='guide-current@test.com', role='coordinator', campus_id=1)
@@ -1017,7 +1109,7 @@ class TestAttendanceTiming:
         body = client.get('/attendance?event_id=1').get_data(as_text=True)
         button = re.search(r'<button[^>]*class="[^"]*attendance-save[^>]*>.*?</button>', body).group(0)
         assert 'disabled' not in button
-        assert 'Check-in opens 30 minutes before' in body
+        assert ('Check-in Active' in body or 'Final Attendance Due' in body)
         response = client.post('/attendance', data={
             'event_id': 1, 'registration_id': rid, 'status': 'present'}, follow_redirects=True)
         assert response.status_code == 200
@@ -1096,6 +1188,60 @@ class TestAttendanceTiming:
             assert not db.session.get(Registration, rid).certificate_eligible
             assert Attendance.query.filter_by(registration_id=rid).one().status == 'present'
 
+    def test_blank_attendance_status_leaves_a_registration_unmarked(self, app, client, monkeypatch):
+        rid = self._setup(app, client, monkeypatch)
+
+        response = client.post('/attendance', data={
+            'event_id': 1, 'registration_id': rid, 'status': ''})
+
+        assert response.status_code == 302
+        with app.app_context():
+            assert db.session.get(Registration, rid).status == 'confirmed'
+            assert Attendance.query.filter_by(registration_id=rid).count() == 0
+
+    def test_attendance_picker_lists_today_then_next_three_and_keeps_past_events(self, app, client, monkeypatch):
+        import app.routes.coordinator as coordinator
+
+        class FrozenDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return TestAttendanceTiming.NOW
+
+        monkeypatch.setattr(coordinator, 'datetime', FrozenDatetime)
+        coordinator_id = _create_user(
+            app, email='attendance-picker@test.com', role='coordinator', campus_id=1)
+        with app.app_context():
+            db.session.add_all([
+                Event(title='Today morning', description='Today',
+                      date=self.NOW.replace(hour=8), slots=10, campus_id=1),
+                Event(title='Today afternoon', description='Today',
+                      date=self.NOW.replace(hour=16), slots=10, campus_id=1),
+                Event(title='Next one', description='Future',
+                      date=self.NOW + timedelta(days=1), slots=10, campus_id=1),
+                Event(title='Next two', description='Future',
+                      date=self.NOW + timedelta(days=2), slots=10, campus_id=1),
+                Event(title='Next three', description='Future',
+                      date=self.NOW + timedelta(days=3), slots=10, campus_id=1),
+                Event(title='Not in quick picker', description='Future',
+                      date=self.NOW + timedelta(days=4), slots=10, campus_id=1),
+                Event(title='Past review activity', description='Past',
+                      date=self.NOW - timedelta(days=1), slots=10, campus_id=1),
+            ])
+            db.session.commit()
+        _login_as(client, coordinator_id)
+
+        body = client.get('/attendance').get_data(as_text=True)
+        picker = re.search(
+            r'<nav class="attendance-picker__list"[^>]*>(.*?)</nav>', body, re.S).group(1)
+        expected = ['Today morning', 'Today afternoon', 'Next one', 'Next two', 'Next three']
+
+        assert [picker.index(title) for title in expected] == sorted(
+            picker.index(title) for title in expected)
+        assert 'Not in quick picker' not in picker
+        assert 'Past review activity' not in picker
+        assert 'Past review activity' in body
+        assert 'Check-in Opens' in picker
+
     @pytest.mark.parametrize('seconds_before_start, allowed', [(1801, False), (1800, True), (1799, True)])
     def test_early_checkin_boundary_and_finalization(self, app, client, monkeypatch, seconds_before_start, allowed):
         rid = self._setup(app, client, monkeypatch, offset=7200)
@@ -1103,7 +1249,7 @@ class TestAttendanceTiming:
             db.session.get(Event, 1).date = self.NOW + timedelta(seconds=seconds_before_start)
             db.session.commit()
         body = client.get('/attendance?event_id=1').get_data(as_text=True)
-        button = re.search(r'<button[^>]*>Save check-in</button>', body).group(0)
+        button = re.search(r'<button[^>]*>Save Check-in</button>', body).group(0)
         assert ('disabled' not in button) == allowed
         data = {'event_id': 1, 'registration_id': rid, 'status': 'present'}
         client.post('/attendance', data=data)
@@ -1181,9 +1327,13 @@ class TestCancellationReview:
 class TestCoordinatorFeatures:
     def test_coordinator_dash_renders(self, client, app):
         uid = _create_user(app, email='cdash@test.com', role='coordinator', campus_id=1)
+        with app.app_context():
+            event_id = Event.query.filter_by(campus_id=1).first().id
         _login_as(client, uid)
         resp = client.get('/coordinator_dash')
         assert resp.status_code == 200
+        assert f'/attendance?event_id={event_id}' in resp.get_data(as_text=True)
+        assert client.get(f'/attendance?event_id={event_id}').status_code == 200
 
     def test_create_activity_get(self, client, app):
         uid = _create_user(app, email='create1@test.com', role='coordinator', campus_id=1)
@@ -1220,6 +1370,7 @@ class TestCoordinatorFeatures:
         _login_as(client, uid)
         resp = client.get('/attendance')
         assert resp.status_code == 200
+        assert 'registered</span>' in resp.get_data(as_text=True)
 
     def test_deactivated_user_can_request_reactivation(self, client, app):
         user_id = _create_user(app, email='appeal@test.com')
@@ -2218,16 +2369,19 @@ class TestAdminUserManagement:
                                 role='admin', name='ResetAdmin')
         assert client.post('/auth/login', data={
             'identifier': 'reset@test.com', 'password': 'oldpass123',
-            'remember': 'on' if remember else '',
         }).status_code == 302
+        # Keep coverage of cookies issued before remember-device sign-in was removed.
+        with app.app_context():
+            legacy_cookie = encode_cookie(str(admin_id))
         if remember:
+            client.set_cookie('remember_token', legacy_cookie)
             assert client.get_cookie('remember_token') is not None
         other_session = app.test_client()
         with app.app_context():
             assert other_session.post('/auth/login', data={
                 'identifier': 'reset@test.com', 'password': 'oldpass123',
-                'remember': 'on',
             }).status_code == 302
+        other_session.set_cookie('remember_token', legacy_cookie)
         resp = client.post(f'/admin/users/{admin_id}/reset-password', data={
             'new_password': 'newpass123',
         }, follow_redirects=True)
@@ -2273,8 +2427,9 @@ class TestAdminUserManagement:
             with app.app_context():
                 assert target_session.post('/auth/login', data={
                     'identifier': 'reset-target@test.com', 'password': 'password123',
-                    'remember': 'on' if index else '',
                 }).status_code == 302
+                if index:
+                    target_session.set_cookie('remember_token', encode_cookie(str(target_id)))
         assert target_sessions[1].get_cookie('remember_token') is not None
         _login_as(client, admin_id)
         response = client.post(f'/admin/users/{target_id}/reset-password', data={
@@ -2747,175 +2902,66 @@ class TestOutsiderVolunteers:
             return Event.query.filter_by(title=title).first().id
 
     @staticmethod
-    def _guest_data(email='guest@example.com', name='Juan Dela Cruz', **extra):
-        data = {
-            'from_psu': 'no',
-            'name': name,
-            'email': email,
-            'accept_agreement': 'yes',
-            'accept_privacy': 'yes',
-        }
-        data.update(extra)
-        return data
+    def _external_registration(app, event_id, id_number='EXT-TEST',
+                               email='external@example.com'):
+        with app.app_context():
+            participant = ExternalParticipant(
+                id_number=id_number, name='External Volunteer', email=email)
+            db.session.add(participant)
+            db.session.flush()
+            registration = Registration(
+                external_participant_id=participant.id, event_id=event_id,
+                status='confirmed')
+            db.session.add(registration)
+            db.session.commit()
+            return registration.id
 
     # â”€â”€ Public Join workflow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    def test_join_asks_psu_question(self, client, app):
+    def test_retired_public_join_redirects_to_psu_sign_in(self, client, app):
         eid = self._event_id(app)
-        resp = client.get(f'/event/{eid}/join')
-        assert resp.status_code == 200
-        body = resp.get_data(as_text=True)
-        assert 'PSU volunteer' in body
-        assert 'Community volunteer' in body
-        assert f'/event/{eid}/join?external=1' in body
+        response = client.get(f'/event/{eid}/join?external=1')
+        target = urlsplit(response.location)
+        assert response.status_code == 302
+        assert target.path == '/auth/login'
+        assert parse_qs(target.query)['next'] == [
+            f'/opportunities/register/{eid}']
 
-    def test_selecting_outsider_shows_form(self, client, app):
+    def test_retired_guest_submission_creates_no_records(self, client, app):
         eid = self._event_id(app)
-        resp = client.get(f'/event/{eid}/join?external=1')
-        body = resp.data.decode()
-        assert resp.status_code == 200
-        assert 'name="name"' in body
-        assert 'name="email"' in body
-        assert 'name="id_number"' not in body
-        assert 'No PSU account is required.' in body
-        assert 'name="accept_privacy"' in body
+        with app.app_context():
+            participant_count = ExternalParticipant.query.count()
+            registration_count = Registration.query.count()
+        response = client.post(f'/event/{eid}/join', data={
+            'from_psu': 'no',
+            'name': 'Former Guest',
+            'email': 'former.guest@example.com',
+        })
+        assert response.status_code == 302
+        with app.app_context():
+            assert ExternalParticipant.query.count() == participant_count
+            assert Registration.query.count() == registration_count
 
-    def test_public_opportunity_card_links_to_external_form(self, client, app):
+    def test_public_opportunity_card_requires_psu_sign_in(self, client, app):
         eid = self._event_id(app)
         body = client.get('/opportunities').get_data(as_text=True)
-        assert 'Choose how to join' in body
-        assert 'Not currently with PSU? Register as an external volunteer.' in body
-        assert f'/event/{eid}/join?external=1' in body
+        assert 'Sign in to join' in body
+        assert 'Register as an external volunteer' not in body
+        assert f'/event/{eid}/join?external=1' not in body
 
-    def test_outsider_requires_name_and_email(self, client, app):
-        eid = self._event_id(app)
-        resp = client.post(f'/event/{eid}/join', data={'from_psu': 'no'})
-        assert resp.status_code == 400
-        with app.app_context():
-            assert ExternalParticipant.query.count() == 0
-
-    def test_outsider_requires_valid_email(self, client, app):
-        eid = self._event_id(app)
-        resp = client.post(
-            f'/event/{eid}/join',
-            data=self._guest_data(email='not an email'),
-        )
-        assert resp.status_code == 400
-        with app.app_context():
-            assert ExternalParticipant.query.count() == 0
-
-    def test_outsider_records_consent_and_generated_reference(self, client, app):
-        eid = self._event_id(app)
-        resp = client.post(f'/event/{eid}/join', data=self._guest_data())
-        assert resp.status_code == 302
-        with app.app_context():
-            ep = ExternalParticipant.query.filter_by(email='guest@example.com').first()
-            assert ep is not None
-            assert ep.id_number.startswith('EXT-')
-            reg = Registration.query.filter_by(
-                external_participant_id=ep.id, event_id=eid).first()
-            assert reg is not None
-            assert reg.user_id is None
-            assert reg.status == 'confirmed'
-            assert reg.policy_accepted_at is not None
-            assert reg.external_privacy_accepted_at is not None
-            assert reg.external_privacy_version == 'system-default'
-
-    def test_outsider_receives_a_signed_management_link(self, client, app, monkeypatch):
-        from app.routes import events as events_routes
-
-        delivered = {}
-        monkeypatch.setattr(
-            events_routes,
-            'send_email',
-            lambda recipient, subject, body: delivered.update(
-                recipient=recipient, subject=subject, body=body),
-        )
-        eid = self._event_id(app)
-        response = client.post(
-            f'/event/{eid}/join',
-            data=self._guest_data('confirmation@example.com'),
-        )
-        assert response.status_code == 302
-        assert delivered['recipient'] == 'confirmation@example.com'
-        assert 'external/registrations/' in delivered['body']
-        assert 'No PSU account was created.' in delivered['body']
-
-    def test_outsider_requires_all_applicable_consents(self, client, app):
-        eid = self._event_id(app)
-        data = self._guest_data()
-        data.pop('accept_privacy')
-        resp = client.post(f'/event/{eid}/join', data=data)
-        assert resp.status_code == 400
-        with app.app_context():
-            assert Registration.query.count() == 0
-
-    def test_outsider_requires_and_records_an_event_nda(self, client, app):
-        eid = self._event_id(app)
-        with app.app_context():
-            event = db.session.get(Event, eid)
-            event.nda_required = True
-            event.nda_text = 'Keep activity materials confidential.'
-            event.nda_version = 'nda-1.0'
-            db.session.commit()
-        data = self._guest_data('nda@example.com')
-        assert client.post(f'/event/{eid}/join', data=data).status_code == 400
-        data['accept_nda'] = 'yes'
-        assert client.post(f'/event/{eid}/join', data=data).status_code == 302
-        with app.app_context():
-            registration = Registration.query.join(ExternalParticipant).filter(
-                ExternalParticipant.email == 'nda@example.com').first()
-            assert registration.nda_accepted_at is not None
-            assert registration.nda_version == 'nda-1.0'
-
-    def test_outsider_duplicate_keeps_one_registration(self, client, app):
-        eid = self._event_id(app)
-        data = self._guest_data(email='duplicate@example.com')
-        assert client.post(f'/event/{eid}/join', data=data).status_code == 302
-        assert client.post(f'/event/{eid}/join', data=data).status_code == 302
-        with app.app_context():
-            participant = ExternalParticipant.query.filter_by(
-                email='duplicate@example.com').first()
-            assert Registration.query.filter_by(
-                external_participant_id=participant.id, event_id=eid).count() == 1
-
-    def test_outsider_rejects_full_or_started_event(self, client, app):
-        with app.app_context():
-            full = Event(
-                title='Full external activity', description='Full',
-                date=datetime.now() + timedelta(days=3), slots=0, campus_id=1,
-            )
-            started = Event(
-                title='Started external activity', description='Started',
-                date=datetime.now() - timedelta(days=1), slots=10, campus_id=1,
-            )
-            db.session.add_all([full, started])
-            db.session.commit()
-            full_id, started_id = full.id, started.id
-        assert client.post(
-            f'/event/{full_id}/join', data=self._guest_data('full@example.com')).status_code == 400
-        assert client.post(
-            f'/event/{started_id}/join', data=self._guest_data('started@example.com')).status_code == 400
-
-    def test_outsider_registration_rate_limit(self, client, app):
-        eid = self._event_id(app)
-        data = self._guest_data(email='limited@example.com')
-        data.pop('accept_privacy')
-        for _ in range(5):
-            assert client.post(f'/event/{eid}/join', data=data).status_code == 400
-        data['accept_privacy'] = 'yes'
-        assert client.post(f'/event/{eid}/join', data=data).status_code == 429
+    def test_home_join_actions_require_psu_sign_in(self, client, app):
+        body = client.get('/').get_data(as_text=True)
+        assert 'Sign in to join' in body
+        assert '/event/' not in body
 
     def test_guest_link_shows_only_signed_registration(self, client, app):
         from app.routes.events import _external_token
 
         eid = self._event_id(app)
-        client.post(f'/event/{eid}/join', data=self._guest_data('manage@example.com'))
+        registration_id = self._external_registration(
+            app, eid, id_number='EXT-MANAGE', email='manage@example.com')
         with app.app_context():
-            participant = ExternalParticipant.query.filter_by(
-                email='manage@example.com').first()
-            registration = Registration.query.filter_by(
-                external_participant_id=participant.id, event_id=eid).first()
+            registration = db.session.get(Registration, registration_id)
             token = _external_token(registration)
         response = client.get(f'/external/registrations/{token}')
         assert response.status_code == 200
@@ -2926,12 +2972,10 @@ class TestOutsiderVolunteers:
         from app.routes.events import _external_token
 
         eid = self._event_id(app)
-        client.post(f'/event/{eid}/join', data=self._guest_data('expired@example.com'))
+        registration_id = self._external_registration(
+            app, eid, id_number='EXT-EXPIRED', email='expired@example.com')
         with app.app_context():
-            participant = ExternalParticipant.query.filter_by(
-                email='expired@example.com').first()
-            registration = Registration.query.filter_by(
-                external_participant_id=participant.id, event_id=eid).first()
+            registration = db.session.get(Registration, registration_id)
             token = _external_token(registration)
         monkeypatch.setattr(events_routes, 'EXTERNAL_LINK_MAX_AGE', -1)
         response = client.get(f'/external/registrations/{token}')
@@ -2982,30 +3026,15 @@ class TestOutsiderVolunteers:
             assert ExternalParticipant.query.filter_by(
                 id_number='EXT-X').first() is None
 
-    def test_outsider_registration_no_privilege(self, client, app):
-        eid = self._event_id(app)
-        with app.app_context():
-            before = User.query.count()
-        client.post(f'/event/{eid}/join', data=self._guest_data('noprive@example.com'))
-        with app.app_context():
-            after = User.query.count()
-            assert after == before  # no User / privileged account created
-            reg = Registration.query.filter_by(
-                external_participant_id=ExternalParticipant.query.filter_by(
-                    email='noprive@example.com').first().id).first()
-            assert reg.user_id is None
-
     def test_guest_cancellation_reaches_only_the_owning_campus_queue(self, client, app):
         from app.routes.events import _external_token
 
         eid = self._event_id(app)
         self._coordinator(app, client, 1)
-        client.post(f'/event/{eid}/join', data=self._guest_data('cancel@example.com'))
+        registration_id = self._external_registration(
+            app, eid, id_number='EXT-CANCEL', email='cancel@example.com')
         with app.app_context():
-            participant = ExternalParticipant.query.filter_by(
-                email='cancel@example.com').first()
-            registration = Registration.query.filter_by(
-                external_participant_id=participant.id, event_id=eid).first()
+            registration = db.session.get(Registration, registration_id)
             token = _external_token(registration)
         response = client.post(
             f'/external/registrations/{token}/cancel',
@@ -3017,7 +3046,7 @@ class TestOutsiderVolunteers:
                 Registration, registration.id).cancellation_request is not None
         response = client.get('/coordinator/cancellation-requests')
         assert response.status_code == 200
-        assert 'Juan Dela Cruz' in response.get_data(as_text=True)
+        assert 'External Volunteer' in response.get_data(as_text=True)
         with app.app_context():
             assert CancellationRequest.query.join(Registration).join(Event).filter(
                 Event.campus_id == 2).count() == 0

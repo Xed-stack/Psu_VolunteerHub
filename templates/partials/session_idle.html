@@ -1,0 +1,20 @@
+{% if idle_session %}
+<dialog class="session-idle" id="session-idle" aria-labelledby="session-idle-title"
+  aria-describedby="session-idle-description" data-status-url="{{ url_for('auth.session_activity') }}"
+  data-login-url="{{ url_for('auth.login') }}" data-server-time="{{ idle_session.server_time }}"
+  data-expires-at="{{ idle_session.expires_at }}" data-warning-seconds="{{ idle_session.warning_seconds }}"
+  data-csrf-token="{{ csrf_token() }}">
+  <h2 id="session-idle-title">Are you still here?</h2>
+  <p id="session-idle-description">Your PSU Volunteer Hub session is about to time out due to inactivity. Stay signed in to continue. Unsaved changes may be lost if you sign out.</p>
+  <p class="session-idle__countdown">Time remaining: <strong data-idle-countdown></strong></p>
+  <p data-idle-status role="status" aria-live="polite"></p>
+  <div class="session-idle__actions">
+    <button type="button" data-idle-stay>Stay signed in</button>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="session-idle__secondary">Sign out now</button>
+    </form>
+  </div>
+</dialog>
+<script src="{{ url_for('static', filename='scripts/session-idle.js') }}"></script>
+{% endif %}

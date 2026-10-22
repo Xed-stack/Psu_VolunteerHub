@@ -5,6 +5,51 @@
  * tokens. This remains the system's only global stylesheet.
  */
 
+/* Shared native session warning, used by public, account and role layouts. */
+.session-idle {
+  box-sizing: border-box;
+  width: min(30rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: clamp(1rem, 4vw, 2rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 2px solid #00408b;
+  border-radius: .75rem;
+  background: #ffffff;
+  color: #111c2c;
+  font: inherit;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.session-idle::backdrop { background: rgb(17 28 44 / 60%); }
+.session-idle h2 { margin: 0 0 1rem; color: #00408b; font-size: 1.5rem; }
+.session-idle p { margin: 0 0 1rem; }
+.session-idle__countdown { font-variant-numeric: tabular-nums; }
+.session-idle [data-idle-status]:empty { display: none; }
+.session-idle__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.session-idle__actions form { margin: 0; }
+.session-idle button {
+  min-height: 44px;
+  padding: .625rem 1rem;
+  border: 2px solid #00408b;
+  border-radius: .375rem;
+  background: #00408b;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.session-idle button.session-idle__secondary { background: #ffffff; color: #00408b; }
+.session-idle button:focus-visible { outline: 3px solid #00408b; outline-offset: 3px; }
+.session-idle button:hover { text-decoration: underline; }
+.session-idle button:disabled { cursor: wait; }
+@media (max-width: 30rem) {
+  .session-idle__actions { flex-direction: column; }
+  .session-idle__actions button { width: 100%; }
+}
+
 :root {
   /* Brand / primary (PSU blue) */
   --color-primary: #00408b;

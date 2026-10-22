@@ -114,5 +114,6 @@
       src="{{ url_for('static', filename='scripts/first-use-tour.js') }}"
     ></script>
     {% block scripts %}{% endblock %}
+    {% include 'partials/session_idle.html' %}
   </body>
 </html>

@@ -1,0 +1,62 @@
+{% macro brand(title, description) -%}
+  <section class="auth-brand" aria-label="PSU Volunteer Hub">
+    <div class="auth-identity">
+      <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="Pangasinan State University logo" width="72" height="72">
+      <p class="auth-brand__name">PSU Volunteer Hub</p>
+    </div>
+    <div class="auth-brand__intro">
+      <p class="auth-brand__title">{{ title }}</p>
+      <p>{{ description }}</p>
+    </div>
+  </section>
+{%- endmacro %}
+
+{% macro error_summary(errors, preferences=false) -%}
+  {% if errors %}
+    <section class="auth-errors" aria-labelledby="error-title" tabindex="-1" data-error-summary>
+      <h2 id="error-title">Please check the following</h2>
+      <ul>
+        {% for name, message in errors.items() %}
+          <li><a href="{{ '#preferences' if preferences else url_for('auth.interests') if name in ['interests', 'skills'] else '#' ~ name }}">{{ message }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{%- endmacro %}
+
+{% macro field(label, name, errors, type='text', autocomplete='off', hint='', placeholder='', minlength=none) -%}
+  <div class="field">
+    <label for="{{ name }}">{{ label }}</label>
+    {% if type == 'password' %}<div class="password-input">{% endif %}
+    <input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" required
+      autocomplete="{{ autocomplete }}"
+      {% if type != 'password' %}value="{{ request.form.get(name, '') }}"{% endif %}
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      {% if minlength %}minlength="{{ minlength }}"{% endif %}
+      {% if name == 'email' %}spellcheck="false" autocapitalize="none"{% endif %}
+      {% if hint or errors.get(name) %}aria-describedby="{{ (name ~ '-hint ') if hint else '' }}{{ (name ~ '-error') if errors.get(name) else '' }}"{% endif %}
+      {% if errors.get(name) %}aria-invalid="true"{% endif %}>
+    {% if type == 'password' %}
+      <button class="button button--secondary" type="button" data-toggle-password="{{ name }}" aria-controls="{{ name }}" aria-label="Show {{ label|lower }}" aria-pressed="false" hidden>Show</button>
+      </div>
+    {% endif %}
+    {% if hint %}<p class="field-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+    {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro select_field(label, name, options, errors, hint='') -%}
+  <div class="field">
+    <label for="{{ name }}">{{ label }}</label>
+    <select class="select" id="{{ name }}" name="{{ name }}" required
+      {% if errors.get(name) %}aria-invalid="true"{% endif %}
+      {% if hint or errors.get(name) %}aria-describedby="{{ (name ~ '-hint ') if hint else '' }}{{ (name ~ '-error') if errors.get(name) else '' }}"{% endif %}>
+      <option value="">Select {{ label|lower }}</option>
+      {% for value, text in options %}
+        <option value="{{ value }}" {% if request.form.get(name, '') == value|string %}selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if hint %}<p class="field-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+    {% if errors.get(name) %}<p class="field-error" id="{{ name }}-error">{{ errors[name] }}</p>{% endif %}
+  </div>
+{%- endmacro %}

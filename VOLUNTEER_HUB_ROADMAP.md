@@ -10,6 +10,20 @@ Use clear Filipino-English wording where it improves comprehension, but retain E
 
 ## Latest delivery status (22 October 2026)
 
+Consolidated release: all current application changes are approved for commit
+and push after documentation updates. See RELEASE_2026_10_22.md for the exact
+scope, focused checks and exclusions. Current isolated publication selection:
+**106 passed in 260.39s**, zero failures. Coordinator baseline 8c22e5f is already
+in main. Older local/uncommitted and pending notes below are historical snapshots.
+The combined revision includes the auth remake, session-only/inactivity behavior,
+PSU-sign-in-only public joining, signed-in Help, Director view context, policy
+source files, Docker preparation and backup/restore documentation. No live policy
+publication, database changes or Railway deployment is included.
+
+Next unfinished verification: full suite for the combined release, plus actual
+browser zoom/screen-reader/physical-mobile checks. The 393-pass full run is the
+21 October snapshot; do not relabel it as today's combined-revision full run.
+
 22 October Coordinator operations refinement: authenticated record tables now
 reflow into labelled mobile records while dense reports use labelled internal
 horizontal scrolling. The Coordinator activity workspace prioritizes attendance,

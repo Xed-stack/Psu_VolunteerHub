@@ -39,6 +39,14 @@ The user can say: **Read HANDOFF.md and continue from the current local files.**
 
 ## Repository and local run
 
+22 October release scope: the user approved committing all current application
+changes and requested documentation updates before pushing to GitHub main.
+See RELEASE_2026_10_22.md for scope, current verification and remaining gates.
+The Coordinator workspace baseline is already in commit 8c22e5f. Earlier
+local/uncommitted statements below are dated implementation snapshots, not a
+claim that every listed change remains unpublished. Confirm actual publication
+with git status/log and the remote rather than treating approval as push success.
+
 Publication note, 18 October 2026: this follow-up revision includes the joining,
 authentication/session, homepage timing, campus-filter, and activity-search
 improvements plus their QA reports and the preserved roadmap refresh. Earlier
@@ -62,6 +70,24 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 - The expected local URL is `http://127.0.0.1:5000`.
 
 ## Completed local work
+
+### Consolidated release preparation (22 October 2026)
+
+- Includes the login/signup remake, session-only login and inactivity timeout;
+  retirement of public guest signup; signed-in Help navigation; Director
+  live/historical view context; policy source documents; and local Docker and
+  backup/restore preparation with QA reports.
+- Public event joining now requires PSU sign-in. Authorized coordinator entry
+  of external participants and existing signed external management links remain.
+- Current focused publication checks: **106 passed in 260.39s**, zero failures;
+  see RELEASE_2026_10_22.md for the command and coverage.
+  The 393-test full run below belongs to the 21 October timeout snapshot, not
+  an assertion that all later changes received a new full-suite/browser review.
+- No live policy publication, migration, seed, cloud deployment or paid hosting
+  change is part of this release operation. Local attachments, credentials,
+  database exports, runtime uploads and private QA artifacts stay out of Git.
+- Next unfinished gate: full regression on this combined revision, then remaining
+  real-browser accessibility checks. Railway remains deferred pending approval.
 
 ### Coordinator workspace refinement (22 October 2026, local)
 

@@ -1,0 +1,71 @@
+PSU VOLUNTEER HUB PRIVACY NOTICE
+Version 1.0
+Effective date: October 21, 2026
+
+PSU Volunteer Hub is an online system for managing volunteer opportunities, registrations, participation, attendance, communications, and related University volunteer programs. PSU, through the office responsible for PSU Volunteer Hub, is the personal information controller for the personal data processed through this system.
+
+This notice explains how PSU Volunteer Hub collects and uses personal data in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173), its Implementing Rules and Regulations, relevant issuances of the National Privacy Commission, and applicable PSU policies.
+
+1. PERSONAL DATA WE PROCESS
+
+We process only information reasonably necessary to operate PSU Volunteer Hub and its volunteer programs. Depending on how you use the system, this may include:
+
+• Account and identity information, such as your name, PSU email address, PSU ID number, account role, campus, college affiliation, and volunteer classification.
+• Profile and matching information, such as your interests, skills, prior participation information, profile image, and your voluntary sex response, including the option to select “prefer not to say.”
+• Volunteer activity information, such as opportunities viewed or joined, registration status, attendance status, cancellation requests, participation agreements or non-disclosure agreements you accept, and activity feedback or documentation you submit.
+• Communications and records, such as system notifications, activity announcements, support requests, and administrator audit records.
+• Security information, such as password hashes, password-reset records, timestamps of security events, and limited one-way security identifiers used to protect accounts and prevent abuse.
+• Information recorded by authorized coordinators for external participants in a specific activity, such as name, contact number, address, email address, and an internal participant reference.
+
+The system may recommend volunteer opportunities using the interests, skills, and participation information you provide. These recommendations are informational only and are not the sole basis for a decision that significantly affects you.
+
+2. PURPOSES AND BASIS OF PROCESSING
+
+PSU processes personal data to:
+
+• create, authenticate, secure, and administer user accounts;
+• verify eligibility and PSU affiliation where applicable;
+• publish and manage volunteer opportunities;
+• register volunteers, record participation and attendance, issue activity-related communications, and administer cancellations;
+• match volunteers with relevant opportunities and improve program planning;
+• prepare aggregate, de-identified reports on participation, campus reach, and volunteer-program outcomes;
+• protect the system, investigate misuse, and maintain audit trails; and
+• comply with lawful University, contractual, regulatory, and records-management obligations.
+
+Processing may be based on your consent where consent is requested, the performance of a service you request, compliance with legal or institutional obligations, or PSU's legitimate interests in securely administering its volunteer programs, as permitted by applicable law.
+
+3. SHARING OF PERSONAL DATA
+
+Personal data are available only to authorized PSU personnel according to their system role and legitimate duties. For a volunteer activity, limited information may be shared with the activity coordinator and, where necessary, the authorized partner organization responsible for that activity.
+
+PSU may also use authorized service providers that support hosting, email delivery, maintenance, or security. These providers may process data only as necessary to provide their services and subject to appropriate safeguards. PSU does not sell personal data.
+
+PSU may disclose information when required by law, a lawful order, or when necessary to protect the rights, safety, and security of PSU, its users, or others.
+
+4. SECURITY
+
+PSU applies appropriate organizational and technical measures designed to protect personal data. These include role-based access controls, password hashing, authentication safeguards, restricted administrative access, audit and security records, and controlled handling of uploaded files. No system can guarantee absolute security, so users must keep their account credentials confidential and report suspected account misuse promptly.
+
+5. RETENTION AND DISPOSAL
+
+PSU retains personal data only for as long as necessary for the purposes in this notice, applicable University records-retention requirements, legal obligations, and the handling of valid claims or investigations. When information is no longer needed, it will be securely deleted, anonymized, or otherwise disposed of in accordance with applicable procedures.
+
+6. YOUR RIGHTS
+
+Subject to applicable law, you may request to be informed about the processing of your personal data; access your data; correct inaccurate or incomplete data; object to processing where applicable; request erasure or blocking where permitted; withdraw consent where consent is the basis for processing; request data portability where applicable; seek damages where provided by law; and lodge a complaint with the National Privacy Commission.
+
+To make a request, contact [INSERT PSU DATA PROTECTION OFFICER EMAIL OR OFFICE]. PSU may ask for information needed to verify your identity before acting on a request.
+
+7. CHANGES TO THIS NOTICE
+
+PSU may publish a revised Privacy Notice when its practices or applicable requirements change. The current version will be presented in PSU Volunteer Hub, and users will be asked to acknowledge a new version before continuing to use the system where appropriate.
+
+8. CONTACT
+
+For privacy questions, concerns, or requests, contact:
+[INSERT DESIGNATED DATA PROTECTION OFFICER]
+[INSERT OFFICE / UNIVERSITY ADDRESS]
+[INSERT EMAIL ADDRESS]
+[INSERT TELEPHONE NUMBER, IF APPLICABLE]
+
+By creating an account, registering for an activity, or continuing to use PSU Volunteer Hub, you acknowledge that you have read and understood this Privacy Notice.

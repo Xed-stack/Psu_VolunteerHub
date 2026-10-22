@@ -1,3 +1,17 @@
 {% extends 'layouts/auth_base.html' %}
 {% block title %}Privacy Notice | PSU Volunteer Hub{% endblock %}
-{% block content %}<section class="auth-brand"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><h1>{{ revision.title }}</h1><p>Review how the Volunteer Hub handles participation information.</p></section><section class="auth-form policy-panel"><div class="policy-copy">{{ revision.body }}</div><form method="post">{% include 'partials/csrf_field.html' %}<label class="check-row"><input type="checkbox" name="acknowledge_privacy" required><span>I have read and acknowledge this Privacy Notice.</span></label><button class="button button--primary button--block" type="submit">Continue</button></form></section>{% endblock %}
+{% from 'partials/auth_forms.html' import brand with context %}
+{% block body %}
+<main class="auth-shell" id="main-content" tabindex="-1">
+  {{ brand('Your participation information.', 'Review how the Volunteer Hub handles participation information.') }}
+  <section class="auth-form">
+    <h1>{{ revision.title }}</h1>
+    <div class="policy-copy">{{ revision.body }}</div>
+    <form method="post">
+      {% include 'partials/csrf_field.html' %}
+      <label class="check-row"><input type="checkbox" name="acknowledge_privacy" required><span>I have read and acknowledge this Privacy Notice.</span></label>
+      <button class="button button--primary button--block" type="submit">Acknowledge and continue</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

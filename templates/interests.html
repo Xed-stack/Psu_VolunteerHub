@@ -1,21 +1,19 @@
 {% extends 'layouts/auth_base.html' %}
+{% from 'partials/auth_forms.html' import brand, error_summary with context %}
 {% block title %}Choose interests | PSU Volunteer Hub{% endblock %}
 {% block body %}
-  <main class="auth-shell">
-    <section class="auth-brand">
-      <img
-        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
-        alt="PSU logo"
-      >
-      <h1>What matters to you?</h1>
-      <p>Choose your causes and the skills you can contribute.</p>
-    </section>
+  <main class="auth-shell auth-shell--signup" id="main-content" tabindex="-1">
+    {{ brand('What matters to you?', 'Choose your causes and the skills you can contribute to the PSU volunteer community.') }}
     <section class="auth-form">
-      <small>Step 1 of 2</small>
-      <h1>Select interests and skills</h1>
+      <header class="auth-form__heading">
+        <p class="auth-step">Step 1 of 2 · Volunteer interests</p>
+        <h1>Select interests and skills</h1>
+        <p id="preferences-hint">{% if selections_required %}Choose at least one interest and one related skill. {% endif %}Your selections help us recommend relevant volunteer opportunities.</p>
+      </header>
+      {{ error_summary(errors, preferences=true) }}
       <form action="{{ url_for('auth.interests') }}" method="post">
         {% include 'partials/csrf_field.html' %}
-        <div class="choice-grid">
+        <div class="choice-grid" id="preferences" tabindex="-1" aria-describedby="preferences-hint">
           {% for item in interests_data %}
             {% set interest = item.interest %}
             <fieldset class="choice-group">
@@ -26,10 +24,12 @@
                     type="checkbox"
                     name="interests"
                     value="{{ interest.id }}"
+                    {% if interest.id|string in selected_interests %}checked{% endif %}
+                    {% if errors.get('interests') %}aria-invalid="true" aria-describedby="interests-error"{% endif %}
                   >
                   <span class="choice__text">
                     <strong>{{ interest.name }}</strong>
-                    <span class="choice__state">Selected</span>
+                    <span class="choice__state" aria-hidden="true">Selected</span>
                   </span>
                 </label>
               </legend>
@@ -47,6 +47,8 @@
                         type="checkbox"
                         name="skills"
                         value="{{ skill.id }}"
+                        {% if skill.id|string in selected_skills and interest.id|string in selected_interests %}checked{% endif %}
+                        {% if errors.get('skills') and interest.id|string in selected_interests %}aria-invalid="true" aria-describedby="skills-error"{% endif %}
                       >
                       <span>{{ skill.name }}</span>
                     </label>
@@ -55,15 +57,16 @@
               {% endif %}
             </fieldset>
           {% else %}
-            <div class="empty-state">No interests are configured.</div>
+            <div class="auth-notice">No interests are configured. Please contact your campus volunteer coordinator for help with signup.</div>
           {% endfor %}
         </div>
+        {% for name, message in errors.items() %}<p class="field-error" id="{{ name }}-error">{{ message }}</p>{% endfor %}
         <div class="form-actions">
           <a
             class="button button--secondary"
             href="{{ url_for('auth.login') }}"
-          >Back</a>
-          <button class="button button--primary" type="submit">Continue</button>
+          >Back to sign in</a>
+          <button class="button button--primary" type="submit">Continue to account details</button>
         </div>
       </form>
     </section>

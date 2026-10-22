@@ -1,12 +1,9 @@
 {% extends 'layouts/auth_base.html' %}
+{% from 'partials/auth_forms.html' import brand with context %}
 {% block title %}Complete profile | PSU Volunteer Hub{% endblock %}
 {% block body %}
-<main class="auth-shell">
-  <section class="auth-brand">
-    <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo">
-    <h1>One more profile detail</h1>
-    <p>This information supports sex-disaggregated participation reporting.</p>
-  </section>
+<main class="auth-shell" id="main-content" tabindex="-1">
+  {{ brand('One more profile detail.', 'This information supports sex-disaggregated participation reporting.') }}
   <section class="auth-form">
     <h1>Complete your profile</h1>
     <form method="post">

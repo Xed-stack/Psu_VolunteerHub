@@ -4,8 +4,8 @@ Flask Application Factory for PSU Volunteer Hub
 Creates and configures the Flask application instance.
 """
 import os
-from flask import Flask, request, redirect, url_for, flash, session
-from flask_login import LoginManager, current_user, logout_user
+from flask import Flask, request, redirect, url_for, session
+from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from app.models import db
@@ -17,6 +17,7 @@ from app.models.audit import AuditLog
 from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                PrivacyAcknowledgement, ParticipationAgreementRevision)
 from config import config
+from app.services.session_idle import check_inactivity, end_session, session_status
 
 
 def create_app(config_name=None):
@@ -34,6 +35,11 @@ def create_app(config_name=None):
     # App configuration
     app.config.from_object(config[config_name])
     app.config['APP_ENV'] = config_name
+    timeout = app.config['SESSION_IDLE_TIMEOUT_SECONDS']
+    warning = app.config['SESSION_IDLE_WARNING_SECONDS']
+    if not (isinstance(timeout, int) and isinstance(warning, int)
+            and 0 < warning < timeout):
+        raise ValueError('Session warning must be positive and shorter than the idle timeout')
 
     if config_name == 'production':
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
@@ -56,6 +62,8 @@ def create_app(config_name=None):
 
     @app.after_request
     def set_security_headers(response):
+        if current_user.is_authenticated or request.endpoint == 'auth.session_activity':
+            response.headers['Cache-Control'] = 'no-store'
         if config_name == 'production':
             response.headers.setdefault('Content-Security-Policy',
                 "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
@@ -79,14 +87,15 @@ def create_app(config_name=None):
     def require_current_terms():
         """Keep authenticated users on the active Terms revision."""
         if current_user.is_authenticated and session.get('auth_version') != current_user.auth_version:
-            session.clear()
-            logout_user()
-            flash('Your session expired because your password was changed. Sign in again.', 'info')
-            return redirect(url_for('auth.login'))
+            return end_session('Your session expired because your password was changed. Sign in again.')
+        if current_user.is_authenticated:
+            expired = check_inactivity()
+            if expired is not None:
+                return expired
         if (not current_user.is_authenticated
                 or request.endpoint in ('static', 'auth.accept_terms',
                                         'auth.accept_privacy', 'auth.complete_sex',
-                                        'auth.logout')):
+                                        'auth.logout', 'auth.session_activity')):
             return None
         from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                        PrivacyAcknowledgement)
@@ -119,6 +128,12 @@ def create_app(config_name=None):
     app.register_blueprint(events_bp)
     from app.routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp)
+
+    @app.context_processor
+    def inject_session_idle():
+        if current_user.is_authenticated and 'last_activity_at' in session:
+            return {'idle_session': session_status()}
+        return {'idle_session': None}
 
     @app.context_processor
     def inject_notifications():

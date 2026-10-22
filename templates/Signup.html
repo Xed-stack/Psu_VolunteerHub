@@ -1,147 +1,82 @@
 {% extends 'layouts/auth_base.html' %}
+{% from 'partials/auth_forms.html' import brand, field, select_field, error_summary with context %}
+{% set errors = errors|default({}) %}
 {% block title %}Create account | PSU Volunteer Hub{% endblock %}
 {% block body %}
-  <main class="auth-shell">
-    <section class="auth-brand">
-      <img
-        src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
-        alt="PSU logo"
-      >
-      <h1>Join the PSU volunteer community</h1>
-      <p>Your selected interests and skills help us recommend relevant opportunities.</p>
-    </section>
-    <section class="auth-form">
-      <small>Step 2 of 2</small>
-      <h1>Create your volunteer account</h1>
-      <form action="{{ url_for('auth.register') }}" method="post">
+  <main class="auth-shell auth-shell--signup" id="main-content" tabindex="-1">
+    {{ brand('Your service starts here.', 'Join the PSU volunteer community and find opportunities connected to your interests and skills.') }}
+    <section class="auth-form" aria-labelledby="signup-title">
+      <header class="auth-form__heading">
+        <p class="auth-step">Step 2 of 2 · Account details</p>
+        <h1 id="signup-title">Create your volunteer account</h1>
+        <p>All fields are required. Your account is for volunteering as a PSU student, faculty member, or staff member.</p>
+      </header>
+      {{ error_summary(errors) }}
+      <form action="{{ url_for('auth.register') }}" method="post" data-warn-unsaved="{{ 'true' if request.method == 'POST' else 'false' }}">
         {% include 'partials/csrf_field.html' %}
-        <div class="form-grid">
-          <label class="field">
-            First name<input
-  name="first_name"
-  value="{{ request.form.get('first_name', '') }}"
-  required
->
-          </label>
-          <label class="field">
-            Last name<input
-  name="last_name"
-  value="{{ request.form.get('last_name', '') }}"
-  required
->
-          </label>
-          <label class="field field--wide">
-            Institutional email<input
-  type="email"
-  name="email"
-  value="{{ request.form.get('email', '') }}"
-  placeholder="00ur0000@psu.edu.ph"
-  autocomplete="email"
-  required
->
-          </label>
-          <div class="field field--wide password-field">
-            <label for="signupPassword">Password</label>
-            <div class="password-input"><input id="signupPassword" type="password" name="password" minlength="{{ password_min or 8 }}" required><button class="button button--ghost" type="button" data-toggle-password="signupPassword" aria-label="Show password">Show</button></div>
-            <ul class="password-checklist" aria-live="polite">
-              <li data-password-check="length">At least {{ password_min or 8 }} characters</li>
-              <li data-password-check="letter">Contains a letter</li>
-              <li data-password-check="number">Contains a number</li>
-            </ul>
+        <fieldset class="auth-fieldset">
+          <legend>Personal details</legend>
+          <div class="form-grid">
+            {{ field('First name', 'first_name', errors, autocomplete='given-name') }}
+            {{ field('Last name', 'last_name', errors, autocomplete='family-name') }}
+            <div class="field--wide">{{ field('Institutional email', 'email', errors, type='email', autocomplete='email', placeholder='00ur0000@psu.edu.ph', hint='Use your PSU email address.') }}</div>
+            {{ select_field('Sex', 'sex', [('male', 'Male'), ('female', 'Female'), ('prefer_not_to_say', 'Prefer Not to Say')], errors, hint='Used for sex-disaggregated participation reporting. You may choose Prefer Not to Say.') }}
           </div>
-          <label class="field field--wide">
-            Confirm password<input id="signupPasswordConfirmation" type="password" name="password_confirmation" minlength="{{ password_min or 8 }}" required>
-          </label>
-          <label class="field">
-            Volunteer category
-            <select name="volunteer_type" required>
-              <option value="">Select category</option>
-              {% for value, label in [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff')] %}
-                <option
-                  value="{{ value }}"
-                  {{ 'selected' if request.form.get("volunteer_type") == value }}
-                >{{ label }}
-                </option>
-              {% endfor %}
-            </select>
-          </label>
-          <label class="field">
-            Sex
-            <select name="sex" required>
-              <option value="">Select sex</option>
-              <option value="male" {{ 'selected' if request.form.get('sex') == 'male' }}>Male</option>
-              <option value="female" {{ 'selected' if request.form.get('sex') == 'female' }}>Female</option>
-              <option value="prefer_not_to_say" {{ 'selected' if request.form.get('sex') == 'prefer_not_to_say' }}>Prefer Not to Say</option>
-            </select>
-          </label>
-          <label class="field">
-            College affiliation<input
-  name="college_affiliation"
-  value="{{ request.form.get('college_affiliation', '') }}"
-  placeholder="e.g. College of Computing"
-  required
->
-          </label>
-          <label class="field">
-            PSU ID number<input
-  name="id_number"
-  value="{{ request.form.get('id_number', '') }}"
-  required
->
-          </label>
-          <label class="field">
-            Campus
-            <select name="campus" required>
-              <option value="">Select campus</option>
-              {% for campus in campuses %}
-                <option
-                  value="{{ campus.id }}"
-                  {{ 'selected' if request.form.get("campus") |int == campus.id }}
-                >{{ campus.name }}
-                </option>
-              {% endfor %}
-            </select>
-          </label>
-        </div>
-{% if active_terms %}
-        <label class="check-row field--wide">
-          <input type="checkbox" name="terms_accepted" required>
-          <span>I have read and accept the <strong>{{ active_terms.title }}</strong> (version {{ active_terms.version }}).</span>
-        </label>
-{% endif %}
-{% if active_privacy %}
-<label class="check-row"><input type="checkbox" name="privacy_acknowledged" required><span>I acknowledge the <a href="#privacy-notice">Privacy Notice</a>.</span></label>
-<details id="privacy-notice" class="policy-copy"><summary>{{ active_privacy.title }}</summary>{{ active_privacy.body }}</details>
-{% endif %}
+        </fieldset>
+        <fieldset class="auth-fieldset">
+          <legend>PSU affiliation</legend>
+          <div class="form-grid">
+            {{ select_field('Volunteer category', 'volunteer_type', [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff')], errors) }}
+            {{ field('PSU ID number', 'id_number', errors, hint='Enter your student or employee ID.') }}
+            {{ field('College affiliation', 'college_affiliation', errors, hint='Enter the name of your college or office.') }}
+            {% set campus_options = [] %}
+            {% for campus in campuses %}{% set _ = campus_options.append((campus.id, campus.name)) %}{% endfor %}
+            {{ select_field('Campus', 'campus', campus_options, errors) }}
+          </div>
+        </fieldset>
+        <fieldset class="auth-fieldset">
+          <legend>Password</legend>
+          <div class="form-grid">
+            {{ field('Password', 'password', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Use at least ' ~ (password_min or 8) ~ ' characters.') }}
+            {{ field('Confirm password', 'password_confirmation', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Enter the same password again.') }}
+          </div>
+        </fieldset>
+        <section class="auth-preferences" aria-label="Your volunteer selections">
+          <p>Review your volunteer interests and skills before creating your account.</p>
+          <a class="auth-text-link" href="{{ url_for('auth.interests') }}">Edit interests and skills</a>
+        </section>
+        {% if active_terms or active_privacy %}
+          <fieldset class="auth-fieldset">
+            <legend>Terms and privacy</legend>
+            <p class="field-hint">Read each document before selecting its checkbox. If this form needs corrections, select the checkboxes again before submitting.</p>
+            {% if active_terms %}
+              <details class="policy-copy" id="terms-notice">
+                <summary>{{ active_terms.title }} (version {{ active_terms.version }})</summary>
+                <div class="policy-copy__body">{{ active_terms.body }}</div>
+              </details>
+              <label class="check-row" for="terms_accepted">
+                <input id="terms_accepted" type="checkbox" name="terms_accepted" required {% if errors.get('terms_accepted') %}aria-invalid="true" aria-describedby="terms_accepted-error"{% endif %}>
+                <span>I have read and accept the {{ active_terms.title }}.</span>
+              </label>
+              {% if errors.get('terms_accepted') %}<p class="field-error" id="terms_accepted-error">{{ errors.terms_accepted }}</p>{% endif %}
+            {% endif %}
+            {% if active_privacy %}
+              <details class="policy-copy" id="privacy-notice">
+                <summary>{{ active_privacy.title }} (version {{ active_privacy.version }})</summary>
+                <div class="policy-copy__body">{{ active_privacy.body }}</div>
+              </details>
+              <label class="check-row" for="privacy_acknowledged">
+                <input id="privacy_acknowledged" type="checkbox" name="privacy_acknowledged" required {% if errors.get('privacy_acknowledged') %}aria-invalid="true" aria-describedby="privacy_acknowledged-error"{% endif %}>
+                <span>I have read and acknowledge the Privacy Notice.</span>
+              </label>
+              {% if errors.get('privacy_acknowledged') %}<p class="field-error" id="privacy_acknowledged-error">{{ errors.privacy_acknowledged }}</p>{% endif %}
+            {% endif %}
+          </fieldset>
+        {% endif %}
         <button class="button button--primary button--block" type="submit">Create account</button>
       </form>
-      <p>Coordinator, Director, and Admin accounts are created by an administrator.</p>
-      <p>Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+      <p class="field-hint auth-role-note">Coordinator, Director, and Admin accounts are created by an administrator.</p>
+      <p class="auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
     </section>
   </main>
-{% endblock %}
-{% block scripts %}
-  <script>
-    document.querySelectorAll('[data-toggle-password]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const input = document.getElementById(button.dataset.togglePassword);
-        const showing = input.type === 'text';
-        input.type = showing ? 'password' : 'text';
-        button.textContent = showing ? 'Show' : 'Hide';
-        button.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-      });
-    });
-    const password = document.getElementById('signupPassword');
-    const checks = {
-      length: (value) => value.length >= {{ password_min or 8 }},
-      letter: (value) => /[A-Za-z]/.test(value),
-      number: (value) => /[0-9]/.test(value),
-    };
-    password.addEventListener('input', () => {
-      Object.entries(checks).forEach(([name, passes]) => {
-        document.querySelector(`[data-password-check="${name}"]`)
-          .classList.toggle('is-met', passes(password.value));
-      });
-    });
-  </script>
 {% endblock %}

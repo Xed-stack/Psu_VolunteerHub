@@ -1,8 +1,9 @@
 {% extends 'layouts/auth_base.html' %}
+{% from 'partials/auth_forms.html' import brand with context %}
 {% block title %}Terms of Use | PSU Volunteer Hub{% endblock %}
 {% block body %}
-<main class="auth-shell">
-  <section class="auth-brand"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="PSU logo"><h1>Terms of Use</h1><p>Review the current terms before using the Volunteer Hub.</p></section>
+<main class="auth-shell" id="main-content" tabindex="-1">
+  {{ brand('Terms of Use', 'Review the current terms before using the Volunteer Hub.') }}
   <section class="auth-form">
     <small>Version {{ revision.version }}</small><h1>{{ revision.title }}</h1>
     <div class="policy-copy">{{ revision.body }}</div>

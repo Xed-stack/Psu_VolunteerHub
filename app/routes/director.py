@@ -117,6 +117,9 @@ def activity_calendar():
 @login_required
 @roles_required('director', 'admin')
 def analytics():
+    analytics_view = request.args.get('view', 'live').strip().lower()
+    if analytics_view not in {'live', 'historical'}:
+        analytics_view = 'live'
     try:
         parse_date_range(request.args.get('start_date'), request.args.get('end_date'))
     except ReportError:
@@ -189,17 +192,30 @@ def analytics():
     leaderboards = (AnalyticsAggregator.award_leaderboards(award_year)
                     if current_user.role == 'director' else None)
 
+    query = request.args.to_dict(flat=False)
+    live_query = {
+        key: values for key, values in query.items()
+        if key not in {'view', 'page', 'start_year', 'end_year', 'activity_type'}
+    }
+    if not campus_error:
+        live_query['campus'] = [str(campus_id) for campus_id in selected_campuses]
+        live_query['campus_mode'] = [campus_mode]
+    historical_query = {'view': 'historical'}
+    for key, value in filters.items():
+        if value is not None:
+            historical_query[key] = value
+
     return render_template('director/Director_impact_anlaytics_dash.html',
+                            analytics_view=analytics_view,
                             demographics=demographics,
                             historical_summary=historical_summary,
                             historical_campus_data=historical_campus_data,
                             campuses=campuses, activity_types=activity_types,
                             selected_campuses=selected_campuses, campus_mode=campus_mode,
                             campus_error=campus_error,
-                            live_query=(request.args.to_dict(flat=False) if campus_error else
-                                        dict(request.args.to_dict(flat=False),
-                                            campus=[str(cid) for cid in selected_campuses],
-                                            campus_mode=[campus_mode])),
+                            live_query=live_query,
+                            live_navigation_query=dict(live_query, view=['live']),
+                            historical_query=historical_query,
                             categories=categories,
                             sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
                             selected_sex=live_sex, selected_sdg_id=live_sdg_id,

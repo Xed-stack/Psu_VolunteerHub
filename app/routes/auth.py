@@ -17,6 +17,8 @@ from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                PrivacyAcknowledgement)
 from app.models import db
 from app.services.email import send_email
+from app.services.session_idle import session_status
+import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -52,8 +54,8 @@ def _record_attempt(action, subject=''):
 
 
 def _too_many_attempts():
-    flash('Too many attempts. Please wait and try again.', 'error')
-    return render_template('login.html'), 429
+    return render_template(
+        'login.html', form_error='Too many attempts. Please wait and try again.'), 429
 
 
 def _password_min_length():
@@ -104,14 +106,13 @@ def login():
     if request.method == 'POST':
         identifier = request.form.get('identifier', '').strip()
         password = request.form.get('password', '')
-        remember = request.form.get('remember') == 'on'
 
         if _is_limited('login', identifier):
             return _too_many_attempts()
 
         if not identifier or not password:
-            flash('Please enter both email/ID and password.', 'warning')
-            return render_template('login.html')
+            return render_template(
+                'login.html', form_error='Please enter both email/ID and password.')
 
         # Institutional email matching is case-insensitive; PSU IDs are exact.
         user = User.query.filter(or_(
@@ -121,15 +122,16 @@ def login():
 
         if user is None or not user.check_password(password):
             _record_attempt('login', identifier)
-            flash('Invalid email/ID or password.', 'error')
-            return render_template('login.html')
+            return render_template(
+                'login.html', form_error='Invalid email/ID or password.')
 
         if not user.is_active:
             session['reactivation_user_id'] = user.id
             return render_template('login.html', show_reactivation_modal=True)
 
-        login_user(user, remember=remember)
+        login_user(user, remember=False)
         session['auth_version'] = user.auth_version
+        session['last_activity_at'] = time.time()
 
         next_page = _safe_next_url(request.args.get('next'))
         active_terms = _active_terms()
@@ -140,6 +142,20 @@ def login():
         return redirect(next_page)
 
     return render_template('login.html')
+
+
+@auth_bp.route('/session', methods=['GET', 'POST'])
+def session_activity():
+    """Read the deadline without renewal; CSRF-protected POST records activity."""
+    from flask import jsonify
+    if not current_user.is_authenticated:
+        response = jsonify(sign_in_url=url_for('auth.login'))
+        response.status_code = 401
+    else:
+        from flask_wtf.csrf import generate_csrf
+        response = jsonify(**session_status(), csrf_token=generate_csrf())
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @auth_bp.route('/request-reactivation', methods=['POST'])
@@ -178,6 +194,8 @@ def interests():
     """Onboarding step 1: pick interests; connected skills reveal inline."""
     from config import Config
     interest_skill_map = getattr(Config, 'INTEREST_SKILL_MAP', {})
+    errors = {}
+    selections_required = bool(Interest.query.first() and Skill.query.first())
 
     if request.method == 'POST':
         selected_interests = Interest.query.filter(
@@ -199,7 +217,14 @@ def interests():
             skill_id for skill_id in request.form.getlist('skills')
             if skill_id in allowed_skill_ids
         ]
-        return redirect(url_for('auth.register'))
+        # Match final registration's existing catalogue-dependent requirements.
+        if selections_required:
+            if not selected_interest_ids:
+                errors['interests'] = 'Select at least one interest.'
+            if not session['selected_skills']:
+                errors['skills'] = 'Select at least one skill.'
+        if not errors:
+            return redirect(url_for('auth.register'))
 
     configured_names = list(interest_skill_map)
     all_interests = Interest.query.filter(
@@ -214,7 +239,11 @@ def interests():
         )
         interests_data.append({'interest': interest, 'skills': connected})
 
-    return render_template('interests.html', interests_data=interests_data)
+    return render_template(
+        'interests.html', interests_data=interests_data, errors=errors,
+        selections_required=selections_required,
+        selected_interests=session.get('selected_interests', []),
+        selected_skills=session.get('selected_skills', []))
 
 
 @auth_bp.route('/skills', methods=['GET', 'POST'])
@@ -277,44 +306,45 @@ def register():
         password_min = _password_min_length()
 
         # Validation
-        errors = []
-        if not first_name or not last_name:
-            errors.append('First and Last Name are required.')
+        errors = {}
+        if not first_name:
+            errors['first_name'] = 'First name is required.'
+        if not last_name:
+            errors['last_name'] = 'Last name is required.'
         if not email:
-            errors.append('Email is required.')
+            errors['email'] = 'Email is required.'
         if not password:
-            errors.append('Password is required.')
+            errors['password'] = 'Password is required.'
         elif len(password) < password_min:
-            errors.append(
-                f'Password must be at least {password_min} characters.')
+            errors['password'] = f'Password must be at least {password_min} characters.'
         if (password_confirmation is not None
                 and password != password_confirmation):
-            errors.append('Password confirmation does not match.')
+            errors['password_confirmation'] = 'Password confirmation does not match.'
 
         if not id_number:
-            errors.append('PSU ID Number is required for volunteers.')
+            errors['id_number'] = 'PSU ID Number is required for volunteers.'
         if volunteer_type not in VOLUNTEER_TYPES:
-            errors.append('Select Student, Faculty, or Staff.')
+            errors['volunteer_type'] = 'Select Student, Faculty, or Staff.'
         if sex not in SEXES:
-            errors.append('Select a sex response.')
+            errors['sex'] = 'Select a sex response.'
         if not college_affiliation:
-            errors.append('College affiliation is required.')
+            errors['college_affiliation'] = 'College affiliation is required.'
         if active_terms and request.form.get('terms_accepted') != 'on':
-            errors.append('You must accept the current Terms of Use.')
+            errors['terms_accepted'] = 'You must accept the current Terms of Use.'
         if active_privacy and request.form.get('privacy_acknowledged') != 'on':
-            errors.append('You must acknowledge the current Privacy Notice.')
+            errors['privacy_acknowledged'] = 'You must acknowledge the current Privacy Notice.'
 
         # Check duplicate email
         if email and User.query.filter(
                 db.func.lower(User.email) == email).first():
-            errors.append('An account with this email already exists.')
+            errors['email'] = 'An account with this email already exists.'
         if id_number and User.query.filter_by(id_number=id_number).first():
-            errors.append('An account with this PSU ID already exists.')
+            errors['id_number'] = 'An account with this PSU ID already exists.'
 
         # Resolve campus string to Campus Model DB record
         campus_obj = db.session.get(Campus, campus_id) if campus_id else None
         if campus_obj is None:
-            errors.append('Select a valid PSU campus.')
+            errors['campus'] = 'Select a valid PSU campus.'
 
         selected_interest_ids = request.form.getlist('interests') or session.get(
             'selected_interests', [])
@@ -322,18 +352,17 @@ def register():
             'selected_skills', [])
         if interests and skills:
             if not selected_interest_ids:
-                errors.append('Select at least one interest.')
+                errors['interests'] = 'Select at least one interest.'
             if not selected_skill_ids:
-                errors.append('Select at least one skill.')
+                errors['skills'] = 'Select at least one skill.'
 
         if errors:
             _record_attempt('register', email)
-            for error in errors:
-                flash(error, 'error')
             return render_template('Signup.html', campuses=campuses,
                                    interests=interests, skills=skills,
                                    password_min=password_min,
-                                   active_terms=active_terms, active_privacy=active_privacy)
+                                   active_terms=active_terms, active_privacy=active_privacy,
+                                   errors=errors)
 
         # Public registration always creates a volunteer. Privileged roles
         # can only be assigned through the protected Admin interface.

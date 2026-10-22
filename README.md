@@ -179,6 +179,16 @@ The historical import and demo seed are idempotent. Historical imports remain se
 
 ## Policies and cancellations
 
+Policy source texts are included in `docs/TERMS_OF_USE_v1.0.txt` and
+`docs/PRIVACY_NOTICE_v1.0.txt`. Committing those files does not publish an active
+database revision or establish institutional/legal approval. An authorized
+administrator must review and publish approved content through the existing
+policy-management screens. Registration disclosures depend on active revisions.
+
+Public activity joining requires PSU sign-in. The former public guest form is
+retired; its legacy entry URL redirects to sign-in. Coordinators can still record
+external participants for an activity, and existing signed management links remain.
+
 - Admins publish versioned Terms of Use, Privacy Notice, and default Participation Agreement revisions.
 - New users acknowledge active Terms and Privacy revisions. Existing users are prompted after a newly published revision.
 - Every event registration stores the accepted participation-agreement version; events may have their own agreement and optional NDA.
@@ -210,11 +220,18 @@ SQLite, plus focused browser checks. No live data or deployment changes.
 
 ## Tests
 
+For the 22 October combined release, see `RELEASE_2026_10_22.md` for current
+focused results (**106 passed in 260.39s**), included changes and outstanding
+checks. The full 393-test run
+on 21 October belongs to the inactivity implementation snapshot; the combined
+release has not received a new complete regression run. Earlier verification
+paragraphs below are historical records, not today's deployment-readiness status.
+
 ```powershell
 python -m pytest tests -q
 ```
 
-The latest full local verification on 18 October 2026 completed with `277 passed`,
+Historical full local verification on 18 October 2026 completed with `277 passed`,
 zero failures, using isolated SQLite test databases. This includes the Admin
 password-reset/session checks and the recent joining, redirect, homepage timing,
 dashboard, and profile regressions.
