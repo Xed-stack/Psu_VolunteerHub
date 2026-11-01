@@ -234,17 +234,36 @@ def campus_ranking(campuses, lowest=False):
     return dict(state='ranked' if leaders else 'zero', rows=rows, leaders=leaders)
 
 
+def campus_prescriptive_tips(campus, evidence_rows, has_coordinator=False):
+    """Return concise, evidence-backed follow-up guidance for a campus row."""
+    rows = [row for row in evidence_rows if row.get('campus_id') == campus['campus_id']]
+    tips = []
+    if any(row.get('ended') and not row.get('attendance_complete') for row in rows):
+        tips.append('Complete outstanding attendance records so verified results can be assessed.')
+    complete = [row for row in rows if row.get('attendance_complete') and row.get('registrations')]
+    if complete and sum(row.get('outcome_attended', 0) for row in complete) / sum(row['registrations'] for row in complete) < .75:
+        tips.append('Review upcoming activity outreach, registration conversion, and attendance follow-up.')
+    if any((row.get('target_participants') or 0) > 0 and row.get('outcome_attended', 0) < row['target_participants'] for row in rows if row.get('attendance_complete')):
+        tips.append('Review activity targets and plan additional participant outreach.')
+    if not rows:
+        tips.append('Plan or publish a campus activity for the selected period.')
+    if not has_coordinator:
+        tips.append('Contact this campus coordinator to review the next evidence or activity milestone.')
+    return tips[:3]
+
+
 def dashboard_context(year=None, campus_id=None):
     from flask import request, url_for
     year = selected_year(request.args.get('goal_year', year))
     sample = request.args.get('sample') == '1'
     plan = summary(year, campus_id, sample)
     if campus_id is None:
-        ranking = campus_ranking(comparisons(year, sample),
-                                 lowest=request.endpoint == 'director.director_dash' and getattr(current_user, 'role', None) == 'director')
+        lowest = request.endpoint == 'director.director_dash' and getattr(current_user, 'role', None) == 'director'
+        ranking = campus_ranking(comparisons(year, sample), lowest=lowest)
         for campus in ranking['rows']:
             campus['detail_url'] = url_for('goals.details', year=year, campus=campus['campus_id'],
                                            sample=1 if sample else None)
+            campus['is_lowest'] = campus in ranking['leaders'] if lowest else False
         plan['campus_ranking'] = ranking
     else:
         plan['participation'] = participation(year, campus_id)

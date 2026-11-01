@@ -16,8 +16,10 @@ from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
 from app.models.event import Event, Campus, SdgGoal
 from app.models.user import User
+from app.models.notification import Notification
 from sqlalchemy.orm import selectinload
 from app.dashboard import summarize_report, resolve_period, dashboard_evidence, annual_plan_summary
+from app.annual_goals import selected_year, campus_prescriptive_tips, summary as annual_goal_summary
 from app.reports import (
     build_events_report, render_csv, render_pdf, resolve_campus,
     ReportError, _build_meta, parse_date_range)
@@ -195,6 +197,18 @@ def director_dash():
                  ((campus.id in evidence['selected_campuses']) == (evidence['campus_mode'] == 'include')))]
     with_activity = sum(campus['activities'] > 0 for campus in campuses)
     evidence['annual_plan'] = annual_plan_summary(now.year)
+    if current_user.role == 'director':
+        coordinators = {campus_id: User.query.filter_by(
+            role='coordinator', campus_id=campus_id, _is_active=True).count()
+            for campus_id in (row['campus_id'] for row in evidence['annual_plan']['campus_ranking']['rows'])}
+        for campus in evidence['annual_plan']['campus_ranking']['rows']:
+            campus['has_coordinator'] = bool(coordinators.get(campus['campus_id']))
+            campus['prescriptive_tips'] = campus_prescriptive_tips(
+                campus, evidence['evidence_rows'], campus['has_coordinator'])
+    else:
+        for campus in evidence['annual_plan']['campus_ranking']['rows']:
+            campus['has_coordinator'] = False
+            campus['prescriptive_tips'] = []
     award_years = sorted({row[0] for row in db.session.query(
         db.extract('year', Event.date)).distinct().all()}, reverse=True) or [now.year]
     award_year = request.args.get('award_year', type=int)
@@ -211,6 +225,40 @@ def director_dash():
                            campus_coverage={'campuses': campuses, 'total': len(campuses),
                                             'with_activity': with_activity,
                                             'without_activity': len(campuses) - with_activity}), (400 if evidence['campus_error'] else 200)
+
+
+@director_bp.route('/director/campus-follow-up', methods=['POST'])
+@login_required
+@roles_required('director')
+def campus_follow_up():
+    campus_id = request.form.get('follow_up_campus_id', type=int)
+    campus = db.session.get(Campus, campus_id) if campus_id else None
+    if campus is None:
+        flash('Choose a valid campus before sending a follow-up.', 'error')
+        return redirect(url_for('director.director_dash'))
+    year = selected_year(request.form.get('goal_year'))
+    plan = annual_goal_summary(year, campus_id)
+    title = f'Campus Goal Follow-Up: {campus.name}'
+    message = (f'The {campus.name} campus is currently at {plan["rate"] if plan["rate"] is not None else "Not Available"}% '
+               f'annual goal achievement for {year}. Please review the campus goals and plan the next '
+               'evidence or activity milestone.')
+    coordinators = User.query.filter_by(role='coordinator', campus_id=campus.id, _is_active=True).all()
+    if not coordinators:
+        flash(f"No active coordinator is assigned to {campus.name}. Contact the campus coordinator directly.", 'warning')
+    else:
+        for coordinator in coordinators:
+            duplicate = Notification.query.filter_by(
+                user_id=coordinator.id, notification_type='campus_goal_follow_up',
+                is_read=False, title=title, message=message).first()
+            if duplicate is None:
+                db.session.add(Notification(user_id=coordinator.id, title=title,
+                                            message=message, notification_type='campus_goal_follow_up'))
+        db.session.commit()
+        flash(f'Follow-up sent to {campus.name} coordinator.', 'success')
+    query = {key: values for key, values in request.form.to_dict(flat=False).items()
+             if key not in {'follow_up_campus_id', 'goal_year', 'csrf_token'}}
+    query['goal_year'] = [str(year)]
+    return redirect(url_for('director.director_dash', **query) + '#recognition')
 
 
 @director_bp.route('/director/calendar')
@@ -307,6 +355,7 @@ def analytics():
 @login_required
 @roles_required('director', 'admin')
 def export_campus_csv():
+    from app.reports import csv_safe
     filters = _historical_filters()
     data = AnalyticsAggregator.historical_campus_stats(**filters)
     output = io.StringIO()
@@ -314,7 +363,7 @@ def export_campus_csv():
     writer.writerow(['Campus / Unit', 'Activities', 'Volunteer Participations',
                      'Incomplete Source Rows'])
     for row in data:
-        writer.writerow([row['campus'], row['activities'],
+        writer.writerow([csv_safe(row['campus']), row['activities'],
                          row['participations'], row['incomplete_records']])
     return Response(output.getvalue(), mimetype='text/csv', headers={
         'Content-Disposition':
