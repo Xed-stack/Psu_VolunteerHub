@@ -304,6 +304,31 @@ def test_director_goal_queries_are_bounded_with_linked_activity_evidence(app):
         ('San Carlos', 2, 0), ('Santa Maria', 3, 0), ('Urdaneta', 3, 0)]
 
 
+def test_director_hero_matches_campus_results_and_separates_university_targets(app):
+    from tests.html_helpers import parse_html
+    from tests.test_system_performance import signed_in_client
+    assert invoke(app).exit_code == 0
+    client = signed_in_client(app, 'director')
+    page = parse_html(client.get('/director_dash?goal_year=2026&period=all&campus=1').get_data(as_text=True))
+    overview = page.one('section', **{'aria-label': 'Campus Annual-Plan Achievement'})
+    hero = overview.one('a', **{'class': 'goal-hero'})
+    assert '51.9%' in hero.text and '14 of 27 Approved Goals' in hero.text
+    assert '6 Awaiting Evidence' in hero.text
+    assert hero.attrs['href'] == '/annual-goals?year=2026#campus-results'
+    pair = overview.one('div', **{'class': 'goal-plan-pair'})
+    assert [link.one('strong').text for link in pair.all('a')] == ['9 / 18', '5 / 9']
+    for link in pair.all('a'):
+        detail = client.get(link.attrs['href'])
+        assert detail.status_code == 200 and b'id="campus-results"' in detail.data
+    university = overview.one('section', **{'aria-label': 'University-wide targets'})
+    assert 'Evidence pending' in university.text
+    assert '0 of 3 goals achieved; 3 awaiting evidence.' in university.text
+    assert university.one('a').attrs['href'] == '/annual-goals?year=2026'
+    empty = parse_html(client.get('/director_dash?goal_year=2025').get_data(as_text=True))
+    assert 'Not Available' in empty.one('a', **{'class': 'goal-hero'}).text
+    assert 'No approved targets' in empty.one('section', **{'aria-label': 'University-wide targets'}).text
+
+
 @pytest.mark.parametrize('code', ['BAYAMBANG', 'STAMARIA', 'ALAMINOS'])
 def test_preserves_coordinator_on_campus_without_upcoming_activity(app, code):
     with app.app_context():

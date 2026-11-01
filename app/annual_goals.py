@@ -289,6 +289,17 @@ def dashboard_context(year=None, campus_id=None):
     if campus_id is None:
         lowest = request.endpoint == 'director.director_dash' and getattr(current_user, 'role', None) == 'director'
         plan['campus_summaries'] = comparisons(year, sample)
+        if request.endpoint == 'director.director_dash':
+            rollup = summarize([row for campus in plan['campus_summaries'] for row in campus['rows']],
+                               year, sample=sample)
+            rollup.update(scope='All Campus',
+                          detail_url=url_for('goals.details', year=year, sample=1 if sample else None,
+                                             _anchor='campus-results'),
+                          aop_url=url_for('goals.details', year=year, plan='AOP',
+                                          sample=1 if sample else None, _anchor='campus-results'),
+                          asp_url=url_for('goals.details', year=year, plan='ASP',
+                                          sample=1 if sample else None, _anchor='campus-results'))
+            plan['campus_rollup'] = rollup
         ranking = campus_ranking(plan['campus_summaries'], lowest=lowest)
         for campus in ranking['rows']:
             campus['detail_url'] = url_for('goals.details', year=year, campus=campus['campus_id'],

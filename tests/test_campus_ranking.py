@@ -4,7 +4,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from app.annual_goals import campus_ranking, dashboard_context
+from app.annual_goals import campus_ranking, dashboard_context, sample_rows
 from app.models.notification import Notification
 from datetime import date
 from tests.test_annual_goals import app, client, target, _login_as, _create_user
@@ -68,7 +68,7 @@ def test_director_routes_reuse_scoped_deduplicated_goals_without_sex_queries(app
 
 
 def test_sample_year_and_drilldowns_preserved(app,monkeypatch):
-    comparisons = Mock(return_value=[campus('Sample campus',3,4,2)])
+    comparisons = Mock(return_value=[dict(campus('Sample campus',3,4,2), rows=sample_rows(2))])
     monkeypatch.setattr('app.annual_goals.comparisons',comparisons)
     with app.test_request_context('/director_dash?goal_year=2024&sample=1'):
         plan = dashboard_context(2026)
@@ -76,6 +76,25 @@ def test_sample_year_and_drilldowns_preserved(app,monkeypatch):
     assert plan['sample'] and plan['year'] == 2024
     assert parse_qs(urlsplit(plan['campus_ranking']['rows'][0]['detail_url']).query) == {
         'year':['2024'],'campus':['2'],'sample':['1']}
+
+
+def test_campus_rollup_weights_goals_and_keeps_shared_memberships(app, client):
+    target(campus=1, actual=4, shared='both')
+    target(campus=1, actual=4, shared='both', kind='ASP')
+    target(campus=2, actual=0)
+    target(campus=2)
+    target(actual=4)
+    _login_as(client, _create_user(app, role='director', email='rollup@test.com'))
+    response = client.get('/director_dash')
+    from tests.html_helpers import parse_html
+    page = parse_html(response.get_data(as_text=True))
+    hero = page.one('a', **{'class': 'goal-hero'})
+    assert '33.3%' in hero.text and '1 of 3 Approved Goals' in hero.text
+    assert '1 Awaiting Evidence' in hero.text
+    plans = page.one('div', **{'class': 'goal-plan-pair'})
+    assert [link.one('strong').text for link in plans.all('a')] == ['1 / 3', '1 / 1']
+    university = page.one('section', **{'aria-label': 'University-wide targets'})
+    assert 'All targets met' in university.text and '1 of 1 goals achieved' in university.text
 
 
 def test_coordinator_still_gets_participation_and_director_empty_preview_states(app,client):

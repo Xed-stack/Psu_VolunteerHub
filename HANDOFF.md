@@ -1,5 +1,43 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Campus Goal Summary Scope: 1 November 2026
+
+The Director dashboard now uses the existing campus comparison rows to summarize
+campus achievement in its main card. The presentation fixture gives 14/27
+(51.9%), AOP 9/18, ASP 5/9, with six goals awaiting evidence. This is a ratio of
+goals, not an average of rounded campus percentages. Shared AOP/ASP obligations
+remain deduplicated within each campus; different campuses' obligations remain
+separate. Year selection and sample-preview state are retained. Activity-report
+filters do not change this independent annual-goal scope.
+
+The three university-wide goals remain separate and show their explicit status
+and pending count in a smaller section below the campus summary. Links from the
+campus summary/AOP/ASP land on the matching campus comparison table; the separate
+university link opens university target evidence. This uses already-loaded rows
+and adds no database queries. Coordinators retain their own campus summary.
+
+UI direction: existing PSU staff dashboard, Inter typography, navy #001a41,
+primary blue #00408b, gold #f6bf22 and pale surface #f9f9ff; ENERGY 1 / RHYTHM 2 /
+MOTION 1. Retain the large campus achievement number as the focal point for
+cross-campus decisions. A plain ruled section separates university targets;
+wrapping flex items stack their content and action on small screens. No new
+assets, dependencies, animations or client-side state.
+
+User chose antislop during this fix. The frontend-design, ponytail/full,
+antislop core/UI/human/mobile skills and current Web Interface Guidelines were
+applied. Changed UI audit: semantic navigation, explicit scope/pending labels,
+year-preserving links, native keyboard activation and visible focus pass.
+Measured text/surface contrast: secondary text 8.88:1; primary/focus 9.51:1.
+`scripts/qa_annual_goal_summary.py` checks the isolated seeded dashboard at
+1440/900/768/390/320px, with no horizontal overflow, a 44px university target
+link, keyboard navigation, and no page errors. It generates ignored QA PNGs.
+No manual screen-reader or physical-device verification is claimed.
+
+Verification: 40 focused ranking, Director-layout, seeded-summary and query-budget
+checks passed. UI gate PASS: existing PSU tokens retained; no decorative assets
+or motion added; all new links resolve; empty/pending states are explicit;
+desktop/mobile reflow and keyboard/focus checks pass in isolated Chromium.
+
 ## Director Dashboard Timeout: 1 November 2026
 
 The presentation reset was deployed as `81cd3c2` and the user successfully ran

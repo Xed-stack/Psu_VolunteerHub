@@ -1029,6 +1029,13 @@ body:has(.activity-page) .flash--success { background: var(--primary); }
 }
 .goal-ranking-list .btn { max-width: 100%; min-height: 44px; white-space: normal; }
 .goal-overview__actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.goal-scope-note { max-width: 80ch; margin: 0 0 24px; color: var(--on-surface-variant); line-height: 1.6; }
+.goal-university { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 32px; margin-bottom: 24px; padding-block: 24px; border-block: 1px solid var(--outline-variant); }
+.goal-university > div { flex: 1 1 240px; min-width: 0; }
+.goal-university h3 { margin: 0; font-size: 1.1rem; color: var(--primary-dark); text-wrap: balance; }
+.goal-university > div:nth-child(2) { font-variant-numeric: tabular-nums; }
+.goal-university p { margin: 6px 0 0; color: var(--on-surface-variant); line-height: 1.5; }
+.goal-university .btn { min-height: 44px; white-space: normal; }
 .goal-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 0; margin-top: 16px; border-block: 2px solid var(--gold); }
 .goal-preview strong { color: var(--primary-dark); }
 .goal-detail-page { max-width: 1280px; }
