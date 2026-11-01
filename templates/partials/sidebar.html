@@ -89,14 +89,6 @@
         href="{{ url_for('admin.admin_dash') }}"
       ><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
       <a
-        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
-        href="{{ url_for('events.opportunities') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">volunteer_activism</span>Opportunities</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint in ['admin.create_user','admin.edit_user'] }}"
-        href="{{ url_for('admin.admin_dash') }}#user-management"
-      ><span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>User Management</a>
-      <a
         class="navlink {{ 'navlink--active' if endpoint == 'admin.settings' }}"
         href="{{ url_for('admin.settings') }}"
       ><span class="material-symbols-outlined" aria-hidden="true">settings</span>Settings</a>

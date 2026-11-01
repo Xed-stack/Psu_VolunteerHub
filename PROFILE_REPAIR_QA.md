@@ -1,5 +1,11 @@
 # Volunteer profile repair verification
 
+Continuation note, 31 October 2026: profile rules and the dated evidence below
+are preserved. The latest dashboard layout does not change profile ownership,
+authored names, photo rules, recommendation scoring, or profile participation
+definitions. See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for the
+current goal/state, decisions, skills/rules, next step, and verification limits.
+
 Scope: `/profile` and its existing photo-removal action. Personal account
 details remain read-only. No database migration, framework, dependency, or
 profile JavaScript was added. Earlier dashboard changes are preserved.

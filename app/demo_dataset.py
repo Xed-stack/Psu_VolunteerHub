@@ -7,21 +7,32 @@ from secrets import token_urlsafe
 import click
 from flask import current_app
 from flask.cli import with_appcontext
-from sqlalchemy import or_
+from sqlalchemy import func, select
 
 from app.models import db
 from app.models.audit import AuditLog
-from app.models.event import (Attendance, CancellationRequest, Campus, Event,
-                              ExternalParticipant, Registration, RecommendationLog,
-                              SdgGoal)
+from app.models.event import (AnalyticsSummary, Attendance, CancellationRequest,
+                              Campus, Event, EventAnnouncement, ExternalParticipant,
+                              HistoricalActivity, Milestone, Registration,
+                              RecommendationLog, SdgGoal, event_sdgs, event_skills)
 from app.models.notification import Notification
-from app.models.user import Interest, Skill, User, VolunteerProfile
+from app.models.policy import (ParticipationAgreementRevision, PrivacyAcknowledgement,
+                               PrivacyRevision, TermsAcceptance, TermsRevision)
+from app.models.user import (Interest, PasswordResetToken, Skill, User,
+                             VolunteerProfile, user_interests, user_skills)
 
 
 DEMO_SERVICE_ID = '5ba9ae8d-fdd4-4850-a193-dcb5760a6e72'
-PREFIX = '[Demo Dataset]'
 KEEP = {'student@psu.edu': 'volunteer', 'coordinator@psu.edu': 'coordinator',
         'director@psu.edu': 'director'}
+# Dependants precede parents so the reset never disables foreign keys.
+RESET_TABLES = (
+    Attendance.__table__, CancellationRequest.__table__,
+    RecommendationLog.__table__, Notification.__table__, Milestone.__table__,
+    EventAnnouncement.__table__, Registration.__table__, event_skills, event_sdgs,
+    Event.__table__, ExternalParticipant.__table__, HistoricalActivity.__table__,
+    AnalyticsSummary.__table__, AuditLog.__table__,
+)
 FIRST_NAMES = ('Andrea', 'Miguel', 'Camille', 'Paolo', 'Nicole', 'Rafael',
                'Bianca', 'Gabriel', 'Sofia', 'Adrian', 'Isabel', 'Marco',
                'Alyssa', 'Daniel', 'Patricia', 'Luis', 'Sam', 'Alex', 'Jamie',
@@ -53,34 +64,27 @@ def _name(index):
     return f'{FIRST_NAMES[index % len(FIRST_NAMES)]} {LAST_NAMES[index // len(FIRST_NAMES) % len(LAST_NAMES)]}'
 
 
-def _old_records():
-    events = Event.query.filter(or_(Event.title.startswith('[Demo Analytics]'),
-                                    Event.title.startswith(PREFIX))).all()
-    externals = ExternalParticipant.query.filter(
-        ExternalParticipant.id_number.startswith('DEMO-EXT-')).all()
-    event_ids = {event.id for event in events}
-    for participant in externals:
-        if any(r.event_id not in event_ids for r in participant.registrations):
-            raise click.ClickException('A demo external participant also has non-demo registrations; no changes made.')
-    return events, externals
+def _reset_counts():
+    return {table.name: db.session.scalar(select(func.count()).select_from(table))
+            for table in RESET_TABLES}
 
 
 def _replace_dataset(accounts, campuses, now):
     """All changes share the caller's transaction; no DDL or intermediate commits."""
-    events, externals = _old_records()
-    event_ids = [event.id for event in events]
-    Notification.query.filter(Notification.related_event_id.in_(event_ids)).delete(synchronize_session=False)
-    RecommendationLog.query.filter(RecommendationLog.event_id.in_(event_ids)).delete(synchronize_session=False)
-    # Delete attendance before ORM registration cascades, including on SQLite.
-    Attendance.query.filter(Attendance.event_id.in_(event_ids)).delete(synchronize_session=False)
-    for event in events:
-        db.session.delete(event)
-    db.session.flush()
-    for participant in externals:
-        db.session.expire(participant, ['registrations'])
-        db.session.delete(participant)
-    AuditLog.query.filter_by(action='synthetic_demo_fixture').delete(synchronize_session=False)
-    db.session.flush()
+    for table in RESET_TABLES:
+        db.session.execute(table.delete())
+    keep_ids = [account.id for account in accounts.values()]
+    for table in (PasswordResetToken.__table__, TermsAcceptance.__table__,
+                  PrivacyAcknowledgement.__table__, VolunteerProfile.__table__,
+                  user_interests, user_skills):
+        db.session.execute(table.delete().where(table.c.user_id.not_in(keep_ids)))
+    for model in (TermsRevision, PrivacyRevision, ParticipationAgreementRevision):
+        db.session.execute(model.__table__.update().where(
+            model.published_by_id.not_in(keep_ids)).values(published_by_id=None))
+    db.session.execute(User.__table__.delete().where(User.id.not_in(keep_ids)))
+    VolunteerProfile.query.update({VolunteerProfile.past_participation: []},
+                                  synchronize_session=False)
+    db.session.expire_all()
 
     from app import _seed_interests_skills, _seed_sdgs
     _seed_interests_skills(current_app, commit=False)
@@ -93,33 +97,26 @@ def _replace_dataset(accounts, campuses, now):
                     'College of Computing', 'College of Agriculture',
                     'College of Nursing', 'College of Hospitality Management')
     rng = random.Random(20261030)
-    existing = {user.email: user for user in User.query.filter(
-        User.email.endswith('@demo.invalid')).all()}
-
     def user_for(email, index, role, campus):
-        user = existing.get(email)
-        if user is not None and (user.role != role or user.id_number != f'SYN-{index:05d}'):
-            raise click.ClickException(f'Fixture identity collision for {email}; no changes committed.')
-        if user is None:
-            user = User(name=_name(index), email=email, role=role,
-                        id_number=f'SYN-{index:05d}', campus_id=campus.id,
-                        sex=rng.choice(('male', 'female', 'prefer_not_to_say')),
-                        created_at=now - timedelta(days=800),
-                        college_affiliation=affiliations[index % len(affiliations)],
-                        volunteer_type=('student', 'faculty', 'staff')[index % 3])
-            # Synthetic identities cannot sign in with a shared demo password.
-            user.set_password(token_urlsafe(32))
-            db.session.add(user)
-            if role == 'volunteer':
-                user.profile = VolunteerProfile()
-                category = ACTIVITIES[index % len(ACTIVITIES)][1]
-                user.interests = [interests[category]]
-                user.skills = [skills[name] for name in current_app.config['INTEREST_SKILL_MAP'][category]]
+        user = User(name=_name(index), email=email, role=role,
+                    id_number=f'SYN-{index:05d}', campus_id=campus.id,
+                    sex=rng.choice(('male', 'female', 'prefer_not_to_say')),
+                    created_at=now - timedelta(days=800),
+                    college_affiliation=affiliations[index % len(affiliations)],
+                    volunteer_type=('student', 'faculty', 'staff')[index % 3])
+        # Synthetic identities cannot sign in with a shared demo password.
+        user.set_password(token_urlsafe(32))
+        db.session.add(user)
+        if role == 'volunteer':
+            user.profile = VolunteerProfile()
+            category = ACTIVITIES[index % len(ACTIVITIES)][1]
+            user.interests = [interests[category]]
+            user.skills = [skills[name] for name in current_app.config['INTEREST_SKILL_MAP'][category]]
         return user
 
     coordinator = accounts['coordinator@psu.edu']
     if coordinator.campus_id not in {campus.id for campus in campuses}:
-        coordinator.campus = campuses[0]
+        coordinator.campus_id = campuses[0].id
     coordinators = {coordinator.campus_id: coordinator}
     for index, campus in enumerate(campuses):
         if campus.id not in coordinators:
@@ -127,7 +124,7 @@ def _replace_dataset(accounts, campuses, now):
                                                1000 + index, 'coordinator', campus)
     student = accounts['student@psu.edu']
     if student.campus_id not in {campus.id for campus in campuses}:
-        student.campus = campuses[0]
+        student.campus_id = campuses[0].id
     if student.profile is None:
         student.profile = VolunteerProfile()
     volunteers = [student] + [user_for(f'volunteer-{index:04d}@demo.invalid', index,
@@ -153,7 +150,7 @@ def _replace_dataset(accounts, campuses, now):
                 else now + timedelta(days=2 + (index - 165) * 2))
         date = date.replace(hour=8, minute=0, second=0, microsecond=0)
         skill_names = current_app.config['INTEREST_SKILL_MAP'][category]
-        event = Event(title=f'{PREFIX} {title}: {campus.name} {index + 1:03d}',
+        event = Event(title=f'{title}: {campus.name} {index + 1:03d}',
             description=(f'Volunteers will support {title.lower()} through guided community '
                          'activities, small-group assistance and a closing review. '
                          'Please arrive 15 minutes before the scheduled start.'),
@@ -222,7 +219,7 @@ def _replace_dataset(accounts, campuses, now):
 @click.option('--dry-run', is_flag=True, help='Inspect target and counts without writing.')
 @with_appcontext
 def reset_and_seed_demo(database, dry_run):
-    """Replace marked demo records, preserving existing accounts and passwords."""
+    """Reset ALL demo data except the three main accounts and reference catalogues."""
     if not current_app.testing and os.environ.get('RAILWAY_SERVICE_ID') != DEMO_SERVICE_ID:
         raise click.ClickException('Run only in the approved Railway demo application service.')
     if database != db.engine.url.database:
@@ -234,15 +231,19 @@ def reset_and_seed_demo(database, dry_run):
     campuses = Campus.query.order_by(Campus.name).all()
     if not campuses:
         raise click.ClickException('Campus catalogue is empty; no changes made.')
-    events, externals = _old_records()
+    counts = _reset_counts()
+    removed_users = User.query.filter(User.email.not_in(KEEP)).count()
     target = f'{db.engine.url.host or "local"}/{database}'
     click.echo(f'Target: {target}')
-    click.echo(f'Replace {len(events)} marked demo events and {len(externals)} demo external participants; keep all existing login accounts/passwords.')
+    click.echo('Reset ALL activity/participation data, including historical records, notifications and activity logs.')
+    click.echo('Clear: ' + ', '.join(f'{name}={count}' for name, count in counts.items()))
+    click.echo(f'Remove {removed_users} other accounts and their account records before generating synthetic users.')
+    click.echo('Keep only student@psu.edu, coordinator@psu.edu, director@psu.edu and their passwords, profiles and policy acceptances; retain reference catalogues.')
     click.echo(f'Create fixture: 750 volunteers, {len(campuses)} campuses, 200 events, 5000 registrations, 4000 attendance, 200 external participants, 150 cancellation requests.')
     if dry_run:
         db.session.rollback()
         return
-    if click.prompt(f'Type RESET DEMO {target} to confirm backup and replacement') != f'RESET DEMO {target}':
+    if click.prompt(f'Type RESET ALL DEMO {target} to confirm backup and replacement') != f'RESET ALL DEMO {target}':
         raise click.ClickException('Confirmation did not match; no changes made.')
     try:
         attendance, requests = _replace_dataset(accounts, campuses, datetime.now())
@@ -250,4 +251,4 @@ def reset_and_seed_demo(database, dry_run):
     except Exception:
         db.session.rollback()
         raise
-    click.echo(f'Created 200 events, 5000 registrations, {attendance} attendance, 200 external participants, {requests} cancellation requests. Existing passwords preserved.')
+    click.echo(f'Created 200 events, 5000 registrations, {attendance} attendance, 200 external participants, {requests} cancellation requests. Three main accounts/passwords preserved.')

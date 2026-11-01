@@ -1,5 +1,13 @@
 # Director live multi-campus verification
 
+Continuation note, 31 October 2026: multi-campus scope and export rules below
+remain. Director filter/export controls now live in dashboard Cross-Campus
+Comparison; Director Analytics retains the campus chart/outcomes and a scope
+summary/Change Filters link. Admin analytics retains its controls. Recognition
+is independently scoped on the Director dashboard. See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026)
+and [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) for current decisions,
+publication, skills/rules, and verification; earlier screenshots are dated.
+
 Date: 18 October 2026
 
 ## Scope

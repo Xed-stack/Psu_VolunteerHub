@@ -33,6 +33,11 @@ def test_analytics_groups_hide_details_but_keep_the_overview(app, client, role, 
     assert groups[1].one('section', id='decision-records')
     assert 'How these numbers are counted' not in page.text
     assert 'Attendance Rate' in page.text
+    assert 'Back to Dashboard' in page.text
+    assert 'Data Scope:' in page.text
+    if role in ('director', 'admin'):
+        assert page.one('section', id='filters')
+        assert 'Export CSV' in page.text
 
 
 @pytest.mark.parametrize('path,query', [

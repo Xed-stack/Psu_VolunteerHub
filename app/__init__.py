@@ -54,9 +54,12 @@ def create_app(config_name=None):
             raise ValueError('DATABASE_URL must be set in production')
         if not app.config.get('SECRET_KEY'):
             raise ValueError('SECRET_KEY must be set in production')
+        proxy_count = app.config['TRUSTED_PROXY_COUNT']
+        if type(proxy_count) is not int or not 1 <= proxy_count <= 10:
+            raise ValueError('TRUSTED_PROXY_COUNT must be an integer between 1 and 10')
         app.wsgi_app = ProxyFix(
             app.wsgi_app, x_for=app.config['TRUSTED_PROXY_COUNT'],
-            x_proto=app.config['TRUSTED_PROXY_COUNT'])
+            x_proto=app.config['TRUSTED_PROXY_COUNT'], x_host=0)
 
     # app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///psu_volunteer_hub.db'
@@ -128,6 +131,31 @@ def create_app(config_name=None):
             return redirect(url_for('auth.accept_privacy'))
         if current_user.role == 'volunteer' and not current_user.sex:
             return redirect(url_for('auth.complete_sex'))
+
+    from app.campuses import official_campus, validate_catalogue
+
+    @app.before_request
+    def validate_campus_choices():
+        if request.endpoint in ('static', 'favicon') or request.routing_exception:
+            return None
+        from flask import abort
+        for source in (request.args, request.form):
+            for key in ('campus', 'campus_id', 'follow_up_campus_id'):
+                # These views already reject bad choices with field/filter feedback.
+                if key == 'campus' and request.endpoint in (
+                        'events.opportunities', 'auth.register', 'director.analytics',
+                        'director.export_university_csv', 'director.export_university_pdf',
+                        'director.director_dash'):
+                    continue
+                for value in source.getlist(key):
+                    if value in ('', 'all'):
+                        continue
+                    try:
+                        valid = official_campus(int(value))
+                    except (TypeError, ValueError):
+                        valid = None
+                    if valid is None:
+                        abort(400, description='Select one of the nine official PSU campuses.')
 
     # Register blueprints
     from app.routes.auth import auth_bp
@@ -270,6 +298,10 @@ def create_app(config_name=None):
         route = role_routes.get(current_user.role, 'volunteer_dash')
         return redirect(url_for(route))
 
+    if config_name == 'production':
+        with app.app_context():
+            if db.inspect(db.engine).has_table('campuses'):
+                validate_catalogue()
     return app
 
 
@@ -315,24 +347,9 @@ def _seed_sdgs(app, commit=True):
 
 
 def _seed_campuses(app, commit=True):
-    """Seed campus data on first run."""
-    from app.models.event import Campus
-    if Campus.query.count() == 0:
-        campuses = [
-            Campus(name='Lingayen', code='LINGAYEN'),
-            Campus(name='Urdaneta', code='URDANETA'),
-            Campus(name='Asingan', code='ASINGAN'),
-            Campus(name='Bayambang', code='BAYAMBANG'),
-            Campus(name='Binmaley', code='BINMALEY'),
-            Campus(name='Infanta', code='INFANTA'),
-            Campus(name='San Carlos', code='SANCARLOS'),
-            Campus(name='Santa Maria', code='STAMARIA'),
-            Campus(name='Alaminos', code='ALAMINOS'),
-        ]
-        for campus in campuses:
-            db.session.add(campus)
-        if commit:
-            db.session.commit()
+    """Validate existing campus references and add missing official campuses."""
+    from app.campuses import seed_catalogue
+    seed_catalogue(commit=commit)
 
 
 def _seed_events(app):

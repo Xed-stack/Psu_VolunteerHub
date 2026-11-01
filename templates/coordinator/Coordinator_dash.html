@@ -158,7 +158,7 @@
                         <form
                           method="post"
                           action="{{ url_for('coordinator.delete_activity', event_id=event.id) }}"
-                          onsubmit="return confirm({{ ('Remove ' ~ event.title ~ '? This permanently deletes the activity and cancels all registrations.')|tojson }});"
+                          data-confirm="Remove {{ event.title }}? This permanently deletes the activity and cancels all registrations."
                         >
                           <button class="btn btn--sm btn--danger" type="submit">Remove Activity</button>
                         </form>

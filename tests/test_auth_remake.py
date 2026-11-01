@@ -43,7 +43,7 @@ def signup_data(**overrides):
     return dict(first_name='QA', last_name='Volunteer', email='signup-ui@example.test',
                 password='12345678', password_confirmation='12345678',
                 volunteer_type='student', sex='prefer_not_to_say',
-                id_number='AUTH-QA-01', college_affiliation='QA College',
+                id_number='AUTH-QA-01', college_affiliation='College of Arts, Sciences and Letters (CASL)',
                 campus='1', **overrides)
 
 

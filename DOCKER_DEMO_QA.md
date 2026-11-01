@@ -1,5 +1,12 @@
 # Railway demo image: local Docker verification
 
+Continuation note, 31 October 2026: the container evidence below remains the
+21 October snapshot. Main/demo Railway services were subsequently reported
+deployed, but deployment of the latest GitHub revision and hosted persistence/
+performance are not verified here. The newest Director layout remains local.
+See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+decisions, skills/rules, next steps, and verification; no image was rebuilt today.
+
 Date: 21 October 2026. No cloud deployment, original-database access, commit or push.
 
 ## Build

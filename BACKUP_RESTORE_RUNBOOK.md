@@ -1,5 +1,12 @@
 # Backup and restore runbook
 
+Continuation note, 31 October 2026: the new dashboard does not change this
+procedure. Encrypted off-site database/upload backups and a private-file restore
+drill remain future operational work. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current priorities,
+decisions, skills/rules, and verification. Reading the runbook does not authorize
+a backup transfer, restore into an existing database, or production change.
+
 Status: local recovery drill passed on 20 October 2026. Not a claim of complete
 production disaster-recovery readiness. See BACKUP_RESTORE_QA.md for limits.
 

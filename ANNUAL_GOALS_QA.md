@@ -1,5 +1,13 @@
 # Annual goal dashboards
 
+Continuation status, 31 October 2026: only the Director dashboard now ranks the
+lowest exact annual goal-achievement ratio as Worst Performing Campus, including
+zero/ties and excluding campuses without approved targets. Both dashboard
+preview buttons are removed. Other annual-goal views retain their ranking and
+sample behavior. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026); earlier results below
+remain dated evidence, not a new migration or deployment instruction.
+
 ## Design read
 
 Institutional decision support for PSU directors and extension coordinators. ENERGY 1 / RHYTHM 2 / MOTION 1.
@@ -16,7 +24,7 @@ Institutional decision support for PSU directors and extension coordinators. ENE
 2. Apply `migrations/20261030_annual_plans.sql` if its four tables do not already exist.
    Older Docker images omitted the migrations directory. In those images, create only the four initial annual-plan tables through `AnnualPlan.__table__.create(db.engine, checkfirst=True)` and the equivalent calls for `AnnualIndicator`, `AnnualTarget`, and `AnnualResult`, inside an application context; then run the workflow command below. Do not use unrestricted `db.create_all()` against production. The Docker packaging now includes the versioned SQL migrations.
 3. For an existing installation, run `flask --app wsgi:app migrate-annual-goals --database DATABASE_NAME --dry-run`, review the listed changes, then omit `--dry-run`. This handles partially applied changes and automatically generated foreign-key names. The raw workflow SQL is for a database created using the named constraints in the initial SQL migration. Deploy code after schema changes. Migrations are explicit and never run automatically in production.
-4. Use the director's goal workspace or the approved CSV importer. Use **Preview sample data** from either dashboard to review the design before official targets arrive.
+4. Use the director's goal workspace or the approved CSV importer. Dashboard preview buttons have been removed; existing analytics preview controls/sample URLs remain available for illustrative review, separately labelled from approved targets.
 
 The workflow migration adds comparison rules, active-version markers, evidence coverage, optional aggregate sex counts, explicit activity mappings, and proposal history. Existing results without reporting coverage remain evidence-pending until their approved coverage is supplied.
 
@@ -40,9 +48,9 @@ Use `docs/annual-plan-import-template.csv`. Run `flask --app wsgi:app import-ann
 
 ### Director campus ranking
 
-The director dashboard and live university analytics use the right-hand summary for **Top-performing campus**, replacing the compact sex-participation summary. Coordinators retain that participation summary; detailed sex-disaggregated evidence remains available to both roles.
+The Director dashboard uses the right-hand summary for **Worst Performing Campus**. Live university analytics retains **Top-Performing Campus**. Coordinators retain their compact participation summary; detailed sex-disaggregated evidence remains available to both roles.
 
-Ranking reuses the existing annual campus summaries for the selected year. Exact fractions (verified targets met / approved targets) determine the leader; percentages are rounded only for display. Pending evidence remains in the denominator and shared AOP/ASP obligations count once. Equal ratios retain every tied leader, even with different denominators. Campuses with no approved targets are excluded. If no campus has a verified achievement, the summary says **No goals achieved yet**; no approved targets yields **Not available**.
+Ranking reuses annual campus summaries for the selected year. Exact fractions (verified targets met / approved targets) determine the lowest dashboard rank or highest analytics rank; percentages are rounded only for display. Pending evidence stays in the denominator and shared AOP/ASP obligations count once. Equal ratios retain every tied campus, even with different denominators. Campuses without approved targets are excluded. Zero achievement is eligible for the lowest dashboard rank. The highest-ranking view retains **No Goals Achieved Yet** when appropriate; no approved targets yields **Not Available**.
 
 The native disclosure lists each eligible campus's achievement counts, percentage, pending evidence, and matching detail link. Year and sample state carry into every link. Sample rankings use only sample results and remain labelled. Director summary context no longer calculates the participation summary it does not display.
 

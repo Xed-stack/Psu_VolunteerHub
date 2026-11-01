@@ -1,5 +1,12 @@
 # Inactivity timeout verification
 
+Continuation note, 31 October 2026: this session-timeout report retains its dated
+scope and evidence. Dashboard integration changed no session or account settings;
+separate unpublished security/recovery edits remain distinct. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+decisions, skills/rules, next steps, and verification. No authentication action
+was performed by this documentation refresh.
+
 Date: 21 October 2026. Local implementation, not committed or pushed.
 
 22 October release note: this report is included in the user-approved consolidated

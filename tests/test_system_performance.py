@@ -27,7 +27,7 @@ def system_app():
     try:
         result = instance.test_cli_runner().invoke(
             args=['reset-and-seed-demo', '--database', ':memory:'],
-            input='RESET DEMO local/:memory:\n')
+            input='RESET ALL DEMO local/:memory:\n')
         assert result.exit_code == 0, result.exception
     finally:
         User.set_password = original
@@ -175,7 +175,9 @@ def test_admin_pages_keep_filters_and_reach_all_rows(system_app, tab, section_id
 
 
 def test_empty_admin_page_and_role_boundary(system_app):
-    response = signed_in_client(system_app, 'admin').get('/admin_dash?campus_id=999999')
+    client = signed_in_client(system_app, 'admin')
+    assert client.get('/admin_dash?campus_id=999999').status_code == 400
+    response = client.get('/admin_dash?search=no-matching-account-qa')
     assert response.status_code == 200
     assert b'No users found.' in response.data
     assert b'aria-label="User pages"' not in response.data

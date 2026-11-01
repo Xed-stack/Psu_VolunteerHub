@@ -1,5 +1,12 @@
 # Live activity-name search verification
 
+Continuation note, 31 October 2026: search matching and report scope stay as
+recorded below. Director Activity Name controls now live under dashboard
+Cross-Campus Comparison; the matching analytics chart/outcomes and detailed
+report remain in Analytics. Coordinator and Admin filter locations are retained.
+See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+decisions, skills/rules, relevant files, next action, and verification.
+
 Date: 18 October 2026
 
 ## Scope and decisions

@@ -1,5 +1,13 @@
 # Coordinator calendar and pagination verification
 
+Continuation status, 31 October 2026: the latest Director follow-up removes the
+Coordinator dashboard's Preview Sample Data button. Five-item pages, square
+44px arrows/current number, 2% PSU gold tint, full calendar, hidden-only period
+label, and visible workspace remain. Earlier checks of the preview button below
+are historical. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current publication,
+decisions, skills/rules, and verification.
+
 Date: 30 October 2026
 
 ## Changes
@@ -7,8 +15,9 @@ Date: 30 October 2026
 - The full Coordinator annual-goals hero has a PSU yellow background at 2%
   opacity, with fully opaque content and existing corner-radius tokens. Its gap
   before the briefing row measures 56px on desktop and 40px on mobile.
-- Apply year, Campus goal proposals, and Preview sample data reuse Create
-  Activity's primary PSU blue/white button style on the Coordinator dashboard.
+- Apply Year and Campus Goal Proposals reuse Create Activity's primary PSU
+  blue/white button style on the Coordinator dashboard. Preview Sample Data used
+  that style in the earlier iteration and is now removed from the dashboard.
   Director and analytics actions retain their existing outline style.
 - Needs attention shows five activities per page. Pagination has three 44px square
   controls using the existing corner radius: Previous, one filled current-page
@@ -119,5 +128,7 @@ historical scope, and annual goals. All four chart JavaScript checks pass.
 A Windows sandbox error accessing pytest temporary storage was resolved by
 rerunning the affected checks with writable isolated storage.
 
-The user requested a push after these revisions. Unrelated workspace edits are
-excluded from the dashboard commit.
+Publication follow-up: calendar, pagination, tint, primary-button, and Title Case
+work was included in `e2e9e6e` and is now in both remotes through `03d1fc1`.
+The newer preview-removal/Director-layout pass remains local and unpublished.
+Unrelated workspace edits remain separate.

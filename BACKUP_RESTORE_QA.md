@@ -1,5 +1,11 @@
 # Local backup and restore drill
 
+Continuation note, 31 October 2026: retain the dated local drill and its limits
+below. The latest dashboard work performed no new backup, restore, or hosted-data
+operation. Read [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current
+priorities, publication state, decisions, skills/rules, and next verification;
+use [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md) for the procedure.
+
 Date: 20 October 2026. No application implementation change, commit or push.
 
 ## Verified

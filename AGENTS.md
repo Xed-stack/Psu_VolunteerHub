@@ -32,3 +32,13 @@ uninstalled candidate is `bergside/typeui@typeui-fundamentals` (2.1K installs)
 for typography and interface foundations. The current PSU workflow does not
 require it.
 <!-- antislop:end -->
+
+## Continuation Reference: 31 October 2026
+
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) records the current goal,
+local versus published state, decisions/reasons, ruled-out options, next step,
+relevant files, verification, and skills actually used. This reference leaves
+the UI workflow above unchanged. The latest Director layout is integrated in
+the original running workspace but remains uncommitted/unpushed; older QA notes
+are dated evidence. Reading documentation is not an instruction to publish,
+deploy, reset data, install skills, or overwrite unrelated working changes.

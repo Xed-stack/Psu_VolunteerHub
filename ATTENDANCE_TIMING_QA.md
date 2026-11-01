@@ -1,5 +1,12 @@
 # Attendance timing repair
 
+Continuation note, 31 October 2026: early-check-in/final-attendance boundaries
+below remain authoritative for their feature. Dashboard placement changes preserve
+the report's attendance definitions and short provisional context. Current
+publication, decisions, skills/rules, files, and verification are in
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026); original repair results
+are dated evidence, not a new live attendance action.
+
 Date: 20 October 2026. Local and uncommitted; no push or live database changes.
 
 Later release verification: copied-MariaDB browser retest now passed, including

@@ -1,5 +1,137 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current Handoff: 1 November 2026, Fixed Campus Catalogue
+
+The current Admin change enforces the nine PSU campuses in `app/campuses.py`.
+The Add Campus and duplicate System Settings dashboard cards are removed;
+Settings remains in the sidebar, including College Affiliation management.
+The former campus-creation URL returns HTTP 410 and cannot create records.
+
+Canonical names/codes preserve the existing seed order and codes, including
+`SANCARLOS` and `STAMARIA`. Existing database IDs remain the selector values.
+Initialization adds missing official rows, validates all existing names/codes,
+and refuses unsupported rows before inserting anything. Production startup
+validates existing rows read-only, preserving explicit production provisioning.
+Use `flask --app wsgi:app sync-campus-catalogue` to add missing reference rows
+to an existing production schema. Unsupported records require a reviewed data
+migration; none are deleted or reassigned by this change.
+
+Selectors and CSV imports use the canonical query helper. Shared request checks
+reject invalid IDs; registration and multi-campus reports retain their existing
+recoverable field/filter feedback. Coordinator activities still use the assigned
+campus rather than accepting a different client-selected campus.
+
+Verification: 79 focused catalogue, production initialization/startup, performance,
+authentication, report-query, and activity-form tests passed.
+The broader account/campus/report selection passed 132 tests, and the additional
+invalid-ID check run passed five cases including oversized integers. Isolated Chromium
+checks passed at 1440px, 720px (200% desktop reflow equivalent), and 390px:
+seven remaining Admin control cards, sidebar Settings navigation, nine campus
+options, visible selector focus, 44px targets, and no page overflow or JS errors.
+See `FIXED_CAMPUS_QA.md` for decisions and audit evidence. Work remains local;
+no commit, push, deployment, or application-data migration was performed.
+
+This builds on the existing ponytail/full and PSU frontend/antislop workflow
+(during-work preference; ENERGY 1 / RHYTHM 2 / MOTION 1). The current Web Interface
+Guidelines were fetched and the changed controls reviewed. Preserve all unrelated
+working-tree edits. The next step is review of the diff and any existing custom
+campus records before release; do not automatically remap them.
+
+## Current Handoff: 1 November 2026, Prescriptive Guidance
+
+This section supersedes older next-step statements below. The current goal is
+live, evidence-based guidance for Directors and Coordinators, without persistent
+task records. Implementation is local in the original application workspace;
+this release has not been committed, pushed, or deployed. Preserve the unrelated
+documentation, security, account-recovery, demo-data, and reporting edits already
+present in this working tree.
+
+### Behavior and Decisions
+
+- One primary recommendation and up to two additional campus recommendations,
+  ordered by incomplete attendance, no approved targets, missed participant
+  targets, attendance below 75%, no activities, then remaining annual goals.
+- Reports supply the operational evidence; annual summaries supply goal evidence.
+  Goal year, report period, and all-date Coordinator attendance backlog remain
+  distinct and labelled. No extra report query is introduced for campus tips;
+  coordinator assignment lookup is batched.
+- Director ranking and coverage tiles show evidence, actions, and optional in-app
+  reminders. Campuses without targets remain excluded from ranking and receive
+  proposal guidance in coverage. Coordinator findings retain five-item pagination
+  and the calendar; annual guidance stays in the hero and scheduling guidance in
+  Performance Overview. Admin analytics does not display the new guidance.
+- Reminders use the existing Director-only POST route, CSRF, active recipients,
+  server-side evidence revalidation, unread-reminder deduplication, and a single
+  commit. Resolved conditions produce no reminder. Existing shared form submission
+  feedback provides the spinner/busy guard; no second submission handler is used.
+- New notifications use `campus_guidance` and versioned JSON in the existing
+  message field. The inbox validates that payload and constructs campus-authorized
+  internal destinations. Old plain-text notifications continue to render normally.
+  Demographic evidence is labelled; Coordinator notification links open their full
+  campus records, because their existing report does not support Director-only
+  demographic slicers.
+- Filtered-empty results do not produce scheduling advice. Missing coordinator
+  assignment is delivery context, not a performance signal. Incomplete outcomes
+  are not judged against attendance rates or targets. Remaining goals are not
+  called overdue without approved deadline evidence.
+- Ruled out for this release: task tables, status/snooze workflows, new capacity
+  thresholds, repeated-underperformance rules, automatic reminders, email,
+  dependency/schema changes, and publishing.
+
+### Relevant Files and Verification
+
+- `app/dashboard.py`, `app/annual_goals.py`: shared presentation records, operational
+  predicates, goal rules, role-specific action destinations, and priority limits.
+- `app/routes/director.py`, `app/routes/coordinator.py`: context integration,
+  batched campus assignment lookup, backlog labels, and reminder delivery.
+- `app/routes/notifications.py`, `templates/notifications/list.html`: validated
+  notification rendering and authorized destinations.
+- `templates/partials/dashboard_ui.html`, `templates/director/Director_Dash.html`,
+  `static/styles/role-shell.css`: existing surfaces, native forms/disclosures,
+  guidance styling, wrapping, and mobile stacking.
+- `tests/test_prescriptive_guidance.py`, `tests/test_campus_ranking.py`: rules,
+  authorization, CSRF, duplicate sends, cleared conditions, delivery rollback,
+  notification compatibility, and batched lookup checks.
+- `scripts/qa_prescriptive_guidance.py`: repeatable Playwright verification using
+  only an isolated in-memory database. Never points at or seeds the running app.
+- Regression run: 125 tests passed; one annual-import fixture was blocked by
+  Windows temporary-directory permissions and then passed when rerun with approved
+  access. All 126 selected checks therefore passed across those runs. Chart tests:
+  4 passed. `git diff --check` passed for changed tracked files.
+
+Reproduce the regression selection with the workspace virtualenv:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider tests/test_prescriptive_guidance.py tests/test_campus_ranking.py tests/test_annual_goals.py tests/test_dashboard_decisions.py tests/test_dashboard_followups.py tests/test_director_dashboard_layout.py tests/test_report_queries.py tests/test_dashboard_groups.py
+node tests/charts.test.cjs
+.\.venv\Scripts\python.exe scripts\qa_prescriptive_guidance.py
+git diff --check
+```
+
+Windows may require approved access for pytest's temporary directory and
+Playwright's subprocess pipes. Browser evidence and audit notes are recorded in
+`PRESCRIPTIVE_GUIDANCE_QA.md`. Next step: review the local changes and start the
+application from this workspace to inspect real campus data. A later publishing
+request must isolate these changes from the unrelated dirty files.
+
+### Skills and Working Rules
+
+Used `ponytail` at full intensity, `frontend-design`, `antislop`, `antislop-ui`,
+`antislop-human`, `antislop-layoutmobile`, `kpi-dashboard-design`,
+`ui-ux-pro-max`, and `web-design-guidelines`. Antislop applies during work by the
+user's session choice. The design read is PSU operational guidance for Directors
+and Coordinators, retaining the existing typography, blue/gold palette, native
+disclosures, and ENERGY 1 / RHYTHM 2 / MOTION 1. No assets or new visual system
+were created. UI/UX Pro Max's relevant search result reinforces explicit submit
+feedback; the existing shared form handler implements it.
+
+Rules: preserve authored activity/campus names and unrelated edits; Title Case
+interface labels with sentence-case helper text; derive all evidence from actual
+records; keep 44px controls, visible focus, keyboard access, contained overflow,
+and understandable empty/error states; recompute trusted notification content on
+the server; no automatic notification sending; no schema/dependency changes;
+no commit/push/deployment without a subsequent request.
+
 ## Current handoff: 31 October 2026
 
 Read this section first. It supersedes older status and next-step statements

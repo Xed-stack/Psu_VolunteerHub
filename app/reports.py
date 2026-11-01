@@ -72,7 +72,8 @@ def resolve_campus(campus_id, allow_all=True):
         cid = int(campus_id)
     except (TypeError, ValueError):
         return None if allow_all else report_invalid()
-    if db.session.get(Campus, cid) is None:
+    from app.campuses import official_campus
+    if official_campus(cid) is None:
         return None if allow_all else report_invalid()
     return cid
 
@@ -268,8 +269,8 @@ def render_csv(rows, summary, meta):
                      'Cancelled', 'Completed', 'Target Participants', 'Target Completion'])
     for r in rows:
         writer.writerow([
-            r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
-            r['category'], r['sdgs'], r['registrations'], r['psu_registrations'],
+            csv_safe(r['title']), r['date'].strftime('%Y-%m-%d'), csv_safe(r['campus']),
+            csv_safe(r['category']), csv_safe(r['sdgs']), r['registrations'], r['psu_registrations'],
             r['external_registrations'], r['attended'], r['cancelled'],
             r['completed'], r['target_participants'] or '',
             f"{r['completion_percentage']}%" if r['completion_percentage'] is not None else '',
@@ -307,12 +308,12 @@ def render_pdf(rows, summary, meta):
 
     story = []
     story.append(Paragraph(
-        f"PSU Volunteer Hub &middot; {meta['title']}", title_style))
-    role_line = f" ({meta['role_label']})" if meta.get('role_label') else ''
+        f"PSU Volunteer Hub &middot; {escape(meta['title'])}", title_style))
+    role_line = f" ({escape(meta['role_label'])})" if meta.get('role_label') else ''
     story.append(Paragraph(
         f"Report scope{role_line}: {escape(meta['scope'])}<br/>"
         f"Date range: {meta['date_range']}<br/>"
-        f"Category: {meta['category']}<br/>"
+        f"Category: {escape(meta['category'])}<br/>"
         f"Generated: {meta['generated']}", small))
     story.append(Spacer(1, 4 * mm))
     if meta.get('activity_name'):
@@ -354,6 +355,6 @@ def render_pdf(rows, summary, meta):
         f"Completed: {summary['total_completed']}", small))
     if meta.get('historical_note'):
         story.append(Spacer(1, 3 * mm))
-        story.append(Paragraph(meta['historical_note'], small))
+        story.append(Paragraph(escape(meta['historical_note']), small))
     document.build(story)
     return output.getvalue()

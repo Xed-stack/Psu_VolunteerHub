@@ -1,5 +1,12 @@
 # My registrations and cancellation UI QA
 
+Continuation note, 31 October 2026: this dated workflow report and its later
+baseline-test reconciliation remain evidence for registration/cancellation
+behavior. The latest Director dashboard changes do not replace those guards or
+alter historical requests. Read [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026)
+for current publication, decisions, skills/rules, relevant files, and next checks.
+No registration/cancellation workflow was rerun by this documentation update.
+
 23 October test-only follow-up: see REGRESSION_RECONCILIATION_QA.md for the
 subsequent repair and verification of the three baseline assertions. Results and
 unpublished/release-gate statements below describe the earlier delivery snapshot;

@@ -1,5 +1,13 @@
 # Dashboard refinement verification
 
+Continuation note, 31 October 2026: the snapshot below preceded the latest local
+Director layout. Coverage now belongs to visible Cross-Campus Comparison with
+filters/exports, recognition/calendar are paired, and campus charts/outcomes stay
+in Analytics. Coordinator retains five-item square pagination and its full
+calendar. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+decisions, skills/rules, and verification. Original measurements remain dated.
+
 Date: 30 October 2026
 
 ## Changes

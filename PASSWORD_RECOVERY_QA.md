@@ -1,6 +1,60 @@
 # Password recovery verification
 
-Date: 28 October 2026. Local implementation; no deployment or live inbox delivery.
+Continuation note, 31 October 2026: retain the user-confirmed deployed recovery
+evidence and the separate local security limitations below. The latest Director
+layout/documentation work changes no credentials, provider settings, recovery
+flow, or hosted service. See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026)
+for publication boundaries, decisions, skills/rules, next steps, and verification.
+No email or credential test was rerun by this documentation refresh.
+
+Updated: 29 October 2026. The earlier recovery release is deployed to the main
+and demo Railway apps; the security remediation below is local only.
+
+## Local security remediation, 29 October 2026
+
+The security fixes in the current worktree have not been deployed. Recovery now
+commits a replacement credential before dispatching mail in a background thread.
+A delivery failure is logged and leaves the replacement token committed; the
+previous temporary password stays revoked, and the permanent password is unchanged.
+Dispatch is capped at four active deliveries per process. Capacity exhaustion is
+logged and can lose delivery. Threads do not provide restart-safe delivery or retries. Use a durable outbox if
+those guarantees are required. Provider latency is removed from the response;
+small database and dispatch timing differences remain.
+
+Recovery requests now have separate per-account (3/hour), per-source (10/hour)
+and combined source/account (3/hour) budgets. Deactivation consumes outstanding
+recovery credentials and increments the session authentication version.
+
+Deployment identifiers below are placeholders. Keep real sender, service,
+deployment, database-host and approved-egress values in operator-managed private
+records. Earlier Git history still contains the original identifiers; this edit
+does not remove them from history.
+
+## Current verification status
+
+- The user confirmed completing the real recovery flow on both apps: email
+  receipt, temporary-password sign-in, choosing a new password, and signing in
+  with that new password. These are user-confirmed results; the agent did not
+  inspect the inbox or enter the user's credentials.
+- Agent checks confirmed Brevo HTTP 200 responses from both app services and
+  restored database connectivity. The verified sender is configured, sending is
+  enabled, and API IP blocking remains enabled with both approved app addresses.
+- Recovery implementation was published in `659500e`. Deployment notes,
+  coordinator safeguards, demo analytics changes and the installed project
+  security-audit skill were published in `d940c32` to `thesis/main`
+  (`arlrom003/PSU-Volunteer-Hub`).
+- The pre-push focused run passed 90 app tests (222 deselected), and a separate
+  in-memory demo seed check passed, including repeat-run idempotency. This was
+  not a new full-suite run. Seven bundled skill CLI tests failed on Windows
+  because required OS file-protection flags are unavailable.
+- Password recovery setup and the reported live flow are complete. Domain DNS
+  authentication, expiry/replay checks on the hosted apps, actual mobile
+  on-screen-keyboard behavior, browser zoom and assistive-technology checks are
+  not established by the user's recovery confirmation. Existing automated
+  expiry/replay coverage remains recorded below.
+
+The dated setup entries below preserve earlier observations. Their pending or
+unverified statements describe those earlier checkpoints, not current blockers.
 
 ## Behavior
 
@@ -12,8 +66,8 @@ Date: 28 October 2026. Local implementation; no deployment or live inbox deliver
   the credential and revokes other pending resets and existing login sessions.
 - Only a hash of the recovery credential is stored. The credential is absent
   from the sign-in response, recovery session cookie, and delivery error logs.
-- Delivery failure rolls back recovery changes and preserves the current password
-  and previous usable recovery credential. Public feedback does not reveal accounts.
+- In the earlier deployed implementation, delivery failure rolled back recovery
+  changes. The local remediation changes that behavior as described above.
 - Existing reset links remain supported. The existing token table needs no migration.
 
 ## Automated checks
@@ -56,7 +110,7 @@ university form language. ENERGY 1 / RHYTHM 1 / MOTION 1.
   Shared field macros provide labels, autocomplete, email spelling settings,
   field-linked errors and password visibility controls. No in-scope findings remain.
 
-## Remaining external verification
+## Provider checks before deployment (28 October 2026)
 
 The selected provider is now Brevo's HTTPS API for Railway. Set `MAIL_PROVIDER=brevo`,
 `BREVO_API_KEY`, `MAIL_DEFAULT_SENDER` and `MAIL_SUPPRESS_SEND=false` privately in the
@@ -71,21 +125,23 @@ credential while an HTTP 401 response rolls it back. HTTPS calls were mocked.
 The API connection uses Python's standard-library HTTPS client, normal certificate
 validation and the existing 15-second delivery timeout. No SDK was added.
 
-Provider activation, sender authentication, hosting egress, spam filtering and
-mobile on-screen-keyboard behavior were not verified. Full-device zoom and
-assistive-technology testing were not performed.
+At this local checkpoint, provider activation, sender authentication, hosting
+egress, spam filtering and mobile on-screen-keyboard behavior were unverified.
+Later deployment checks and the user's live-flow confirmation are recorded in
+the current status above. Full-device zoom and assistive-technology testing were
+not performed.
 
 ## Railway setup follow-up, 28 October 2026
 
 - Published commit `659500e` to `arlrom003/PSU-Volunteer-Hub` on `main`, the source
-  connected to `psu-volunteer-hub-main` in the `zonal-light` Railway project.
+  connected to `<main-app-service>` in the `<hosting-project>` Railway project.
 - The user saved `BREVO_API_KEY` in the web app service. Its value was kept masked.
 - Added and applied `MAIL_PROVIDER=brevo`,
-  `MAIL_DEFAULT_SENDER=23ur0679@psu.edu.ph`, and `MAIL_SUPPRESS_SEND=false`.
-- Deployment `6d33e7ae-c66f-4b6b-97de-a1cd00e7eeef` became Active/Online, and the
+  `MAIL_DEFAULT_SENDER=<verified-sender@example.edu>`, and `MAIL_SUPPRESS_SEND=false`.
+- Deployment `<main-app-deployment>` became Active/Online, and the
   live forgot-password form rendered the new temporary-password instructions.
 - One reset request for the user's email returned HTTP 500 before email delivery.
-  Deployment logs identify `Unknown server host 'mysql.railway.internal'`.
+  Deployment logs identify `Unknown server host '<private-database-host>'`.
   The linked MySQL service has no active deployment; its previous deployment
   was removed three days earlier. No password-reset email delivery was verified.
 - Automatic approval review rejected confirmation of the existing MySQL
@@ -100,7 +156,7 @@ assistive-technology testing were not performed.
 
 - The user explicitly approved restarting the existing MySQL service. Redeploy
   of the saved configuration succeeded as deployment
-  `a7afff2d-584e-4c7c-b917-66cc4d55ed8c`. No import or schema change was performed.
+  `<main-database-deployment>`. No import or schema change was performed.
 - The next live forgot-password request completed normally and redirected to
   sign-in. Brevo still showed zero transactional email logs.
 - A read-only check in the deployed app confirmed the provider is `brevo`,
@@ -108,7 +164,7 @@ assistive-technology testing were not performed.
   The user's tested email was not registered in the app, and the user confirmed
   they had not created an app account yet.
 - A read-only Brevo statistics request from the deployed app returned HTTP 401
-  with an unauthorized source-IP error for `34.124.168.27`. The Brevo security UI
+  with an unauthorized source-IP error for `<main-app-egress-ip>`. The Brevo security UI
   independently lists that address under Unauthorized IP addresses. API IP
   blocking is enabled and the authorized list is empty.
 - Authorization of this exact Railway IP is prepared for user approval. IP
@@ -117,7 +173,7 @@ assistive-technology testing were not performed.
 
 ### Approved IP authorization
 
-- The user approved authorizing `34.124.168.27`. Brevo now lists exactly one
+- The user approved authorizing `<main-app-egress-ip>`. Brevo now lists exactly one
   authorized address, with zero unauthorized addresses, while API IP blocking
   remains enabled. The key's permissions were not changed.
 - Repeating the same read-only transactional statistics request from Railway
@@ -133,16 +189,17 @@ assistive-technology testing were not performed.
 ### Demo service setup
 
 - Applied the Brevo provider, verified sender, API key and enabled-sending
-  settings to `PSU-Volunteer-Hub-Demo`. Deployment
-  `c8c023a6-37ad-47ed-878a-15a416b92b97` is running the recovery release.
-- The user separately approved authorizing the demo source IP `100.48.150.79`
-  and restarting `PSU Volunteer Hub Demo DB` from its saved configuration and
-  attached volume. Database deployment `f5e415b1-dc95-4ddb-8e73-79a50e4f10a4`
+  settings to `<demo-app-service>`. Deployment
+  `<demo-app-deployment>` is running the recovery release.
+- The user separately approved authorizing the demo source IP `<demo-app-egress-ip>`
+  and restarting `<demo-database-service>` from its saved configuration and
+  attached volume. Database deployment `<demo-database-deployment>`
   became Active. No import or schema change was performed.
 - Brevo lists both approved app addresses, with API IP blocking still enabled.
   A read-only statistics request from the demo returned HTTP 200, and a direct
   `SELECT 1` from the demo app confirmed the database connection.
-- The owner's tested email is absent from the demo users table. Its live reset
-  request completed with the generic success notice, as expected for an absent
-  account. Real email delivery and credential use still require a registered
-  active account and an inbox round trip.
+- At this setup checkpoint, the owner's tested email was absent from the demo
+  users table. Its live reset request completed with the generic success notice,
+  as expected for an absent
+  account. A registered active account and an inbox round trip were still needed;
+  the user subsequently confirmed the full recovery flow on both apps.

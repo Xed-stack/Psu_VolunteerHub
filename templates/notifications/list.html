@@ -26,7 +26,8 @@
         >
           <div class="notification-item__body">
             <h3>{{ note.title }}</h3>
-            <p>{{ note.message }}</p>
+            <p>{{ guidance_content[note.id].text }}</p>
+            {% if guidance_content[note.id].url %}<a class="btn btn--outline" href="{{ guidance_content[note.id].url }}">Review Campus Records<span class="sr-only"> for {{ note.title }}</span></a>{% endif %}
             <small>{{ note.created_at.strftime("%b %d, %Y %I:%M %p") if note.created_at else '' }}</small>
           </div>
           {% if not note.is_read %}

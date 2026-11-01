@@ -1,5 +1,12 @@
 # Joining flow verification
 
+Continuation note, 31 October 2026: retain the dated joining evidence and follow-up
+references below. Latest reporting work preserves registration/cancellation
+rules and adds no schema or public-route change. Current publication, decisions,
+skills/rules, next steps, and verification are summarized in
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026). No live joining action
+was performed by this documentation refresh.
+
 Date: 18 October 2026
 
 ## Scope and design

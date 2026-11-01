@@ -16,6 +16,12 @@ def recovery(app, monkeypatch):
     user_id = _create_user(app, email='recovery@example.test')
     messages = []
     monkeypatch.setattr('app.routes.auth.send_email', lambda *args: messages.append(args))
+    class ImmediateThread:
+        def __init__(self, target, **kwargs):
+            self.target = target
+        def start(self):
+            self.target()
+    monkeypatch.setattr('app.routes.auth.threading.Thread', ImmediateThread)
     return user_id, messages
 
 
@@ -125,7 +131,7 @@ def test_expiry_is_rechecked_after_temporary_sign_in(app, client, recovery):
         'password': 'newpassword123', 'password_confirmation': 'newpassword123'}).location == '/auth/forgot-password'
 
 
-def test_delivery_failure_preserves_current_and_previous_temporary_password(app, client, recovery, monkeypatch):
+def test_delivery_failure_preserves_password_and_committed_replacement(app, client, recovery, monkeypatch):
     user_id, messages = recovery
     first = issue(app, client, messages)
     def fail(*args):
@@ -135,11 +141,13 @@ def test_delivery_failure_preserves_current_and_previous_temporary_password(app,
                        data={'email': 'recovery@example.test'})
     assert response.location == '/auth/login'
     with app.app_context():
-        assert PasswordResetToken.query.count() == 1
-        assert PasswordResetToken.query.one().used_at is None
+        assert PasswordResetToken.query.count() == 2
+        assert PasswordResetToken.query.filter_by(used_at=None).count() == 1
+        assert PasswordResetToken.query.filter_by(
+            token_hash=sha256(first.encode()).hexdigest()).one().used_at is not None
         assert db.session.get(User, user_id).check_password('password123')
     assert request(app, client, 'post', '/auth/login', data={
-        'identifier': 'recovery@example.test', 'password': first}).location == '/auth/reset-password'
+        'identifier': 'recovery@example.test', 'password': first}).status_code == 200
 
 
 def test_unknown_inactive_and_throttled_requests_do_not_send_mail(app, client, recovery):
@@ -179,7 +187,7 @@ def test_recovery_forms_require_csrf(app, client, recovery):
 
 
 @pytest.mark.parametrize('status', [201, 401])
-def test_recovery_persists_credential_only_after_brevo_accepts(app, client, recovery, monkeypatch, status):
+def test_recovery_commits_credential_before_brevo_delivery(app, client, recovery, monkeypatch, status):
     user_id, _ = recovery
     app.config.update(MAIL_PROVIDER='brevo', BREVO_API_KEY='test-only-key', MAIL_SUPPRESS_SEND=False)
     monkeypatch.setattr('app.routes.auth.send_email', send_email)
@@ -191,7 +199,7 @@ def test_recovery_persists_credential_only_after_brevo_accepts(app, client, reco
         assert response.location == '/auth/login'
         assert connection.request.call_args.args == ('POST', '/v3/smtp/email')
     with app.app_context():
-        assert PasswordResetToken.query.count() == (1 if status == 201 else 0)
+        assert PasswordResetToken.query.count() == 1
         assert db.session.get(User, user_id).check_password('password123')
 
 

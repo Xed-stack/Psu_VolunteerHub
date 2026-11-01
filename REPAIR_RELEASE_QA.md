@@ -1,5 +1,12 @@
 # Cancellation and attendance release verification
 
+Continuation note, 31 October 2026: this is the dated repair-release evidence,
+not the latest layout or publication checkpoint. The Director reorganization
+preserves attendance/cancellation rules. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current repository
+state, decisions, skills/rules, relevant files, next steps, and verification;
+no new release or live-data operation is included in this documentation update.
+
 Date: 20 October 2026. Verification only; no implementation changes, commit or push.
 
 Subsequent publication authorization: the user approved review, commit and push

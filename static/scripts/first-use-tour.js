@@ -33,7 +33,7 @@
     admin: [
       ['summary', 'Check the system summary', 'Review the current database connection and account totals before making administrative changes.'],
       ['user-management', 'Manage users', 'Create, edit, assign roles, and deactivate accounts through this protected workspace.'],
-      ['admin-controls', 'Configure the system', 'Use these controls for campuses, policies, categories, exports, backups, notifications, and settings.'],
+      ['admin-controls', 'Administrative Controls', 'Use these controls for policies, imports, exports, backups, and notifications. Open Settings in the sidebar for operational defaults and College Affiliations. PSU campus choices are fixed.'],
       ['internal-reporting', 'Access internal reporting', 'Export user records from this protected administrative workspace.'],
     ],
   };

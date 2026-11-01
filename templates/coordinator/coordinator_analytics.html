@@ -12,10 +12,10 @@
       <h1>Campus Analytics</h1>
       <p>Review participation and attendance outcomes for {{ campus_name }}.</p>
     </div>
-    <a
-      class="btn btn--outline"
-      href="{{ url_for('coordinator.attendance') }}"
-    >Manage Attendance</a>
+    <div class="page-heading__actions">
+      <a class="btn btn--outline" href="{{ url_for('coordinator.coordinator_dash', **report_query) }}">Back to Dashboard</a>
+      <a class="btn btn--outline" href="{{ url_for('coordinator.attendance') }}">Manage Attendance</a>
+    </div>
   </header>
   {{ annual_plan_summary(annual_plan, campus_name ~ ' Annual-Plan Achievement') }}
   {{ period_control(period, 'coordinator.analytics', report_query) }}
@@ -69,6 +69,7 @@
         href="{{ url_for('coordinator.analytics') }}"
       >Clear</a>
     </form>
+    <p class="analytics-filter-summary" role="status"><strong>Data Scope:</strong> {{ campus_name }} Campus · {{ period.label }}{% if request.args.get('category') %} · Category: {{ request.args.get('category') }}{% endif %}{% if request.args.get('activity_name') %} · Activity: {{ request.args.get('activity_name') }}{% endif %}{% if request.args.get('attention') %} · {{ attention_labels[request.args.get('attention')] }}{% endif %}</p>
     <div class="dashboard-export-actions">
       <a
         class="btn btn--outline"
@@ -81,7 +82,7 @@
     </div>
   </section>
   {{ findings(attention_items, 'coordinator.analytics', report_query) }}
-  {{ performance_metrics(performance, period, deltas) }}
+  {{ performance_metrics(performance, period, deltas, scope_label=campus_name ~ ' Campus · ' ~ period.label ~ ((' · ' ~ request.args.get('category')) if request.args.get('category') else '') ~ ((' · Activity: ' ~ request.args.get('activity_name')) if request.args.get('activity_name') else '')) }}
   {% if request.args.get('attention') %}<p class="scope-note">Showing: {{ attention_labels[request.args.get('attention')] }}. <a href="{{ url_for('coordinator.analytics', **dict(report_query, attention='')) }}">Show All Activity Records in This Scope</a></p>{% endif %}
   <details class="analytics-disclosure" id="participation-breakdowns">
     <summary><span>Participation Breakdowns</span><small>Activity categories, participant types, and monthly or weekly participation trends.</small></summary>

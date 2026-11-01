@@ -1,5 +1,13 @@
 # Dashboard decision support verification
 
+Continuation note, 31 October 2026: retain the counting/period definitions below.
+Later UI work removes Director dashboard follow-ups, moves recognition and
+Director filter/export controls to the dashboard, and keeps campus charts and
+outcomes in Analytics. Coordinator now pairs five follow-ups per page with a full
+calendar. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026). The original layout and
+test counts below describe the 29 October iteration.
+
 Date: 29 October 2026
 
 ## Implemented behavior

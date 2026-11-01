@@ -24,7 +24,7 @@
       {% endfor %}</div>
       {% if plan.campus_ranking is defined %}
       {% set ranking = plan.campus_ranking %}
-      <details class="goal-participation goal-campus-ranking">
+      <details class="goal-participation goal-campus-ranking" id="campus-guidance"{{ ' open' if request.args.get('guidance_open') == '1' }}>
         <summary>
           <span>{{ 'Worst Performing Campus' if request.endpoint == 'director.director_dash' and current_user.role == 'director' else 'Top-Performing Campus' }}</span>
           {% if ranking.state == 'unavailable' %}
@@ -44,7 +44,8 @@
           <p>Each campus is assessed against its own approved targets. Pending evidence stays in the denominator.</p>
           <ul class="goal-ranking-list">
           {% for campus in ranking.rows %}
-            <li><strong>{{ campus.campus }}</strong><span>{{ campus.rate }}% · {{ campus.met }} of {{ campus.total }} Goals Achieved</span><span>{{ campus.pending }} Awaiting Evidence</span>
+            <li class="goal-ranking-list__item{{ ' goal-ranking-list__item--lowest' if campus.is_lowest }}"><strong>{{ campus.campus }}</strong><span>{{ campus.rate }}% · {{ campus.met }} of {{ campus.total }} Goals Achieved</span><span>{{ campus.pending }} Awaiting Evidence</span>
+              {% if campus.prescriptive_tips %}{{ guidance(campus.prescriptive_tips, campus.campus, campus.has_coordinator, true) }}{% endif %}
               <a class="btn btn--outline" href="{{ campus.detail_url }}">View Campus Goals<span class="sr-only"> for {{ campus.campus }}</span></a>
             </li>
           {% else %}<li>No campuses have approved targets in this year.</li>{% endfor %}
@@ -58,12 +59,37 @@
       </details>
       {% endif %}
     </div>
+    {% if plan.guidance and current_user.role == 'coordinator' %}{{ guidance(plan.guidance) }}{% endif %}
     <nav class="goal-overview__actions" aria-label="Annual Goal Workspaces">
       {% if not plan.sample and current_user.role != 'admin' %}<a class="btn {{ action_style }}" href="{{ plan.workspace_url }}">{{ 'Review Goal Proposals' if current_user.role == 'director' else 'Campus Goal Proposals' }}{% if plan.proposal_count %} ({{ plan.proposal_count }}){% endif %}</a>{% endif %}
       {% if current_user.role == 'director' %}<a class="btn btn--outline" href="{{ plan.detail_url }}#campus-results">Compare Campus Goals</a>{% endif %}
       {% if not plan.sample and request.endpoint not in ['director.director_dash', 'coordinator.coordinator_dash'] %}<a class="btn {{ action_style }}" href="{{ url_for(request.endpoint, goal_year=plan.year, sample=1) }}">Preview Sample Data</a>{% endif %}
     </nav>
   </section>
+{%- endmacro %}
+
+{% macro guidance(records, campus_name='', has_coordinator=false, remind=false) -%}
+  {% if records %}<div class="guidance-list">
+    {% for tip in records %}<section class="goal-follow-up" data-guidance="{{ tip.code }}">
+      <strong>{{ 'Recommended Follow-Up' if loop.first else 'Additional Follow-Up' }}</strong>
+      <p>{{ tip.text }}</p><p>{{ tip.evidence }}</p><p class="scope-note">{{ tip.scope_label }}</p>
+      <div class="goal-ranking-list__actions"><a class="btn btn--outline" href="{{ tip.url }}">{{ tip.action_label }}{% if campus_name %}<span class="sr-only"> for {{ campus_name }}</span>{% endif %}</a>
+      {% if remind and current_user.role == 'director' %}
+        {% if has_coordinator and request.args.get('sample') != '1' %}
+        <form method="post" action="{{ url_for('director.campus_follow_up') }}" data-guidance-form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="follow_up_campus_id" value="{{ tip.campus_id }}">
+          <input type="hidden" name="goal_year" value="{{ tip.goal_year }}">
+          <input type="hidden" name="guidance_kind" value="{{ tip.code }}">
+          {% if tip.event_id %}<input type="hidden" name="guidance_event_id" value="{{ tip.event_id }}">{% endif %}
+          <input type="hidden" name="report_scope" value="{{ tip.scope_query|tojson|forceescape }}">
+          {% for key, values in request.args.to_dict(flat=false).items() if key not in ['goal_year', 'follow_up_campus_id', 'guidance_kind', 'guidance_event_id', 'report_scope', 'csrf_token'] %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endfor %}
+          <button class="btn btn--primary" type="submit" aria-label="Notify {{ campus_name }} Coordinator: {{ tip.text }}">Notify {{ campus_name }} Coordinator</button>
+        </form>
+        {% else %}<p class="goal-follow-up__contact">Contact {{ campus_name }}’s Coordinator to review this campus.</p>{% endif %}
+      {% endif %}</div>
+    </section>{% endfor %}
+  </div>{% endif %}
 {%- endmacro %}
 
 {% macro metric(label, value, explanation, change=none, unit='', show_help=true) -%}
@@ -95,7 +121,7 @@
   </form>
 {%- endmacro %}
 
-{% macro performance_metrics(performance, period, deltas, period_endpoint=none, period_query={}, workspace=false, show_period_label=true) -%}
+{% macro performance_metrics(performance, period, deltas, period_endpoint=none, period_query={}, workspace=false, show_period_label=true, scope_label='') -%}
   <section class="performance-overview" aria-label="Performance for {{ period.label }}">
     <h2>{{ 'Performance Overview' if period_endpoint else 'Participation Outcomes' }}</h2>
     {% if period_endpoint %}{{ period_control(period, period_endpoint, period_query, workspace, show_period_label) }}{% endif %}
@@ -106,7 +132,9 @@
       {{ metric('Attendance Rate', (performance.rate ~ '%') if performance.rate is not none else 'Not Available', '', deltas.get('rate'), ' pp', false) }}
       {{ metric('Targets Reached', (performance.targets_met ~ ' of ' ~ performance.targets_count) if performance.targets_count else 'Not Available', '', show_help=false) }}
     </div>
+    {% if scope_label %}<p class="analytics-scope-summary"><strong>Data Scope:</strong> {{ scope_label }}</p>{% endif %}
     <p class="scope-note">{% if performance.rate is not none %}Attendance rate: {{ performance.rate_attended }} present / {{ performance.rate_registrations }} registrations in fully recorded, ended activities.{% else %}Attendance rate is unavailable until ended activities have complete records and registrations.{% endif %}</p>
+    {% if performance_guidance and current_user.role == 'coordinator' %}{{ guidance(performance_guidance) }}{% endif %}
   </section>
 {%- endmacro %}
 
@@ -118,6 +146,7 @@
       <strong>{{ item.title }}</strong>
       {% if director %}<span class="attention-campus">{{ item.campus or 'Unassigned Campus' }}</span>{% endif %}
       <p>{{ item.reasons|join('; ') }}.</p>
+      {% if current_user.role != 'admin' and item.guidance %}<div class="attention-guidance"><strong>Recommended Follow-Up</strong>{% for tip in item.guidance %}<p>{{ tip.text }}{% if tip.scope_label %} <span class="scope-note">{{ tip.scope_label }}.</span>{% endif %}</p>{% endfor %}</div>{% endif %}
     </div>
     <a class="btn btn--outline" href="{{ url_for('coordinator.attendance', event_id=item.event_id) if item.is_pending and not director else url_for(endpoint, **row_query) ~ '#decision-records' }}">
       {{ 'Complete Attendance' if item.is_pending and not director else 'Review Activity' }}<span class="sr-only"> for {{ item.title }}</span>

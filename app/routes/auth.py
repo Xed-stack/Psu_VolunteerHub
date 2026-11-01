@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 from urllib.parse import unquote
 import secrets
+import json
+from app.campuses import campus_affiliations, campus_query, official_campus
+import threading
 from app.models.user import (User, Interest, Skill, SystemSetting,
                              AuthSecurityEvent, PasswordResetToken)
 from app.models.notification import Notification
@@ -18,16 +21,20 @@ from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
 from app.models import db
 from app.services.email import send_email
 from app.services.session_idle import session_status
+from app.security import password_error
 import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+_recovery_delivery_slots = threading.BoundedSemaphore(4)
 
 VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
 SEXES = {'male', 'female', 'prefer_not_to_say'}
 AUTH_LIMITS = {'login': (5, timedelta(minutes=15)),
                'register': (5, timedelta(hours=1)),
                'reactivation': (5, timedelta(minutes=15)),
-               'password_reset': (3, timedelta(hours=1))}
+               'password_reset': (3, timedelta(hours=1)),
+               'password_reset_account': (3, timedelta(hours=1)),
+               'password_reset_source': (10, timedelta(hours=1))}
 
 
 def _request_ip():
@@ -35,6 +42,10 @@ def _request_ip():
 
 
 def _throttle_key(action, subject=''):
+    if action == 'password_reset_account':
+        return AuthSecurityEvent.subject(f'{action}|{subject.lower()}')
+    if action == 'password_reset_source':
+        return AuthSecurityEvent.subject(f'{action}|{_request_ip()}')
     return AuthSecurityEvent.subject(f'{action}|{_request_ip()}|{subject.lower()}')
 
 
@@ -293,11 +304,16 @@ def register():
         # instead of bouncing the visitor to their own dashboard.
         logout_user()
 
-    campuses = Campus.query.order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
+    campuses = campus_query().order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
     interests = Interest.query.all()
     skills = Skill.query.all()
     active_terms = _active_terms()
     active_privacy = _active_privacy()
+    selected_campus = official_campus(request.form.get('campus', type=int)) if request.method == 'POST' else None
+    campus_affiliation_options = {
+        str(campus.id): campus_affiliations(campus) for campus in campuses
+    }
+    college_affiliations = campus_affiliations(selected_campus)
 
     if request.method == 'POST':
         # 1. Grab inputs from Signup.html
@@ -326,10 +342,9 @@ def register():
             errors['last_name'] = 'Last name is required.'
         if not email:
             errors['email'] = 'Email is required.'
-        if not password:
-            errors['password'] = 'Password is required.'
-        elif len(password) < password_min:
-            errors['password'] = f'Password must be at least {password_min} characters.'
+        password_message = password_error(password, password_min)
+        if password_message:
+            errors['password'] = password_message
         if (password_confirmation is not None
                 and password != password_confirmation):
             errors['password_confirmation'] = 'Password confirmation does not match.'
@@ -355,9 +370,11 @@ def register():
             errors['id_number'] = 'An account with this PSU ID already exists.'
 
         # Resolve campus string to Campus Model DB record
-        campus_obj = db.session.get(Campus, campus_id) if campus_id else None
+        campus_obj = official_campus(campus_id) if campus_id else None
         if campus_obj is None:
             errors['campus'] = 'Select a valid PSU campus.'
+        elif college_affiliation not in campus_affiliations(campus_obj):
+            errors['college_affiliation'] = 'Select a College Affiliation for the selected campus.'
 
         selected_interest_ids = request.form.getlist('interests') or session.get(
             'selected_interests', [])
@@ -373,6 +390,8 @@ def register():
             _record_attempt('register', email)
             return render_template('Signup.html', campuses=campuses,
                                    interests=interests, skills=skills,
+                                   college_affiliations=college_affiliations,
+                                   campus_affiliation_options=campus_affiliation_options,
                                    password_min=password_min,
                                    active_terms=active_terms, active_privacy=active_privacy,
                                    errors=errors)
@@ -440,6 +459,8 @@ def register():
 
     return render_template('Signup.html', campuses=campuses,
                            interests=interests, skills=skills,
+                           college_affiliations=college_affiliations,
+                           campus_affiliation_options=campus_affiliation_options,
                            password_min=_password_min_length(),
                            active_terms=active_terms, active_privacy=active_privacy)
 
@@ -452,11 +473,15 @@ def forgot_password():
         if not email or len(email) > 120 or email.count('@') != 1 or any(c.isspace() for c in email):
             return render_template('auth/forgot_password.html', errors={
                 'email': 'Enter the email address registered to your account.'}), 400
-        if _is_limited('password_reset', email):
+        actions = ('password_reset', 'password_reset_account', 'password_reset_source')
+        if any(_is_limited(action, email) for action in actions):
             flash('If an active account uses that email, a temporary password will arrive shortly. Check your spam folder too.', 'info')
             return redirect(url_for('auth.login'))
-        _record_attempt('password_reset', email)
-        user = User.query.filter(db.func.lower(User.email) == email).first()
+        for action in actions:
+            db.session.add(AuthSecurityEvent(
+                action=action, subject_hash=_throttle_key(action, email)))
+        db.session.commit()
+        user = User.query.filter(db.func.lower(User.email) == email).with_for_update().first()
         if user and user.is_active:
             raw_token = secrets.token_urlsafe(15)
             PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
@@ -464,8 +489,10 @@ def forgot_password():
             db.session.add(PasswordResetToken(
                 user_id=user.id, token_hash=sha256(raw_token.encode()).hexdigest(),
                 expires_at=datetime.utcnow() + timedelta(minutes=30)))
-            try:
-                send_email(user.email, 'Your PSU Volunteer Hub temporary password',
+            db.session.commit()
+            _send_recovery_email_async(
+                           current_app._get_current_object(), user.email,
+                           'Your PSU Volunteer Hub temporary password',
                            f'Temporary password: {raw_token}\n\n'
                            'Open PSU Volunteer Hub and sign in with your registered email '
                            'and this temporary password within 30 minutes. You must choose '
@@ -473,14 +500,30 @@ def forgot_password():
                            'Only the latest temporary password works. It can complete one reset.\n'
                            'If you did not request this, ignore this email. '
                            'Your current password has not changed.')
-            except OSError:
-                db.session.rollback()
-                current_app.logger.error('Password reset email delivery failed; check email provider configuration')
-            else:
-                db.session.commit()
         flash('If an active account uses that email, a temporary password will arrive shortly. Check your spam folder too.', 'info')
         return redirect(url_for('auth.login'))
     return render_template('auth/forgot_password.html', errors={})
+
+
+def _send_recovery_email_async(app, recipient, subject, body):
+    if not _recovery_delivery_slots.acquire(blocking=False):
+        app.logger.error('Password reset email dispatch capacity reached')
+        return
+    def deliver():
+        try:
+            with app.app_context():
+                try:
+                    send_email(recipient, subject, body)
+                except OSError:
+                    app.logger.error('Password reset email delivery failed; check email provider configuration')
+        finally:
+            _recovery_delivery_slots.release()
+    # ponytail: best-effort delivery; use a durable outbox when restart-safe retries are required.
+    try:
+        threading.Thread(target=deliver, daemon=True).start()
+    except RuntimeError:
+        _recovery_delivery_slots.release()
+        app.logger.error('Password reset email dispatch failed')
 
 
 @auth_bp.route('/reset-password', defaults={'token': None}, methods=['GET', 'POST'])
@@ -497,8 +540,9 @@ def reset_password(token):
         password = request.form.get('password', '')
         confirmation = request.form.get('password_confirmation', '')
         minimum = _password_min_length()
-        if len(password) < minimum:
-            errors['password'] = f'Use at least {minimum} characters.'
+        password_message = password_error(password, minimum)
+        if password_message:
+            errors['password'] = password_message
         if password != confirmation:
             errors['password_confirmation'] = 'Enter the same new password in both fields.'
         if sha256(password.encode()).hexdigest() == record.token_hash:

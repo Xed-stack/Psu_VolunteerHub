@@ -6,7 +6,9 @@ Uses AnalyticsAggregator for all aggregation queries.
 """
 import csv
 import io
+import json
 from collections import Counter
+from collections import defaultdict
 from calendar import Calendar
 from datetime import datetime
 from flask import Blueprint, render_template, Response, current_app, request, flash, redirect, url_for, abort
@@ -15,9 +17,15 @@ from app.utils.decorators import roles_required
 from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
 from app.models.event import Event, Campus, SdgGoal
+from app.campuses import campus_query
 from app.models.user import User
+from app.models.notification import Notification
 from sqlalchemy.orm import selectinload
-from app.dashboard import summarize_report, resolve_period, dashboard_evidence, annual_plan_summary
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.datastructures import MultiDict
+from app.dashboard import (summarize_report, resolve_period, dashboard_evidence, annual_plan_summary,
+                           operational_guidance, present_guidance, scheduling_scope, GUIDANCE_SCOPE_KEYS, guidance_scope_label)
+from app.annual_goals import selected_year, goal_guidance, summary as annual_goal_summary
 from app.reports import (
     build_events_report, render_csv, render_pdf, resolve_campus,
     ReportError, _build_meta, parse_date_range)
@@ -62,7 +70,7 @@ def _historical_filters():
 
 
 def _live_report_context(period):
-    campuses = Campus.query.order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
+    campuses = campus_query().order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
     selected, mode, allowed, error = _live_campuses(campuses)
     sex = request.args.get('sex', '').strip().lower()
     sex = sex if sex in ('male', 'female', 'prefer_not_to_say', 'unrecorded') else None
@@ -195,6 +203,29 @@ def director_dash():
                  ((campus.id in evidence['selected_campuses']) == (evidence['campus_mode'] == 'include')))]
     with_activity = sum(campus['activities'] > 0 for campus in campuses)
     evidence['annual_plan'] = annual_plan_summary(now.year)
+    if current_user.role == 'director':
+        grouped = defaultdict(list)
+        for row in evidence['evidence_rows']:
+            grouped[row['campus_id']].append(row)
+        assigned = {row[0] for row in db.session.query(User.campus_id).filter_by(
+            role='coordinator', _is_active=True).distinct().all()}
+        included = {campus['id'] for campus in campuses}
+        summaries = {campus['campus_id']: campus for campus in evidence['annual_plan']['campus_summaries']}
+        for campus in summaries.values():
+            records = goal_guidance(campus)
+            if campus['campus_id'] in included:
+                records += operational_guidance(grouped[campus['campus_id']], guidance_scope_label(period, request.args),
+                    show_targets=not evidence['selected_sex'], allow_scheduling=scheduling_scope(request.args))
+            campus['has_coordinator'] = campus['campus_id'] in assigned
+            campus['prescriptive_tips'] = present_guidance(records, campus['campus_id'],
+                evidence['annual_plan']['year'], evidence['live_query'])
+        for campus in campuses:
+            campus['guidance'] = summaries[campus['id']]['prescriptive_tips']
+            campus['has_coordinator'] = campus['id'] in assigned
+    else:
+        for campus in evidence['annual_plan']['campus_ranking']['rows']:
+            campus['has_coordinator'] = False
+            campus['prescriptive_tips'] = []
     award_years = sorted({row[0] for row in db.session.query(
         db.extract('year', Event.date)).distinct().all()}, reverse=True) or [now.year]
     award_year = request.args.get('award_year', type=int)
@@ -213,6 +244,95 @@ def director_dash():
                                             'without_activity': len(campuses) - with_activity}), (400 if evidence['campus_error'] else 200)
 
 
+@director_bp.route('/director/campus-follow-up', methods=['POST'])
+@login_required
+@roles_required('director')
+def campus_follow_up():
+    campus_id = request.form.get('follow_up_campus_id', type=int)
+    campus = db.session.get(Campus, campus_id) if campus_id else None
+    if campus is None:
+        flash('Choose a valid campus before sending a follow-up.', 'error')
+        return redirect(url_for('director.director_dash'))
+    try:
+        year = selected_year(request.form.get('goal_year'))
+        raw_scope = json.loads(request.form.get('report_scope', '{}'))
+        if (not isinstance(raw_scope, dict) or any(key not in GUIDANCE_SCOPE_KEYS for key in raw_scope)
+                or any(not isinstance(values, list) or not all(isinstance(v, str) for v in values)
+                       for values in raw_scope.values())):
+            raise ValueError
+        scope = MultiDict((key, value) for key, values in raw_scope.items() for value in values)
+        period = resolve_period(scope)
+        event_id = request.form.get('guidance_event_id', type=int)
+        code = request.form.get('guidance_kind', 'remaining_goals')
+        if code not in ('no_targets', 'remaining_goals', 'pending_attendance', 'missed_targets', 'low_attendance', 'no_activities'):
+            raise ValueError
+        if request.form.get('guidance_event_id') and (not event_id or event_id < 1 or code not in ('pending_attendance', 'low_attendance', 'missed_targets')):
+            raise ValueError
+        plan = annual_goal_summary(year, campus_id)
+        records = goal_guidance(plan)
+        if code not in ('no_targets', 'remaining_goals'):
+            if scope.get('campus') and (scope.getlist('campus') != [str(campus_id)] or scope.get('campus_mode') != 'include'):
+                raise ValueError
+            rows, _ = build_events_report(campus_id=campus_id, start_date=period['start'], end_date=period['end'],
+                category=scope.get('category'), sex=scope.get('sex'), sdg_id=scope.get('sdg_id', type=int),
+                activity_name=scope.get('activity_name'), attention=scope.get('attention'),
+                event_id=event_id or scope.get('event_id'))
+            records = operational_guidance(rows, guidance_scope_label(period, scope), not scope.get('sex'), scheduling_scope(scope))
+        record = next((item for item in records if item['code'] == code), None)
+    except (ValueError, TypeError):
+        abort(400, description='Choose a valid recommendation and report scope.')
+    navigation = {key: values for key, values in request.form.to_dict(flat=False).items()
+                  if key in GUIDANCE_SCOPE_KEYS or key in ('award_year', 'calendar_year', 'calendar_month', 'attention_page')}
+    navigation['goal_year'] = year
+    navigation['guidance_open'] = '1'
+    destination = url_for('director.director_dash', **navigation) + '#campus-guidance'
+    if not record or plan.get('sample') or request.form.get('sample') == '1':
+        flash('This recommendation has cleared or is unavailable. No reminder was sent.', 'info')
+        return redirect(destination)
+    if code == 'remaining_goals':
+        text = f'The {campus.name} campus is at {plan["rate"]}% annual goal achievement for {year}. '
+    else:
+        text = f'{campus.name}: '
+    text += f'{record["evidence"]} {record["scope_label"]} {record["text"]}'
+    canonical_scope = {key: scope.getlist(key) for key in GUIDANCE_SCOPE_KEYS
+                       if scope.get(key) and key not in ('period', 'campus_id', 'campus', 'campus_mode')}
+    canonical_scope.update(start_date=[period['start']], end_date=[period['end']])
+    identity = dict(campus_id=campus_id, rule=code, event_id=event_id,
+                    scope={} if code in ('no_targets', 'remaining_goals') else canonical_scope, goal_year=year)
+    message = json.dumps(dict(version=1, identity=identity, text=text), sort_keys=True)
+    title = f'Campus Goal Follow-Up: {campus.name}' if code in ('no_targets', 'remaining_goals') else f'Campus Follow-Up: {campus.name}'
+    # Serialize sends for each recipient before checking their unread reminders.
+    coordinators = User.query.filter_by(role='coordinator', campus_id=campus.id, _is_active=True).order_by(User.id).with_for_update().all()
+    if not coordinators:
+        flash(f"No active coordinator is assigned to {campus.name}. Contact the campus coordinator directly.", 'warning')
+    else:
+        try:
+            sent = 0
+            for coordinator in coordinators:
+                unread = Notification.query.filter_by(user_id=coordinator.id,
+                    notification_type='campus_guidance', is_read=False).all()
+                duplicate = False
+                for note in unread:
+                    try:
+                        duplicate = json.loads(note.message).get('identity') == identity
+                    except (ValueError, AttributeError):
+                        continue
+                    if duplicate:
+                        break
+                if not duplicate:
+                    db.session.add(Notification(user_id=coordinator.id, title=title,
+                        message=message, notification_type='campus_guidance', related_event_id=event_id))
+                    sent += 1
+            db.session.commit()
+            flash(f'Follow-up sent to {sent} coordinator(s) for {campus.name}.' if sent else
+                  f'An equivalent unread reminder already exists for {campus.name}.', 'success' if sent else 'info')
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception('Campus guidance delivery failed')
+            flash('The reminder could not be sent. Please try again.', 'error')
+    return redirect(destination)
+
+
 @director_bp.route('/director/calendar')
 @login_required
 @roles_required('director', 'admin')
@@ -224,7 +344,7 @@ def activity_calendar():
     return render_template('director/activity_calendar.html',
                            **_director_calendar(request.args.get('year', type=int),
                                                 request.args.get('month', type=int), campus_id, category),
-                           campuses=Campus.query.order_by(Campus.name).all(), categories=categories,
+                           campuses=campus_query().order_by(Campus.name).all(), categories=categories,
                            selected_campus=campus_id, selected_category=category)
 
 
@@ -307,6 +427,7 @@ def analytics():
 @login_required
 @roles_required('director', 'admin')
 def export_campus_csv():
+    from app.reports import csv_safe
     filters = _historical_filters()
     data = AnalyticsAggregator.historical_campus_stats(**filters)
     output = io.StringIO()
@@ -314,7 +435,7 @@ def export_campus_csv():
     writer.writerow(['Campus / Unit', 'Activities', 'Volunteer Participations',
                      'Incomplete Source Rows'])
     for row in data:
-        writer.writerow([row['campus'], row['activities'],
+        writer.writerow([csv_safe(row['campus']), row['activities'],
                          row['participations'], row['incomplete_records']])
     return Response(output.getvalue(), mimetype='text/csv', headers={
         'Content-Disposition':
@@ -406,7 +527,7 @@ def _university_report_payload():
     may request any single campus or all campuses; the campus is validated and
     never trusted blindly. Invalid dates raise ReportError -> caller redirects.
     """
-    campuses = Campus.query.order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
+    campuses = campus_query().order_by(db.func.lower(Campus.name), Campus.name, Campus.id).all()
     selected, mode, allowed, error = _live_campuses(campuses)
     if error:
         abort(400, description=error)

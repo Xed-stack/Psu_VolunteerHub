@@ -37,4 +37,17 @@
       <button class="btn btn--primary" type="submit">Save settings</button>
     </div>
   </form>
+  <section class="panel" aria-labelledby="college-affiliations-title">
+    <header class="panel__header"><div><h2 id="college-affiliations-title">College Affiliations</h2><small>Manage the universal affiliation options used across account forms and filters.</small></div></header>
+    <form class="filter-row" method="post">
+      <label class="field">Add College Affiliation<input class="input" name="college_affiliation_add" maxlength="150" required></label>
+      <button class="btn btn--primary" type="submit">Add Affiliation</button>
+    </form>
+    <div class="tag-list">
+      {% for affiliation in college_affiliations %}
+        <span class="admin-category"><span>{{ affiliation }}</span><button class="icon-button icon-button--danger" type="submit" form="remove-{{ loop.index }}" aria-label="Remove {{ affiliation }}">×</button></span>
+        <form id="remove-{{ loop.index }}" method="post"><input type="hidden" name="college_affiliation_remove" value="{{ affiliation }}"></form>
+      {% else %}<p class="empty-state">No managed College Affiliations yet.</p>{% endfor %}
+    </div>
+  </section>
 {% endblock %}

@@ -1,5 +1,13 @@
 # Dashboard grouping and campus chart verification
 
+Continuation note, 31 October 2026: this report preserves the original grouping
+iteration. The latest local Director dashboard uses recognition/calendar and a
+visible Cross-Campus Comparison section for filters/exports/coverage; its campus
+chart and outcomes table remain in Analytics. Coordinator uses the full calendar
+and five-item square pagination. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md)
+and [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for final decisions,
+publication state, skills/rules, and verification.
+
 Date: 30 October 2026
 
 Director and Coordinator analytics now group participation breakdowns, detailed

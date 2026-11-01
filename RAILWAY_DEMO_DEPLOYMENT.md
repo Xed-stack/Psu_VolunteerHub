@@ -1,7 +1,33 @@
 # Railway thesis demonstration deployment
 
-Local preparation only. No cloud project, billable upgrade, deployment or database
-upload has been performed. Preserve the local original database and backup files.
+Continuation status, 31 October 2026: both GitHub `main` branches are verified
+at `03d1fc1`; that proves source publication, not the deployed Railway revision.
+The newest Director layout and separate security/recovery/broader-reset edits
+remain local. Follow [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for
+scope, decisions, skills/rules, verification, and the next step. This guide's
+commands are operator procedures, not authorization to deploy or reset data.
+
+Updated: 29 October 2026. The main and demo apps have been deployed to Railway,
+and the user confirmed the real password-recovery flow on both. Preserve the
+local original database and backup files. No paid upgrade is recorded.
+
+## Current deployment status
+
+- Both app services use Brevo's HTTPS API with sending enabled and a verified
+  sender. Their existing MySQL services were restarted from saved configurations
+  and attached volumes with separate user approval. No import or schema change
+  was performed during email setup.
+- Brevo access and database connectivity were checked from the app services.
+  Both observed app IPs were authorized with user approval; API IP blocking
+  remains enabled. Real email receipt and temporary-to-permanent password
+  replacement were subsequently confirmed by the user on both apps.
+- Recovery implementation `659500e` and follow-up `d940c32` were pushed to
+  `arlrom003/PSU-Volunteer-Hub` (`thesis/main`). See `PASSWORD_RECOVERY_QA.md`.
+  Deployment of the follow-up commit was not independently rechecked after push.
+- Encrypted off-site backup/recovery, hosted upload persistence and private-file
+  restoration still need their own verification. The setup checklist below is
+  retained for future deployments; do not initialize or seed an existing database
+  merely because it appears in this guide.
 
 ## Check the account before creating services
 
@@ -46,7 +72,8 @@ existing uploaded files; local PSU assets and shared styles remain included.
    `MAIL_DEFAULT_SENDER` to your verified Brevo sender, and
    `MAIL_SUPPRESS_SEND=false`. Free, Trial, and Hobby plans require HTTPS email
    APIs because Railway blocks outbound SMTP. See the Brevo setup in `README.md`.
-   Live inbox delivery must still be verified after deployment.
+   Verify live inbox delivery for each new deployment. The user confirmed it
+   for the current main and demo apps; see the status above.
 5. Set healthcheck path **/auth/login**, timeout **120 seconds**, restart policy
    **On Failure**, maximum retries **3**, and one app replica in dashboard settings.
    The healthcheck proves HTTP liveness only, not initialized schema or DB health.
@@ -94,17 +121,19 @@ Use synthetic data, disable real outbound messaging unless explicitly configured
 and keep the working local demo available as a defense-day fallback. Remove demo
 access after the demonstration using an approved retention/cleanup decision.
 
-## Verification so far
+## Earlier local verification (21 October 2026)
 
 - 20 focused deployment-file/startup/provisioning tests passed initially.
 - 21 October follow-up: Linux Docker image built successfully; real Gunicorn
   startup and public/private upload plus synthetic SQLite data persistence across
   replacement containers passed with no network access. 18 startup/provisioning
   checks passed in the Linux image environment. See DOCKER_DEMO_QA.md for exact
-  coverage, retained artifacts and limits. Actual Railway deployment, proxy chain,
-  cloud MySQL connection and mounted-volume behavior remain unverified.
-- No application/UI changes, new Python dependencies, commit/push, paid upgrade
-  or actual cloud writes. Pending backup/runbook documents are preserved.
+  coverage, retained artifacts and limits. At that checkpoint, actual Railway
+  deployment, proxy chain, cloud MySQL connection and mounted-volume behavior
+  were unverified. Later cloud/email checks are recorded in the status above;
+  they do not establish hosted upload persistence.
+- That local checkpoint included no application/UI changes, new Python
+  dependencies, commit/push, paid upgrade or actual cloud writes.
 
 References: [Flask deployment](https://docs.railway.com/guides/flask),
 [MySQL](https://docs.railway.com/databases/mysql),

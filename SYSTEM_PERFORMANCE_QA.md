@@ -1,5 +1,14 @@
 # System loading performance, 30 October 2026
 
+Continuation status, 31 October 2026: both remote `main` branches were verified
+at `03d1fc1`, including this performance release and the timeout fix. The newer
+local Director layout moves recognition/filter controls and uses these retained
+batched queries; the measurements below belong to the earlier page layout.
+See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) for its query-budget checks
+and [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for next steps,
+skills/rules, mixed-worktree boundaries, and publication state. Hosted results
+remain unverified; this documentation update introduces no new measurements.
+
 ## Measured bottlenecks and local fixes
 
 Measured Flask requests against isolated, synthetic SQLite data: 200 events,
@@ -88,12 +97,16 @@ scripts outside the repository; they are not application or deployment changes.
 
 ## Deployment and remaining hosted checks
 
-This performance pass is prepared for the user-authorized push to both Git
-repositories. The earlier report-timeout fix is included where it was missing.
-The performance test fixture uses the existing marker-only demo command's
-confirmation text, with an isolated in-memory database; the separate broader
-demo-reset implementation and unrelated local security changes are excluded.
-Hosted deployment completion and performance still require verification.
+Push follow-up: commit `03d1fc1` was pushed to both repositories' `main` branches,
+and both remote SHAs were verified. Another 32 performance/timeout regressions
+passed against the isolated publishable source. Its Git tree matched the final
+common commit exactly. The earlier report-timeout fix is now in both repositories.
+Unrelated security/recovery/demo-reset edits were excluded; the published test
+fixture uses the existing marker-only demo CLI confirmation. The original local
+workspace remained unchanged apart from notes at that publication checkpoint.
+The later Director UI was subsequently integrated into the original workspace;
+it remains unpublished, as recorded in HANDOFF.md.
+Hosted deployment completion and performance remain unverified.
 No dependency, schema migration, paid upgrade, Railway setting or worker-count
 change was made. Existing unrelated local changes remain intact.
 

@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from app.models import db
+from app.campuses import campus_query
 from app.models.annual_plan import AnnualPlan, AnnualIndicator, AnnualTarget, AnnualResult, AnnualActivityMapping
 from app.models.event import Campus, Event
 from app.annual_goals import validate_definition, number, cutoff_for, SEX_LABELS
@@ -35,7 +36,7 @@ def import_file(path, dry_run=False):
                         definition=row.get('definition') or row['indicator_name'],
                         comparison_rule=row.get('comparison_rule') or 'gte',
                         evidence_basis=row.get('evidence_basis') or 'approved_aggregate'))
-                    campus = Campus.query.filter_by(code=row['campus_code']).first() if row['campus_code'] else None
+                    campus = campus_query().filter_by(code=row['campus_code']).first() if row['campus_code'] else None
                     if row['campus_code'] and not campus:
                         raise ReportError('Unknown campus_code.')
                     approval = row.get('approval_reference')

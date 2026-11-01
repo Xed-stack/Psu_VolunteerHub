@@ -28,16 +28,23 @@
           <div class="form-grid">
             {{ select_field('Volunteer category', 'volunteer_type', [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff')], errors) }}
             {{ field('PSU ID number', 'id_number', errors, hint='Enter your student or employee ID.') }}
-            {{ field('College affiliation', 'college_affiliation', errors, hint='Enter the name of your college or office.') }}
             {% set campus_options = [] %}
             {% for campus in campuses|sort(attribute='name') %}{% set _ = campus_options.append((campus.id, campus.name)) %}{% endfor %}
             {{ select_field('Campus', 'campus', campus_options, errors) }}
+            <label class="field" for="college_affiliation">College Affiliation
+              <select class="select" id="college_affiliation" name="college_affiliation" required {% if not request.form.get('campus') %}disabled{% endif %} aria-describedby="college-affiliation-hint{% if errors.get('college_affiliation') %} college_affiliation-error{% endif %}">
+                <option value="">{% if request.form.get('campus') %}Select an affiliation{% else %}Select a campus first{% endif %}</option>
+                {% for affiliation in college_affiliations %}<option value="{{ affiliation }}" {% if request.form.get('college_affiliation') == affiliation %}selected{% endif %}>{{ affiliation }}</option>{% endfor %}
+              </select>
+              <span class="field-hint" id="college-affiliation-hint">Options depend on the selected campus.</span>
+              {% if errors.get('college_affiliation') %}<span class="field-error" id="college_affiliation-error">{{ errors.college_affiliation }}</span>{% endif %}
+            </label>
           </div>
         </fieldset>
         <fieldset class="auth-fieldset">
           <legend>Password</legend>
           <div class="form-grid">
-            {{ field('Password', 'password', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Use at least ' ~ (password_min or 8) ~ ' characters.') }}
+            {{ field('Password', 'password', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Use at least ' ~ (password_min or 8) ~ ' characters with uppercase, lowercase, a number, and a special character.') }}
             {{ field('Confirm password', 'password_confirmation', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Enter the same password again.') }}
           </div>
         </fieldset>
@@ -79,4 +86,20 @@
       <p class="auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
     </section>
   </main>
+  <script>
+    (() => {
+      const campus = document.querySelector('select[name="campus"]');
+      const affiliation = document.querySelector('#college_affiliation');
+      const optionsByCampus = {{ campus_affiliation_options|default({})|tojson }};
+      if (!campus || !affiliation) return;
+      campus.addEventListener('change', () => {
+        const selected = affiliation.value;
+        const options = optionsByCampus[campus.value] || [];
+        affiliation.replaceChildren(new Option(options.length ? 'Select an affiliation' : 'No affiliations are configured for this campus.', ''));
+        options.forEach((value) => affiliation.add(new Option(value, value)));
+        affiliation.disabled = options.length === 0;
+        if (options.includes(selected)) affiliation.value = selected;
+      });
+    })();
+  </script>
 {% endblock %}

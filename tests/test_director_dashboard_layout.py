@@ -50,11 +50,11 @@ def test_director_move_preserves_admin_analytics_and_campus_evidence(app, client
     assert analytics.one('section', id='campus-outcomes')
     assert not analytics.all('select', name='award_year')
     if role == 'director':
-        assert analytics.one('section', id='filters').one('h2').text == 'Selected Report Scope'
-        link = next(link for link in analytics.all('a') if link.text == 'Change Filters')
+        assert analytics.one('section', id='filters').one('h2').text == 'Filters and Reports'
+        link = next(link for link in analytics.all('a') if 'Change Filters' in link.text)
         assert urlsplit(link.attrs['href']).path == '/director_dash'
         assert urlsplit(link.attrs['href']).fragment == 'cross-campus-comparison'
-        assert not analytics.all('form', id='analytics-filters')
+        assert analytics.one('form', id='analytics-filters')
     else:
         assert analytics.one('form', id='analytics-filters')
         assert 'Filters and Reports' in analytics.one('section', id='filters').text

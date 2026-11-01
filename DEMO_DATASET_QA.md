@@ -1,23 +1,41 @@
 # Large demonstration dataset
 
-30 October 2026. Publication authorized to `thesis/main`; hosted deployment and
-database execution require separate verification after the push.
+Continuation note, 31 October 2026: the broader reset described here is a
+separate local, unpublished workstream. The dashboard update does not require
+running it, replacing activity records, or changing accounts. The published
+performance fixture still uses the earlier marker-only confirmation. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current publication,
+decisions, skills/rules, and handover verification. Preserve all target guards
+and do not execute a reset as part of reading this document.
+
+30 October 2026 follow-up. Ordinary activity titles and a complete reset keeping
+only the three main accounts are implemented locally. The earlier prefix-based
+command was published as `2872af3`; this revision is not yet published or hosted.
 
 ## Scope
 
-`reset-and-seed-demo` replaces activities titled `[Demo Analytics] ...` or
-`[Demo Dataset] ...`, their registrations, attendance, cancellation requests,
-recommendation logs, announcements and event notifications. It also replaces
-`DEMO-EXT-...` external participants and its own generated audit entries.
-It refuses replacement if a marked external participant has registrations in
-unmarked activities. Existing operational audit history and uploaded files stay
-untouched; database record removal does not erase files from the upload volume.
+`reset-and-seed-demo` clears ALL activity and participation data in the demo
+database regardless of titles or ID markers. This includes activities,
+registrations, attendance, external participants, cancellation requests,
+recommendations, milestones, announcements, notifications, event/skill and
+event/SDG associations, historical source records, cached analytics and activity
+audit entries. Dependants are deleted before parents with foreign keys enabled.
+Uploaded files stay untouched; database record removal does not erase files from
+the upload volume.
 
-All existing login accounts, password hashes and IDs are preserved, including
-`student@psu.edu`, `coordinator@psu.edu` and `director@psu.edu`. These three must
-already exist with their correct roles. Missing student/coordinator campus links
+Only `student@psu.edu`, `coordinator@psu.edu` and `director@psu.edu` retain their
+existing account IDs and passwords. All other accounts, including other manually
+created demo roles, are deleted with their profiles, interest/skill links,
+reset tokens and policy acceptances. Synthetic volunteers and campus coordinators
+are recreated. No administrator account is retained or generated.
+
+These three main accounts must exist with their correct roles before any reset.
+Missing student/coordinator campus links
 are repaired using the first existing campus in alphabetical order; valid campus
-links are retained. Existing demographics and policy acceptances are unchanged.
+links are retained. Their demographics, skills, interests, profile records and
+policy acceptances are preserved; old profile participation history is cleared.
+Policy revisions and reference catalogues remain; deleted publisher IDs become
+null without changing publication status, text or versions.
 An existing volunteer missing a sex response still completes the normal profile
 gate after login. No consent is recorded on behalf of preserved accounts.
 
@@ -43,9 +61,10 @@ Names, event details and sex responses are synthetic. Sex responses are generate
 independently of names. Distribution is illustrative, not calibrated to the
 original PDF or an asserted PSU demographic breakdown. Generated emails use the
 reserved `.invalid` domain. New accounts have random undisclosed passwords; use
-the preserved accounts for the presentation. Repeat runs reuse generated accounts
-and preserve their passwords. Unmarked activities and imported historical source
-records remain intact, so whole-database totals can exceed fixture counts.
+the three preserved accounts for the presentation. Repeat runs replace all
+other accounts and regenerate the fixture. Activity titles have no visible
+`[Demo Dataset]` or `[Demo Analytics]` prefix. Synthetic provenance remains here
+and in generated fixture audit entries.
 
 ## Railway operation after deployment
 
@@ -67,8 +86,10 @@ shell prompt. If the prompt is `>>>`, enter `exit()` first.
    flask --app wsgi:app reset-and-seed-demo --database railway
    ```
 
-4. Type the exact `RESET DEMO <host>/railway` phrase shown by the command. The
-   command preserves passwords; it does not restore any previously shared password.
+4. Review the per-table deletion counts and number of other accounts to remove.
+   Type the exact `RESET ALL DEMO <host>/railway` phrase shown by the command.
+   The older `RESET DEMO` phrase is rejected because the deletion scope is broader.
+   Only the three main accounts retain their passwords.
 5. Check the reported counts and visit opportunities, both dashboards, analytics
    and the cancellation review workspace using the preserved accounts.
 
@@ -88,19 +109,22 @@ Isolated SQLite, foreign keys enabled:
 .\.venv\Scripts\python.exe -m pytest tests/test_demo_dataset.py tests/test_historical_import.py tests/test_production_init.py -q -p no:cacheprovider
 ```
 
-Result: **15 passed in 27.58 seconds**. Includes exact fixture counts, cancelled
+Current result: **15 passed in 27.23 seconds**. Includes exact fixture counts, cancelled
 versus active registration decisions, future full/available events, partial
-attendance, chronology, unchanged existing accounts/passwords/unmarked activities,
+attendance, chronology, unchanged main account IDs/passwords,
 repeat-run replacement, rollback after injected failure, wrong-service/database/
-role/confirmation rejection, no-write preview, external ownership protection,
+role/confirmation rejection, rejection of the older confirmation phrase,
+no-write preview, unmarked-record removal, other-account deletion,
+preserved main-account profiles/skills/interests/policy acceptances/reset tokens,
+preserved policy text and catalogues, removal of obsolete profile history,
 and HTTP 200 responses for public opportunities, Director dashboard/analytics/CSV
 and Coordinator dashboard/analytics. New identity password hashing is stubbed in
 the large database-logic test to keep the check fast; application hash verification
 remains unchanged. This is not a new full-suite or hosted MySQL verification.
 
-Publication check: the same 15 tests passed in 26.98 seconds against a temporary
-checkout of exactly the staged files, excluding the unrelated working-tree edits.
+Historical verification for `2872af3`: 15 passed in 27.58 seconds, plus 15 passed
+in 26.98 seconds against exactly its staged files. Those results covered the
+older marker-only reset and all-account preservation, not the new reset scope.
 
-Publication includes only this dataset command, its tests and related documentation.
-No live database write or backup was performed. Existing uncommitted
-security/recovery changes and attachments remain outside this publication.
+No database write, backup, commit, push or deployment was performed for this
+follow-up. Unrelated uncommitted security/recovery changes and attachments remain.

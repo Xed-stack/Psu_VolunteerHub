@@ -1,5 +1,13 @@
 # Cancellation decision submission repair
 
+Continuation note, 31 October 2026: keep the cancellation/loading-state repair
+and its dated evidence below. Coordinator cancellation visibility is preserved in
+the latest five-item follow-up layout; moving Director recognition/filters does
+not change cancellation decisions. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+decisions, skills/rules, files, next action, and verification. No cancellation
+was submitted during this documentation refresh.
+
 Date: 20 October 2026. Scope: the shared form-submit loading-state script.
 
 Later release verification: desktop approval and mobile keyboard rejection now

@@ -11,6 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 from app.models import db
+from app.campuses import campus_query
 from app.models.user import VolunteerProfile
 from app.models.event import (Event, Registration, Attendance, Campus,
                              ExternalParticipant, CancellationRequest)
@@ -131,11 +132,21 @@ def _external_cancellation_available(registration):
     )
 
 
-def _upsert_external_participant(id_number, name=None, contact_number=None,
+def _upsert_external_participant(id_number, campus_id, name=None, contact_number=None,
                                  address=None, email=None, sex=None):
     """Find an existing outsider by ID number or create a new record."""
     id_number = (id_number or '').strip()
-    participant = ExternalParticipant.query.filter_by(id_number=id_number).first()
+    participant = ExternalParticipant.query.filter_by(
+        id_number=id_number).with_for_update().first()
+    if not campus_id:
+        abort(403)
+    if participant is not None:
+        registrations = Registration.query.join(Event).filter(
+            Registration.external_participant_id == participant.id)
+        if (not registrations.filter(Event.campus_id == campus_id).first()
+                or registrations.filter(db.or_(
+                    Event.campus_id != campus_id, Event.campus_id.is_(None))).first()):
+            abort(403)
     if participant is None:
         participant = ExternalParticipant(id_number=id_number)
         db.session.add(participant)
@@ -158,7 +169,7 @@ def _upsert_external_participant(id_number, name=None, contact_number=None,
 def opportunities():
     page = request.args.get('page', 1, type=int)
     per_page = 9
-    campuses = Campus.query.order_by(func.lower(Campus.name), Campus.name, Campus.id).all()
+    campuses = campus_query().order_by(func.lower(Campus.name), Campus.name, Campus.id).all()
     available_campuses = {campus.id for campus in campuses}
     raw_campuses = [value.strip() for value in request.args.getlist('campus') if value.strip()]
     requested_campuses = request.args.getlist('campus', type=int)
@@ -441,7 +452,7 @@ def volunteer_dash():
     calendar_weeks = Calendar(firstweekday=0).monthdayscalendar(year, month)
     previous_year, previous_month = (year - 1, 12) if month == 1 else (year, month - 1)
     next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
-    campuses = Campus.query.order_by(Campus.name).all()
+    campuses = campus_query().order_by(Campus.name).all()
     categories = sorted({r.event.category for r in registrations if r.event.category})
     upcoming_schedule = [{'event': r.event, 'date': r.event.date}
                          for r in upcoming]

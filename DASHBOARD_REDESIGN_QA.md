@@ -1,5 +1,13 @@
 # Dashboard redesign verification
 
+Continuation note, 31 October 2026: this report preserves the original redesign
+and component/counting evidence. Later Director recognition/calendar/filter
+placement and Coordinator pagination/tint decisions are documented in
+[DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[COORDINATOR_CALENDAR_QA.md](COORDINATOR_CALENDAR_QA.md). Read
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current state,
+superseded options, skills/rules, relevant files, and verification.
+
 Date: 18 October 2026
 
 ## Implementation

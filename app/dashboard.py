@@ -10,6 +10,91 @@ ATTENTION_LABELS = {
     'missed_targets': 'Participant Targets Not Reached',
 }
 
+GUIDANCE_SCOPE_KEYS = ('period', 'start_date', 'end_date', 'campus', 'campus_mode',
+                       'campus_id', 'category', 'sex', 'sdg_id', 'activity_name',
+                       'attention', 'event_id', 'department')
+GUIDANCE_TEXT = {
+    'pending_attendance': (1, 'Complete outstanding attendance records so verified results can be assessed.'),
+    'missed_targets': (3, 'Review the activity target and plan additional participant outreach.'),
+    'low_attendance': (4, 'Review reminders, participant confirmation, and outreach timing.'),
+    'no_activities': (5, 'Plan or publish a campus activity for the selected period.'),
+}
+
+
+def operational_guidance(rows, scope_label, show_targets=True, allow_scheduling=False):
+    """Use the report's existing predicates; never judge provisional outcomes."""
+    performance = performance_summary(rows, show_targets)
+    result = []
+    for code, key in [('pending_attendance', 'pending'), ('missed_targets', 'missed'),
+                      ('low_attendance', 'low')]:
+        affected = performance[key]
+        if not affected:
+            continue
+        priority, text = GUIDANCE_TEXT[code]
+        if key == 'pending':
+            evidence = (f'{len(affected)} activities; '
+                        f'{sum(row["missing_attendance"] for row in affected)} missing attendance records; '
+                        f'{sum(row["unconfirmed_present"] for row in affected)} awaiting completion confirmation.')
+        elif key == 'missed':
+            evidence = (f'{len(affected)} activities; {sum(row["outcome_attended"] for row in affected)} '
+                        f'attended / {sum(row["target_participants"] for row in affected)} participant target.')
+        else:
+            evidence = (f'{len(affected)} activities below the 75% review guide; '
+                        f'{sum(row["outcome_attended"] for row in affected)} attended / '
+                        f'{sum(row["registrations"] for row in affected)} registrations in those activities.')
+        result.append(dict(code=code, priority=priority, text=text, evidence=evidence,
+                           scope_label=scope_label, event_id=affected[0]['event_id'] if len(affected) == 1 else None))
+    if not rows and allow_scheduling:
+        priority, text = GUIDANCE_TEXT['no_activities']
+        result.append(dict(code='no_activities', priority=priority, text=text,
+                           evidence='0 campus activity records.', scope_label=scope_label, event_id=None))
+    return result
+
+
+def scheduling_scope(query):
+    return not any(query.get(key) for key in
+                   ('category', 'sex', 'sdg_id', 'activity_name', 'attention', 'event_id', 'department', 'status'))
+
+
+def guidance_scope_label(period, query):
+    parts = [period['label']]
+    for key, label in [('category', 'Category'), ('activity_name', 'Activity'), ('sex', 'Sex'), ('sdg_id', 'SDG')]:
+        if query.get(key):
+            parts.append(f'{label}: {query.get(key)}')
+    return '; '.join(parts)
+
+
+def present_guidance(records, campus_id, goal_year, query=None):
+    """Generate role-appropriate destinations exclusively from internal routes."""
+    from flask import url_for
+    from flask_login import current_user
+    director = current_user.role == 'director'
+    query = query or {}
+    scope = {key: value for key, value in query.items() if key in GUIDANCE_SCOPE_KEYS}
+    scope.update(campus=[str(campus_id)], campus_mode=['include'])
+    scope.pop('campus_id', None)
+    result = []
+    for record in sorted(records, key=lambda item: item['priority'])[:3]:
+        item = dict(record, campus_id=campus_id, goal_year=goal_year, scope_query=scope)
+        code = item['code']
+        if code in ('no_targets', 'remaining_goals'):
+            item['action_label'] = 'Review Goal Proposals' if code == 'no_targets' else 'View Campus Goals'
+            item['url'] = (url_for('goals.workspace') if code == 'no_targets' else
+                           url_for('goals.details', year=goal_year, campus=campus_id))
+        elif code == 'no_activities' and not director:
+            item.update(action_label='Create Activity', url=url_for('coordinator.create_activity'))
+        elif code == 'pending_attendance' and not director:
+            item.update(action_label='Complete Attendance',
+                        url=url_for('coordinator.attendance', event_id=item['event_id']))
+        else:
+            target = dict(scope, attention=code if code in ATTENTION_LABELS else '', page=1)
+            if item['event_id']:
+                target['event_id'] = item['event_id']
+            item['action_label'] = 'View Campus Report' if code == 'no_activities' else 'Review Activities'
+            item['url'] = url_for('director.analytics' if director else 'coordinator.analytics', **target) + '#decision-records'
+        result.append(item)
+    return result
+
 
 def resolve_period(args, now=None):
     """Resolve explicit dates before presets; never overwrite bookmarked ranges."""
@@ -79,9 +164,20 @@ def dashboard_evidence(scope, period, now=None):
         for key in ('activities', 'registrations', 'attended', 'rate'):
             if performance[key] is not None and baseline[key] is not None:
                 deltas[key] = round(performance[key] - baseline[key], 1)
+    items = consolidate_attention(performance)
+    for item in items:
+        item['guidance'] = operational_guidance([item], guidance_scope_label(period, scope), not scope.get('sex'))
+    performance_guidance = []
+    if scope.get('campus_id'):
+        from flask import has_request_context, request
+        from flask_login import current_user
+        if has_request_context() and current_user.is_authenticated and current_user.role == 'coordinator':
+            records = operational_guidance(rows, period['label'], not scope.get('sex'), scheduling_scope(scope))
+            performance_guidance = present_guidance([item for item in records if item['code'] == 'no_activities'],
+                scope['campus_id'], request.args.get('goal_year'), request.args.to_dict(flat=False))
     return dict(evidence_rows=rows, evidence_summary=summary, performance=performance,
                 period=period, deltas=deltas, attention_labels=ATTENTION_LABELS,
-                attention_items=consolidate_attention(performance))
+                attention_items=items, performance_guidance=performance_guidance)
 
 
 def consolidate_attention(performance, pending=None):
@@ -92,6 +188,10 @@ def consolidate_attention(performance, pending=None):
     for kind, rows in groups:
         for row in rows:
             item = items.setdefault(row['event_id'], dict(row, reasons=[], is_pending=False))
+            item.setdefault('guidance', [])
+            code = {'pending': 'pending_attendance', 'missed': 'missed_targets', 'low': 'low_attendance'}[kind]
+            priority, text = GUIDANCE_TEXT[code]
+            item['guidance'].append(dict(code=code, priority=priority, text=text))
             if kind == 'pending':
                 item['is_pending'] = True
                 if row['missing_attendance']:

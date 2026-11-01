@@ -1,6 +1,6 @@
 {% extends 'layouts/role_base.html' %}
 {% from 'partials/info_tip.html' import info_tip %}
-{% from 'partials/dashboard_ui.html' import heading, metric, chart, period_control, performance_metrics, findings, annual_plan_summary with context %}
+{% from 'partials/dashboard_ui.html' import heading, metric, chart, period_control, performance_metrics, findings with context %}
 {% set active_page = "analytics" %}
 {% block title %}University Analytics · PSU Volunteer Hub{% endblock %}
 {% block header_title %}{{ 'Administration' if current_user.role == 'admin' else 'Director Console' }}{% endblock %}
@@ -12,12 +12,11 @@
       <h1>University Analytics</h1>
       <p>Compare campus participation and review the evidence behind activity outcomes.</p>
     </div>
-    <a
-      class="btn btn--outline"
-      href="{{ url_for('director.activity_calendar') }}"
-    >Activity Calendar</a>
+    <div class="page-heading__actions">
+      <a class="btn btn--outline" href="{{ url_for('director.director_dash', **live_query) if analytics_view == 'live' else url_for('director.director_dash') }}">Back to Dashboard</a>
+      <a class="btn btn--outline" href="{{ url_for('director.activity_calendar') }}">Activity Calendar</a>
+    </div>
   </header>
-  {% if analytics_view == 'live' %}{{ annual_plan_summary(annual_plan, 'University Annual-Plan Achievement') }}{% endif %}
   <nav class="analytics-view-switcher" aria-label="Analytics Report View">
     <a
       class="btn {{ 'btn--primary' if analytics_view == 'live' else 'btn--outline' }}"
@@ -32,7 +31,7 @@
   </nav>
   {% if analytics_view == 'live' %}
   {{ period_control(period, 'director.analytics', live_navigation_query) }}
-  {% if current_user.role == 'admin' %}
+  {% if current_user.role in ['admin', 'director'] %}
     {% include 'partials/university_report_filters.html' %}
   {% else %}
     <section class="panel report-scope" id="filters" aria-labelledby="report-scope-title">
@@ -43,7 +42,8 @@
     </section>
   {% endif %}
   {{ findings(attention_items, 'director.analytics', live_query, director=true) }}
-  {{ performance_metrics(performance, period, deltas) }}
+  {{ performance_metrics(performance, period, deltas, scope_label=live_scope|join(' · ')) }}
+  <p class="analytics-parent-link"><a href="{{ url_for('director.director_dash', **live_query) }}#cross-campus-comparison">Change Filters on the Dashboard</a></p>
   {% if request.args.get('attention') %}<p class="scope-note">Showing: {{ attention_labels[request.args.get('attention')] }}. <a href="{{ url_for('director.analytics', **dict(live_query, attention='')) }}">Show All Activity Records in This Scope</a></p>{% endif %}
   <details class="analytics-disclosure" id="participation-breakdowns">
     <summary><span>Participation Breakdowns</span><small>Campus and category comparisons, participant types, and participation trends.</small></summary>

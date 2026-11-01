@@ -234,20 +234,39 @@ def campus_ranking(campuses, lowest=False):
     return dict(state='ranked' if leaders else 'zero', rows=rows, leaders=leaders)
 
 
+def goal_guidance(plan):
+    """Remaining goals are not overdue unless an approved deadline says so."""
+    if plan.get('sample'):
+        return []
+    if not plan['total']:
+        code, priority, text = 'no_targets', 2, 'Submit or review campus goal proposals before interpreting annual performance.'
+    elif plan['met'] < plan['total']:
+        code, priority, text = 'remaining_goals', 6, 'Review remaining campus goals and agree on the next evidence or activity milestone.'
+    else:
+        return []
+    return [dict(code=code, priority=priority, text=text, event_id=None,
+                 evidence=f'{plan["met"]} of {plan["total"]} approved goals achieved; {plan["pending"]} awaiting evidence.',
+                 scope_label=f'Annual goal year {plan["year"]}; independent of report filters.')]
+
+
 def dashboard_context(year=None, campus_id=None):
     from flask import request, url_for
     year = selected_year(request.args.get('goal_year', year))
     sample = request.args.get('sample') == '1'
     plan = summary(year, campus_id, sample)
     if campus_id is None:
-        ranking = campus_ranking(comparisons(year, sample),
-                                 lowest=request.endpoint == 'director.director_dash' and getattr(current_user, 'role', None) == 'director')
+        lowest = request.endpoint == 'director.director_dash' and getattr(current_user, 'role', None) == 'director'
+        plan['campus_summaries'] = comparisons(year, sample)
+        ranking = campus_ranking(plan['campus_summaries'], lowest=lowest)
         for campus in ranking['rows']:
             campus['detail_url'] = url_for('goals.details', year=year, campus=campus['campus_id'],
                                            sample=1 if sample else None)
+            campus['is_lowest'] = campus in ranking['leaders'] if lowest else False
         plan['campus_ranking'] = ranking
     else:
         plan['participation'] = participation(year, campus_id)
+        from app.dashboard import present_guidance
+        plan['guidance'] = present_guidance(goal_guidance(plan), campus_id, year)
     plan['detail_url'] = url_for('goals.details', year=year, sample=1 if sample else None)
     plan['aop_url'] = url_for('goals.details', year=year, plan='AOP', sample=1 if sample else None)
     plan['asp_url'] = url_for('goals.details', year=year, plan='ASP', sample=1 if sample else None)

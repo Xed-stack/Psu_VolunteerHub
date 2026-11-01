@@ -5,6 +5,8 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 
 from app.annual_goals import campus_ranking, dashboard_context
+from app.models.notification import Notification
+from datetime import date
 from tests.test_annual_goals import app, client, target, _login_as, _create_user
 
 
@@ -48,14 +50,18 @@ def test_director_routes_reuse_scoped_deduplicated_goals_without_sex_queries(app
     _login_as(client,uid)
     forbidden = Mock(side_effect=AssertionError('Director hero must not calculate sex participation'))
     monkeypatch.setattr('app.annual_goals.participation',forbidden)
-    for path in ['/director_dash','/analytics']:
-        response = client.get(path)
-        assert response.status_code == 200
-        body = response.get_data(as_text=True)
-        assert ('Worst Performing Campus' if path == '/director_dash' else 'Top-Performing Campus') in body
-        assert 'goal-campus-ranking' in body
-        assert ('50.0% · 1 of 2 Goals Achieved' if path == '/director_dash' else '100.0% · 1 of 1 Goals Achieved') in body
-        assert 'Participation by Recorded Sex' not in body
+    response = client.get('/director_dash')
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'Worst Performing Campus' in body
+    assert 'goal-campus-ranking' in body
+    assert '50.0% · 1 of 2 Goals Achieved' in body
+    assert 'Participation by Recorded Sex' not in body
+    analytics = client.get('/analytics')
+    assert analytics.status_code == 200
+    analytics_body = analytics.get_data(as_text=True)
+    assert 'goal-campus-ranking' not in analytics_body
+    assert 'University Annual-Plan Achievement' not in analytics_body
     forbidden.assert_not_called()
     monkeypatch.undo()
     assert 'Actual participation by recorded sex' in client.get('/annual-goals?campus=1').get_data(as_text=True)
@@ -88,3 +94,21 @@ def test_coordinator_still_gets_participation_and_director_empty_preview_states(
     preview = client.get('/director_dash?sample=1').get_data(as_text=True)
     assert '4 Campuses Tied' in preview and 'Lowest Annual Goal-Achievement Rate · Sample Data' in preview
     assert 'Worst Performing Campus' in client.get('/director_dash').get_data(as_text=True)
+
+
+def test_director_can_notify_active_campus_coordinator(app, client):
+    coordinator = _create_user(app, email='follow-up-coordinator@test.com', role='coordinator', campus_id=1)
+    director = _create_user(app, email='follow-up-director@test.com', role='director', campus_id=1)
+    target(campus=1, actual=0, value=4)
+    _login_as(client, director)
+    body = client.get('/director_dash').get_data(as_text=True)
+    assert 'Recommended Follow-Up' in body
+    assert 'Notify Lingayen Coordinator' in body
+    response = client.post('/director/campus-follow-up', data={
+        'follow_up_campus_id': '1', 'goal_year': str(date.today().year)})
+    assert response.status_code == 302
+    note = Notification.query.filter_by(user_id=coordinator, notification_type='campus_guidance').one()
+    assert 'Lingayen' in note.title and '0.0%' in note.message and str(date.today().year) in note.message
+    client.post('/director/campus-follow-up', data={
+        'follow_up_campus_id': '1', 'goal_year': str(date.today().year)})
+    assert Notification.query.filter_by(user_id=coordinator, notification_type='campus_guidance').count() == 1

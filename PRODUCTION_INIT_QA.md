@@ -1,5 +1,12 @@
 # Fresh production initialization verification
 
+Continuation note, 31 October 2026: preserve the initialization safeguards and
+dated evidence below. The latest dashboard and handoff work require no schema
+initialization, seed, account creation, or database replacement. See
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current publication,
+decisions, skills/rules, next steps, and verification. An existing deployment
+must not be reinitialized just because this QA procedure is present.
+
 Date: 20 October 2026. Local implementation, not deployed or published.
 
 Publication follow-up: the user subsequently approved committing and pushing

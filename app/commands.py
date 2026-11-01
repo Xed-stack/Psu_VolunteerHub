@@ -84,7 +84,8 @@ def import_historical_activities(csv_path, dry_run):
         'unit_name', 'title', 'activity_type', 'partners',
         'participant_categories', 'volunteer_count', 'year_conducted',
     }
-    campuses = {c.name.casefold(): c for c in Campus.query.all()}
+    from app.campuses import campus_query
+    campuses = {c.name.casefold(): c for c in campus_query().all()}
     aliases = {'sta. maria': 'santa maria'}
     created = updated = unchanged = 0
 
@@ -291,6 +292,20 @@ def register_commands(app):
     app.cli.add_command(seed_demo_analytics)
     app.cli.add_command(reset_and_seed_demo)
     app.cli.add_command(migrate_annual_goals_command)
+    app.cli.add_command(sync_campuses)
+
+
+@click.command('sync-campus-catalogue')
+@with_appcontext
+def sync_campuses():
+    """Add missing official campuses without changing existing IDs or references."""
+    from app.campuses import seed_catalogue
+    try:
+        seed_catalogue()
+    except ValueError as exc:
+        db.session.rollback()
+        raise click.ClickException(str(exc)) from exc
+    click.echo('The nine official PSU campuses are configured.')
 
 
 @click.command('migrate-annual-goals')

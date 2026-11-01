@@ -17,11 +17,13 @@ from sqlalchemy.orm import joinedload
 from app.models import db
 from app.models.user import User, SystemSetting, VolunteerProfile, PasswordResetToken
 from app.models.event import ActivityCategory, Campus, Event
+from app.campuses import campus_query
 from app.models.notification import Notification, notify_campus_coordinators
 from app.utils.decorators import role_required
 from app.models.audit import AuditLog
 from app.models.policy import TermsRevision, PrivacyRevision, ParticipationAgreementRevision
 from app.utils.audit import log_activity
+from app.security import password_error
 
 admin_bp = Blueprint('admin', __name__, url_prefix='')
 
@@ -32,6 +34,24 @@ def _setting_int(key, default, minimum=1):
         return max(minimum, int(setting.value)) if setting else default
     except (TypeError, ValueError):
         return default
+
+
+def _college_affiliations():
+    setting = SystemSetting.query.filter_by(key='college_affiliations').first()
+    try:
+        values = json.loads(setting.value) if setting and setting.value else []
+    except (TypeError, ValueError):
+        values = []
+    return sorted({str(value).strip() for value in values if str(value).strip()}, key=str.casefold)
+
+
+def _save_college_affiliations(values):
+    setting = SystemSetting.query.filter_by(key='college_affiliations').first()
+    value = json.dumps(sorted(set(values), key=str.casefold))
+    if setting:
+        setting.value = value
+    else:
+        db.session.add(SystemSetting(key='college_affiliations', value=value))
 
 
 def _active_admin_count():
@@ -63,9 +83,19 @@ def admin_dash():
     if active_tab not in ('users', 'deactivated', 'audit'):
         active_tab = 'users'
     campus_id = request.args.get('campus_id', type=int)
+    search = request.args.get('search', '').strip()
+    role = request.args.get('role', '').strip()
+    affiliation = request.args.get('college_affiliation', '').strip()
     query = User.query.options(joinedload(User.campus))
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
+    if search:
+        term = f'%{search}%'
+        query = query.filter(db.or_(User.name.ilike(term), User.email.ilike(term)))
+    if role in {'volunteer', 'coordinator', 'director', 'admin'}:
+        query = query.filter(User.role == role)
+    if affiliation:
+        query = query.filter(User.college_affiliation == affiliation)
     page = max(request.args.get('page', 1, type=int) or 1, 1)
     users, deactivated_users, audit_logs = [], [], []
     deactivated_total = User.query.filter(User._is_active.is_(False)).count()
@@ -76,9 +106,10 @@ def admin_dash():
     else:
         page_query = AuditLog.query.options(joinedload(AuditLog.actor)).order_by(
             AuditLog.created_at.desc(), AuditLog.id.desc())
-    pagination = page_query.paginate(page=page, per_page=25, error_out=False)
+    pagination = page_query.paginate(page=page, per_page=5, error_out=False)
     if page > max(pagination.pages, 1):
         return redirect(url_for('admin.admin_dash', tab=active_tab, campus_id=campus_id,
+                                search=search, role=role, college_affiliation=affiliation,
                                 page=max(pagination.pages, 1)))
     if active_tab == 'users':
         users = pagination.items
@@ -100,8 +131,14 @@ def admin_dash():
     except Exception:
         database_status = 'Unavailable'
     server_status = {'database': database_status}
-    campuses = Campus.query.all()
-    categories = ActivityCategory.query.order_by(ActivityCategory.name).all()
+    campuses = campus_query().order_by(Campus.name).all()
+    category_page = max(request.args.get('category_page', 1, type=int) or 1, 1)
+    categories_pagination = ActivityCategory.query.order_by(ActivityCategory.name).paginate(
+        page=category_page, per_page=5, error_out=False)
+    if category_page > max(categories_pagination.pages, 1):
+        return redirect(url_for('admin.admin_dash', tab=active_tab, campus_id=campus_id,
+                                search=search, role=role, college_affiliation=affiliation,
+                                page=page, category_page=max(categories_pagination.pages, 1)))
     return render_template('admin/Admin_mngmt_dash.html',
                            users=users,
                            server_status=server_status,
@@ -110,7 +147,12 @@ def admin_dash():
                            audit_logs=audit_logs,
                            selected_campus=campus_id,
                            campuses=campuses,
-                           categories=categories,
+                           categories=categories_pagination.items,
+                           categories_pagination=categories_pagination,
+                           college_affiliations=_college_affiliations(),
+                           search=search,
+                           selected_role=role,
+                           selected_affiliation=affiliation,
                            deactivated_users=deactivated_users,
                            deactivated_total=deactivated_total,
                            pagination=pagination,
@@ -137,6 +179,9 @@ def deactivate_user(user_id):
     user.is_active = False
     user.deactivated_at = datetime.utcnow()
     user.reactivation_requested_at = None
+    user.auth_version += 1
+    PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
+        {'used_at': datetime.utcnow()})
     log_activity('user_deactivated', user, {'name': user.name})
     db.session.commit()
     flash(f'User {user.name} has been deactivated.', 'success')
@@ -201,7 +246,7 @@ def create_category():
         log_activity('category_created', category, {'name': name})
         db.session.commit()
         flash(f'{name} category created.', 'success')
-    return _admin_redirect()
+    return redirect(url_for('admin.admin_dash', tab='users', category_page=request.form.get('category_page', 1, type=int)))
 
 
 @admin_bp.route('/admin/categories/<int:category_id>/delete', methods=['POST'])
@@ -253,6 +298,9 @@ def change_role(user_id):
     if new_role not in valid_roles:
         flash('Invalid role specified.', 'error')
         return redirect(url_for('admin.admin_dash'))
+    if new_role == 'coordinator' and (not user.campus_id
+                                    or not db.session.get(Campus, user.campus_id)):
+        abort(400)
     if (user.role == 'admin' and new_role != 'admin'
             and user.is_active and _active_admin_count() <= 1):
         flash('The final active Admin cannot be demoted.', 'error')
@@ -271,7 +319,8 @@ def change_role(user_id):
 @login_required
 @role_required('admin')
 def create_user():
-    campuses = Campus.query.all()
+    campuses = campus_query().order_by(Campus.name).all()
+    affiliations = _college_affiliations()
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
@@ -283,14 +332,16 @@ def create_user():
         college_affiliation = request.form.get(
             'college_affiliation', '').strip() or None
         errors = []
+        if role == 'coordinator' and (not campus_id or not db.session.get(Campus, campus_id)):
+            errors.append('A coordinator must have a valid campus.')
         if not name:
             errors.append('Name is required.')
         if not email:
             errors.append('Email is required.')
         password_min = _setting_int('default_password_length', 8, 8)
-        if not password or len(password) < password_min:
-            errors.append(
-                f'Password must be at least {password_min} characters.')
+        password_message = password_error(password, password_min)
+        if password_message:
+            errors.append(password_message)
         if User.query.filter_by(email=email).first():
             errors.append('Email already exists.')
         if id_number and User.query.filter_by(id_number=id_number).first():
@@ -300,6 +351,7 @@ def create_user():
                 flash(e, 'error')
             return render_template('admin/admin_user_form.html', user=None,
                                    campuses=campuses,
+                                   college_affiliations=affiliations,
                                    password_min=password_min)
         user = User(name=name, email=email, role=role, campus_id=campus_id,
                     id_number=id_number, volunteer_type=volunteer_type,
@@ -318,6 +370,7 @@ def create_user():
         return redirect(url_for('admin.admin_dash'))
     return render_template('admin/admin_user_form.html', user=None,
                            campuses=campuses,
+                           college_affiliations=affiliations,
                            password_min=_setting_int(
                                'default_password_length', 8, 8))
 
@@ -329,7 +382,8 @@ def edit_user(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         abort(404)
-    campuses = Campus.query.all()
+    campuses = campus_query().order_by(Campus.name).all()
+    affiliations = _college_affiliations()
     if request.method == 'POST':
         user.name = request.form.get('name', user.name).strip()
         user.email = request.form.get('email', user.email).strip()
@@ -345,6 +399,9 @@ def edit_user(user_id):
         user.college_affiliation = request.form.get(
             'college_affiliation', '').strip() or None
         new_role = request.form.get('role', user.role)
+        campus_id = request.form.get('campus_id', user.campus_id, type=int)
+        if new_role == 'coordinator' and (not campus_id or not db.session.get(Campus, campus_id)):
+            abort(400)
         if (user.role == 'admin' and new_role != 'admin'
                 and user.is_active and _active_admin_count() <= 1):
             flash('The final active Admin cannot be demoted.', 'error')
@@ -363,6 +420,7 @@ def edit_user(user_id):
         return redirect(url_for('admin.admin_dash'))
     return render_template('admin/admin_user_form.html', user=user,
                            campuses=campuses,
+                           college_affiliations=affiliations,
                            password_min=_setting_int(
                                'default_password_length', 8, 8))
 
@@ -375,10 +433,15 @@ def reset_password(user_id):
     if user is None:
         abort(404)
     new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password')
     password_min = _setting_int('default_password_length', 8, 8)
-    if len(new_password) < password_min:
-        flash(f'Password must be at least {password_min} characters.', 'error')
+    password_message = password_error(new_password, password_min)
+    if password_message:
+        flash(password_message, 'error')
         return redirect(url_for('admin.admin_dash'))
+    if confirm_password is not None and new_password != confirm_password:
+        flash('The password confirmation does not match.', 'error')
+        return redirect(url_for('admin.edit_user', user_id=user.id))
     user.set_password(new_password)
     user.auth_version += 1
     PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
@@ -399,6 +462,19 @@ def reset_password(user_id):
 @role_required('admin')
 def settings():
     if request.method == 'POST':
+        affiliations = _college_affiliations()
+        affiliation_add = ' '.join(request.form.get('college_affiliation_add', '').split())
+        affiliation_remove = request.form.get('college_affiliation_remove', '').strip()
+        if affiliation_add:
+            if any(item.casefold() == affiliation_add.casefold() for item in affiliations):
+                flash('That College Affiliation already exists.', 'error')
+            else:
+                affiliations.append(affiliation_add)
+                _save_college_affiliations(affiliations)
+                flash('College Affiliation added.', 'success')
+        elif affiliation_remove:
+            _save_college_affiliations([item for item in affiliations if item != affiliation_remove])
+            flash('College Affiliation removed.', 'success')
         allowed = {
             'max_slots_per_event': (1, 10000),
             'default_password_length': (8, 128),
@@ -431,37 +507,15 @@ def settings():
         db.session.commit()
         flash('Settings saved.', 'success')
     settings = {s.key: s.value for s in SystemSetting.query.all()}
-    return render_template('admin/settings.html', settings=settings)
+    return render_template('admin/settings.html', settings=settings,
+                           college_affiliations=_college_affiliations())
 
 
 @admin_bp.route('/admin/campuses/create', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')
 def create_campus():
-    if request.method == 'POST':
-        name = ' '.join(request.form.get('name', '').split())
-        code = request.form.get('code', '').strip().upper()
-        description = request.form.get('description', '').strip()
-        errors = []
-        if not name:
-            errors.append('Campus name is required.')
-        if not code or not code.replace('-', '').isalnum():
-            errors.append('Campus code must contain letters, numbers, or hyphens.')
-        if Campus.query.filter(db.func.lower(Campus.name) == name.lower()).first():
-            errors.append('Campus name already exists.')
-        if Campus.query.filter(db.func.upper(Campus.code) == code).first():
-            errors.append('Campus code already exists.')
-        if not errors:
-            campus = Campus(name=name, code=code, description=description)
-            db.session.add(campus)
-            db.session.flush()
-            log_activity('campus_created', campus, {'name': name, 'code': code})
-            db.session.commit()
-            flash(f'{name} campus created.', 'success')
-            return redirect(url_for('admin.admin_dash'))
-        for error in errors:
-            flash(error, 'error')
-    return render_template('admin/campus_form.html')
+    abort(410, description='PSU uses a fixed catalogue of nine campuses. Campus creation is unavailable.')
 
 
 def _backup_value(value):
@@ -510,13 +564,14 @@ def user_import_template():
 @login_required
 @role_required('admin')
 def export_users_csv():
+    from app.reports import csv_safe
     output = io.StringIO(newline='')
     fields = ('name', 'email', 'role', 'campus_code', 'id_number',
               'volunteer_type', 'college_affiliation', 'is_active', 'created_at')
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
     for user in User.query.order_by(User.name).all():
-        writer.writerow({
+        writer.writerow({key: csv_safe(value) for key, value in {
             'name': user.name,
             'email': user.email,
             'role': user.role,
@@ -526,7 +581,7 @@ def export_users_csv():
             'college_affiliation': user.college_affiliation or '',
             'is_active': 'yes' if user.is_active else 'no',
             'created_at': user.created_at.isoformat() if user.created_at else '',
-        })
+        }.items()})
     return Response(output.getvalue(), mimetype='text/csv', headers={
         'Content-Disposition': 'attachment;filename=psu_users.csv'})
 
@@ -617,7 +672,7 @@ def import_users_csv():
         flash('The CSV does not match the downloadable import template.', 'error')
         return redirect(url_for('admin.import_users_csv'))
 
-    campuses = {campus.code.upper(): campus for campus in Campus.query.all()}
+    campuses = {campus.code.upper(): campus for campus in campus_query().all()}
     existing_emails = {email.casefold() for email, in db.session.query(User.email)}
     existing_ids = {number for number, in db.session.query(User.id_number)
                     if number}
@@ -629,12 +684,14 @@ def import_users_csv():
         campus = campuses.get(row['campus_code'].upper()) if row['campus_code'] else None
         if not row['name'] or not email or not row['password']:
             errors.append(f'Row {line_number}: name, email, and password are required.')
-        elif len(row['password']) < password_min:
-            errors.append(f'Row {line_number}: password is too short.')
+        elif password_error(row['password'], password_min):
+            errors.append(f"Row {line_number}: {password_error(row['password'], password_min)}")
         elif role not in ('volunteer', 'coordinator', 'director', 'admin'):
             errors.append(f'Row {line_number}: role is invalid.')
         elif row['campus_code'] and campus is None:
             errors.append(f'Row {line_number}: campus code is invalid.')
+        elif role == 'coordinator' and campus is None:
+            errors.append(f'Row {line_number}: a coordinator must have a campus.')
         elif email in existing_emails or email in seen_emails:
             errors.append(f'Row {line_number}: email already exists.')
         elif row['id_number'] and (row['id_number'] in existing_ids or row['id_number'] in seen_ids):

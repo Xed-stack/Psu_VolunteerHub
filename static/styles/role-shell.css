@@ -1008,6 +1008,25 @@ body:has(.activity-page) .flash--success { background: var(--primary); }
 .goal-ranking-list { list-style: none; margin: 0; padding: 0; }
 .goal-overview__metrics:has(.goal-campus-ranking[open]) { align-items: start; }
 .goal-ranking-list > li { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px 0; border-top: 1px solid var(--outline-variant); overflow-wrap: anywhere; }
+.goal-ranking-list__item--lowest { border-left: 4px solid var(--gold); padding-left: 16px; }
+.goal-follow-up { width: 100%; margin-top: 8px; padding: 12px 16px; border: 1px solid var(--outline-variant); border-radius: var(--control-radius); background: var(--surface-container-low); color: var(--on-surface-variant); }
+.goal-follow-up strong { color: var(--primary-dark); }
+.goal-follow-up ul { margin: 6px 0 0 18px; padding: 0; }
+.goal-follow-up__contact { margin: 0; color: var(--on-surface-variant); }
+.goal-ranking-list__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; width: 100%; }
+.goal-ranking-list__actions form { margin: 0; }
+.guidance-list { width: 100%; min-width: 0; }
+.goal-follow-up { box-sizing: border-box; overflow-wrap: anywhere; }
+.goal-follow-up p { margin: 8px 0; }
+.goal-follow-up .scope-note { font-size: .875rem; }
+.attention-guidance { margin-top: 12px; }
+.attention-guidance p { margin: 6px 0; }
+#campus-guidance { scroll-margin-top: 90px; }
+.campus-coverage__campuses > li { min-width: 0; }
+@media (max-width: 640px) {
+  .guidance-list .goal-ranking-list__actions { align-items: stretch; flex-direction: column; }
+  .guidance-list .goal-ranking-list__actions .btn { width: 100%; box-sizing: border-box; }
+}
 .goal-ranking-list .btn { max-width: 100%; min-height: 44px; white-space: normal; }
 .goal-overview__actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .goal-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 14px 0; margin-top: 16px; border-block: 2px solid var(--gold); }
@@ -1058,6 +1077,18 @@ body:has(.activity-page) .flash--success { background: var(--primary); }
   align-items: end;
   margin-top: 16px;
 }
+
+.page-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.analytics-parent-link { margin: -8px 0 20px; }
+.analytics-parent-link a { color: var(--primary); font-weight: 700; text-underline-offset: 4px; }
+.analytics-scope-summary { margin: 16px 0 0; color: var(--on-surface-variant); line-height: 1.5; overflow-wrap: anywhere; }
+.analytics-filter-summary { margin: 16px 0 0; color: var(--on-surface-variant); line-height: 1.5; overflow-wrap: anywhere; }
 
 .dashboard-filters .analytics-filter-form {
   grid-template-columns: 1fr;
@@ -1429,6 +1460,7 @@ body:has(.activity-page) .flash--success { background: var(--primary); }
   touch-action: manipulation;
 }
 .campus-coverage__tile--empty { border-left-color: var(--color-text-muted); }
+.campus-coverage__campuses > li:has(.guidance-list) .campus-coverage__tile { height: auto; }
 .campus-coverage__tile > span { color: var(--color-text-muted); font-size: .875rem; }
 .campus-coverage__tile .campus-coverage__count { color: var(--on-surface); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 .campus-coverage__tile .campus-coverage__action { color: var(--primary); text-decoration: underline; }
@@ -1859,6 +1891,62 @@ body:has(.activity-page) .flash--success { background: var(--primary); }
 
 .icon-button:hover {
   background: var(--surface-container-low);
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+.admin-pagination .icon-button,
+.admin-pagination__current {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-pagination .icon-button {
+  color: var(--primary);
+  background: transparent;
+  touch-action: manipulation;
+}
+
+.admin-pagination .icon-button:not(:disabled):hover {
+  background: var(--primary-light);
+}
+
+.admin-pagination .icon-button:not(:disabled):active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.admin-pagination .icon-button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.admin-pagination .icon-button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.admin-pagination__current {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 .flash-stack {

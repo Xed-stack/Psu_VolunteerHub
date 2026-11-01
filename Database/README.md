@@ -1,5 +1,12 @@
 # Database artifacts
 
+Continuation note, 31 October 2026: the dashboard changes add no schema or
+historical-record changes and require no import, reset, or migration. Database
+exports remain private local artifacts. See
+[HANDOFF.md](../HANDOFF.md#current-handoff-31-october-2026) for the current goal,
+publication state, decisions, skills/rules, next steps, and verification. The
+procedures below remain separate operator actions.
+
 Full database exports are private local artifacts, not source code. The two
 previously tracked SQL dumps are removed from source tracking in this revision;
 local files are preserved and ignored by `Database/*.sql`. The user approved

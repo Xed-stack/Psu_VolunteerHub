@@ -1,5 +1,12 @@
 # Baseline report/profile test reconciliation
 
+Continuation note, 31 October 2026: the full-suite result below belongs to this
+dated reconciliation. Latest dashboard evidence is targeted, not a replacement
+full-suite run: see [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current scope,
+publication, decisions, skills/rules, files, and verification commands. This
+documentation refresh does not rerun or reclassify the historical failures.
+
 23 October publication follow-up: the user approved committing and pushing this
 verified test/documentation repair. The no-publication and HEAD/index statements
 below preserve the verification-time snapshot; verify the published revision with

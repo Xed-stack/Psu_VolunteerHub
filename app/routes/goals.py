@@ -10,6 +10,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app.models import db
+from app.campuses import campus_query
 from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget, AnnualResult,
                                    AnnualActivityMapping, AnnualGoalProposal)
 from app.models.event import Campus, Event
@@ -121,7 +122,7 @@ def details():
         campus.update(updated)
     return render_template('goals/details.html', plan=plan, rows=rows[(page-1)*10:page*10],
         row_count=len(rows), page=page, pages=pages, query=query, filters=filters, programs=programs,
-        offices=offices, campuses=Campus.query.order_by(Campus.name).all() if university_reader else [],
+        offices=offices, campuses=campus_query().order_by(Campus.name).all() if university_reader else [],
         campus_rows=campus_rows, participation=participation(year, campus_id, basis), basis=basis,
         director=university_reader, sample=sample, campus_id=campus_id,
         scope_name=(db.session.get(Campus, campus_id).name + ' campus') if campus_id is not None else 'University')

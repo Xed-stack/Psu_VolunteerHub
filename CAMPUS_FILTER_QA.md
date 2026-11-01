@@ -1,5 +1,13 @@
 # Opportunities campus-filter verification
 
+Continuation note, 31 October 2026: Opportunities keeps the campus selection
+contract below. Director reporting reuses include/exclude semantics through
+dashboard controls, with analytics retaining its chart and outcomes. See
+[DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current locations,
+decisions, skills/rules, publication, and next verification. Original test results
+and opportunity screenshots remain dated evidence.
+
 Date: 18 October 2026
 
 ## Scope and decisions

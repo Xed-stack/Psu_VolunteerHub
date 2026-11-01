@@ -1,5 +1,11 @@
 # PSU custom error screens
 
+Continuation note, 31 October 2026: existing PSU error handling remains in place.
+The latest Director filters retain recoverable invalid-campus errors and fail
+closed instead of broadening scope. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md)
+and [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current decisions,
+skills/rules, publication, and verification. Tests below remain dated evidence.
+
 Design read: clear institutional recovery screens for visitors and all PSU roles. ENERGY 1 / RHYTHM 1 / MOTION 1.
 
 PSU dark blue carries the code and heading; the short gold underline identifies the recovery content without carrying text. Inter, the PSU logo, and existing button styles retain the application identity. A single readable column gives priority to what happened and where to go next. No decorative illustrations, tiles, or animation are added.

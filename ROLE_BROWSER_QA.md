@@ -1,5 +1,13 @@
 # Four-role browser workflow review
 
+Continuation note, 31 October 2026: findings and screenshots below retain their
+original dates; later repair reports record their follow-ups. The latest
+Director layout was separately tested and visibly verified in the running local
+workspace. See [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md) and
+[HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current role behavior,
+skills/rules, publication, and verification. This refresh is not a new four-role
+or assistive-technology audit.
+
 Date: 18 October 2026. Outcome: **core workflows exercised; two confirmed findings**.
 This is not a claim that every feature, boundary, or destructive action passed.
 No application fix, commit, or push was performed during this review.

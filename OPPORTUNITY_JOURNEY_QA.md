@@ -1,5 +1,11 @@
 # Opportunities, details and joining QA
 
+Continuation note, 31 October 2026: opportunity and consent behavior below is
+dated evidence retained alongside the later baseline-test repair. Dashboard
+reorganization does not add public routes, alter agreements, or change joining
+permissions. See [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for the
+current state, decisions, skills/rules, relevant files, next action, and verification.
+
 23 October test-only follow-up: REGRESSION_RECONCILIATION_QA.md records the later
 repair and verification of the three baseline assertions. Counts and open-issue
 statements below are the original delivery snapshot, not the current test status.

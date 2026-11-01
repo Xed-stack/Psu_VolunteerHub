@@ -229,6 +229,9 @@ def coordinator_dash():
     pending, _ = build_events_report(campus_id=campus_id, attention='pending_attendance')
     pending.sort(key=lambda row: (row['end_date'], row['event_id']))
     evidence['attention_items'] = consolidate_attention(evidence['performance'], pending)
+    for item in evidence['attention_items']:
+        for tip in item['guidance']:
+            tip['scope_label'] = 'All-date attendance backlog' if tip['code'] == 'pending_attendance' else period['label']
     attention_total = len(evidence['attention_items'])
     attention_pages = max(1, (attention_total + 4) // 5)
     attention_page = min(max(request.args.get('attention_page', 1, type=int) or 1, 1), attention_pages)
@@ -909,7 +912,7 @@ def add_external_participant(event_id):
         from app.models.event import Registration
         from app.routes.events import _upsert_external_participant
         participant = _upsert_external_participant(
-            id_number,
+            id_number, event.campus_id,
             name=request.form.get('name', '').strip(),
             contact_number=request.form.get('contact_number', '').strip(),
             address=request.form.get('address', '').strip(),

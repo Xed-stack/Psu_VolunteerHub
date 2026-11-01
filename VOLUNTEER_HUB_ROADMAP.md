@@ -8,18 +8,75 @@ The working tagline is: **“Serve with purpose. See the impact.”**
 
 Use clear Filipino-English wording where it improves comprehension, but retain English labels for institutional reports and data fields. Replace the volunteer-facing word **Register** with **Join Now**; keep `Registration` as the internal data term.
 
-30 October addition: the guarded `reset-and-seed-demo` command replaces
-marked demonstration records while preserving existing accounts/passwords.
+## Latest Delivery Status: 31 October 2026
+
+Use [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current scope,
+publication state, decisions, skills/rules, files, and verification. Both remote
+`main` branches are verified at `03d1fc1`; original local `main` is at `e2e9e6e`
+with mixed working changes. The newest Director layout is integrated locally
+and visibly verified, but remains uncommitted/unpushed.
+
+- [x] Director: lowest exact annual goal-achievement ranking, including zero/ties;
+  paired Outstanding Recognition and complete university Activity Calendar.
+- [x] Move Director filters/exports and coverage into visible Cross-Campus
+  Comparison. Keep campus charts and outcomes in Analytics and Admin controls
+  intact. Annual-goal, award-year, calendar-month, and report scopes stay separate.
+- [x] Remove both dashboard Preview Sample Data buttons. Retain Coordinator's
+  five-item pages, square arrows/current number, 2% gold tint, full calendar,
+  hidden-only period label, and visible Manage Activities.
+- [x] Preserve existing counting rules, report formats, PSU styling, native
+  controls, database schema, and published performance optimizations.
+- Latest layout verification: 200 targeted Python cases, four chart tests,
+  219 browser assertions, and 22 original-workspace integration cases. See
+  [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md). No new full-suite result.
+- [ ] Review the integrated layout with the user; publish only upon request from
+  a clean reviewed snapshot that preserves both remote histories and excludes
+  unrelated security/recovery/demo-reset work. Do not blindly pull/reset local main.
+- [ ] Verify actual browser zoom, screen-reader output, a physical phone, and the
+  deployed release/hosted performance. Later operational work includes encrypted
+  off-site database/uploads backups and a private-file restore drill.
+
+### Historical Deployment and Recovery Milestones: 29–30 October
+
+30 October follow-up: the guarded `reset-and-seed-demo` command now clears all
+demo activity/participation data and other accounts, preserving only the main
+student/coordinator/director accounts and their passwords. Synthetic users are
+regenerated, and activity titles have no visible demo prefix. Historical data,
+notifications and activity logs are cleared; catalogues and policies remain.
 Generates 750 participating internal volunteers, 200 events, 5,000 registrations,
 4,000 attendance, 200 external volunteers and 150 cancellation requests. Uses
 existing campus/catalogue/schema data; synthetic demographics are illustrative.
-Isolated CLI/import/provisioning checks: 15 passed in 27.58 seconds. See
-`DEMO_DATASET_QA.md`. Publication of this command is authorized to `thesis/main`;
-hosted deployment and database execution remain unverified. Earlier deployment
-results below do not cover this command; unrelated local changes are excluded.
+Current isolated CLI/import/provisioning checks: 15 passed in 27.23 seconds. See
+`DEMO_DATASET_QA.md`. This broader reset follow-up is local; `2872af3` on
+`thesis/main` still has the older marker-only behavior. No hosted execution or
+publication of this follow-up; unrelated local changes are excluded.
 
+- [x] Deploy temporary-password recovery through Brevo's HTTPS API to the main
+  and demo Railway apps. The user confirmed inbox receipt, temporary-password
+  sign-in, choosing a permanent password and signing in with it on both apps.
+  See `PASSWORD_RECOVERY_QA.md`; these live-flow results are user-confirmed.
+- [x] Restart both existing MySQL services with separate user approval and verify
+  app connectivity. Authorize each observed app IP in Brevo with user approval;
+  keep API IP blocking enabled. No database import or schema change was made.
+- [x] Publish recovery release `659500e` and follow-up `d940c32` to `thesis/main`
+  in `arlrom003/PSU-Volunteer-Hub`. The follow-up includes coordinator scope
+  safeguards, richer demo analytics data, regression tests, deployment notes
+  and the installed project security-audit skill.
+- Latest focused verification: **90 app tests passed, 222 deselected**, plus an
+  isolated demo seed/repeat-run check. Seven vendor skill CLI tests fail due to
+  unsupported Windows file-protection flags. The 458-pass result below belongs
+  to the earlier full-suite revision; no new full-suite result is claimed.
+- [ ] Next priority: encrypted off-site database and upload backups, recoverable
+  keys, retention/monitoring, and a separate-environment restore drill that
+  includes private milestone files. See `BACKUP_RESTORE_QA.md` and the runbook.
+- [ ] Complete actual 200% browser zoom, screen-reader and physical-phone checks.
+  The recovery confirmation does not close these accessibility gates or prove
+  sender-domain DNS authentication or all hosted expiry/replay cases.
 
-## Latest delivery status (23 October 2026)
+The entries below preserve earlier delivery snapshots. Pending Railway, email
+and publication statements there are historical where superseded above.
+
+### 23 October 2026 regression snapshot
 
 Publication follow-up: the user approved commit/push of the test reconciliation
 and documentation. Local/no-publication statements below are verification-time
@@ -348,7 +405,7 @@ claim that every drill-down, search, multi-select, or multi-year feature was add
 - Keep the repeatable `seed-demo-analytics` fixture for local development and panel demonstrations. It creates representative events, registrations, and attendance without modifying real deployment data unless explicitly run there. Historical aggregate imports remain separate through `import-historical-activities`.
 - Director Analytics includes a sex filter/table based on verified PSU attendance and an SDG filter for live activity reports. `Prefer Not to Say` is a declared response; `Not recorded` is a separate legacy missing-data state.
 - Coordinators select one or more applicable official SDGs while creating or editing an activity; Director PDF/CSV exports and the live report display those tags.
-- Director Analytics includes an informational calendar-year Top 5 for volunteers and campuses. Volunteer order is verified present attendance then completed activities; campus order is verified attendance rate then verified present attendance. Equal scores share a displayed rank. This is decision support only and excludes outsiders, cancellations, absences, unverified records, and historical aggregates.
+- The Director dashboard now holds the informational calendar-year Top 5 recognition lists formerly in Director Analytics. Their existing ordering, ties, and counting rules remain unchanged; see DIRECTOR_DASHBOARD_QA.md. The earlier analytics-location notes describe the prior layout.
 
 ## Phase 4 — administration and governance extensions
 
