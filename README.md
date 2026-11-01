@@ -13,7 +13,7 @@ Both GitHub `main` branches received the Director update, feature commit
 still at `e2e9e6` with mixed uncommitted edits. The latest Director layout is
 integrated into the running local workspace, visibly verified in the user's
 browser, and pushed to both repositories. See
-[DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md).
+[docs/qa/DIRECTOR_DASHBOARD_QA.md](docs/qa/DIRECTOR_DASHBOARD_QA.md).
 Do not confuse a local worktree, a GitHub push, and a deployed Railway revision.
 
 Current local Director behavior: Worst Performing Campus uses the lowest exact
@@ -79,8 +79,8 @@ For production, set a non-default `SECRET_KEY` and a MySQL `DATABASE_URL`. Do no
 ## Production Startup
 
 For the existing Railway thesis demo and deployment boundaries, see
-[RAILWAY_DEMO_DEPLOYMENT.md](RAILWAY_DEMO_DEPLOYMENT.md). Earlier local Docker
-checks are recorded in [DOCKER_DEMO_QA.md](DOCKER_DEMO_QA.md). Main/demo recovery
+[docs/operations/RAILWAY_DEMO_DEPLOYMENT.md](docs/operations/RAILWAY_DEMO_DEPLOYMENT.md). Earlier local Docker
+checks are recorded in [docs/operations/DOCKER_DEMO_QA.md](docs/operations/DOCKER_DEMO_QA.md). Main/demo recovery
 flows were user-confirmed on 29 October; deployment of later GitHub revisions
 has not been independently verified here. Do not upload private database exports
 or existing user files, and do not initialize an existing database from this guide.
@@ -113,7 +113,7 @@ not a complete HTTPS deployment; keep the WSGI port private behind the proxy.
 - For any new deployment, verify provisioning, HTTPS, persistent uploads, email
   delivery and recovery backups, and address historical SQL exposure. The current
   Railway apps use Brevo HTTPS email delivery; their status is recorded in
-  `PASSWORD_RECOVERY_QA.md` and `RAILWAY_DEMO_DEPLOYMENT.md`.
+  `docs/qa/PASSWORD_RECOVERY_QA.md` and `docs/operations/RAILWAY_DEMO_DEPLOYMENT.md`.
 
 ### Explicit fresh-database provisioning
 
@@ -142,7 +142,7 @@ migrations to the fresh current-model schema without comparing it first.
 
 This command passed isolated SQLite checks and actual MariaDB provisioning on a
 new disposable database, including first-Admin login and second-run refusal.
-See `PRODUCTION_INIT_QA.md`; this is not hosted-deployment approval.
+See `docs/operations/PRODUCTION_INIT_QA.md`; this is not hosted-deployment approval.
 The subsequent full regression run passed all 352 tests in one run; the user
 approved publishing this verified feature, tests and documentation.
 Policies, uploads, backups, HTTPS and email delivery require operator
@@ -211,7 +211,7 @@ flask seed-demo-analytics
 The historical import and demo seed are idempotent. Historical imports remain separate from live activity data.
 
 For the larger, account-preserving fixture replacement, see
-[`DEMO_DATASET_QA.md`](DEMO_DATASET_QA.md). The separate Railway demo app must
+[`docs/qa/DEMO_DATASET_QA.md`](docs/qa/DEMO_DATASET_QA.md). The separate Railway demo app must
 receive that code before `reset-and-seed-demo --database railway` is available.
 Use its `--dry-run` preview to verify the demo database target before replacement.
 
@@ -233,7 +233,7 @@ homepage featured-details links open this page. Volunteers review agreements in
 the existing authenticated joining step; successful joining returns to details
 with database-backed status and a My registrations link. Only existing listing
 filter/page keys are carried through Back links and sign-in. See
-`OPPORTUNITY_JOURNEY_QA.md` for isolated verification and browser-check limits.
+`docs/qa/OPPORTUNITY_JOURNEY_QA.md` for isolated verification and browser-check limits.
 
 - Admins publish versioned Terms of Use, Privacy Notice, and default Participation Agreement revisions.
 - New users acknowledge active Terms and Privacy revisions. Existing users are prompted after a newly published revision.
@@ -244,7 +244,7 @@ filter/page keys are carried through Back links and sign-in. See
   one cancellation request per registration; rejection does not enable another
   request. A restored registration retains its previous decision. Recorded attendance
   and deadline/status restrictions are enforced consistently on the dashboard and
-  server. See `REGISTRATION_CANCELLATION_UI_QA.md` for isolated verification.
+  server. See `docs/qa/REGISTRATION_CANCELLATION_UI_QA.md` for isolated verification.
 
 ## Reports and analytics
 
@@ -266,13 +266,13 @@ All four roles time out after 30 minutes without acknowledged activity, with a
 server before protected route actions; an expired session cannot be renewed.
 Status reads and static files do not keep a session alive. Sign-in remains
 session-only, without a persistent remember cookie. Unsaved work is not saved
-automatically. See `SESSION_IDLE_QA.md` for verification and signed-cookie limits.
+automatically. See `docs/qa/SESSION_IDLE_QA.md` for verification and signed-cookie limits.
 Final local regression on 21 October 2026: 393 passed in 986.10s using isolated
 SQLite, plus focused browser checks. No live data or deployment changes.
 
 ## Tests
 
-For the 22 October combined release, see `RELEASE_2026_10_22.md` for current
+For the 22 October combined release, see `docs/planning/RELEASE_2026_10_22.md` for current
 focused results (**106 passed in 260.39s**), included changes and outstanding
 checks. The full 393-test run
 on 21 October belongs to the inactivity implementation snapshot; the combined
@@ -289,7 +289,7 @@ password-reset/session checks and the recent joining, redirect, homepage timing,
 dashboard, and profile regressions.
 
 The subsequent campus-filter enhancement passed 49 focused checks plus isolated
-desktop/mobile browser checks with scripts blocked. See `CAMPUS_FILTER_QA.md`;
+desktop/mobile browser checks with scripts blocked. See `docs/qa/CAMPUS_FILTER_QA.md`;
 the full suite has not been rerun since that enhancement.
 
 Subsequent analytics search/multi-campus work passed 68 reporting/analytics/UI
@@ -297,14 +297,14 @@ regression checks plus 3 final-code follow-ups. The actual MariaDB database pass
 18 read-only report checks. A four-role browser review used a disposable copy of
 actual data and found two unresolved issues: cancellation approval loses its
 submit-button decision, and future attendance can produce premature completion
-and certificate eligibility. See `ROLE_BROWSER_QA.md` for evidence and scope.
+and certificate eligibility. See `docs/qa/ROLE_BROWSER_QA.md` for evidence and scope.
 
 Local follow-up, 20 October 2026: the shared form-submit loading script now
 preserves cancellation decisions and prevents duplicate submits. 18 focused
 backend/UI checks and 6 Node.js behavioral checks passed; the Node checks also
 run through pytest when Node.js is installed (otherwise explicitly skipped).
 Browser Approve/Reject passed with CSRF in isolated SQLite. MariaDB-copy retest
-remains pending because MariaDB was stopped. See `CANCELLATION_REPAIR_QA.md`.
+remains pending because MariaDB was stopped. See `docs/qa/CANCELLATION_REPAIR_QA.md`.
 Attendance follow-up, 20 October 2026: server-side timing checks now prevent
 attendance writes before the scheduled end (start fallback for legacy no-end
 activities), with an explanatory notice and disabled controls. Final focused
@@ -312,7 +312,7 @@ timing/cancellation/UI run: 22 passed; broader attendance/UI run: 56 passed,
 plus one added external-participant timing case. Browser checks used isolated
 CSRF-enabled SQLite. Existing records were not rewritten. Both repairs remain
 local/uncommitted; full suite and copied-MariaDB rerun remain pending.
-See `ATTENDANCE_TIMING_QA.md`.
+See `docs/qa/ATTENDANCE_TIMING_QA.md`.
 
 Latest approved refinement: check-in opens 30 minutes before start. Early Present
 saves remain Confirmed and certificate-ineligible; the coordinator saves final
@@ -321,7 +321,7 @@ This replaces the end-only attendance lock described above. No automatic finaliz
 
 Release verification follow-up: both repairs passed copied-MariaDB browser checks
 on 20 October 2026, including the same registration's early check-in to final
-attendance transition. See `REPAIR_RELEASE_QA.md` for the full automated run,
+attendance transition. See `docs/qa/REPAIR_RELEASE_QA.md` for the full automated run,
 environment-related reruns, and source-isolation checks. Earlier pending notes
 above are delivery-time snapshots. The user subsequently approved including these
 verified repairs, tests, roadmap and QA documents in the 20 October publication.
@@ -339,8 +339,8 @@ focused local checks, not a new full-suite or deployment claim.
 - Use a dedicated MySQL application account with only the database privileges the app needs; never deploy with MySQL `root` credentials.
 - Configure working email delivery before enabling public password resets; see the email setup below.
 - Back up MySQL regularly, encrypt backups, and test restoration before each release. Apply migrations to a backup/staging copy first.
-  See `BACKUP_RESTORE_RUNBOOK.md` and the scoped local results in
-  `BACKUP_RESTORE_QA.md`. The local drill passed for database and existing public
+  See `docs/operations/BACKUP_RESTORE_RUNBOOK.md` and the scoped local results in
+  `docs/operations/BACKUP_RESTORE_QA.md`. The local drill passed for database and existing public
   files, not encrypted off-site recovery or private-file restoration.
 - Keep `PRIVATE_UPLOAD_FOLDER` outside the web root. New milestone uploads are private and are downloaded only through role-checked routes.
 
@@ -351,7 +351,7 @@ Railway apps. The user confirmed receiving the email, signing in with the
 temporary password, choosing a permanent password and signing in with it on
 both apps. Agent checks verified provider access and database connectivity;
 the agent did not inspect the user's inbox or enter their credentials. See
-`PASSWORD_RECOVERY_QA.md` for test evidence and remaining limits. The setup
+`docs/qa/PASSWORD_RECOVERY_QA.md` for test evidence and remaining limits. The setup
 instructions below remain applicable to new environments.
 
 Forgot password emails a random temporary password to the active account's

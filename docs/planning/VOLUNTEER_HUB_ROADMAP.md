@@ -28,7 +28,7 @@ and visibly verified, but remains uncommitted/unpushed.
   controls, database schema, and published performance optimizations.
 - Latest layout verification: 200 targeted Python cases, four chart tests,
   219 browser assertions, and 22 original-workspace integration cases. See
-  [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md). No new full-suite result.
+  [../qa/DIRECTOR_DASHBOARD_QA.md](../qa/DIRECTOR_DASHBOARD_QA.md). No new full-suite result.
 - [ ] Review the integrated layout with the user; publish only upon request from
   a clean reviewed snapshot that preserves both remote histories and excludes
   unrelated security/recovery/demo-reset work. Do not blindly pull/reset local main.
@@ -47,14 +47,14 @@ Generates 750 participating internal volunteers, 200 events, 5,000 registrations
 4,000 attendance, 200 external volunteers and 150 cancellation requests. Uses
 existing campus/catalogue/schema data; synthetic demographics are illustrative.
 Current isolated CLI/import/provisioning checks: 15 passed in 27.23 seconds. See
-`DEMO_DATASET_QA.md`. This broader reset follow-up is local; `2872af3` on
+`../qa/DEMO_DATASET_QA.md`. This broader reset follow-up is local; `2872af3` on
 `thesis/main` still has the older marker-only behavior. No hosted execution or
 publication of this follow-up; unrelated local changes are excluded.
 
 - [x] Deploy temporary-password recovery through Brevo's HTTPS API to the main
   and demo Railway apps. The user confirmed inbox receipt, temporary-password
   sign-in, choosing a permanent password and signing in with it on both apps.
-  See `PASSWORD_RECOVERY_QA.md`; these live-flow results are user-confirmed.
+  See `../qa/PASSWORD_RECOVERY_QA.md`; these live-flow results are user-confirmed.
 - [x] Restart both existing MySQL services with separate user approval and verify
   app connectivity. Authorize each observed app IP in Brevo with user approval;
   keep API IP blocking enabled. No database import or schema change was made.
@@ -68,7 +68,7 @@ publication of this follow-up; unrelated local changes are excluded.
   to the earlier full-suite revision; no new full-suite result is claimed.
 - [ ] Next priority: encrypted off-site database and upload backups, recoverable
   keys, retention/monitoring, and a separate-environment restore drill that
-  includes private milestone files. See `BACKUP_RESTORE_QA.md` and the runbook.
+  includes private milestone files. See `../operations/BACKUP_RESTORE_QA.md` and the runbook.
 - [ ] Complete actual 200% browser zoom, screen-reader and physical-phone checks.
   The recovery confirmation does not close these accessibility gates or prove
   sender-domain DNS authentication or all hosted expiry/replay cases.
@@ -91,7 +91,7 @@ and missing attendance within the five-record limit. No production UI, report
 behavior or query format changed. Focused checks: **97 passed in 233.32s**, plus
 **3 dashboard checks in 0.35s**. Final full suite: **458 passed in 1141.90s**, zero
 failures/errors/skips. All three baseline assertions are reconciled and the
-automated suite is green. See REGRESSION_RECONCILIATION_QA.md.
+automated suite is green. See ../qa/REGRESSION_RECONCILIATION_QA.md.
 No live database access, deployment, commit or push.
 Actual zoom, screen-reader and physical-device verification remains unfinished.
 All earlier implementation/publication counts below are historical snapshots.
@@ -109,7 +109,7 @@ effective cancellation deadlines, distinct request/registration states and priva
 decision disclosures. Shared PSU guards align dashboard actions with attendance,
 deadlines and the approved one-request rule. Form validation retains values and
 supports no-script recovery; context returns to the registration record. See
-REGISTRATION_CANCELLATION_UI_QA.md for current verification. No publication, new
+../qa/REGISTRATION_CANCELLATION_UI_QA.md for current verification. No publication, new
 routes/schema/dependencies or live database changes; prior journey work preserved.
 Final focused verification: **66 passed in 165.81s**, including shared UI structure.
 Final uninterrupted full suite: **450 passed, 3 known baseline failures in
@@ -122,7 +122,7 @@ and Back links, plain registration states, authenticated review summary, inline
 consent errors and activity-specific confirmation are implemented. Existing
 joining/restoration, agreement versions and server guards remain authoritative.
 Focused journey/filter checks: **43 passed in 111.42s**. See
-OPPORTUNITY_JOURNEY_QA.md for full regression results and browser evidence.
+../qa/OPPORTUNITY_JOURNEY_QA.md for full regression results and browser evidence.
 Full suite: **413 passed, 3 failed in 1033.25s**. The same three failures reproduce
 on committed baseline 21a0545: two Director report-filter assertions and one
 profile responsive-cell markup assertion. No new journey failures were observed;
@@ -131,7 +131,7 @@ Not committed/pushed; no original-database writes or deployment. Prior publicati
 approval applies to the earlier release, not this newly requested implementation.
 
 Consolidated release: all current application changes are approved for commit
-and push after documentation updates. See RELEASE_2026_10_22.md for the exact
+and push after documentation updates. See ../planning/RELEASE_2026_10_22.md for the exact
 scope, focused checks and exclusions. Current isolated publication selection:
 **106 passed in 260.39s**, zero failures. Coordinator baseline 8c22e5f is already
 in main. Older local/uncommitted and pending notes below are historical snapshots.
@@ -163,13 +163,13 @@ Shared server expiry and native warning added across role/public/auth layouts,
 with CSRF-protected renewal and an explicit inactivity sign-in message. Final
 20 focused checks and 7 Node checks passed, plus isolated role/mobile/keyboard/
 multi-tab browser checks. Final uninterrupted full suite: **393 passed in
-986.10s**, zero failures. See SESSION_IDLE_QA.md for evidence and limitations.
+986.10s**, zero failures. See ../qa/SESSION_IDLE_QA.md for evidence and limitations.
 No migration, live DB write, cloud change or publication.
 The prior uncommitted login/signup remake and deployment preparation are retained.
 
 21 October Railway follow-up: local image build, network-isolated Gunicorn and
 synthetic SQLite/public/private file persistence passed; 18 Linux tests passed.
-See DOCKER_DEMO_QA.md. Actual Railway allowance/services/MySQL/HTTPS checks and
+See ../operations/DOCKER_DEMO_QA.md. Actual Railway allowance/services/MySQL/HTTPS checks and
 publication remain pending. Original database never accessed by container tests.
 
 Railway thesis-demo preparation (local): Dockerfile/context allowlist and deployment
@@ -180,7 +180,7 @@ writes, publication, original database changes or paid upgrade.
 
 Latest local recovery work: native MariaDB backup/restoration passed on a new
 disposable target, all 31 schema/1,167 row hashes and 2 public upload hashes
-matched. Original unchanged. See BACKUP_RESTORE_RUNBOOK.md and BACKUP_RESTORE_QA.md.
+matched. Original unchanged. See ../operations/BACKUP_RESTORE_RUNBOOK.md and ../operations/BACKUP_RESTORE_QA.md.
 Not complete production DR: private files absent, no encrypted off-site copy,
 independent-host recovery or scheduled backup/alert verification. No publication.
 
@@ -191,7 +191,7 @@ describe implementation snapshots. Deployment gates remain open.
 Production initialization release gate: full suite **352 passed in 885.51s**
 in one run; scoped diff reviewed. Actual disposable MariaDB setup/login/repeat
 checks already passed. Ready for commit/push approval, not yet published.
-See PRODUCTION_INIT_QA.md. No live database changes or deployment.
+See ../operations/PRODUCTION_INIT_QA.md. No live database changes or deployment.
 
 Latest local work: explicit production initialization command now creates the
 current schema, reference data and first Admin in a confirmed empty target only.
@@ -201,7 +201,7 @@ hosting/recovery checks and publication remain pending. See README and HANDOFF.
 Focused provisioning/startup/app-init/historical-import verification: 24 passed.
 MariaDB follow-up completed on a new disposable target: reference data and one
 working Admin only, repeat refused, original all-table fingerprints unchanged.
-See PRODUCTION_INIT_QA.md. Full suite, publication and hosting gates still pending.
+See ../operations/PRODUCTION_INIT_QA.md. Full suite, publication and hosting gates still pending.
 
 Publication revision: production startup safety, tests and SQL tracking removal
 are approved for commit/push. The local/staged notes immediately below are prior
@@ -221,7 +221,7 @@ backup/restore and actual hosting verification remain release gates.
 
 Publication revision: the user approved commit/push of both verified repairs,
 tests and documentation. Earlier pending/uncommitted statements below are dated
-implementation snapshots; final verification is recorded in REPAIR_RELEASE_QA.md.
+implementation snapshots; final verification is recorded in ../qa/REPAIR_RELEASE_QA.md.
 
 Follow-up, 20 October 2026: cancellation Approve/Reject submission repaired locally
 in the shared loading-state script. 18 backend/UI checks and 6 JavaScript checks
@@ -232,7 +232,7 @@ opening-time notice, and disabled controls before end (legacy start fallback).
 Final timing/cancellation/UI run: 22 passed; broader attendance/UI run: 56 passed,
 plus one added external timing case. Full suite and copied-MariaDB verification
 are the next unfinished gate. Neither repair is committed/pushed.
-See CANCELLATION_REPAIR_QA.md and ATTENDANCE_TIMING_QA.md.
+See ../qa/CANCELLATION_REPAIR_QA.md and ../qa/ATTENDANCE_TIMING_QA.md.
 
 Approved refinement, 20 October: allow check-in from 30 minutes before start,
 but keep participation Confirmed and certificate-ineligible until the coordinator
@@ -241,7 +241,7 @@ activities). This replaces the end-only attendance-write rule above.
 
 Release verification follow-up, 20 October: copied-MariaDB browser gate completed
 for both repairs, including early check-in to final attendance on one registration.
-See REPAIR_RELEASE_QA.md for automated results and environment-related reruns.
+See ../qa/REPAIR_RELEASE_QA.md for automated results and environment-related reruns.
 Original database connections read-only; no source QA records. No commit/push.
 
 This section records the work completed in this chat. The phases below retain
@@ -260,7 +260,7 @@ requirements to verify, not new claims of implementation.
 | Continuation documentation and UI/UX workflow | Completed | HANDOFF.md contains the current workspace, required skills, preservation rules, verification results, and instructions for a new chat. |
 | GitHub delivery | Published | Commit `8745ec4` on `main` includes dashboards, walkthroughs, profile repair, tests, and handoff. This roadmap refresh is a subsequent local documentation update until committed. |
 | Follow-up correctness and session fixes | Completed locally, uncommitted | Joining consent/start-time checks, safe sign-in/policy return destinations, homepage completion timing, and separate self/other Admin reset handling. Full isolated suite: 277 passed. |
-| Opportunities campus filtering | Completed locally, uncommitted | Alphabetized include/exclude campus checkboxes, retained query filters and pagination, native no-JavaScript operation, and recoverable validation. 49 focused checks passed; see CAMPUS_FILTER_QA.md. |
+| Opportunities campus filtering | Completed locally, uncommitted | Alphabetized include/exclude campus checkboxes, retained query filters and pagination, native no-JavaScript operation, and recoverable validation. 49 focused checks passed; see ../qa/CAMPUS_FILTER_QA.md. |
 | Coordinator operations and responsive tables | Completed locally, uncommitted | Staged Create Activity form, attendance workspace, separated activity actions, labelled mobile record tables, and contained report tables. No schema or route change; 9 focused checks passed across the two feature sets. |
 
 ### Verification recorded in this chat
@@ -288,8 +288,8 @@ requirements to verify, not new claims of implementation.
   is required. Separate self/other reset tests preserve session invalidation and
   verify remember-cookie cleanup, audit actors, validation, and CSRF.
 
-Detailed evidence and limitations: `DASHBOARD_REDESIGN_QA.md` and
-`PROFILE_REPAIR_QA.md`. Native OS screen-reader output, actual browser 200% zoom,
+Detailed evidence and limitations: `../qa/DASHBOARD_REDESIGN_QA.md` and
+`../qa/PROFILE_REPAIR_QA.md`. Native OS screen-reader output, actual browser 200% zoom,
 and a physical mobile keyboard were not independently verified. A narrow CSS
 viewport reflow check must not be described as actual browser zoom verification.
 
@@ -334,7 +334,7 @@ Implementation update, 18 October 2026: the first-use guide is now a shared role
 - [x] Refine My registrations and cancellation without replacing the dashboard:
   linked activity titles/recommendations/schedule, effective deadlines, separate
   decision states, private notes, consistent availability, accessible error recovery
-  and one request per PSU registration. See REGISTRATION_CANCELLATION_UI_QA.md.
+  and one request per PSU registration. See ../qa/REGISTRATION_CANCELLATION_UI_QA.md.
 
 Profile repair completed in this chat:
 
@@ -395,17 +395,17 @@ claim that every drill-down, search, multi-select, or multi-year feature was add
 - Keep analytics limited to descriptive reporting defined by the manuscript: counts, percentages, means, attendance/sign-up conversion, participation by campus/category/demographic, activity performance, and weekly/monthly trends. Do not expose K-means segmentation or ANOVA in the user interface.
 - Move role-appropriate KPI summaries to the top of analytics pages. Make each event-count KPI clickable and route it to the corresponding filtered event/report list; for example, a summary of 50 events opens that 50-event filtered list.
 - [x] Display the Director Live Activity Report in ten-row numbered pages while retaining filters.
-- [x] Add literal case-insensitive activity-name search to Director/Admin and Coordinator live reports, aligned with live metrics, charts, pagination, and PDF/CSV exports. Coordinator campus isolation is retained. See ACTIVITY_SEARCH_QA.md.
+- [x] Add literal case-insensitive activity-name search to Director/Admin and Coordinator live reports, aligned with live metrics, charts, pagination, and PDF/CSV exports. Coordinator campus isolation is retained. See ../qa/ACTIVITY_SEARCH_QA.md.
 - [ ] Separately assess the proposed additional View all interaction; existing Director pagination remains ten rows per page and exports already contain all matching rows.
 - Add date range plus multi-year comparison controls. A user may choose one or more years; comparisons use the same selected campus, category, and activity-name criteria. If a same-named activity has no comparable data, show an explicit empty state rather than inventing a match.
-- [x] Director/Admin live analytics: alphabetized multi-campus include/exclude control with consistent totals, charts, pagination, and exports. Coordinators remain restricted to their own campus. Historical/affiliation scopes remain separate; only existing catalog campuses are selectable. See ANALYTICS_CAMPUS_QA.md. No academic-unit data model was added.
+- [x] Director/Admin live analytics: alphabetized multi-campus include/exclude control with consistent totals, charts, pagination, and exports. Coordinators remain restricted to their own campus. Historical/affiliation scopes remain separate; only existing catalog campuses are selectable. See ../qa/ANALYTICS_CAMPUS_QA.md. No academic-unit data model was added.
 - Let users change supported visualizations where the metric is compatible: line for time series, bar for comparisons, and pie/donut for composition. Preserve a text/table equivalent for accessibility.
 - Add Plotly chart controls for zoom, reset, and exporting the active chart image. Retain current PDF/CSV report exports for the filtered report as a whole; do not attempt browser screenshots as official reports.
 - Label historical imports as aggregate records and show a short data-quality note: historical counts cannot produce individual attendance, demographics, or precise event dates not recorded in the source. Add the same limitation to analytics export metadata.
 - Keep the repeatable `seed-demo-analytics` fixture for local development and panel demonstrations. It creates representative events, registrations, and attendance without modifying real deployment data unless explicitly run there. Historical aggregate imports remain separate through `import-historical-activities`.
 - Director Analytics includes a sex filter/table based on verified PSU attendance and an SDG filter for live activity reports. `Prefer Not to Say` is a declared response; `Not recorded` is a separate legacy missing-data state.
 - Coordinators select one or more applicable official SDGs while creating or editing an activity; Director PDF/CSV exports and the live report display those tags.
-- The Director dashboard now holds the informational calendar-year Top 5 recognition lists formerly in Director Analytics. Their existing ordering, ties, and counting rules remain unchanged; see DIRECTOR_DASHBOARD_QA.md. The earlier analytics-location notes describe the prior layout.
+- The Director dashboard now holds the informational calendar-year Top 5 recognition lists formerly in Director Analytics. Their existing ordering, ties, and counting rules remain unchanged; see ../qa/DIRECTOR_DASHBOARD_QA.md. The earlier analytics-location notes describe the prior layout.
 
 ## Phase 4 — administration and governance extensions
 

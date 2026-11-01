@@ -28,7 +28,7 @@ invalid-ID check run passed five cases including oversized integers. Isolated Ch
 checks passed at 1440px, 720px (200% desktop reflow equivalent), and 390px:
 seven remaining Admin control cards, sidebar Settings navigation, nine campus
 options, visible selector focus, 44px targets, and no page overflow or JS errors.
-See `FIXED_CAMPUS_QA.md` for decisions and audit evidence. Work remains local;
+See `docs/qa/FIXED_CAMPUS_QA.md` for decisions and audit evidence. Work remains local;
 no commit, push, deployment, or application-data migration was performed.
 
 This builds on the existing ponytail/full and PSU frontend/antislop workflow
@@ -110,7 +110,7 @@ git diff --check
 
 Windows may require approved access for pytest's temporary directory and
 Playwright's subprocess pipes. Browser evidence and audit notes are recorded in
-`PRESCRIPTIVE_GUIDANCE_QA.md`. Next step: review the local changes and start the
+`docs/qa/PRESCRIPTIVE_GUIDANCE_QA.md`. Next step: review the local changes and start the
 application from this workspace to inspect real campus data. A later publishing
 request must isolate these changes from the unrelated dirty files.
 
@@ -296,18 +296,18 @@ performed by this dashboard/documentation task.
 
 ### Documentation map
 
-- [DIRECTOR_DASHBOARD_QA.md](DIRECTOR_DASHBOARD_QA.md): latest layout, scope,
+- [docs/qa/DIRECTOR_DASHBOARD_QA.md](docs/qa/DIRECTOR_DASHBOARD_QA.md): latest layout, scope,
   ranking, verification, and UI gates.
-- [COORDINATOR_CALENDAR_QA.md](COORDINATOR_CALENDAR_QA.md): retained calendar,
+- [docs/qa/COORDINATOR_CALENDAR_QA.md](docs/qa/COORDINATOR_CALENDAR_QA.md): retained calendar,
   spacing, tint, pagination, and Title Case history; latest preview removal wins.
-- [SYSTEM_PERFORMANCE_QA.md](SYSTEM_PERFORMANCE_QA.md): published query/payload
-  optimization evidence. [SECURITY_REMEDIATION.md](SECURITY_REMEDIATION.md),
-  [PASSWORD_RECOVERY_QA.md](PASSWORD_RECOVERY_QA.md), and
-  [DEMO_DATASET_QA.md](DEMO_DATASET_QA.md) describe separate local workstreams;
+- [docs/qa/SYSTEM_PERFORMANCE_QA.md](docs/qa/SYSTEM_PERFORMANCE_QA.md): published query/payload
+  optimization evidence. [docs/qa/SECURITY_REMEDIATION.md](docs/qa/SECURITY_REMEDIATION.md),
+  [docs/qa/PASSWORD_RECOVERY_QA.md](docs/qa/PASSWORD_RECOVERY_QA.md), and
+  [docs/qa/DEMO_DATASET_QA.md](docs/qa/DEMO_DATASET_QA.md) describe separate local workstreams;
   do not silently bundle them with the Director changes.
-- [README.md](README.md) for setup, [VOLUNTEER_HUB_ROADMAP.md](VOLUNTEER_HUB_ROADMAP.md)
-  for priorities, [RAILWAY_DEMO_DEPLOYMENT.md](RAILWAY_DEMO_DEPLOYMENT.md) for
-  deployment boundaries, and [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md)
+- [README.md](README.md) for setup, [docs/planning/VOLUNTEER_HUB_ROADMAP.md](docs/planning/VOLUNTEER_HUB_ROADMAP.md)
+  for priorities, [docs/operations/RAILWAY_DEMO_DEPLOYMENT.md](docs/operations/RAILWAY_DEMO_DEPLOYMENT.md) for
+  deployment boundaries, and [docs/operations/BACKUP_RESTORE_RUNBOOK.md](docs/operations/BACKUP_RESTORE_RUNBOOK.md)
   for recovery procedures.
 
 ## Earlier dated records
@@ -331,7 +331,7 @@ These are local query/payload measurements, not hosted timing guarantees.
 179 broader tests passed; the final performance module passed all 25 tests.
 Desktop/375px/320px browser pagination, keyboard focus, empty state, contrast,
 template formatting and the Web Interface Guidelines audit passed for changed UI.
-See `SYSTEM_PERFORMANCE_QA.md` for scope, measurements and limitations.
+See `docs/qa/SYSTEM_PERFORMANCE_QA.md` for scope, measurements and limitations.
 
 Push follow-up: both `origin/main` and `thesis/main` were updated to
 `03d1fc15b8fea0833128d206d0c3958de72d15c8`; both remote SHAs were verified after push.
@@ -390,7 +390,7 @@ The new fixture
 contains 200 events, 5,000 registrations, 4,000 attendance, 200 external volunteers,
 150 cancellation requests and SDG mappings across the existing campuses.
 Current isolated CLI/import/provisioning checks: 15 passed in 27.23 seconds.
-See `DEMO_DATASET_QA.md` for exact scope, target checks, limitations and commands.
+See `docs/qa/DEMO_DATASET_QA.md` for exact scope, target checks, limitations and commands.
 The earlier marker-only version is on `thesis/main` as `2872af3`. This broader
 reset follow-up is local and not yet published, deployed or run against Railway.
 Unrelated security/recovery changes remain local and outside this task.
@@ -401,7 +401,7 @@ Unrelated security/recovery changes remain local and outside this task.
   Brevo's HTTPS API. The user confirmed real email receipt, temporary-password
   sign-in, permanent-password replacement and subsequent sign-in on both apps.
   This is user-confirmed verification, not agent inspection of their inbox or
-  credentials. See `PASSWORD_RECOVERY_QA.md` for the evidence and limitations.
+  credentials. See `docs/qa/PASSWORD_RECOVERY_QA.md` for the evidence and limitations.
 - Main: `https://psu-volunteer-hub-production.up.railway.app`.
   Demo: `https://psu-volunteer-hub-demo-production.up.railway.app`.
   Both existing MySQL services were restarted with separate user approval using
@@ -431,10 +431,10 @@ email and publication statements are superseded by this status where applicable.
 
 The user can say: **Read HANDOFF.md and continue from the current local files.**
 
-1. Read the current handoff above, `DIRECTOR_DASHBOARD_QA.md`,
-   `COORDINATOR_CALENDAR_QA.md`, `SYSTEM_PERFORMANCE_QA.md`,
-   `VOLUNTEER_HUB_ROADMAP.md`, `DASHBOARD_REDESIGN_QA.md`, and
-   `PROFILE_REPAIR_QA.md`. Inspect `git status` and the actual local changes
+1. Read the current handoff above, `docs/qa/DIRECTOR_DASHBOARD_QA.md`,
+   `docs/qa/COORDINATOR_CALENDAR_QA.md`, `docs/qa/SYSTEM_PERFORMANCE_QA.md`,
+   `docs/planning/VOLUNTEER_HUB_ROADMAP.md`, `docs/qa/DASHBOARD_REDESIGN_QA.md`, and
+   `docs/qa/PROFILE_REPAIR_QA.md`. Inspect `git status` and the actual local changes
    before editing; do not assume GitHub contains the latest iteration.
 2. Preserve the dashboard redesign, first-use walkthroughs, volunteer profile
    repair, and any uncommitted changes. Do not discard or overwrite unrelated work.
@@ -485,7 +485,7 @@ cases. Production files remain unchanged from be44a31. Focused verification:
 97 passed in 233.32s, plus 3 dashboard scope/count checks in 0.35s. Final full
 suite: 458 passed in 1141.90s, zero failures/errors/skips. All three baseline
 assertions are reconciled without production changes; the automated suite is
-green. See REGRESSION_RECONCILIATION_QA.md for evidence.
+green. See docs/qa/REGRESSION_RECONCILIATION_QA.md for evidence.
 Earlier counts below remain historical snapshots. Actual browser zoom,
 screen-reader and physical-mobile checks remain separate release gates.
 No live database access, schema changes, deployment, commits or pushes.
@@ -503,7 +503,7 @@ separate, private native disclosures. Shared PSU cancellation checks prevent the
 attendance/action mismatch and repeat requests after any existing decision under
 the user-selected one-request rule. Inline form errors retain values; whitelisted
 dashboard context returns to the affected record. No new routes/schema/dependencies.
-See REGISTRATION_CANCELLATION_UI_QA.md for final tests, screenshots and manual limits.
+See docs/qa/REGISTRATION_CANCELLATION_UI_QA.md for final tests, screenshots and manual limits.
 Final focused selection: 66 passed in 165.81s, including shared UI structure.
 Final uninterrupted full suite: 450 passed, 3 known baseline failures in 1130.79s.
 The initial sandboxed attempt could not finish its summary; the final run used
@@ -516,7 +516,7 @@ listing/details/consent remake is implemented. Public read-only details live at
 `GET /opportunities/<int:event_id>`; authenticated joining retains its existing
 endpoint and redirects to database-backed confirmation on details. Listing query
 keys are whitelisted through Back links and sign-in. Homepage featured details
-now use this page; hero/carousel behavior is retained. See OPPORTUNITY_JOURNEY_QA.md
+now use this page; hero/carousel behavior is retained. See docs/qa/OPPORTUNITY_JOURNEY_QA.md
 for current verification, screenshots and remaining physical-device/zoom limits.
 Final isolated full suite: 413 passed, 3 failed in 1033.25s; all three failures
 reproduce on untouched committed baseline 21a0545 (two Director-filter assertions
@@ -527,7 +527,7 @@ Earlier release approval below does not authorize publishing this new work.
 
 22 October release scope: the user approved committing all current application
 changes and requested documentation updates before pushing to GitHub main.
-See RELEASE_2026_10_22.md for scope, current verification and remaining gates.
+See docs/planning/RELEASE_2026_10_22.md for scope, current verification and remaining gates.
 The Coordinator workspace baseline is already in commit 8c22e5f. Earlier
 local/uncommitted statements below are dated implementation snapshots, not a
 claim that every listed change remains unpublished. Confirm actual publication
@@ -540,7 +540,7 @@ improvements plus their QA reports and the preserved roadmap refresh. Earlier
 Publication revision, 20 October 2026: includes the verified cancellation and
 early-check-in/final-attendance repairs, tests, and QA documents. The user approved
 commit and push after release verification. Earlier local/uncommitted/pending
-statements are delivery-time snapshots; see REPAIR_RELEASE_QA.md for final results.
+statements are delivery-time snapshots; see docs/qa/REPAIR_RELEASE_QA.md for final results.
 Copied databases, uploads,
 diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 
@@ -567,7 +567,7 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 - Public event joining now requires PSU sign-in. Authorized coordinator entry
   of external participants and existing signed external management links remain.
 - Current focused publication checks: **106 passed in 260.39s**, zero failures;
-  see RELEASE_2026_10_22.md for the command and coverage.
+  see docs/planning/RELEASE_2026_10_22.md for the command and coverage.
   The 393-test full run below belongs to the 21 October timeout snapshot, not
   an assertion that all later changes received a new full-suite/browser review.
 - No live policy publication, migration, seed, cloud deployment or paid hosting
@@ -606,7 +606,7 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 - Keeps signed-cookie/session-only authentication, auth_version invalidation,
   policy gates and existing role authorization. No DB migration or live writes.
   Legacy sessions get first-request grace; no central revocation store added.
-- See SESSION_IDLE_QA.md and tests/test_session_idle.py. Final 20 focused checks
+- See docs/qa/SESSION_IDLE_QA.md and tests/test_session_idle.py. Final 20 focused checks
   and 7 Node checks passed. Browser role/workflow/mobile/keyboard/multi-tab checks
   completed on isolated SQLite; preview stopped. Final uninterrupted full suite:
   **393 passed in 986.10s**, zero failures. Syntax and diff checks passed.
@@ -619,7 +619,7 @@ diagnostic scripts, screenshots, and downloaded reports are not included in Git.
 Network-isolated Gunicorn startup, upload symlink and public/private probe plus
 synthetic SQLite data persistence across two containers passed. 18 focused tests
 passed in built Linux environment. Both smoke containers stopped; synthetic
-volume retained. See DOCKER_DEMO_QA.md. Supersedes engine-stopped/build-pending
+volume retained. See docs/operations/DOCKER_DEMO_QA.md. Supersedes engine-stopped/build-pending
 notes below. No cloud writes, original DB access, commit/push or paid upgrade.
 Next: inspect actual Railway trial allowance before creating demo services.
 
@@ -629,7 +629,7 @@ Next: inspect actual Railway trial allowance before creating demo services.
 - App volume design: /data/public via static/uploads symlink, /data/private for
   milestones. Requires actual mounted /data volume plus separate MySQL volume;
   trial vs ongoing Free limits must be checked before cloud creation.
-- See RAILWAY_DEMO_DEPLOYMENT.md. 20 focused deployment/startup/provisioning checks
+- See docs/operations/RAILWAY_DEMO_DEPLOYMENT.md. 20 focused deployment/startup/provisioning checks
   passed. Docker CLI installed but Linux engine stopped; no image build or cloud
   deployment verified. No legacy railway.json (deprecated per current docs).
 - Pending backup documents preserved. No source DB changes, cloud writes, image
@@ -638,7 +638,7 @@ Next: inspect actual Railway trial allowance before creating demo services.
 
 ### Backup/restore drill (latest local work)
 
-- Added BACKUP_RESTORE_RUNBOOK.md and BACKUP_RESTORE_QA.md. Native MariaDB dump
+- Added docs/operations/BACKUP_RESTORE_RUNBOOK.md and docs/operations/BACKUP_RESTORE_QA.md. Native MariaDB dump
   restored into new psu_volunteer_restoreqa_20261020_0bbf28ad: all 31 schemas and
   1,167 row fingerprints matched; 2 public uploads matched after file restore.
   Original DB and upload fingerprints unchanged. Private upload root had 0 files.
@@ -659,7 +659,7 @@ Final regression follow-up: **352 passed in 885.51s**, one uninterrupted full
 run with approved execution permission and fresh private QA temp directory.
 No code/assertion edits required; scoped diff reviewed and diff check passed.
 Ready for user commit/push approval. No publication or database changes in this
-regression turn. See PRODUCTION_INIT_QA.md; earlier full-suite-pending notes below
+regression turn. See docs/operations/PRODUCTION_INIT_QA.md; earlier full-suite-pending notes below
 are superseded. Hosting/recovery and historical exposure gates remain open.
 
 MariaDB follow-up: verified on new disposable
@@ -667,7 +667,7 @@ MariaDB follow-up: verified on new disposable
 catalogues only, no events/participation. Wrong target/decline/repeat refused.
 HTTPS-scheme CSRF test-client login and Admin dashboard passed (not hosted TLS).
 All original 31 table fingerprints unchanged, 1,167 rows. Test database retained;
-no credentials saved. See PRODUCTION_INIT_QA.md. This supersedes the earlier
+no credentials saved. See docs/operations/PRODUCTION_INIT_QA.md. This supersedes the earlier
 MariaDB-pending note below; full suite and deployment still pending.
 
 - Added `flask --app wsgi:app init-production --database EXACT_EMPTY_NAME`.
@@ -733,7 +733,7 @@ Completed/Present without duplication. Desktop cancellation approval and mobile
 keyboard rejection persisted correct decisions, notes, reviewers, audit entries
 and notifications. Original database access was read-only; before/after counts
 matched (31 tables / 1,167 rows), with no QA fixtures in the original.
-See REPAIR_RELEASE_QA.md for automated results and isolation limits.
+See docs/qa/REPAIR_RELEASE_QA.md for automated results and isolation limits.
 Automated: 334 collected; full run 328 passed plus six environment-blocked
 outcomes, then Node/profile rerun 20 passed (14 overlapping), resolving all six.
 All 334 have passing outcomes across runs, not one uninterrupted green run.
@@ -746,7 +746,7 @@ Before effective end, Present records attendance but leaves registration Confirm
 and certificate-ineligible. Coordinator must save final attendance at/after end;
 legacy no-end activities retain the start fallback. This supersedes the original
 end-only locking policy below. See the early-check-in follow-up in
-ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
+docs/qa/ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 
 - Attendance writes now require the scheduled end to have arrived, falling back
   to the start for legacy activities without an end. Exact-boundary saves are
@@ -759,7 +759,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
   saves in isolated CSRF-enabled SQLite, plus contained 390px mobile layout.
 - No migration, new dependency, commit, push, or source database writes.
   MariaDB was stopped; copied-MariaDB rerun and full suite remain pending.
-  See ATTENDANCE_TIMING_QA.md. Next: verify both repairs on the disposable
+  See docs/qa/ATTENDANCE_TIMING_QA.md. Next: verify both repairs on the disposable
   MariaDB copy and run the full regression suite before publication.
 
 ### Cancellation decision submission repair (20 October 2026)
@@ -780,7 +780,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
   Browser verification therefore used an isolated CSRF-enabled in-memory SQLite
   preview, not the existing MariaDB copy. MariaDB-copy retest and full suite remain
   pending; no source database was started or changed. Preview was stopped/closed.
-- Local/uncommitted, no push or migration. See CANCELLATION_REPAIR_QA.md.
+- Local/uncommitted, no push or migration. See docs/qa/CANCELLATION_REPAIR_QA.md.
   The future-attendance/certificate-eligibility issue is not part of this fix.
 
 ### Four-role browser QA on an actual-data copy (18 October 2026)
@@ -792,7 +792,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
   **Two confirmed issues remain unfixed:** cancellation approval loses its named
   submit-button decision through the shared submit-state script; future activity
   attendance can immediately produce Completed/certificate-eligible participation.
-- See ROLE_BROWSER_QA.md for reproduction steps, code evidence, role-by-role
+- See docs/qa/ROLE_BROWSER_QA.md for reproduction steps, code evidence, role-by-role
   coverage, sampled authorization checks, evidence, and untested workflows.
 - Original database connections were read-only. Post-review original counts and
   all 18 read-only report checks still passed; no QA accounts/activities existed
@@ -820,7 +820,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
   No new campus records, migration, dependency, foundation stylesheet, or JS.
 - Isolated SQLite browser checks covered native keyboard inclusion/exclusion,
   invalid-choice recovery, desktop and 390px mobile. All campus targets were
-  44px high; page widths matched the viewport. See ANALYTICS_CAMPUS_QA.md.
+  44px high; page widths matched the viewport. See docs/qa/ANALYTICS_CAMPUS_QA.md.
 - Everything remains local and uncommitted; no live database change or push.
   Reporting/analytics/UI regression rerun: **68 passed**; final-code follow-up:
   **3 passed**, including an additional all-excluded/legacy-link case.
@@ -840,7 +840,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 - Browser verification used isolated in-memory SQLite with CSRF enabled:
   desktop and 390px mobile, Enter submission, empty result, and Clear recovery.
   Mobile input height was 44px; page client/scroll widths both 375px.
-- See ACTIVITY_SEARCH_QA.md for automated evidence and verification limits.
+- See docs/qa/ACTIVITY_SEARCH_QA.md for automated evidence and verification limits.
   Reporting/analytics/UI regression run: **57 passed**; final-code follow-up
   after attendance-table alignment: **3 passed** (including one additional case).
   All previous work is preserved. No migration, dependency, live database write,
@@ -859,7 +859,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
   dependency, migration, or new stylesheet was added.
 - Final focused verification: **49 passed**. Guest/volunteer desktop, tablet,
   mobile, long-name, and script-blocked browser checks passed. See
-  `CAMPUS_FILTER_QA.md` for evidence and limits. The last full suite (277 passed)
+  `docs/qa/CAMPUS_FILTER_QA.md` for evidence and limits. The last full suite (277 passed)
   predates this enhancement; it was not rerun for this scoped change.
 - All work remains local and uncommitted. No live database change or push.
 
@@ -927,7 +927,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 - Changed homepage action controls use PSU blue keyboard focus outlines.
 - Verification: **19 volunteer-flow tests and 55 compatibility checks passed**
   using isolated SQLite. Desktop/mobile browser review and a successful preview
-  registration were checked with CSRF enabled. See `JOINING_FLOW_QA.md`.
+  registration were checked with CSRF enabled. See `docs/qa/JOINING_FLOW_QA.md`.
 - No migration or live database change. Changes remain local and uncommitted;
   the pre-existing roadmap refresh is preserved.
 
@@ -957,7 +957,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 - Browser checks used isolated SQLite previews, not live MySQL. Desktop, tablet,
   390px mobile, keyboard controls, long names, and contained history scrolling
   were checked. Temporary preview servers were stopped afterward. See
-  `PROFILE_REPAIR_QA.md` for evidence and explicit verification limitations.
+  `docs/qa/PROFILE_REPAIR_QA.md` for evidence and explicit verification limitations.
 
 ### Director / Coordinator reporting redesign (18 October 2026)
 
@@ -969,7 +969,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 - `POST /guide/dismiss` is authenticated and CSRF protected and updates only `current_user.first_use_guide_dismissed_at`. The old volunteer dismissal URL remains compatible. Skip, Finish, and Escape share persistence; `?tour=1` replays without changing the stored timestamp.
 - No new migration is required. Existing databases must already have `migrations/20260916_first_use_guide.sql` applied. This work adds no framework, runtime dependency, or database seed.
 - Browser verification uses an isolated in-memory SQLite preview on port 5055, with CSRF enabled. This preview does not modify the deployment's MySQL data.
-- Verification: 212 tests passed with the existing Admin self-password-reset message assertion still failing; final focused report/workspace/UI checks passed (10 tests). See `DASHBOARD_REDESIGN_QA.md` for browser evidence, the design gate, and native zoom/reduced-motion verification limits.
+- Verification: 212 tests passed with the existing Admin self-password-reset message assertion still failing; final focused report/workspace/UI checks passed (10 tests). See `docs/qa/DASHBOARD_REDESIGN_QA.md` for browser evidence, the design gate, and native zoom/reduced-motion verification limits.
 
 - Volunteer dashboard lists personal registrations, lets volunteers cancel eligible future registrations, and supports re-registration after a cancellation when capacity remains.
 - Coordinators can permanently remove activities in their campus. PSU volunteers with registrations receive in-app cancellation notifications.
@@ -982,7 +982,7 @@ ATTENDANCE_TIMING_QA.md. No automatic background finalization or migration.
 - The `seed-demo-analytics` Flask command creates idempotent presentation data across campuses, categories, registrations, and attendance without overwriting existing records.
 - Phase 4 now includes an append-only Admin Activity Log, validated CSV user import/export (without password hashes), and versioned Terms of Use. An admin publishes the active terms revision; new registrations accept it during sign-up, while existing users are redirected to accept it before continuing.
 - Accounts can be deactivated, request reactivation through the login flow, be reviewed in a Deactivated Users tab, and be permanently deleted manually after 30 days. Safeguards protect the last active admin and the current admin account.
-- The roadmap in `VOLUNTEER_HUB_ROADMAP.md` records proposed future work. It is not implemented.
+- The roadmap in `docs/planning/VOLUNTEER_HUB_ROADMAP.md` records proposed future work. It is not implemented.
 - Director demographics, SDG, and recognition are now implemented locally: volunteer sex is required at registration (existing volunteers complete it once after sign-in), coordinators tag activities with the official 17 SDGs, and Director Analytics shows sex-disaggregated verified participation plus calendar-year Top 5 recognition.
 - Recognition is informational only: volunteers rank by verified present attendance then completed activities; campuses rank by verified attendance rate then verified present attendance. External, cancelled, absent, unverified, and historical aggregate records are excluded.
 
@@ -994,7 +994,7 @@ Also apply `migrations/20260912_add_audit_logs.sql` and `migrations/20260912_add
 
 Apply `migrations/20261016_director_demographics_sdgs.sql` before using the Director demographics and SDG features against an existing MySQL database. Then restart Flask so the built-in SDG catalogue seed can verify the 17 official goals.
 
-Apply `migrations/20261016_security_hardening.sql` before deploying the security update to an existing MySQL database that lacks those changes. It adds session-version invalidation, database-backed authentication throttling, and password-reset tokens. Production also requires `SECRET_KEY`, `DATABASE_URL`, HTTPS behind a trusted proxy, a writable `PRIVATE_UPLOAD_FOLDER` outside the web root, and configured email delivery. The Railway apps use Brevo's HTTPS API; see `PASSWORD_RECOVERY_QA.md`. Do not rerun migrations on an existing hosted schema without comparing it first.
+Apply `migrations/20261016_security_hardening.sql` before deploying the security update to an existing MySQL database that lacks those changes. It adds session-version invalidation, database-backed authentication throttling, and password-reset tokens. Production also requires `SECRET_KEY`, `DATABASE_URL`, HTTPS behind a trusted proxy, a writable `PRIVATE_UPLOAD_FOLDER` outside the web root, and configured email delivery. The Railway apps use Brevo's HTTPS API; see `docs/qa/PASSWORD_RECOVERY_QA.md`. Do not rerun migrations on an existing hosted schema without comparing it first.
 
 Historical CSV data can be imported with:
 

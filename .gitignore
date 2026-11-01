@@ -24,3 +24,9 @@ __pycache__/
 # ignore local tooling caches
 .npm-cache/
 .skill-install-tmp/
+
+# ignore local QA screenshots, attachments, and test caches
+.codex-remote-attachments/
+.qa-*.png
+.qa-*-temp/
+.pytest_cache/
