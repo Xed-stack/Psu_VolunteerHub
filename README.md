@@ -2,33 +2,14 @@
 
 PSU Volunteer Hub is a centralized volunteer-management platform for Pangasinan State University. It supports public opportunity discovery, volunteer registration, campus-scoped coordination, attendance, descriptive analytics, reports, policy acknowledgements, and administrative governance.
 
-## Continuation Status: 31 October 2026
+## Current Documentation
 
-Start with [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for the goal,
-current state, decisions and reasons, ruled-out options, next step, relevant
-files, verification commands, and the exact skills/rules used.
-
-Both GitHub `main` branches received the Director update, feature commit
-`bdb2006`, followed by a handoff-only correction. The original local branch is
-still at `e2e9e6` with mixed uncommitted edits. The latest Director layout is
-integrated into the running local workspace, visibly verified in the user's
-browser, and pushed to both repositories. See
-[docs/qa/DIRECTOR_DASHBOARD_QA.md](docs/qa/DIRECTOR_DASHBOARD_QA.md).
-Do not confuse a local worktree, a GitHub push, and a deployed Railway revision.
-
-Current local Director behavior: Worst Performing Campus uses the lowest exact
-annual goal-achievement ratio; recognition and the complete university calendar
-share the briefing row. Filters/exports and coverage live in Cross-Campus
-Comparison. The campus chart and attendance-outcomes table remain in Analytics;
-Admin analytics retains its controls. Preview buttons are removed from both
-dashboards. Coordinator keeps five-item square pagination, its 2% PSU gold hero,
-full calendar, and permanently visible Manage Activities.
-
-Latest layout evidence is 200 targeted Python cases, four chart tests, and 219
-browser assertions, plus 22 integration cases in the original workspace. This
-documentation update runs no new application tests and makes no deployment or
-database change. Native zoom, screen-reader, physical-device, and hosted checks
-remain separate. Older results below are dated snapshots.
+Start with [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current
+workspace state, decisions, verification, and handoff rules. The complete
+developer/operator/user reference is [System Documentation](docs/SYSTEM_DOCUMENTATION.md).
+Feature evidence is organized under [QA documentation](docs/qa/), operational
+runbooks under [docs/operations/](docs/operations/), and roadmap/release notes
+under [docs/planning/](docs/planning/).
 
 ## What it does
 
@@ -37,8 +18,24 @@ remain separate. Older results below are dated snapshots.
 - Coordinator event creation and editing, agreements and optional NDAs, cancellation deadlines, announcements, attendance, external participants, milestones, reports, campus analytics, cancellation review, and campus calendar. The Coordinator console uses a staged Create Activity form, an operational attendance workspace, and compact secondary actions for activity management.
 - Director cross-campus dashboard, activity accomplishments, target-versus-verified attendance, monthly calendars, descriptive analytics, ten-row paginated Live Activity Reports, and CSV/PDF exports.
 - Admin user/campus/category management, deactivation/reactivation safeguards, validated CSV import/export, audit log, backups, Terms of Use, Privacy Notice, and default participation-agreement publishing.
+- Fixed catalogue of nine official PSU campuses with campus-specific College Affiliation choices during registration.
+- Descriptive analytics for what happened, diagnostic analytics for contributing evidence, and prescriptive guidance for recommended operational follow-up.
 
 Historical records are aggregate institutional reporting units. They are never represented as individual user accounts, registrations, attendance records, or verified hours.
+
+## Analytics at a glance
+
+The platform classifies analytics into three layers:
+
+- **Descriptive:** activities, registrations, verified attendance, attendance rates, goals, trends, campus comparisons, recognition, and historical aggregates.
+- **Diagnostic:** filtered evidence rows, campus/category/activity breakdowns, incomplete attendance, target gaps, conversion differences, and data-quality context.
+- **Prescriptive:** live guidance such as completing attendance, reviewing targets, planning outreach, scheduling activities, and optional Director-to-Coordinator reminders.
+
+Analytics are built from scoped live activity, registration, attendance, user,
+campus, goal, SDG, profile, and historical-source records. Coordinators are
+restricted to their campus; Directors and Admins have university-level views.
+The formulas and counting rules are documented in
+[System Documentation → Analytics Classification](docs/SYSTEM_DOCUMENTATION.md#analytics-classification).
 
 ## Requirements
 
