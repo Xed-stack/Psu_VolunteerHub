@@ -285,12 +285,14 @@ def seed_demo_analytics():
 
 def register_commands(app):
     from app.demo_dataset import reset_and_seed_demo
+    from app.presentation_dataset import reset_and_seed_presentation
 
     app.cli.add_command(init_production)
     app.cli.add_command(import_historical_activities)
     app.cli.add_command(import_annual_plans)
     app.cli.add_command(seed_demo_analytics)
     app.cli.add_command(reset_and_seed_demo)
+    app.cli.add_command(reset_and_seed_presentation)
     app.cli.add_command(migrate_annual_goals_command)
     app.cli.add_command(sync_campuses)
 

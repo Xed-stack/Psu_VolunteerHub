@@ -1,5 +1,82 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Release Preparation: 1 November 2026, Presentation Dataset
+
+The user explicitly approved committing and pushing the tested presentation-reset
+files to `thesis/main` (`arlrom003/PSU-Volunteer-Hub`) and deploying the Demo app.
+Only the presentation-reset implementation, tests, and accompanying documentation
+are included. The connected Railway Demo service uses that repository's `main`
+branch with automatic deployments enabled. Remote main was verified at the
+local base `48160c1` before preparing this release.
+
+The Demo service variables were saved through the Railway dashboard:
+`MAIL_SUPPRESS_SEND=true` and
+`PRESENTATION_DATABASE_HOST=mysql-tgn.railway.internal`. The hostname was read
+independently from the separate Demo MySQL service. The variable-only deployment
+was queued when checked; saved variables alone do not prove active workers have
+reloaded them. Verify the eventual code deployment and run the guarded dry-run.
+
+No database reset is included in this publication approval. The deployed app
+previously reported that `reset-and-seed-presentation` was unavailable. Backup,
+preview, live account checks, and confirmation remain required before replacing
+data. Earlier local-only statements below describe the implementation stage.
+
+## Current Handoff: 1 November 2026, Presentation Dataset Reset
+
+Implemented locally: `reset-and-seed-presentation --database railway`, with
+`--dry-run`, in `app/presentation_dataset.py`. Registered alongside the unchanged
+large fixture command. No commit, push, deployment, or live application database
+reset was performed. This section supersedes earlier dataset-reset procedures
+for the new 28-activity presentation dataset; the existing UI handoffs below
+remain applicable.
+
+The new command preserves all four default accounts (Admin, student, Director,
+coordinator), their IDs, password hashes, account fields, profiles, policy
+acceptances and account links. Only obsolete profile participation history is
+cleared. It adds 80 volunteers and eight coordinators for 92 accounts total,
+28 activities, 432 registrations, 296 attendance records, 24 cancellation
+requests (eight of each state), and 30 attendance-backed annual goals. Campus
+outcomes include verified shortfalls in Asingan, mixed results elsewhere, and
+pending evidence in Binmaley and Infanta. University evidence remains pending.
+Generated institutional-style addresses are fictional and must not receive mail.
+
+Guards require the existing approved presentation service ID, exact database
+name, independently verified `PRESENTATION_DATABASE_HOST`, suppressed mail,
+complete current schema, transactional InnoDB, foreign key checks, nine official
+campuses, and four existing active accounts. Student/coordinator campus links
+must already be valid; account details are never repaired. Execution dates are
+25 October through 13 November 2026 because upcoming activities start on
+14 November. Later presentations need a reviewed schedule update.
+
+Operational and annual-goal dependants are deleted before parents; inserts,
+account preservation checks and real annual-goal calculations precede one
+commit. Dry-run and failures roll back. Catalogue/settings/policy records and
+uploaded files are retained. The operator must back up the database and uploads,
+pause concurrent writes, and type destination-specific confirmation. Mail must
+also be suppressed in the running app workers, not merely the CLI shell.
+
+Read `docs/operations/PRESENTATION_DATASET.md` for exact backup, dry-run, reset,
+verification and recovery commands. Do not use `reset-and-seed-demo` for this
+dataset: its older three-account preservation and performance-fixture volumes
+remain unchanged.
+
+Verification: 19 isolated SQLite presentation tests passed. The additional
+MariaDB 10.4.32 integration test passed against a new disposable local server
+on port 34071, including production service/host guards, read-only dry-run,
+rollback after injected deletion/insertion/validation failures, repeat resets,
+and enabled foreign keys. The final capacity/content checks and default-account
+routes passed in a five-test follow-up. Existing dataset, performance, goals,
+ranking, report-query and Railway configuration regression selection passed
+57 tests initially; two Windows temporary-directory fixture errors passed when
+rerun with normal access, giving 59 passed regression cases. The temporary
+MariaDB server was stopped after verification. No Railway credentials or
+database exports were added. `git diff --check` passed.
+
+Skills used: existing antislop core and ponytail/full. No UI files, schema,
+dependencies, new skills, or user-facing design were changed. Next step is
+review and a separately authorized release; the target database host, backup,
+deployed revision and live account state have not been verified here.
+
 ## Current Handoff: 1 November 2026, Fixed Campus Catalogue
 
 The current Admin change enforces the nine PSU campuses in `app/campuses.py`.

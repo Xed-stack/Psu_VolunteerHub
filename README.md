@@ -212,6 +212,14 @@ For the larger, account-preserving fixture replacement, see
 receive that code before `reset-and-seed-demo --database railway` is available.
 Use its `--dry-run` preview to verify the demo database target before replacement.
 
+For the 2026 presentation dataset with **28 activities, 80 new volunteers,
+eight new coordinators, and all four default accounts preserved**, use
+`reset-and-seed-presentation --database railway --dry-run`. Read
+[`docs/operations/PRESENTATION_DATASET.md`](docs/operations/PRESENTATION_DATASET.md)
+for the required destination/mail guards, backup, confirmation, and recovery
+procedure. The earlier large fixture command has different preservation rules.
+Neither command runs automatically during startup or deployment.
+
 ## Policies and cancellations
 
 Policy source texts are included in `docs/TERMS_OF_USE_v1.0.txt` and

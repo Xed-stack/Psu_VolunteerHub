@@ -1,5 +1,11 @@
 # Database artifacts
 
+The separate 2026 presentation reset preserves all four default accounts and
+creates 28 activities and 80 new volunteers. See the
+[operator guide](../docs/operations/PRESENTATION_DATASET.md) before any Railway
+operation. Full backups stay private; the reset performs no schema changes and
+does not run automatically.
+
 Continuation note, 31 October 2026: the dashboard changes add no schema or
 historical-record changes and require no import, reset, or migration. Database
 exports remain private local artifacts. See
