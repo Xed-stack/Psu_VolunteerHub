@@ -84,7 +84,7 @@ def report_invalid():
 
 def build_events_report(campus_id=None, start_date=None, end_date=None,
                         category=None, sex=None, sdg_id=None, activity_name=None,
-                        campus_ids=None, attention=None, now=None, event_id=None):
+                        campus_ids=None, attention=None, now=None, event_id=None, event_ids=None):
     """Return (rows, summary) for the filtered event dataset.
 
     campus_id=None means all campuses. Coordinators must pass their own
@@ -101,6 +101,8 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
         raise ReportError('Clear the sex filter to review whole-activity participant targets.')
 
     query = Event.query
+    if event_ids is not None:
+        query = query.filter(Event.id.in_(event_ids))
     if event_id is not None:
         try:
             event_id = int(event_id)

@@ -285,6 +285,25 @@ def test_default_account_views_and_no_email(app, monkeypatch):
             assert response.status_code == 200, (email, path, response.status_code, response.location)
 
 
+def test_director_goal_queries_are_bounded_with_linked_activity_evidence(app):
+    from tests.test_system_performance import query_count, signed_in_client
+    result = invoke(app)
+    assert result.exit_code == 0, (result.output, result.exception)
+    client = signed_in_client(app, 'director')
+    for path in ('/director_dash', '/analytics', '/annual-goals'):
+        with query_count(app) as statements:
+            response = client.get(path)
+        assert response.status_code == 200
+        assert len(statements) <= 60, (path, len(statements))
+    with app.app_context(), query_count(app) as statements:
+        campus_results = comparisons(2026)
+    assert len(statements) <= 10
+    assert [(row['campus'], row['met'], row['pending']) for row in campus_results] == [
+        ('Alaminos', 2, 0), ('Asingan', 0, 0), ('Bayambang', 1, 0),
+        ('Binmaley', 0, 3), ('Infanta', 0, 3), ('Lingayen', 3, 0),
+        ('San Carlos', 2, 0), ('Santa Maria', 3, 0), ('Urdaneta', 3, 0)]
+
+
 @pytest.mark.parametrize('code', ['BAYAMBANG', 'STAMARIA', 'ALAMINOS'])
 def test_preserves_coordinator_on_campus_without_upcoming_activity(app, code):
     with app.app_context():

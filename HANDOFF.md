@@ -1,5 +1,30 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Director Dashboard Timeout: 1 November 2026
+
+The presentation reset was deployed as `81cd3c2` and the user successfully ran
+it on the Demo service: 92 accounts, 28 activities, 432 registrations, 296
+attendance records, 30 goals and 24 cancellation requests. The four default
+accounts were preserved. Do not reset again to troubleshoot the dashboard.
+
+Live Railway logs show repeated Gunicorn worker timeouts on `/director_dash`
+inside annual-goal activity evidence calculations. The seeded dataset exposed
+repeated per-target/per-activity reporting queries that the older performance
+fixture (without annual goals) did not cover.
+
+The fix batches approved targets, loads their indicator/plan, results and mapped
+activities eagerly, and shares one filtered activity report and registration
+read across campus comparisons. Evidence remains scoped to each target's mapped
+activities, campus, year and attendance completeness. No persistent cache or
+schema/data change is involved. Local cold-request measurements with the exact
+presentation fixture: Director dashboard 868 -> 42 queries; campus comparisons
+482 -> 9 queries; analytics 44 queries; annual-goal details 23 queries. Campus
+results, including pending Binmaley/Infanta evidence, remain unchanged.
+
+Regression coverage now includes populated-goal query budgets and intersecting
+batch event filters. Publication/deployment verification for this fix is recorded
+in the current chat; earlier sections below describe prior stages.
+
 ## Release Preparation: 1 November 2026, Presentation Dataset
 
 The user explicitly approved committing and pushing the tested presentation-reset

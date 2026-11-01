@@ -5,10 +5,10 @@ from fractions import Fraction
 from flask_login import current_user
 from collections import defaultdict
 import operator
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget,
-                                   AnnualResult, AnnualGoalProposal)
+                                   AnnualResult, AnnualGoalProposal, AnnualActivityMapping)
 from app.models.event import Campus, Registration, Event
 from app.reports import ReportError
 
@@ -109,7 +109,7 @@ def participation(year, campus_id=None, basis='verified_attendance'):
                 basis=BASES[basis], missing=counts['unrecorded'])
 
 
-def target_row(target, year):
+def target_row(target, year, evidence=None):
     indicator = target.indicator
     actual, verified, source, coverage = None, False, None, None
     mappings = [mapping.event for mapping in target.activity_mappings]
@@ -120,17 +120,14 @@ def target_row(target, year):
         if result and result.result_type == 'approved_aggregate':
             actual, verified, source, coverage = result.actual_value, True, result.source_document, result.coverage_note
     elif mappings:
-        from app.reports import build_events_report
-        rows = []
-        for event in mappings:
-            if target.campus_id is not None and event.campus_id != target.campus_id:
-                continue
-            found, _ = build_events_report(event_id=event.id, start_date=f'{year}-01-01',
-                                          end_date=cutoff_for(year).isoformat())
-            rows.extend(found)
+        if evidence is None:
+            evidence = _activity_evidence([target], year)
+        reports, registrations_by_event = evidence
+        rows = [reports[event.id] for event in mappings if event.id in reports
+                and (target.campus_id is None or event.campus_id == target.campus_id)]
         eligible = [row for row in rows if row['ended']]
         verified = bool(eligible) and all(row['attendance_complete'] for row in eligible)
-        regs = registrations(year, target.campus_id, [row['event_id'] for row in eligible])
+        regs = [reg for row in eligible for reg in registrations_by_event[row['event_id']]]
         present = [reg for reg in regs if reg.attendance_record and reg.attendance_record.status == 'present']
         basis = indicator.evidence_basis
         actual = {'activities': len(eligible), 'registrations': len(regs), 'verified_attendance': len(present),
@@ -167,20 +164,45 @@ def summarize(rows, year, campus_id=None, sample=False):
                 status='No approved targets' if not rows else 'All targets met' if met == len(rows) else 'Evidence pending' if pending else 'Targets remaining')
 
 
-def summary(year=None, campus_id=None, sample=False):
-    year = selected_year(year)
-    if sample:
-        return summarize(sample_rows(campus_id), year, campus_id, True)
+def _activity_evidence(targets, year):
+    from app.reports import build_events_report
+    event_ids = {mapping.event_id for target in targets
+                 if target.indicator.evidence_basis != 'approved_aggregate'
+                 for mapping in target.activity_mappings}
+    by_event = defaultdict(list)
+    if not event_ids:
+        return {}, by_event
+    rows, _ = build_events_report(event_ids=event_ids, start_date=f'{year}-01-01',
+                                  end_date=cutoff_for(year).isoformat())
+    for reg in registrations(year, event_ids=event_ids):
+        by_event[reg.event_id].append(reg)
+    return {row['event_id']: row for row in rows}, by_event
+
+
+def _summaries(year, campus_ids):
     targets = AnnualTarget.query.join(AnnualIndicator).join(AnnualPlan).filter(
         AnnualPlan.year == year, AnnualPlan.status == 'approved', AnnualTarget.is_active.is_(True),
-        AnnualTarget.campus_id == campus_id if campus_id is not None else AnnualTarget.campus_id.is_(None)
+        AnnualTarget.campus_id.in_([campus for campus in campus_ids if campus is not None]) |
+        (AnnualTarget.campus_id.is_(None) if None in campus_ids else False)
+    ).options(joinedload(AnnualTarget.indicator).joinedload(AnnualIndicator.plan),
+              selectinload(AnnualTarget.results),
+              selectinload(AnnualTarget.activity_mappings).joinedload(AnnualActivityMapping.event)
     ).order_by(AnnualTarget.id).all()
+    evidence = _activity_evidence(targets, year)
+    by_campus = defaultdict(list)
+    for target in targets:
+        by_campus[target.campus_id].append(target)
+    return {campus_id: _target_summary(by_campus[campus_id], year, campus_id, evidence)
+            for campus_id in campus_ids}
+
+
+def _target_summary(targets, year, campus_id, activity_evidence):
     groups = defaultdict(list)
     for target in targets:
         groups[target.indicator.shared_key or f'target:{target.id}'].append(target)
     rows = []
     for group in groups.values():
-        evidence = [target_row(target, year) for target in group]
+        evidence = [target_row(target, year, activity_evidence) for target in group]
         row = next((item for item in evidence if item['verified']), evidence[0])
         row['plan_types'] = sorted({target.indicator.plan.plan_type for target in group})
         # Conflicting shared definitions cannot support an achievement claim.
@@ -191,6 +213,13 @@ def summary(year=None, campus_id=None, sample=False):
             row.update(met=False, verified=False, pending=True, status='Evidence pending', coverage_note='Shared target evidence conflicts; review approved results.')
         rows.append(row)
     return summarize(rows, year, campus_id)
+
+
+def summary(year=None, campus_id=None, sample=False):
+    year = selected_year(year)
+    if sample:
+        return summarize(sample_rows(campus_id), year, campus_id, True)
+    return _summaries(year, [campus_id])[campus_id]
 
 
 def sample_rows(campus_id):
@@ -218,8 +247,11 @@ def sample_rows(campus_id):
 
 
 def comparisons(year=None, sample=False):
-    return [dict(summary(year, campus.id, sample), campus=campus.name)
-            for campus in Campus.query.order_by(Campus.name, Campus.id).all()]
+    year = selected_year(year)
+    campuses = Campus.query.order_by(Campus.name, Campus.id).all()
+    plans = ({campus.id: summarize(sample_rows(campus.id), year, campus.id, True) for campus in campuses}
+             if sample else _summaries(year, [campus.id for campus in campuses]))
+    return [dict(plans[campus.id], campus=campus.name) for campus in campuses]
 
 
 def campus_ranking(campuses, lowest=False):
