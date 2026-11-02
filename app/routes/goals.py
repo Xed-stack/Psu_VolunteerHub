@@ -8,6 +8,8 @@ from xml.sax.saxutils import escape
 from flask import Blueprint, abort, flash, redirect, render_template, request, Response, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from app.pagination import paginate
 
 from app.models import db
 from app.campuses import campus_query
@@ -317,6 +319,24 @@ def review(proposal_id):
             db.session.rollback()
             error = str(exc)
     return render_template('goals/review.html', proposal=proposal, director=director(), error=error), 400 if error else 200
+
+
+@goals_bp.route('/targets/<int:target_id>/activities')
+@login_required
+@roles_required('coordinator', 'director', 'admin')
+def target_activities(target_id):
+    target = db.get_or_404(AnnualTarget, target_id)
+    if current_user.role == 'coordinator' and target.campus_id != current_user.campus_id:
+        abort(403)
+    year = target.indicator.plan.year
+    query = Event.query.join(AnnualActivityMapping).filter(
+        AnnualActivityMapping.target_id == target.id,
+        Event.date >= datetime(year, 1, 1), Event.date < datetime(year+1, 1, 1))
+    if target.campus_id is not None:
+        query = query.filter(Event.campus_id == target.campus_id)
+    pagination = paginate(query.options(joinedload(Event.campus)).order_by(Event.date.desc(), Event.id.desc()))
+    return render_template('goals/activities.html', target=target, pagination=pagination,
+                           activities=pagination.items, year=year)
 
 
 @goals_bp.route('/targets/<int:target_id>/evidence', methods=['GET', 'POST'])

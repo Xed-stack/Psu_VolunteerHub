@@ -1,4 +1,5 @@
 {% extends 'layouts/role_base.html' %}
+{% from 'partials/pagination.html' import pages with context %}
 {% block title %}Attendance · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Coordinator Console{% endblock %}
 {% block header_subtitle %}Attendance management{% endblock %}
@@ -38,6 +39,9 @@
       <div class="empty-state">No activities are scheduled for today or the next three activity dates. Choose a past activity below if you need to review its attendance.</div>
     {% endif %}
     <form class="attendance-picker__all" method="get" autocomplete="off">
+      <label class="field">Find Campus Activity<input class="input" type="search" name="activity_search" value="{{ activity_search }}" placeholder="e.g., Coastal cleanup…"></label>
+      <button class="btn btn--outline" type="submit">Search Activities</button>
+      <p>Showing up to 25 matching activities. Search to find older records.</p>
       <label class="field" for="event_id">
         <span class="field__label">All Campus Activities</span>
         <select class="select" id="event_id" name="event_id">
@@ -74,10 +78,11 @@
         <h2>Registered Volunteers</h2>
         {% if selected_event %}<p>Review each participant before saving attendance for {{ selected_event.title }}.</p>{% endif %}
       </div>
-      <span class="badge badge--neutral">{{ attendance_counts.registered }} registered</span>
+      <span class="badge badge--neutral">{% if pagination %}{{ attendance_counts.registered }} on this page · {{ pagination.total }} registered{% else %}0 registered{% endif %}</span>
     </header>
 
     {% if selected_event %}
+      <p>Counts and bulk actions apply to this page. Save changes before changing pages.</p>
       <section class="attendance-summary" aria-label="Attendance status summary">
         {% for key, label in [('present', 'Present'), ('absent', 'Absent'), ('excused', 'Excused'), ('unmarked', 'Not Marked')] %}
           <div class="attendance-summary__item">
@@ -132,5 +137,6 @@
       </div>
     {% endif %}
   </form>
+  {{ pages(pagination, 'Attendance participant pages') }}
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='scripts/attendance-workspace.js') }}"></script>{% endblock %}

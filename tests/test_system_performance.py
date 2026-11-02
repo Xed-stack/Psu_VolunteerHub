@@ -106,12 +106,12 @@ def test_awards_and_forecast_queries_are_bounded(system_app):
     with system_app.app_context(), query_count(system_app) as statements:
         awards = AnalyticsAggregator.award_leaderboards(REPORT_YEAR)
     assert len(awards['volunteers']) == 5
-    assert len(statements) == 5
+    assert len(statements) <= 4
     with system_app.app_context(), query_count(system_app) as statements:
         forecast = AnalyticsAggregator.forecast_turnout(campus_id=1)
     assert forecast
     assert all(0 <= row['predicted_attendance_rate'] <= 1 for row in forecast)
-    assert len(statements) == 4
+    assert len(statements) <= 3
 
 
 @pytest.mark.parametrize('path', ['/static/styles/base.css', '/static/scripts/form-submit-state.js',

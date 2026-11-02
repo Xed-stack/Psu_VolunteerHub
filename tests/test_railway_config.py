@@ -9,6 +9,7 @@ def test_railway_uses_production_docker_startup_without_seeds():
     assert not (ROOT / 'railway.json').exists()
     assert 'wsgi:app' in docker and '${PORT:-8000}' in docker
     assert '--workers 1' in docker
+    assert '--worker-class gthread --threads 4 --timeout 120' in docker
     assert 'init-production' not in docker and 'seed-demo' not in docker
     assert '/data/private' in docker and 'ln -s /data/public /app/static/uploads' in docker
     assert 'COPY . ' not in docker
@@ -24,3 +25,10 @@ def test_build_context_excludes_real_data_and_history():
     for line in (ROOT / 'Dockerfile').read_text().splitlines():
         if line.startswith('COPY '):
             assert not any(value in line for value in ('Database', 'instance', '.env', '.git'))
+
+
+def test_production_connection_budget_is_bounded():
+    from config import ProductionConfig
+    options = ProductionConfig.SQLALCHEMY_ENGINE_OPTIONS
+    assert options == dict(pool_pre_ping=True, pool_recycle=300, pool_size=5,
+                           max_overflow=0, pool_timeout=5, connect_args={'connect_timeout': 5})

@@ -1,5 +1,67 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Performance candidate: 2 November 2026
+
+Active branch: `codex/performance-workflows`, based on published `c960159`.
+The performance implementation, tests and operations guide are currently local
+and uncommitted. Neither Railway service has received this candidate. Both
+services originally watch `thesis/main`; publish only the candidate branch for
+Demo, then validate before releasing the same commit to main.
+
+Implemented: request timing/SQL fingerprints without parameters; request-local
+reuse; grouped annual evidence and unique counts; selected-view analytics;
+SQL Top 5 volunteers; lightweight recommendation candidates with identical-term
+score reuse; policy checks combined into one query; bounded capacity/status
+lookups; SQL pagination; actual single-statement attendance page saves; batched
+reports; explicit additive index CLI; five-connection pool; four Gunicorn threads.
+No schema reset, shared cache, dependency or paid service was added.
+
+The isolated benchmark has 1,000 activities, 50,000 registrations, active Terms
+and Privacy acceptances, 30 mapped goals, historical records and incomplete
+attendance. New tools: `scripts/benchmark_workflows.py`,
+`scripts/profile_performance_indexes.py`, `scripts/qa_performance_pagination.py`.
+See `docs/operations/PERFORMANCE_ROLLOUT.md` for commands and rollout/rollback.
+
+Final local policy-aware run passed all measured budgets: 12,568 requests /
+1,250 writes in 1,035.37 seconds including a 15-minute 50-user hold. No HTTP errors,
+duplicates or inconsistent writes; all 50 actors completed cancellation review;
+20 contenders for one final place admitted exactly one. Registration p95 1.419s,
+Director 1.400s, annual goals 1.362s; max five database connections; app RSS 242.08
+MiB against an explicit local 950 MiB budget. This is local Werkzeug/MariaDB
+evidence, not Railway/Gunicorn capacity acceptance. Raw final artifact:
+`.qa-presentation-temp/performance-final-policies.json`.
+
+Verification to date: focused groups of 134, 74, 44 and 18 tests passed at their
+respective implementation stages. Forty desktop/mobile pagination checks passed
+at 1440/900/768/390/320px, including keyboard focus, 44px targets, no page overflow
+and unsaved-attendance protection. Five public-signup regressions reproduce in
+the unchanged `c960159` baseline; do not report the entire suite as green.
+The eight index candidates improved disposable MariaDB EXPLAIN plans; apply,
+idempotence and rollback passed. Rollback restores missing foreign-key support
+indexes before removing owned composite indexes. Startup never creates them.
+
+Railway read-only checks: Demo app is in Singapore; Demo MySQL is in US East.
+Both have Serverless enabled. A cold wake returned MySQL connection-refused;
+later reads succeeded. Verified source `mysql-tgn.railway.internal/railway`:
+92 accounts, 28 activities, 432 registrations, 296 attendance records.
+No presentation reset was performed during this work.
+
+A protected dump was created on Demo MySQL at
+`/var/lib/mysql/performance-backup-20261102/database.sql` (183,537 bytes, mode 600).
+It restored successfully into separate `psu_performance_restore_20261102`.
+All 37 source/restored table checksums matched, including account data. This is
+not an off-service backup. Upload backup at `/data/operations-backup-20261102/uploads.tar.gz`
+was extracted separately and verified: zero upload files, 214-byte archive, hashes
+match. Off-volume downloads and any region move remain pending. Keep the database
+stationary and defer a move that cannot fit 15 minutes.
+No index migration or live region/configuration change has been applied yet.
+
+Next: complete backup downloads; commit/push the candidate branch; configure only Demo
+to that branch; validate actual indexes, runtime and default-account workflows;
+observe 30 minutes before main. Do not load the benchmark into Railway or reset
+the existing presentation records. Main's MySQL was offline and its last app
+deployment failed when last inspected; inspect that separately before release.
+
 ## Campus Goal Summary Scope: 1 November 2026
 
 The Director dashboard now uses the existing campus comparison rows to summarize
