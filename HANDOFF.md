@@ -1,5 +1,24 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Volunteer profile settings: 2 November 2026
+
+Current local branch: `codex/volunteer-profile-settings`, based on `a9694e5`.
+Implemented independent change-name, campus/college and password forms for all
+volunteers, with native disclosures, validation, focused errors and unsaved-change
+protection. Password changes serialize on the account row, enforce the shared
+policy and five-failure limit, revoke other sessions and unused reset tokens,
+and keep the current browser signed in after a successful commit. No migration,
+dependency or dataset reset. Live account credentials were not changed.
+
+The user authorized committing and pushing this feature branch to both `origin`
+(`Xed-stack/Psu_VolunteerHub`) and `thesis` (`arlrom003/PSU-Volunteer-Hub`).
+Deployment remains a separate step. Do not merge into deployment branches as part
+of this push. Main remains offline; Demo remains on its existing release.
+See `docs/qa/PROFILE_SETTINGS.md` for behavior, commands, verification and UI audit.
+New tests cover 30 account cases and two optional real MariaDB concurrency cases;
+Chromium checks cover five desktop/mobile widths. An unrelated password-recovery
+expectation also fails on unchanged `c960159`; do not claim the full suite is green.
+
 ## Performance candidate: 2 November 2026
 
 Active branch: `codex/performance-workflows`, based on published `c960159`.

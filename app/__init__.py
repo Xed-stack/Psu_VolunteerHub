@@ -149,6 +149,9 @@ def create_app(config_name=None):
     def validate_campus_choices():
         if request.endpoint in ('static', 'favicon') or request.routing_exception:
             return None
+        if request.endpoint in ('volunteer.change_name', 'volunteer.change_campus',
+                                'volunteer.change_password'):
+            return None
         from flask import abort
         for source in (request.args, request.form):
             for key in ('campus', 'campus_id', 'follow_up_campus_id'):
