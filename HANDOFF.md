@@ -3,10 +3,12 @@
 ## Performance candidate: 2 November 2026
 
 Active branch: `codex/performance-workflows`, based on published `c960159`.
-The performance implementation, tests and operations guide are currently local
-and uncommitted. Neither Railway service has received this candidate. Both
-services originally watch `thesis/main`; publish only the candidate branch for
-Demo, then validate before releasing the same commit to main.
+The performance implementation was committed/pushed as `e743b4f` to the candidate
+branch on `thesis`, then deployed to Demo. Demo now watches that branch; main stays
+on its previous code. The user explicitly chose to keep main and its database
+offline while finishing Demo. Follow-up validation documentation/tools record the
+completed workload; Docker-copied application inputs remain identical to tested
+`e743b4f`. No main release is intended in this handoff.
 
 Implemented: request timing/SQL fingerprints without parameters; request-local
 reuse; grouped annual evidence and unique counts; selected-view analytics;
@@ -50,17 +52,36 @@ A protected dump was created on Demo MySQL at
 `/var/lib/mysql/performance-backup-20261102/database.sql` (183,537 bytes, mode 600).
 It restored successfully into separate `psu_performance_restore_20261102`.
 All 37 source/restored table checksums matched, including account data. This is
-not an off-service backup. Upload backup at `/data/operations-backup-20261102/uploads.tar.gz`
+now also downloaded, with explicit user approval, to `C:\Users\arlro\Downloads\database.sql`.
+Local SHA-256: `fdf717c8224ef5556b9b370c9fec7e5cd1a75d6d0682584bfa402591d8e6577f`.
+Upload backup at `/data/operations-backup-20261102/uploads.tar.gz`
 was extracted separately and verified: zero upload files, 214-byte archive, hashes
-match. Off-volume downloads and any region move remain pending. Keep the database
-stationary and defer a move that cannot fit 15 minutes.
-No index migration or live region/configuration change has been applied yet.
+match; that archive was downloaded to Downloads too. App/volume colocation in US
+East completed within two minutes; the database stayed stationary. Eight reviewed
+indexes applied with writes paused for 2.11 seconds and resumed safely. Account
+table checksums still match the pre-change restoration. Runtime gthread/pool/mail
+and metrics flags verified. Read `docs/qa/PERFORMANCE_BENCHMARK.md` for live query
+counts and the separate public HTTPS measurement.
 
-Next: complete backup downloads; commit/push the candidate branch; configure only Demo
-to that branch; validate actual indexes, runtime and default-account workflows;
-observe 30 minutes before main. Do not load the benchmark into Railway or reset
-the existing presentation records. Main's MySQL was offline and its last app
-deployment failed when last inspected; inspect that separately before release.
+The actual Gunicorn GET workload completed: 173 requests at 10 users, 435 at 25,
+and 12,765 during the full 900-second 50-user hold, all HTTP 200. Live p95 ranged
+from 25.64ms to 82.50ms; burst opportunities 323.95ms and concurrent PDF 430.41ms.
+Service peak 506,118,144 bytes against limit 999,997,440 (49.4% headroom), including
+load/verification helpers; 201.88 cgroup CPU seconds. More than 30 minutes observed.
+MySQL server-wide connection peak 6 / allowed 151, including operators/probes;
+application pool remains 5. Final primary counts still 92 / 28 / 432 / 296 and all
+account details still match the restored checksum. Supplemental 37 checks passed.
+Files are under `/data/operations-backup-20261102/demo-*`; `demo-load-status.log`
+confirms all three exits 0 and LOAD_COMPLETE. No hold remains active. The test used
+the existing presentation dataset and GETs; the 50k mixed-write case remains local,
+and is not a proven Railway acceptance result. Follow-up publication must leave
+Docker-copied application inputs identical to tested `e743b4f`.
+No main rollout is currently authorized: user chose to keep it offline. Do not
+load the large fixture into Railway or reset presentation records. Default role
+session checks pass, but password-based login is unverified; the historical
+bootstrap Director password was rejected. Do not reset passwords to test access.
+The isolated local MariaDB helper on port 34071 was verified and shut down; its
+fixture files and raw benchmark measurements remain in the ignored QA directory.
 
 ## Campus Goal Summary Scope: 1 November 2026
 

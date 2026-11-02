@@ -127,14 +127,85 @@ Five existing public-signup test failures reproduce on unchanged `c960159`:
 Do not describe the entire repository suite as green. These failures were not
 removed or weakened as part of the performance work.
 
-## Hosting observations before rollout
+## Railway Demo rollout
 
-Demo app: Singapore; Demo database: US East; both use Serverless. A cold wake
+Before rollout the Demo app was in Singapore and its database in US East; both use Serverless. A cold wake
 initially refused a MySQL connection, followed by successful reads after startup.
 Verified live totals: 92 accounts, 28 activities, 432 registrations and 296
 attendance records. A protected dump restored into a separate recovery database;
-all 37 table checksums matched. No dataset reset, live index change or region
-change has been performed during this verification stage.
+all 37 table checksums matched. The user subsequently approved downloading the full
+SQL backup to `C:\Users\arlro\Downloads\database.sql`; the downloaded 183,537-byte file
+has SHA-256 `fdf717c8224ef5556b9b370c9fec7e5cd1a75d6d0682584bfa402591d8e6577f`.
+No encryption of that local file is claimed. The upload archive was restored
+separately: zero source upload files, 214-byte archive, matching checksums.
 
-Main's database was offline and its last app deployment had failed before this
-candidate. Main must not receive the candidate automatically before Demo passes.
+Runtime commit `e743b4f` deployed successfully to Demo on 2 November. The app and
+attached volume moved to `us-east4-eqdc4a`, beside the stationary US East database,
+within the 15-minute maintenance allowance. The deployment started at 02:36 UTC
+and was successful by 02:38. The eight reviewed indexes applied with the Gunicorn
+worker paused for 2.11 seconds and resumed in a `finally` block. Actual MySQL
+EXPLAIN plans now use composite indexes for activity dates/campus dates, capacity,
+history, attendance and notifications. The tiny auth table still chooses its old
+action index; the 20,000-record disposable auth probe supports the composite for
+growth. Production configuration, four gthread threads, pool limits, metrics and
+email suppression were checked in the running container.
+
+All account details matched the restored pre-change account table after migration.
+There was no dataset reset. Live role-session checks returned HTTP 200 for all 17
+workflows, including full CSV/PDF exports. Measured SQL counts: Admin 13, Coordinator
+dashboard 19, attendance 9, cancellation review list 5, Coordinator analytics 19,
+Director dashboard 21, live analytics 17, historical analytics 10, annual details 10,
+goal activities 8, volunteer/history 15, signed-in opportunities 7, notifications 5,
+and university exports 5. These are per-request query checks, not live p95 timings.
+An additional 37 runtime/configuration/performance regressions passed. The final
+live data check remained 92 accounts / 28 activities / 432 registrations / 296
+attendance records, with the account table still matching its restored checksum.
+Campus results remain 14/27, with Asingan 0/3 and pending evidence for Binmaley and
+Infanta; university-wide targets remain separately pending at 0/3.
+
+Twelve sequential HTTPS requests from this workstation to public Demo opportunities
+all returned 200; the last ten had a measured p95 of 409.84 ms. This includes the
+public edge and workstation network. Default-account role checks use temporary
+internal sessions, and do not establish successful password-based login; the old
+bootstrap Director password was rejected, and existing passwords were preserved.
+
+The deployed GET-only ramps completed 173 requests at 10 users and 435 at 25 users.
+The full 900-second hold at 50 distinct existing accounts completed 12,765 requests
+(14.18/second). All 13,373 navigation requests and the separate default-role probes
+returned HTTP 200. No connection exhaustion or worker timeout occurred in these
+requests. The concurrent 50-request opportunity burst had 323.95 ms p95; a full,
+valid PDF returned in 430.41 ms alongside normal navigation.
+
+| Workflow during the live 50-user hold | Loopback p95 |
+|---|---:|
+| Opportunities | 33.79 ms |
+| Notifications | 27.75 ms |
+| Volunteer dashboard / page 2 | 61.02 / 63.99 ms |
+| Coordinator dashboard | 82.14 ms |
+| Attendance | 33.66 ms |
+| Coordinator analytics | 74.41 ms |
+| Cancellation review list | 25.64 ms |
+| Director dashboard | 82.50 ms |
+| Live analytics | 74.91 ms |
+| Annual goals | 56.29 ms |
+
+The service cgroup peaked at 506,118,144 bytes (482.67 MiB), with 49.4% headroom
+against its measured 999,997,440-byte limit. Sampling includes the deployed worker,
+probe clients and verification helpers. Cgroup CPU time increased by 201.88 seconds
+over the ramps/hold; no paid capacity or services were added. Demo remained deployed
+for more than 30 minutes through this observation. Raw deployed reports and resource
+samples are in `/data/operations-backup-20261102/demo-*.json`.
+MySQL reported a server-wide peak of six connections against its limit of 151;
+that includes operator/probe connections. The deployed application pool remains
+bounded at five, with no overflow.
+
+These live loopback timings use the current presentation records and actual
+Gunicorn, and exclude the public edge. They do **not** establish the 1,000-activity /
+50,000-registration mixed-write Railway acceptance target. That combined case is
+verified locally; production load testing and any dataset replacement remain outside
+this rollout. Cold wake behavior after the new deployment is also unverified.
+
+Main's database had no active deployment (last removed four days earlier), and
+its last app build had failed before this candidate. The user explicitly requested
+keeping main offline and finishing Demo first. No main code, database or service
+configuration has been changed during this rollout.

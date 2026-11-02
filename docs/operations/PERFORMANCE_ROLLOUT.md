@@ -165,6 +165,26 @@ it. Rollback first creates missing `ix_fk_*` support indexes, then drops only ow
 
 ## Regions, validation and release
 
+For deployed Gunicorn checks without replacing presentation records, upload
+`scripts/probe_deployed_demo.py` to `/app/probe_deployed_demo.py` through Demo's
+Console Files drawer, then run from `/app`:
+
+```sh
+python probe_deployed_demo.py --users 1 --seconds 10 --output /data/operations-backup-20261102/demo-smoke.json
+python probe_deployed_demo.py --users 10 --seconds 60 --output /data/operations-backup-20261102/demo-10.json
+python probe_deployed_demo.py --users 25 --seconds 60 --output /data/operations-backup-20261102/demo-25.json
+python probe_deployed_demo.py --users 50 --seconds 900 --output /data/operations-backup-20261102/demo-50.json
+```
+
+This utility rejects any service/database except the approved Demo. It uses
+existing accounts and temporary signed sessions held in process memory; it does
+not check passwords or print session cookies. GET requests pass through the actual
+Gunicorn listener. Ordinary GET side effects, such as recommendation logs, remain.
+It does not submit participation changes. Its timings include app/database work
+and exclude the public edge and the user's network. Record these limitations:
+this run uses the current presentation dataset, while the separate disposable
+50,000-registration workload covers the mixed writes and large-data case.
+
 Recheck actual regions and private URLs in Railway. Demo was observed in Southeast
 Asia and its database in US East before this rollout; this is an avoidable network
 round trip for every query. Keep the database stationary. Move the app and its

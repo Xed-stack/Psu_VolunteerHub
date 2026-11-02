@@ -59,7 +59,7 @@ def acceptance(result):
         latency_failures=latency, query_failures=queries,
         memory_headroom_measured=headroom is not None,
         passed=not (latency or queries or result['errors'] or result['consistency_errors']
-                    or (headroom is not None and headroom < 20)))
+                    or headroom is None or headroom < 20))
 
 
 def resident_bytes():
