@@ -2,8 +2,13 @@
 
 Implemented on `codex/volunteer-profile-settings`, based on `a9694e5`.
 The user authorized publishing this feature branch to both configured repositories.
-No deployment, live credential change, migration, dependency, or dataset reset is
-part of this delivery. Main remains offline.
+The initial delivery did not deploy the feature. On 11 November 2026 the user
+authorized the live merge: Demo's watched `codex/performance-workflows` branch was
+fast-forwarded to `97ba1aa`, and Railway confirmed successful deployment
+`fa40b10b-bba6-4208-b721-16295700b402` at `https://www.psuvolunteerhub.tech`.
+No live credentials, schema, dependencies, or dataset were reset. Main remains
+offline. The release is the tested application commit; subsequent documentation
+changes do not change its application files.
 
 ## Behavior
 
@@ -82,6 +87,23 @@ submit feedback is reused. Contrast checker: blue `#00408b` on white 9.97:1;
 error text `#98201c` on white 8.21:1. Desktop and mobile screenshots were inspected.
 This is not a full-site accessibility audit; physical devices, screen readers and
 Safari/Firefox were not manually tested.
+
+## Live deployment checks: 11 November 2026
+
+The deployed revision and all three POST-only endpoints were verified in the new
+container; the profile template compiles. The public login page and profile
+JavaScript/CSS returned HTTP 200. Asset hashes match the tested source. Anonymous
+profile access requires sign-in. Mail suppression remains enabled.
+
+Aggregate counts before/after: accounts 97/97, registrations 433/433, attendance
+296/296, annual targets 30/30 and cancellation requests 24/24. Activity count grew
+29/30 during normal use; a successful POST `/create_activity` appears in network
+logs at 13:44:41 GMT+8, consistent with that addition. The agent ran no activity
+creation or account-update requests. The full-account checksum was rejected by
+automatic approval review because it unnecessarily reads personal data/password
+hashes; aggregate verification was used instead. No sensitive account rows were
+exported. Signed-in live profile editing and password changes remain unexercised;
+the local test results above cover those behaviors.
 
 ## Reproduce locally
 
