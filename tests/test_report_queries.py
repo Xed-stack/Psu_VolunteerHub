@@ -10,6 +10,17 @@ from app.reports import build_events_report
 from tests.test_app import app
 
 
+def test_event_id_batch_intersects_other_report_filters(app):
+    activities = Event.query.order_by(Event.id).limit(2).all()
+    assert len(activities) == 2
+    ids = [activity.id for activity in activities]
+    rows, _ = build_events_report(event_ids=ids)
+    assert {row['event_id'] for row in rows} == set(ids)
+    rows, _ = build_events_report(event_ids=ids, event_id=ids[0])
+    assert [row['event_id'] for row in rows] == [ids[0]]
+    assert build_events_report(event_ids=[])[0] == []
+
+
 @pytest.mark.parametrize('event_count', [1, 200])
 def test_report_query_count_does_not_grow_with_registrations(app, event_count):
     now = datetime(2026, 10, 30, 12)

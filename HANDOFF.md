@@ -1,5 +1,276 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Live profile release: 11 November 2026
+
+The user explicitly requested merging the profile settings into live. Demo's
+watched branch `thesis/codex/performance-workflows` was fast-forwarded from
+`a9694e5` to tested application commit `97ba1aa`. Railway deployment
+`fa40b10b-bba6-4208-b721-16295700b402` is Active / Deployment successful on
+`https://www.psuvolunteerhub.tech`. Main and both repositories' main branches were
+left unchanged; main's MySQL stays offline. This supersedes the earlier statement
+that profile settings had not been deployed.
+
+Verified from the new container: exact revision, three POST-only profile account
+routes, compiled profile template, database connectivity and mail suppression.
+Public login and profile assets returned HTTP 200; JavaScript/CSS hashes match the
+tested source. Account/password edits were not submitted during live validation.
+No migrations, seed/reset commands, region moves or configuration changes.
+Before/after counts: users 97/97, registrations 433/433, attendance 296/296,
+annual targets 30/30, cancellations 24/24. Activities increased 29/30 while the
+app was in use; network logs show POST `/create_activity` -> 302 at 13:44:41 GMT+8,
+consistent with that addition. No event creation was performed by the agent.
+Only aggregate database counts were read. Full account checksum verification was
+rejected by automatic approval review and replaced with aggregate checks.
+
+The logged-out browser correctly requires sign-in. Signed-in live editing and
+password-change submissions were not exercised; existing local feature/security
+and MariaDB concurrency results remain the functional evidence. Screenshot:
+`.qa-presentation-temp/profile-live-20261111.jpg` (ignored local artifact).
+Rollback, if necessary: revert the profile feature on Demo's watched branch;
+no schema rollback is required. Do not overwrite user account edits.
+
+## Volunteer profile settings: 2 November 2026
+
+Current local branch: `codex/volunteer-profile-settings`, based on `a9694e5`.
+Implemented independent change-name, campus/college and password forms for all
+volunteers, with native disclosures, validation, focused errors and unsaved-change
+protection. Password changes serialize on the account row, enforce the shared
+policy and five-failure limit, revoke other sessions and unused reset tokens,
+and keep the current browser signed in after a successful commit. No migration,
+dependency or dataset reset. Live account credentials were not changed.
+
+The user authorized committing and pushing this feature branch to both `origin`
+(`Xed-stack/Psu_VolunteerHub`) and `thesis` (`arlrom003/PSU-Volunteer-Hub`).
+Deployment remains a separate step. Do not merge into deployment branches as part
+of this push. Main remains offline; Demo remains on its existing release.
+See `docs/qa/PROFILE_SETTINGS.md` for behavior, commands, verification and UI audit.
+New tests cover 30 account cases and two optional real MariaDB concurrency cases;
+Chromium checks cover five desktop/mobile widths. An unrelated password-recovery
+expectation also fails on unchanged `c960159`; do not claim the full suite is green.
+
+## Performance candidate: 2 November 2026
+
+Active branch: `codex/performance-workflows`, based on published `c960159`.
+The performance implementation was committed/pushed as `e743b4f` to the candidate
+branch on `thesis`, then deployed to Demo. Demo now watches that branch; main stays
+on its previous code. The user explicitly chose to keep main and its database
+offline while finishing Demo. Follow-up validation documentation/tools record the
+completed workload; Docker-copied application inputs remain identical to tested
+`e743b4f`. No main release is intended in this handoff.
+
+Implemented: request timing/SQL fingerprints without parameters; request-local
+reuse; grouped annual evidence and unique counts; selected-view analytics;
+SQL Top 5 volunteers; lightweight recommendation candidates with identical-term
+score reuse; policy checks combined into one query; bounded capacity/status
+lookups; SQL pagination; actual single-statement attendance page saves; batched
+reports; explicit additive index CLI; five-connection pool; four Gunicorn threads.
+No schema reset, shared cache, dependency or paid service was added.
+
+The isolated benchmark has 1,000 activities, 50,000 registrations, active Terms
+and Privacy acceptances, 30 mapped goals, historical records and incomplete
+attendance. New tools: `scripts/benchmark_workflows.py`,
+`scripts/profile_performance_indexes.py`, `scripts/qa_performance_pagination.py`.
+See `docs/operations/PERFORMANCE_ROLLOUT.md` for commands and rollout/rollback.
+
+Final local policy-aware run passed all measured budgets: 12,568 requests /
+1,250 writes in 1,035.37 seconds including a 15-minute 50-user hold. No HTTP errors,
+duplicates or inconsistent writes; all 50 actors completed cancellation review;
+20 contenders for one final place admitted exactly one. Registration p95 1.419s,
+Director 1.400s, annual goals 1.362s; max five database connections; app RSS 242.08
+MiB against an explicit local 950 MiB budget. This is local Werkzeug/MariaDB
+evidence, not Railway/Gunicorn capacity acceptance. Raw final artifact:
+`.qa-presentation-temp/performance-final-policies.json`.
+
+Verification to date: focused groups of 134, 74, 44 and 18 tests passed at their
+respective implementation stages. Forty desktop/mobile pagination checks passed
+at 1440/900/768/390/320px, including keyboard focus, 44px targets, no page overflow
+and unsaved-attendance protection. Five public-signup regressions reproduce in
+the unchanged `c960159` baseline; do not report the entire suite as green.
+The eight index candidates improved disposable MariaDB EXPLAIN plans; apply,
+idempotence and rollback passed. Rollback restores missing foreign-key support
+indexes before removing owned composite indexes. Startup never creates them.
+
+Railway read-only checks: Demo app is in Singapore; Demo MySQL is in US East.
+Both have Serverless enabled. A cold wake returned MySQL connection-refused;
+later reads succeeded. Verified source `mysql-tgn.railway.internal/railway`:
+92 accounts, 28 activities, 432 registrations, 296 attendance records.
+No presentation reset was performed during this work.
+
+A protected dump was created on Demo MySQL at
+`/var/lib/mysql/performance-backup-20261102/database.sql` (183,537 bytes, mode 600).
+It restored successfully into separate `psu_performance_restore_20261102`.
+All 37 source/restored table checksums matched, including account data. This is
+now also downloaded, with explicit user approval, to `C:\Users\arlro\Downloads\database.sql`.
+Local SHA-256: `fdf717c8224ef5556b9b370c9fec7e5cd1a75d6d0682584bfa402591d8e6577f`.
+Upload backup at `/data/operations-backup-20261102/uploads.tar.gz`
+was extracted separately and verified: zero upload files, 214-byte archive, hashes
+match; that archive was downloaded to Downloads too. App/volume colocation in US
+East completed within two minutes; the database stayed stationary. Eight reviewed
+indexes applied with writes paused for 2.11 seconds and resumed safely. Account
+table checksums still match the pre-change restoration. Runtime gthread/pool/mail
+and metrics flags verified. Read `docs/qa/PERFORMANCE_BENCHMARK.md` for live query
+counts and the separate public HTTPS measurement.
+
+The actual Gunicorn GET workload completed: 173 requests at 10 users, 435 at 25,
+and 12,765 during the full 900-second 50-user hold, all HTTP 200. Live p95 ranged
+from 25.64ms to 82.50ms; burst opportunities 323.95ms and concurrent PDF 430.41ms.
+Service peak 506,118,144 bytes against limit 999,997,440 (49.4% headroom), including
+load/verification helpers; 201.88 cgroup CPU seconds. More than 30 minutes observed.
+MySQL server-wide connection peak 6 / allowed 151, including operators/probes;
+application pool remains 5. Final primary counts still 92 / 28 / 432 / 296 and all
+account details still match the restored checksum. Supplemental 37 checks passed.
+Files are under `/data/operations-backup-20261102/demo-*`; `demo-load-status.log`
+confirms all three exits 0 and LOAD_COMPLETE. No hold remains active. The test used
+the existing presentation dataset and GETs; the 50k mixed-write case remains local,
+and is not a proven Railway acceptance result. Follow-up publication must leave
+Docker-copied application inputs identical to tested `e743b4f`.
+No main rollout is currently authorized: user chose to keep it offline. Do not
+load the large fixture into Railway or reset presentation records. Default role
+session checks pass, but password-based login is unverified; the historical
+bootstrap Director password was rejected. Do not reset passwords to test access.
+The isolated local MariaDB helper on port 34071 was verified and shut down; its
+fixture files and raw benchmark measurements remain in the ignored QA directory.
+
+## Campus Goal Summary Scope: 1 November 2026
+
+The Director dashboard now uses the existing campus comparison rows to summarize
+campus achievement in its main card. The presentation fixture gives 14/27
+(51.9%), AOP 9/18, ASP 5/9, with six goals awaiting evidence. This is a ratio of
+goals, not an average of rounded campus percentages. Shared AOP/ASP obligations
+remain deduplicated within each campus; different campuses' obligations remain
+separate. Year selection and sample-preview state are retained. Activity-report
+filters do not change this independent annual-goal scope.
+
+The three university-wide goals remain separate and show their explicit status
+and pending count in a smaller section below the campus summary. Links from the
+campus summary/AOP/ASP land on the matching campus comparison table; the separate
+university link opens university target evidence. This uses already-loaded rows
+and adds no database queries. Coordinators retain their own campus summary.
+
+UI direction: existing PSU staff dashboard, Inter typography, navy #001a41,
+primary blue #00408b, gold #f6bf22 and pale surface #f9f9ff; ENERGY 1 / RHYTHM 2 /
+MOTION 1. Retain the large campus achievement number as the focal point for
+cross-campus decisions. A plain ruled section separates university targets;
+wrapping flex items stack their content and action on small screens. No new
+assets, dependencies, animations or client-side state.
+
+User chose antislop during this fix. The frontend-design, ponytail/full,
+antislop core/UI/human/mobile skills and current Web Interface Guidelines were
+applied. Changed UI audit: semantic navigation, explicit scope/pending labels,
+year-preserving links, native keyboard activation and visible focus pass.
+Measured text/surface contrast: secondary text 8.88:1; primary/focus 9.51:1.
+`scripts/qa_annual_goal_summary.py` checks the isolated seeded dashboard at
+1440/900/768/390/320px, with no horizontal overflow, a 44px university target
+link, keyboard navigation, and no page errors. It generates ignored QA PNGs.
+No manual screen-reader or physical-device verification is claimed.
+
+Verification: 40 focused ranking, Director-layout, seeded-summary and query-budget
+checks passed. UI gate PASS: existing PSU tokens retained; no decorative assets
+or motion added; all new links resolve; empty/pending states are explicit;
+desktop/mobile reflow and keyboard/focus checks pass in isolated Chromium.
+
+## Director Dashboard Timeout: 1 November 2026
+
+The presentation reset was deployed as `81cd3c2` and the user successfully ran
+it on the Demo service: 92 accounts, 28 activities, 432 registrations, 296
+attendance records, 30 goals and 24 cancellation requests. The four default
+accounts were preserved. Do not reset again to troubleshoot the dashboard.
+
+Live Railway logs show repeated Gunicorn worker timeouts on `/director_dash`
+inside annual-goal activity evidence calculations. The seeded dataset exposed
+repeated per-target/per-activity reporting queries that the older performance
+fixture (without annual goals) did not cover.
+
+The fix batches approved targets, loads their indicator/plan, results and mapped
+activities eagerly, and shares one filtered activity report and registration
+read across campus comparisons. Evidence remains scoped to each target's mapped
+activities, campus, year and attendance completeness. No persistent cache or
+schema/data change is involved. Local cold-request measurements with the exact
+presentation fixture: Director dashboard 868 -> 42 queries; campus comparisons
+482 -> 9 queries; analytics 44 queries; annual-goal details 23 queries. Campus
+results, including pending Binmaley/Infanta evidence, remain unchanged.
+
+Regression coverage now includes populated-goal query budgets and intersecting
+batch event filters. Publication/deployment verification for this fix is recorded
+in the current chat; earlier sections below describe prior stages.
+
+## Release Preparation: 1 November 2026, Presentation Dataset
+
+The user explicitly approved committing and pushing the tested presentation-reset
+files to `thesis/main` (`arlrom003/PSU-Volunteer-Hub`) and deploying the Demo app.
+Only the presentation-reset implementation, tests, and accompanying documentation
+are included. The connected Railway Demo service uses that repository's `main`
+branch with automatic deployments enabled. Remote main was verified at the
+local base `48160c1` before preparing this release.
+
+The Demo service variables were saved through the Railway dashboard:
+`MAIL_SUPPRESS_SEND=true` and
+`PRESENTATION_DATABASE_HOST=mysql-tgn.railway.internal`. The hostname was read
+independently from the separate Demo MySQL service. The variable-only deployment
+was queued when checked; saved variables alone do not prove active workers have
+reloaded them. Verify the eventual code deployment and run the guarded dry-run.
+
+No database reset is included in this publication approval. The deployed app
+previously reported that `reset-and-seed-presentation` was unavailable. Backup,
+preview, live account checks, and confirmation remain required before replacing
+data. Earlier local-only statements below describe the implementation stage.
+
+## Current Handoff: 1 November 2026, Presentation Dataset Reset
+
+Implemented locally: `reset-and-seed-presentation --database railway`, with
+`--dry-run`, in `app/presentation_dataset.py`. Registered alongside the unchanged
+large fixture command. No commit, push, deployment, or live application database
+reset was performed. This section supersedes earlier dataset-reset procedures
+for the new 28-activity presentation dataset; the existing UI handoffs below
+remain applicable.
+
+The new command preserves all four default accounts (Admin, student, Director,
+coordinator), their IDs, password hashes, account fields, profiles, policy
+acceptances and account links. Only obsolete profile participation history is
+cleared. It adds 80 volunteers and eight coordinators for 92 accounts total,
+28 activities, 432 registrations, 296 attendance records, 24 cancellation
+requests (eight of each state), and 30 attendance-backed annual goals. Campus
+outcomes include verified shortfalls in Asingan, mixed results elsewhere, and
+pending evidence in Binmaley and Infanta. University evidence remains pending.
+Generated institutional-style addresses are fictional and must not receive mail.
+
+Guards require the existing approved presentation service ID, exact database
+name, independently verified `PRESENTATION_DATABASE_HOST`, suppressed mail,
+complete current schema, transactional InnoDB, foreign key checks, nine official
+campuses, and four existing active accounts. Student/coordinator campus links
+must already be valid; account details are never repaired. Execution dates are
+25 October through 13 November 2026 because upcoming activities start on
+14 November. Later presentations need a reviewed schedule update.
+
+Operational and annual-goal dependants are deleted before parents; inserts,
+account preservation checks and real annual-goal calculations precede one
+commit. Dry-run and failures roll back. Catalogue/settings/policy records and
+uploaded files are retained. The operator must back up the database and uploads,
+pause concurrent writes, and type destination-specific confirmation. Mail must
+also be suppressed in the running app workers, not merely the CLI shell.
+
+Read `docs/operations/PRESENTATION_DATASET.md` for exact backup, dry-run, reset,
+verification and recovery commands. Do not use `reset-and-seed-demo` for this
+dataset: its older three-account preservation and performance-fixture volumes
+remain unchanged.
+
+Verification: 19 isolated SQLite presentation tests passed. The additional
+MariaDB 10.4.32 integration test passed against a new disposable local server
+on port 34071, including production service/host guards, read-only dry-run,
+rollback after injected deletion/insertion/validation failures, repeat resets,
+and enabled foreign keys. The final capacity/content checks and default-account
+routes passed in a five-test follow-up. Existing dataset, performance, goals,
+ranking, report-query and Railway configuration regression selection passed
+57 tests initially; two Windows temporary-directory fixture errors passed when
+rerun with normal access, giving 59 passed regression cases. The temporary
+MariaDB server was stopped after verification. No Railway credentials or
+database exports were added. `git diff --check` passed.
+
+Skills used: existing antislop core and ponytail/full. No UI files, schema,
+dependencies, new skills, or user-facing design were changed. Next step is
+review and a separately authorized release; the target database host, backup,
+deployed revision and live account state have not been verified here.
+
 ## Current Handoff: 1 November 2026, Fixed Campus Catalogue
 
 The current Admin change enforces the nine PSU campuses in `app/campuses.py`.
