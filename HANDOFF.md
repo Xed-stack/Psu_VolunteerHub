@@ -1,5 +1,34 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Live profile release: 11 November 2026
+
+The user explicitly requested merging the profile settings into live. Demo's
+watched branch `thesis/codex/performance-workflows` was fast-forwarded from
+`a9694e5` to tested application commit `97ba1aa`. Railway deployment
+`fa40b10b-bba6-4208-b721-16295700b402` is Active / Deployment successful on
+`https://www.psuvolunteerhub.tech`. Main and both repositories' main branches were
+left unchanged; main's MySQL stays offline. This supersedes the earlier statement
+that profile settings had not been deployed.
+
+Verified from the new container: exact revision, three POST-only profile account
+routes, compiled profile template, database connectivity and mail suppression.
+Public login and profile assets returned HTTP 200; JavaScript/CSS hashes match the
+tested source. Account/password edits were not submitted during live validation.
+No migrations, seed/reset commands, region moves or configuration changes.
+Before/after counts: users 97/97, registrations 433/433, attendance 296/296,
+annual targets 30/30, cancellations 24/24. Activities increased 29/30 while the
+app was in use; network logs show POST `/create_activity` -> 302 at 13:44:41 GMT+8,
+consistent with that addition. No event creation was performed by the agent.
+Only aggregate database counts were read. Full account checksum verification was
+rejected by automatic approval review and replaced with aggregate checks.
+
+The logged-out browser correctly requires sign-in. Signed-in live editing and
+password-change submissions were not exercised; existing local feature/security
+and MariaDB concurrency results remain the functional evidence. Screenshot:
+`.qa-presentation-temp/profile-live-20261111.jpg` (ignored local artifact).
+Rollback, if necessary: revert the profile feature on Demo's watched branch;
+no schema rollback is required. Do not overwrite user account edits.
+
 ## Volunteer profile settings: 2 November 2026
 
 Current local branch: `codex/volunteer-profile-settings`, based on `a9694e5`.
