@@ -32,3 +32,12 @@ def test_production_connection_budget_is_bounded():
     options = ProductionConfig.SQLALCHEMY_ENGINE_OPTIONS
     assert options == dict(pool_pre_ping=True, pool_recycle=300, pool_size=5,
                            max_overflow=0, pool_timeout=5, connect_args={'connect_timeout': 5})
+
+
+def test_build_includes_only_approved_historical_csv():
+    source = 'data/historical_activities_2020_2025.csv'
+    ignores = (ROOT / '.dockerignore').read_text().splitlines()
+    assert [line for line in ignores if line.startswith('!data')] == [
+        '!data/', f'!{source}']
+    assert f'COPY {source} ./{source}' in (ROOT / 'Dockerfile').read_text()
+    assert (ROOT / source).is_file()

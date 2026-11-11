@@ -16,6 +16,7 @@ COPY app ./app
 COPY templates ./templates
 COPY static ./static
 COPY migrations ./migrations
+COPY data/historical_activities_2020_2025.csv ./data/historical_activities_2020_2025.csv
 COPY config.py wsgi.py ./
 RUN ln -s /data/public /app/static/uploads
 
