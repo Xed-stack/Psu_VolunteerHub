@@ -1,5 +1,6 @@
 {% extends 'layouts/role_base.html' %}
 {% from 'partials/dashboard_ui.html' import heading, metric %}
+{% from 'partials/password_feedback.html' import password_feedback %}
 {% set active_page = "profile" %}
 {% block title %}Profile | PSU Volunteer Hub{% endblock %}
 {% block header_title %}Volunteer profile{% endblock %}
@@ -108,6 +109,7 @@
                   </div>
                   {% if section_errors.get(key) %}<p id="account-{{ key }}-error" class="profile-error">{{ section_errors[key] }}</p>{% endif %}
                 {% endfor %}
+                {{ password_feedback('account-new_password', 'account-password_confirmation', password_min) }}
               {% endif %}
               <div><button class="btn btn--primary" type="submit">{{ 'Change password' if section == 'password' else 'Save ' ~ section }}</button></div>
             </form>
@@ -256,4 +258,5 @@
 {% block scripts %}
   <script type="application/json" id="profile-colleges">{{ affiliation_options|tojson }}</script>
   <script src="{{ url_for('static', filename='scripts/profile-settings.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/password-feedback.js') }}"></script>
 {% endblock %}
