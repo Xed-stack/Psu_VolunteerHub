@@ -13,6 +13,7 @@ Cosine similarity = |shared terms| / sqrt(|user terms| * |event terms|)
 """
 import re
 from datetime import datetime
+from app.services.activity_workflow import local_now
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import selectinload, joinedload, load_only
 from sqlalchemy import insert
@@ -94,58 +95,37 @@ def _cosine_similarity(user_terms: set, event_terms: set) -> float:
 
 
 def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None, commit=True):
-    """Rank activity fit from profile terms and registration history.
+    """Rank positive interest matches, preferred campus first, using cosine similarity.
 
-    Combine profile skills/interests into one set. Compare against each
-    event's required skills plus category, then add 0.15 for a previously
-    joined category, capped at 1. Cancelled/rejected history gives no boost.
-    Joining a category needs a registration, not verified attendance.
-
-    Exclude events already registered for, except cancelled/rejected entries.
-    With events=None, query upcoming events across campuses. Supplied events
-    keep caller's date, campus, and eligibility scope; only registration
-    exclusion happens here. No capacity or positive-score cutoff applies.
-    Missing profile, empty selections, or missing user uses fallback instead.
-
-    Return at most top_n rows with event, score (4 decimal places), matching
-    profile skill/interest sets, and percentage. Percentage is rounded score
-    * 100, not attendance probability. Equal scores keep candidate order.
-    Save top results through _log_recommendations; commit=False leaves
-    transaction control to caller. Fallback returns without saving logs.
-    campus_id affects only fallback's own query, not personalized scoring.
+    Exclude existing active registrations and cancelled activities. Reuse scores
+    for identical activity term sets. Supplied candidates keep the caller's
+    date/capacity scope. Scores describe interest similarity, not attendance
+    probability. commit=False leaves log persistence to the caller.
     """
-    if volunteer_profile is None or (not volunteer_profile.skill_list and not volunteer_profile.interest_list):
-        return _cold_start_recommendations(events, top_n, campus_id=campus_id)
+    if volunteer_profile is None or not volunteer_profile.interest_list:
+        return []
 
     user = db.session.get(User, volunteer_profile.user_id)
     if user is None:
-        return _cold_start_recommendations(events, top_n, campus_id=campus_id)
+        return []
 
     user_skills = normalize_terms(volunteer_profile.skill_list)
     user_interests = normalize_terms(volunteer_profile.interest_list)
     user_terms = user_skills | user_interests
 
-    history = db.session.query(Registration.event_id, Registration.status, Event.category).outerjoin(
-        Event, Event.id == Registration.event_id).filter(Registration.user_id == user.id).all()
-    registered_ids = {event_id for event_id, status, _ in history
+    history = db.session.query(Registration.event_id, Registration.status).filter(Registration.user_id == user.id).all()
+    registered_ids = {event_id for event_id, status in history
                       if status not in ('cancelled', 'rejected')}
-
-    # Registration history supplies category preference; attendance is not required.
-    history_categories = set()
-    for _, status, category in history:
-        if status in ('cancelled', 'rejected'):
-            continue
-        if category:
-            history_categories |= normalize_terms([category])
 
     if events is not None:
         candidates = [e for e in events if e.id not in registered_ids]
     else:
         candidates = Event.query.filter(
             db.not_(Event.id.in_(registered_ids))
-        ).filter(Event.date >= datetime.now()).options(selectinload(Event.required_skills_rel),
-            load_only(Event.id, Event.date, Event.category)).order_by(Event.date.asc(), Event.id).all()
+        ).filter(Event.date >= local_now()).options(selectinload(Event.required_skills_rel),
+            load_only(Event.id, Event.date, Event.category, Event.campus_id, Event.lifecycle_status)).order_by(Event.date.asc(), Event.id).all()
 
+    candidates = [event for event in candidates if event.lifecycle_status == 'approved']
     scored = []
     similarities = {}
     for event in candidates:
@@ -157,70 +137,27 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None,
         terms_key = frozenset(event_terms)
         # Same term set means same base score; reuse within this request.
         if terms_key not in similarities:
-            similarities[terms_key] = _cosine_similarity(user_terms, event_terms)
-        score = similarities[terms_key]
+            similarities[terms_key] = _cosine_similarity(user_interests, event_terms)
+        interest_score = similarities[terms_key]
+        if interest_score <= 0:
+            continue
         matched = user_terms & event_terms
-
-        # Fixed bonus applies once per matching category, regardless of join count.
-        if event.category and (normalize_terms([event.category]) & history_categories):
-            score = min(1.0, score + 0.15)
 
         scored.append({
             'event': event,
-            'score': round(score, 4),
+            'score': round(interest_score, 4),
             'matched_skills': matched & user_skills,
             'matched_interests': matched & user_interests,
-            'percentage': min(round(score * 100), 100),
+            'percentage': min(round(interest_score * 100), 100),
         })
 
-    scored.sort(key=lambda x: x['score'], reverse=True)
+    scored.sort(key=lambda x: (x['event'].campus_id != campus_id, -x['score'], x['event'].date, x['event'].id))
     top = scored[:top_n]
     if top:
         Event.query.filter(Event.id.in_([item['event'].id for item in top])).options(
             joinedload(Event.campus)).populate_existing().all()
     _log_recommendations(user, top, commit=commit)
     return top
-
-
-def _cold_start_recommendations(events=None, limit=5, campus_id=None):
-    """Suggest popular activities when profile cannot produce a personal match.
-
-    With events=None, query upcoming events and restrict to campus_id when
-    supplied. With a supplied list, trust caller's scope; no extra campus,
-    date, capacity, or existing-registration filter applies here.
-    Count every registration, including cancelled/rejected rows. More
-    registrations rank first; earlier event dates break popularity ties.
-    Return at most limit events with score/percentage 0 and empty match sets.
-    Zero means no personal score calculated, not proof of unsuitable activity.
-    Fallback does not write RecommendationLog records.
-    """
-    if events is None:
-        query = Event.query.filter(Event.date >= datetime.now())
-        if campus_id:
-            query = query.filter(Event.campus_id == campus_id)
-        events = query.all()
-
-    reg_counts = dict(
-        db.session.query(Registration.event_id, db.func.count(Registration.id))
-        .filter(Registration.event_id.in_([event.id for event in events])).group_by(Registration.event_id).all()
-    )
-
-    events = sorted(
-        events,
-        key=lambda e: (reg_counts.get(e.id, 0), e.date.timestamp() * -1),
-        reverse=True,
-    )
-    top = events[:limit]
-    if top:
-        Event.query.filter(Event.id.in_([event.id for event in top])).options(
-            joinedload(Event.campus)).populate_existing().all()
-    return [{
-        'event': e,
-        'score': 0,
-        'matched_skills': set(),
-        'matched_interests': set(),
-        'percentage': 0,
-    } for e in top]
 
 
 def bootstrap_from_event(user, event, top_skills=3, commit=True):

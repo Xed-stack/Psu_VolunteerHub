@@ -1,0 +1,89 @@
+{% macro heading(title, description='', back_url='', back_label='Back') %}
+  <header
+    class="mb-8 flex flex-wrap items-start justify-between gap-4"
+  >
+    <div>{% if back_url %}<a
+  class="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-psu"
+  href="{{ back_url }}"
+><span aria-hidden="true">←</span>{{ back_label }}</a>{% endif %}<h1
+  class="text-3xl font-bold tracking-tight text-ink sm:text-4xl"
+>{{ title }}</h1>{% if description %}<p class="mt-3 max-w-3xl text-base leading-7 text-slate-600">{{ description }}</p>{% endif %}</div>
+  </header>
+{% endmacro %}
+{% macro input(name, label, value='', type='text', required=false, help='', minimum=none) %}
+  <label class="field"><span>{{ label }}{% if required %} <span aria-hidden="true">*</span>{% endif %}</span><input
+  class="input"
+  type="{{ type }}"
+  name="{{ name }}"
+  value="{{ value }}"
+  {% if minimum is not none %}min="{{ minimum }}"{% endif %}
+  {% if required %}required{% endif %}
+>{% if help %}<small>{{ help }}</small>{% endif %}</label>
+{% endmacro %}
+{% macro errors(items) %}{% if items %}<div
+  class="mb-6 rounded-lg border-2 border-red-700 bg-red-50 p-4 text-red-900"
+  role="alert"
+  tabindex="-1"
+  data-form-errors
+><h2 class="font-bold">Review these details</h2><ul class="list-disc pl-5">{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}{% endmacro %}
+{% macro filters(year, period, segment, campuses, campus_id, activity_choices=[], event_id=none, department='') %}
+  <details class="panel mb-6">
+    <summary>Refine report scope · {{ year }} · {{ period|title }}</summary>
+    <form method="get" class="mt-5">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {{ input('year', 'Reporting year', year, 'number', true) }}
+        <label class="field">
+          Period<select name="period">
+          <option value="annual" {{ 'selected' if period == 'annual' }}>Annual</option>
+          <option
+            value="semiannual"
+            {{ 'selected' if period == 'semiannual' }}
+          >Semi-annual
+          </option>
+          <option value="quarterly" {{ 'selected' if period == 'quarterly' }}>Quarterly</option>
+          </select>
+        </label>
+        <label class="field">Period number<select name="segment">{% for n in range(1, 5) %}<option value="{{ n }}" {{ 'selected' if segment == n }}>{{ n }}</option>{% endfor %}</select><small>Annual: 1; semi-annual: 1–2; quarterly: 1–4.</small></label>
+        {% if current_user.role != 'coordinator' %}<label class="field">Campus<select name="campus_id"><option value="">All campuses</option>{% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {{ 'selected' if campus_id == campus.id }}
+>{{ campus.name }}</option>{% endfor %}</select></label>{% endif %}
+        <label class="field">Activity<select name="event_id"><option value="">All approved activities</option>{% for event in activity_choices %}<option
+  value="{{ event.id }}"
+  {{ 'selected' if event_id == event.id }}
+>{{ event.title }}</option>{% endfor %}</select></label>
+        {{ input('department', 'Conducting department', department) }}
+      </div>
+      <div class="mt-4">
+        <button class="btn btn--primary">Apply filters</button>
+      </div>
+    </form>
+  </details>
+{% endmacro %}
+{% macro charts(campus_chart, monthly, month_labels, period_label) %}
+  <div class="grid gap-6 xl:grid-cols-2">
+    <section class="panel"><h2>Campus accomplishments</h2><p class="mt-2 text-sm text-slate-600">Conducted approved activities, grouped by the campus that delivered them. {{ period_label }}.</p>{% if campus_chart|sum(attribute='count') %}<div
+  data-campus-chart
+  data-chart-values='{{ campus_chart|tojson }}'
+  class="min-h-72"
+  aria-hidden="true"
+></div>{% else %}<p class="empty-state my-5">No conducted activities are recorded in this scope.</p>{% endif %}<details class="mt-4"><summary>View campus values and details</summary><ul class="divide-y divide-slate-200">{% for row in campus_chart %}<li class="flex items-center justify-between gap-3 py-2"><a
+  class="min-h-11 content-center font-medium text-psu"
+  href="{{ url_for('workspace.report_results', **dict(request.args, campus_id=row.id)) }}"
+>{{ row.name }}</a><strong class="tabular-nums">{{ row.count }}</strong></li>{% endfor %}</ul></details><p class="mt-3 text-sm">{{ campus_chart|selectattr('count', 'gt', 0) |list|length }} campuses recorded conducted activities in this scope. Counts describe delivery volume, not quality.</p></section>
+    <section class="panel"><h2>Activity delivery over time</h2><p class="mt-2 text-sm text-slate-600">Conducted activities grouped by start month. {{ period_label }}.</p>{% if monthly|sum %}<div
+  data-month-chart
+  data-chart-values='{{ monthly|tojson }}'
+  data-chart-labels='{{ month_labels|tojson }}'
+  class="min-h-72"
+  aria-hidden="true"
+></div>{% else %}<p class="empty-state my-5">A delivery trend will appear when conducted activities are recorded.</p>{% endif %}<details><summary>View monthly values</summary><ul class="mt-3 grid grid-cols-2 gap-3">{% for label in month_labels %}<li>{{ label }}: <strong>{{ monthly[loop.index0] }}</strong></li>{% endfor %}</ul></details><p class="mt-3 text-sm">{{ monthly|sum }} activities were conducted. Months without recorded delivery show zero; attendance completeness is assessed separately.</p></section>
+  </div>
+{% endmacro %}
+{% macro chart_scripts() %}
+  <script
+    src="{{ url_for('static', filename='scripts/plotly-5.24.1.min.js') }}"
+  ></script><script
+  src="{{ url_for('static', filename='scripts/workspace-charts.js') }}"
+></script>
+{% endmacro %}

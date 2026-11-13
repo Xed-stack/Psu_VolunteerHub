@@ -1,0 +1,37 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% block title %}Activities · PSU Volunteer Hub{% endblock %}
+{% block content %}
+  {{ heading('Activities', 'Choose an activity to view its details, attendance, documents, and report.') }}
+  <div class="mb-6 flex flex-wrap justify-between gap-4"><nav class="flex flex-wrap gap-2" aria-label="Activity schedule">{% for value, label in [('upcoming','Upcoming'),('ongoing','Ongoing'),('past','Past activities'),('cancelled','Cancelled'),('all','All')] %}<a
+  class="btn {{ 'btn--primary' if state == value else 'btn--outline' }}"
+  href="{{ url_for('workspace.activities', **dict(request.args, state=value, page=1)) }}"
+  {{ 'aria-current=page' if state == value }}
+>{{ label }}</a>{% endfor %}</nav>{% if current_user.role == 'coordinator' %}<a
+  class="btn btn--primary"
+  href="{{ url_for('workspace.create_activity', step=1) }}"
+>Create activity</a>{% endif %}</div>
+  <form class="mb-6 flex flex-wrap gap-3" method="get">
+    <input type="hidden" name="state" value="{{ state }}"><label class="field grow">Search activities<input name="q" value="{{ search }}" type="search"></label><button class="btn btn--outline self-end">Search</button>
+  </form>
+  <div
+    class="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-300 bg-white"
+  >{% for event in pagination.items %}<article
+  class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6"
+><div><p class="text-sm text-slate-600">{{ event.campus.name if event.campus else 'Unassigned' }} · {{ event.date.strftime("%d %b %Y, %I:%M %p") }}</p><h2 class="mt-2 text-xl"><a
+  href="{{ url_for('workspace.activity', event_id=event.id, **request.args) }}"
+  class="font-semibold text-psu hover:underline"
+>{{ event.title }}</a></h2><p class="mt-2 text-sm">{{ event.conducting_department or 'Department not recorded' }}</p></div><span
+  class="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold"
+>{{ event.lifecycle_status|title }}</span></article>{% else %}<p class="p-8">No activities match this view. Try another schedule or search.</p>{% endfor %}</div>
+  <nav
+    class="mt-6 flex flex-wrap items-center gap-4"
+    aria-label="Pagination"
+  >{% if pagination.has_prev %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.activities', **dict(request.args, page=pagination.prev_num)) }}"
+>Previous</a>{% endif %}<span>Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.activities', **dict(request.args, page=pagination.next_num)) }}"
+>Next</a>{% endif %}</nav>
+{% endblock %}

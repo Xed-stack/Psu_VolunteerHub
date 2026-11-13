@@ -1,0 +1,9 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Partner agency and MOAs · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading, input, errors as show_errors with context %}
+{% block content %}{{ heading(agency.name,agency.contact_name ~ ' · ' ~ (agency.email or agency.phone or ''),url_for('workspace.partners'),'Back to agencies') }}{{ show_errors(errors) }}<div class="grid gap-6 lg:grid-cols-2"><section class="panel"><h2>Existing MOAs</h2><ul class="mt-4 divide-y divide-slate-200">{% for agreement in agency.agreements %}<li class="py-4"><a
+  class="font-semibold text-psu underline"
+  href="{{ url_for('workspace.moa',agency_id=agency.id,agreement_id=agreement.id) }}"
+>{{ agreement.reference }}</a><p>{{ agreement.valid_from }} – {{ agreement.valid_until }}</p></li>{% else %}<li>No agreements recorded.</li>{% endfor %}</ul><a
+  class="btn btn--outline mt-5"
+  href="{{ url_for('workspace.create_activity',step=3) }}"
+>Return to activity draft</a></section><form class="panel" method="post" enctype="multipart/form-data"><h2 class="mb-5">New MOA</h2><div class="grid gap-4">{{ input('reference','Agreement reference','','text',true) }}{{ input('valid_from','Valid from','','date',true) }}{{ input('valid_until','Valid until','','date',true) }}<label class="field">Agreement document *<input name="document" type="file" accept=".pdf,.docx" required></label></div><button class="btn btn--primary mt-5">Save agreement</button></form></div>{% endblock %}

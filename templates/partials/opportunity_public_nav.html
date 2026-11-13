@@ -2,7 +2,7 @@
 <nav class="public-nav" aria-label="Public navigation">
   <a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="" width="44" height="44"><span>PSU Volunteer Hub</span></a>
   <div class="public-nav__links">
-    <a href="{{ url_for('events.opportunities') }}"{% if request.endpoint == 'events.opportunities' %} aria-current="page"{% endif %}>Opportunities</a>
+    <a href="{{ url_for('events.opportunities') }}"{% if request.endpoint == 'events.opportunities' %} aria-current="page"{% endif %}>Activities</a>
     <a href="{{ url_for('help_page') }}">Help</a>
     <a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a>
   </div>

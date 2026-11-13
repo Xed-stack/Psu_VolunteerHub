@@ -19,7 +19,7 @@ from app.models.user import User, SystemSetting, VolunteerProfile, PasswordReset
 from app.models.event import ActivityCategory, Campus, Event
 from app.campuses import campus_query
 from app.models.notification import Notification, notify_campus_coordinators
-from app.utils.decorators import role_required
+from app.utils.decorators import roles_required, role_required
 from app.models.audit import AuditLog
 from app.models.policy import TermsRevision, PrivacyRevision, ParticipationAgreementRevision
 from app.utils.audit import log_activity
@@ -55,7 +55,7 @@ def _save_college_affiliations(values):
 
 
 def _active_admin_count():
-    return User.query.filter_by(role='admin', _is_active=True).count()
+    return User.query.filter(User.role.in_(('director', 'admin')), User._is_active.is_(True)).count()
 
 
 def _sync_volunteer_profile(user, old_role=None):
@@ -77,7 +77,7 @@ def _reactivate(user):
 
 @admin_bp.route('/admin_dash')
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def admin_dash():
     active_tab = request.args.get('tab', 'users')
     if active_tab not in ('users', 'deactivated', 'audit'):
@@ -92,7 +92,7 @@ def admin_dash():
     if search:
         term = f'%{search}%'
         query = query.filter(db.or_(User.name.ilike(term), User.email.ilike(term)))
-    if role in {'volunteer', 'coordinator', 'director', 'admin'}:
+    if role in {'volunteer', 'coordinator', 'director'}:
         query = query.filter(User.role == role)
     if affiliation:
         query = query.filter(User.college_affiliation == affiliation)
@@ -161,14 +161,14 @@ def admin_dash():
 
 @admin_bp.route('/admin/users/deactivate/<int:user_id>', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def deactivate_user(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         abort(404)
-    if (user.role == 'admin' and user.is_active
+    if (user.role in ('director', 'admin') and user.is_active
             and _active_admin_count() <= 1):
-        flash('The final active Admin cannot be deactivated.', 'error')
+        flash('The final active Director cannot be deactivated.', 'error')
         return _admin_redirect()
     if user.id == current_user.id:
         flash('You cannot deactivate your own account.', 'error')
@@ -190,7 +190,7 @@ def deactivate_user(user_id):
 
 @admin_bp.route('/admin/users/<int:user_id>/reactivate', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def reactivate_user(user_id):
     user = db.session.get(User, user_id)
     if user is None:
@@ -204,7 +204,7 @@ def reactivate_user(user_id):
 
 @admin_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def delete_expired_user(user_id):
     user = db.session.get(User, user_id)
     if user is None:
@@ -229,7 +229,7 @@ def delete_expired_user(user_id):
 
 @admin_bp.route('/admin/categories/create', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def create_category():
     name = ' '.join(request.form.get('name', '').split())
     if not name:
@@ -251,7 +251,7 @@ def create_category():
 
 @admin_bp.route('/admin/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def delete_category(category_id):
     category = db.session.get(ActivityCategory, category_id)
     if category is None:
@@ -288,22 +288,22 @@ def delete_category(category_id):
 
 @admin_bp.route('/admin/users/role/<int:user_id>', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def change_role(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         abort(404)
     new_role = request.form.get('role', '').strip()
-    valid_roles = ['volunteer', 'coordinator', 'director', 'admin']
+    valid_roles = ['volunteer', 'coordinator', 'director']
     if new_role not in valid_roles:
         flash('Invalid role specified.', 'error')
         return redirect(url_for('admin.admin_dash'))
     if new_role == 'coordinator' and (not user.campus_id
                                     or not db.session.get(Campus, user.campus_id)):
         abort(400)
-    if (user.role == 'admin' and new_role != 'admin'
+    if (user.role in ('director', 'admin') and new_role not in ('director', 'admin')
             and user.is_active and _active_admin_count() <= 1):
-        flash('The final active Admin cannot be demoted.', 'error')
+        flash('The final active Director cannot be demoted.', 'error')
         return redirect(url_for('admin.admin_dash'))
     old_role = user.role
     user.role = new_role
@@ -317,7 +317,7 @@ def change_role(user_id):
 
 @admin_bp.route('/admin/users/create', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def create_user():
     campuses = campus_query().order_by(Campus.name).all()
     affiliations = _college_affiliations()
@@ -326,6 +326,8 @@ def create_user():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         role = request.form.get('role', 'volunteer')
+        if role not in ('volunteer', 'coordinator', 'director'):
+            abort(400)
         campus_id = request.form.get('campus_id', type=int)
         id_number = request.form.get('id_number', '').strip() or None
         volunteer_type = request.form.get('volunteer_type', '').strip() or None
@@ -377,7 +379,7 @@ def create_user():
 
 @admin_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def edit_user(user_id):
     user = db.session.get(User, user_id)
     if user is None:
@@ -399,12 +401,14 @@ def edit_user(user_id):
         user.college_affiliation = request.form.get(
             'college_affiliation', '').strip() or None
         new_role = request.form.get('role', user.role)
+        if new_role not in ('volunteer', 'coordinator', 'director'):
+            abort(400)
         campus_id = request.form.get('campus_id', user.campus_id, type=int)
         if new_role == 'coordinator' and (not campus_id or not db.session.get(Campus, campus_id)):
             abort(400)
-        if (user.role == 'admin' and new_role != 'admin'
+        if (user.role in ('director', 'admin') and new_role not in ('director', 'admin')
                 and user.is_active and _active_admin_count() <= 1):
-            flash('The final active Admin cannot be demoted.', 'error')
+            flash('The final active Director cannot be demoted.', 'error')
             return redirect(url_for('admin.edit_user', user_id=user.id))
         old_role = user.role
         user.role = new_role
@@ -427,7 +431,7 @@ def edit_user(user_id):
 
 @admin_bp.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def reset_password(user_id):
     user = db.session.get(User, user_id)
     if user is None:
@@ -459,7 +463,7 @@ def reset_password(user_id):
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def settings():
     if request.method == 'POST':
         affiliations = _college_affiliations()
@@ -513,7 +517,7 @@ def settings():
 
 @admin_bp.route('/admin/campuses/create', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def create_campus():
     abort(410, description='PSU uses a fixed catalogue of nine campuses. Campus creation is unavailable.')
 
@@ -541,7 +545,7 @@ def _clean_import_row(row):
 
 @admin_bp.route('/admin/users/import-template.csv')
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def user_import_template():
     output = io.StringIO(newline='')
     writer = csv.DictWriter(output, fieldnames=USER_IMPORT_COLUMNS)
@@ -562,7 +566,7 @@ def user_import_template():
 
 @admin_bp.route('/admin/users/export.csv')
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def export_users_csv():
     from app.reports import csv_safe
     output = io.StringIO(newline='')
@@ -588,7 +592,7 @@ def export_users_csv():
 
 @admin_bp.route('/admin/terms', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def manage_terms():
     if request.method == 'POST':
         title = ' '.join(request.form.get('title', '').split())
@@ -616,7 +620,7 @@ def manage_terms():
 
 @admin_bp.route('/admin/policies/<document>', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def manage_policy(document):
     documents = {
         'privacy': (PrivacyRevision, 'Privacy Notice'),
@@ -649,9 +653,37 @@ def manage_policy(document):
 
 @admin_bp.route('/admin/users/import', methods=['GET', 'POST'])
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def import_users_csv():
     password_min = _setting_int('default_password_length', 8, 8)
+    if request.method == 'POST' and request.form.get('action') == 'confirm':
+        import secrets
+        from pathlib import Path
+        staged = session.get('user_import_preview')
+        if not staged or not secrets.compare_digest(staged['token'], request.form.get('token', '')):
+            abort(400)
+        path = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'import-previews' / Path(staged['file']).name
+        if not path.is_file():
+            abort(400)
+        rows = json.loads(path.read_text(encoding='utf-8'))
+        if any(User.query.filter_by(email=row['email']).first() or
+               (row['id_number'] and User.query.filter_by(id_number=row['id_number']).first()) for row in rows):
+            flash('Accounts changed after preview. Upload and validate the file again.', 'error')
+            return redirect(url_for('admin.import_users_csv'))
+        for row in rows:
+            user = User(name=row['name'], email=row['email'], role=row['role'], campus_id=row['campus_id'],
+                        id_number=row['id_number'] or None, volunteer_type=row['volunteer_type'] or None,
+                        college_affiliation=row['college_affiliation'] or None, password_hash=row['password_hash'])
+            db.session.add(user)
+            db.session.flush()
+            if user.role == 'volunteer':
+                db.session.add(VolunteerProfile(user_id=user.id))
+            log_activity('user_imported', user, {'role': user.role})
+        db.session.commit()
+        path.unlink()
+        session.pop('user_import_preview', None)
+        flash(f'{len(rows)} user account(s) imported.', 'success')
+        return redirect(url_for('admin.admin_dash'))
     if request.method == 'GET':
         return render_template('admin/user_import.html', password_min=password_min)
 
@@ -686,7 +718,7 @@ def import_users_csv():
             errors.append(f'Row {line_number}: name, email, and password are required.')
         elif password_error(row['password'], password_min):
             errors.append(f"Row {line_number}: {password_error(row['password'], password_min)}")
-        elif role not in ('volunteer', 'coordinator', 'director', 'admin'):
+        elif role not in ('volunteer', 'coordinator', 'director'):
             errors.append(f'Row {line_number}: role is invalid.')
         elif row['campus_code'] and campus is None:
             errors.append(f'Row {line_number}: campus code is invalid.')
@@ -714,27 +746,23 @@ def import_users_csv():
         flash('The CSV contains no user rows.', 'warning')
         return redirect(url_for('admin.import_users_csv'))
 
+    import secrets
+    from pathlib import Path
+    from werkzeug.security import generate_password_hash
     for row in rows:
-        user = User(
-            name=row['name'], email=row['email'], role=row['role'],
-            campus_id=row['campus_id'], id_number=row['id_number'] or None,
-            volunteer_type=row['volunteer_type'] or None,
-            college_affiliation=row['college_affiliation'] or None,
-        )
-        user.set_password(row['password'])
-        db.session.add(user)
-        db.session.flush()
-        if user.role == 'volunteer':
-            db.session.add(VolunteerProfile(user_id=user.id))
-        log_activity('user_imported', user, {'role': user.role})
-    db.session.commit()
-    flash(f'{len(rows)} user account(s) imported.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+        row['password_hash'] = generate_password_hash(row.pop('password'))
+    folder = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'import-previews'
+    folder.mkdir(parents=True, exist_ok=True)
+    filename = secrets.token_hex(24) + '.json'
+    (folder / filename).write_text(json.dumps(rows), encoding='utf-8')
+    token = secrets.token_urlsafe(32)
+    session['user_import_preview'] = {'token': token, 'file': filename}
+    return render_template('workspace/user_import_preview.html', rows=rows, token=token)
 
 
 @admin_bp.route('/admin/backup')
 @login_required
-@role_required('admin')
+@roles_required('director', 'admin')
 def backup():
     """Download a portable, credential-free application data archive."""
     archive_buffer = io.BytesIO()

@@ -25,7 +25,7 @@ from app.models.user import (Interest, PasswordResetToken, Skill, User, Voluntee
                              user_interests, user_skills)
 
 
-KEEP = {'admin@psu.edu': 'admin', 'student@psu.edu': 'volunteer',
+KEEP = {'admin@psu.edu': 'director', 'student@psu.edu': 'volunteer',
         'director@psu.edu': 'director', 'coordinator@psu.edu': 'coordinator'}
 ANNUAL_TABLES = tuple(model.__table__ for model in (
     AnnualGoalProposal, AnnualActivityMapping, AnnualResult, AnnualTarget,

@@ -1,0 +1,6 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Review user import · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Review user import','Validation passed. No accounts have been created. Passwords are not displayed or retained as plain text.',url_for('workspace.imports'),'Back to imports') }}<section class="panel"><h2>{{ rows|length }} accounts ready to import</h2><div class="overflow-x-auto"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.email }}</td><td>{{ row.role|title }}</td></tr>{% endfor %}</tbody></table></div><form method="post" class="mt-6" data-no-draft><input type="hidden" name="action" value="confirm"><input type="hidden" name="token" value="{{ token }}"><button class="btn btn--primary">Confirm import</button><a
+  class="btn btn--outline"
+  href="{{ url_for('admin.import_users_csv') }}"
+>Choose another file</a></form></section>{% endblock %}

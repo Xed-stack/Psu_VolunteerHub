@@ -2,7 +2,7 @@
 User Models for PSU Volunteer Hub
 ==================================
 Core user management with role-based access control (RBAC).
-Supports 4 user roles: volunteer, coordinator, director, admin.
+Supports three user roles: volunteer, coordinator, director.
 """
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -70,7 +70,7 @@ class User(UserMixin, db.Model):
     college_affiliation = db.Column(db.String(150), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.Enum('volunteer', 'coordinator', 'director',
-                     'admin', name='user_roles'), default='volunteer')
+                     name='user_roles'), default='volunteer')
     campus_id = db.Column(db.Integer, db.ForeignKey(
         'campuses.id', ondelete='SET NULL'))
     _is_active = db.Column('is_active', db.Boolean, default=True)

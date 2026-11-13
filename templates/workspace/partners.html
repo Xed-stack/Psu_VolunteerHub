@@ -1,0 +1,6 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Partner agencies · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading, input with context %}
+{% block content %}{{ heading('Partner agencies','Open an agency to select an existing MOA or add a new agreement.',url_for('workspace.create_activity',step=3),'Back to activity draft') }}<div class="grid gap-6 lg:grid-cols-2"><section class="panel"><h2>Campus agencies</h2><ul class="mt-4 divide-y divide-slate-200">{% for agency in agencies %}<li><a
+  class="block min-h-11 py-4 font-semibold text-psu"
+  href="{{ url_for('workspace.partner',agency_id=agency.id) }}"
+>{{ agency.name }}</a></li>{% else %}<li>No partner agencies yet.</li>{% endfor %}</ul></section><form class="panel" method="post"><h2 class="mb-5">New partner agency</h2><div class="grid gap-4">{{ input('name','Agency name','','text',true) }}{{ input('contact_name','Contact person','','text',true) }}{{ input('email', 'Email', '', 'email') }}{{ input('phone', 'Phone', '', 'tel') }}</div><button class="btn btn--primary mt-5">Save agency</button></form></div>{% endblock %}

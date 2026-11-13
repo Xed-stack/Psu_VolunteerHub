@@ -1,0 +1,13 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Saved drafts · PSU Volunteer Hub{% endblock %}
+{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Saved drafts', 'Resume unfinished work. Drafts are private to your account and campus.') }}<div class="panel divide-y divide-slate-200">{% for draft in drafts %}<article
+  class="flex flex-wrap items-center justify-between gap-4 py-4"
+><div><h2>{{ draft.label }}</h2><p class="text-sm text-slate-600">Last saved {{ draft.updated_at.strftime("%d %b %Y, %H:%M") }} UTC</p></div><div class="flex gap-3"><a
+  class="btn btn--primary"
+  href="{{ url_for('workspace.create_activity', step=1) if draft.key == 'activity:new' else draft.key.removeprefix('form:') }}"
+>Resume</a><button
+  type="button"
+  class="btn btn--outline"
+  data-discard-draft="{{ draft.key }}"
+>Discard</button></div></article>{% else %}<p>No saved drafts. Your unfinished forms appear here after autosave.</p>{% endfor %}</div>{% endblock %}

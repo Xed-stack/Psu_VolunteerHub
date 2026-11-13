@@ -19,15 +19,8 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
     >
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/base.css') }}"
-    >
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/' ~ current_user.role ~ '.css') }}"
-    >
     {% block styles %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/app.css') }}">
   </head>
   <body
     class="role-page role-page--{{ current_user.role }}{{ ' reporting-page' if reporting_page }}"
@@ -82,26 +75,38 @@
         const sidebar = document.getElementById('roleSidebar');
         const overlay = document.getElementById('shellOverlay');
         const toggle = document.querySelector('[data-sidebar-toggle]');
+        const shell = document.querySelector('.role-shell');
         const close = (restoreFocus = false) => {
           sidebar?.classList.remove('is-open');
           overlay?.classList.remove('is-visible');
           document.body.classList.remove('sidebar-open');
           toggle?.setAttribute('aria-expanded', 'false');
-          if (sidebar) sidebar.inert = window.innerWidth <= 767;
+          if (sidebar) sidebar.inert = window.innerWidth < 768;
+          if (shell) shell.inert = false;
           if (restoreFocus) toggle?.focus();
         };
         toggle?.addEventListener('click', () => {
           const open = sidebar.classList.toggle('is-open');
           overlay.classList.toggle('is-visible', open);
           document.body.classList.toggle('sidebar-open', open);
-          sidebar.inert = window.innerWidth <= 767 && !open;
+          sidebar.inert = window.innerWidth < 768 && !open;
           toggle.setAttribute('aria-expanded', String(open));
+          shell.inert = open && window.innerWidth < 768;
+          if (open) sidebar.querySelector('a')?.focus();
         });
         document.querySelectorAll('[data-sidebar-close]').forEach(el => el.addEventListener('click', close));
         sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => close()));
-        window.addEventListener('keydown', event => { if (event.key === 'Escape') close(true); });
+        window.addEventListener('keydown', event => {
+          if (event.key === 'Escape') close(true);
+          if (event.key === 'Tab' && window.innerWidth < 768 && sidebar.classList.contains('is-open')) {
+            const items = [...sidebar.querySelectorAll('a, button')];
+            const first = items[0], last = items.at(-1);
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+          }
+        });
         window.addEventListener('resize', () => {
-          if (window.innerWidth > 767) close();
+          if (window.innerWidth >= 768) close();
           else if (!sidebar.classList.contains('is-open')) sidebar.inert = true;
         });
         close();
@@ -118,5 +123,7 @@
     ></script>
     {% block scripts %}{% endblock %}
     {% include 'partials/session_idle.html' %}
-  </body>
+  <script src="{{ url_for('static', filename='scripts/workspace.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/drafts.js') }}"></script>
+</body>
 </html>

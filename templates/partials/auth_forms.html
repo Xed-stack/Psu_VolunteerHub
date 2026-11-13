@@ -23,11 +23,11 @@
   {% endif %}
 {%- endmacro %}
 
-{% macro field(label, name, errors, type='text', autocomplete='off', hint='', placeholder='', minlength=none) -%}
+{% macro field(label, name, errors, type='text', autocomplete='off', hint='', placeholder='', minlength=none, required=true) -%}
   <div class="field">
     <label for="{{ name }}">{{ label }}</label>
     {% if type == 'password' %}<div class="password-input">{% endif %}
-    <input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" required
+    <input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" {{ 'required' if required }}
       autocomplete="{{ autocomplete }}"
       {% if type != 'password' %}value="{{ request.form.get(name, '') }}"{% endif %}
       {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}

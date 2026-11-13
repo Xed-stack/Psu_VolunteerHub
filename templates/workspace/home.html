@@ -1,0 +1,91 @@
+{% extends 'layouts/public_base.html' %}
+{% block title %}PSU Volunteer Hub · Serve your community{% endblock %}
+{% block content %}
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <nav class="public-nav" aria-label="Public navigation">
+    <a class="public-brand" href="{{ url_for('home') }}">
+    <img
+      src="{{ url_for('static',filename='assets/PSU-logo.png') }}"
+      alt=""
+      width="44"
+      height="44"
+    >PSU Volunteer Hub</a>
+    <div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Activities</a><a href="{{ url_for('workspace.about') }}">About us</a><a href="{{ url_for('help_page') }}">Help</a><a
+  class="btn btn--primary"
+  href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('auth.login') }}"
+>{{ 'Dashboard' if current_user.is_authenticated else 'Sign in' }}</a></div>
+  </nav>
+  <main id="main-content">
+    <section
+      class="grid items-center gap-8 py-6 lg:grid-cols-[1fr_1.15fr] lg:gap-14 lg:py-12"
+    ><div><p class="mb-5 font-semibold text-psu">Pangasinan State University</p><h1
+  class="max-w-xl text-4xl leading-tight text-psu sm:text-5xl xl:text-6xl"
+>Your campus.<br>Your community.<br>Your contribution.</h1><p class="mt-6 max-w-lg text-lg leading-8 text-slate-600">Find an activity that connects your interests with the people and places you can help.</p><div class="mt-8 flex flex-wrap gap-3"><a
+  class="btn btn--primary"
+  href="{{ url_for('events.opportunities') }}"
+>Explore activities</a>{% if not current_user.is_authenticated %}<a
+  class="btn btn--outline"
+  href="{{ url_for('auth.interests') }}"
+>Become a volunteer</a>{% endif %}</div><p class="mt-6 text-sm text-slate-600">Open to PSU students, faculty, staff, and external volunteers.</p></div><figure
+  class="overflow-hidden rounded-2xl border border-slate-300 bg-white"
+><img
+  src="{{ url_for('static',filename='assets/FB_IMG_1788789005999.jpg') }}"
+  alt="PSU volunteers gathered during a coastal cleanup"
+  width="960"
+  height="720"
+  fetchpriority="high"
+  class="aspect-[4/3] w-full object-cover"
+><figcaption class="border-t-4 border-gold p-5 text-sm text-slate-700">Service starts with people working together.</figcaption></figure></section>
+    <section class="border-y border-slate-300 py-8">
+      <div class="grid gap-6 md:grid-cols-3">
+        <div>
+          <h2>Choose your cause</h2>
+          <p class="mt-3 text-slate-600">Select interests and skills to discover activities that match.</p>
+        </div>
+        <div>
+          <h2>Find your activity</h2>
+          <p class="mt-3 text-slate-600">Review the schedule, campus, requirements, and agreement before joining.</p>
+        </div>
+        <div>
+          <h2>Follow your commitment</h2>
+          <p class="mt-3 text-slate-600">Keep upcoming activities in your calendar and track verified participation.</p>
+        </div>
+      </div>
+    </section>
+    <section class="py-10"><header
+  class="mb-6 flex flex-wrap items-center justify-between gap-4"
+><div><h2 class="text-2xl">Upcoming campus activities</h2><p class="mt-2 text-slate-600">Open an activity for the complete details.</p></div><a
+  class="btn btn--outline"
+  href="{{ url_for('events.opportunities') }}"
+>View all activities</a></header><div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{% for event in featured_events %}<article class="panel"><p class="text-sm font-medium text-psu">{{ event.campus.name if event.campus else 'University' }}</p><h3 class="my-3"><a
+  href="{{ url_for('events.opportunity_detail',event_id=event.id) }}"
+>{{ event.title }}</a></h3><p class="text-sm text-slate-600">{{ event.date.strftime("%d %b %Y, %I:%M %p") }} · Philippine time</p><a
+  class="btn btn--outline mt-5"
+  href="{{ url_for('events.opportunity_detail',event_id=event.id) }}"
+>View activity</a></article>{% else %}<p class="panel md:col-span-2">No upcoming activities are available yet. Check back for new campus activities.</p>{% endfor %}</div></section>
+    <section class="rounded-xl bg-psu p-6 text-white sm:p-8">
+      <div class="flex flex-wrap items-center justify-between gap-6">
+        <div>
+          <h2>Explore PSU’s documented service</h2>
+          <p class="mt-3 max-w-2xl text-blue-50">View historical activity records separately from current activity participation and verified annual achievements.</p>
+        </div>
+        <a
+          class="btn border-white bg-white text-psu"
+          href="{{ url_for('historical_activities') }}"
+        >Historical records</a>
+      </div>
+    </section>
+  </main>
+  <footer class="public-footer">
+    <span><strong>PSU Volunteer Hub</strong>
+      <br>
+    Pangasinan State University</span>
+    <div class="flex flex-wrap gap-5"><a
+  class="min-h-11 content-center text-psu"
+  href="{{ url_for('workspace.about') }}"
+>About us</a><a
+  class="min-h-11 content-center text-psu"
+  href="{{ url_for('help_page') }}"
+>Help and process guide</a></div>
+  </footer>
+{% endblock %}

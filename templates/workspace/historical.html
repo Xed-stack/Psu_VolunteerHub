@@ -1,0 +1,9 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% from 'partials/pagination.html' import pages with context %}
+{% block title %}Historical source records · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{{ heading('Historical source records','Imported aggregate records are separate from live registrations and verified annual achievements.',url_for('workspace.reports'),'Back to reports') }}
+<form method="get" class="mb-6 flex flex-wrap items-end gap-3"><label class="field">Year<input type="number" name="year" value="{{ request.args.get('year','') }}" min="1900" max="9998"></label><button class="btn btn--outline">Filter records</button></form>
+<section class="panel"><div class="overflow-x-auto"><table><thead><tr><th>Activity</th><th>Campus / unit</th><th>Year</th><th>Reported participations</th><th>Source</th></tr></thead><tbody>{% for activity in pagination.items %}<tr><td>{{ activity.title }}</td><td>{{ activity.unit_name }}</td><td>{{ activity.year_conducted or 'Not recorded' }}</td><td>{{ activity.volunteer_count if activity.volunteer_count is not none else 'Not recorded' }}</td><td>{{ activity.source_document or 'Not recorded' }}</td></tr>{% else %}<tr><td colspan="5">No imported historical records match this scope.</td></tr>{% endfor %}</tbody></table></div><p class="mt-4 text-sm text-slate-600">Reported participations are activity-level counts, not unique volunteer accounts.</p></section>{{ pages(pagination) }}
+{% endblock %}

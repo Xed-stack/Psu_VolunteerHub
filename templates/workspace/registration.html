@@ -1,0 +1,9 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Registration details · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading(registration.event.title,'Registration details',url_for('workspace.registrations',**request.args),'Back to registrations') }}<section class="panel max-w-3xl"><h2>{{ registration.status|title }}</h2><p class="my-4">{{ registration.event.date.strftime("%d %b %Y, %I:%M %p") }} · Philippine time</p><p>Attendance: {{ {'present':'Attending','absent':'Not Attended','excused':'Excused'}.get(registration.attendance_record.status,'Unrecorded') if registration.attendance_record else 'Unrecorded' }}</p><p>{{ 'Participation verified' if registration.certificate_eligible else 'Participation is not yet verified' }}</p><div class="mt-5 flex flex-wrap gap-3"><a
+  class="btn btn--outline"
+  href="{{ url_for('events.opportunity_detail',event_id=registration.event_id) }}"
+>Activity details</a>{% if can_withdraw %}<a
+  class="btn btn--outline"
+  href="{{ url_for('events.cancel_registration',registration_id=registration.id) }}"
+>Withdraw</a>{% endif %}</div></section>{% endblock %}

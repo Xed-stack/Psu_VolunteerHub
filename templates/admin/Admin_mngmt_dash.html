@@ -23,7 +23,7 @@
     </nav>
   {% endif %}
 {% endmacro %}
-{% block title %}Admin Dashboard · PSU Volunteer Hub{% endblock %}
+{% block title %}Manage users · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}System and user management{% endblock %}
 {% block header_actions %}<a
@@ -33,7 +33,7 @@
 {% block content %}
   <header class="page-heading">
     <div>
-      <h1>Admin Dashboard</h1>
+      <h1>Manage users</h1>
       <p>Manage users, campuses, and system configuration.</p>
     </div>
     <form method="get">
@@ -95,7 +95,7 @@
       <form class="filter-row admin-user-filters" method="get">
         <input type="hidden" name="tab" value="{{ active_tab }}">
         <label class="field">Search users<input class="input" name="search" value="{{ search }}" placeholder="Name or email"></label>
-        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director','admin'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
+        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
         <label class="field">College Affiliation<select class="select" name="college_affiliation"><option value="">All Affiliations</option>{% for value in college_affiliations %}<option value="{{ value }}" {% if selected_affiliation == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
         <button class="btn btn--primary" type="submit">Apply Filters</button>
         <a class="btn btn--ghost" href="{{ url_for('admin.admin_dash', tab=active_tab, campus_id=selected_campus) }}">Clear</a>
@@ -134,7 +134,7 @@
                       onchange="this.form.submit()"
                       aria-label="Change role for {{ user.name }}"
                     >
-                      {% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}
+                      {% for role in ['volunteer', 'coordinator', 'director'] %}
                         <option value="{{ role }}" {{ 'selected' if user.role == role }}>{{ role|title }}</option>
                       {% endfor %}
                     </select>
@@ -171,89 +171,7 @@
       </div>
       {{ page_controls("User pages") }}
     </section>
-    <section class="panel">
-      <header class="panel__header">
-        <div>
-          <h2>Activity Categories</h2>
-          <small>Categories available when coordinators create or edit activities.</small>
-        </div>
-      </header>
-      <form
-        class="filter-row"
-        method="post"
-        action="{{ url_for('admin.create_category') }}"
-      >
-        <label class="field">
-          New category<input class="input" name="name" maxlength="50" required>
-        </label>
-        <button class="btn btn--primary" type="submit">Add Category</button>
-      </form>
-      <div class="tag-list">
-        {% for category in categories %}
-          <span class="admin-category"><span>{{ category.name }}</span>{% if category.name != 'General' %}<form
-  method="post"
-  action="{{ url_for('admin.delete_category', category_id=category.id) }}"
-  class="inline-form"
-  data-confirm="Remove {{ category.name }}? Affected activities will become General."
-><button
-  class="icon-button icon-button--danger"
-  type="submit"
-  title="Remove {{ category.name }}"
-  aria-label="Remove {{ category.name }}"
->×</button></form>{% endif %}</span>
-        {% endfor %}
-      </div>
-      {{ page_controls("Category pages", categories_pagination, 'category_page') }}
-    </section>
-    <section class="panel" data-tour-id="admin-controls">
-      <header class="panel__header">
-        <h2>Administrative Controls</h2>
-      </header>
-      <div class="admin-actions">
-        <a
-          class="admin-action"
-          href="{{ url_for('admin.manage_policy', document='privacy') }}"
-        ><span class="material-symbols-outlined">privacy_tip</span><strong>Privacy Notice</strong><small>Publish separate privacy revisions</small></a>
-        <a
-          class="admin-action"
-          href="{{ url_for('admin.manage_policy', document='participation-agreement') }}"
-        ><span class="material-symbols-outlined">handshake</span><strong>Default Agreement</strong><small>Set the fallback for existing activities</small></a>
-        <a
-          class="admin-action"
-          href="{{ url_for('admin.import_users_csv') }}"
-        >
-          <span class="material-symbols-outlined">upload_file</span>
-          <strong>Import Users</strong>
-          <small>Validate and add accounts from CSV</small>
-        </a>
-        <a
-          class="admin-action"
-          data-tour-id="internal-reporting"
-          href="{{ url_for('admin.export_users_csv') }}"
-        >
-          <span class="material-symbols-outlined">download</span>
-          <strong>Export Users</strong>
-          <small>Download non-sensitive account data</small>
-        </a>
-        <a
-          class="admin-action"
-          href="{{ url_for('admin.manage_terms') }}"
-        >
-          <span class="material-symbols-outlined">gavel</span>
-          <strong>Terms of Use</strong>
-          <small>Publish and version policy revisions</small>
-        </a>
-        <a
-          class="admin-action"
-          href="{{ url_for('notifications.list_notifications') }}"
-        ><span class="material-symbols-outlined">campaign</span><strong>Notifications</strong><small>Review system activity</small></a>
-        <a class="admin-action" href="{{ url_for('admin.backup') }}">
-          <span class="material-symbols-outlined">download</span>
-          <strong>Backup</strong>
-          <small>Download portable data archive</small>
-        </a>
-      </div>
-    </section>
+    <nav class="mt-6 flex flex-wrap gap-3" aria-label="Related management"><a class="btn btn--outline" href="{{ url_for('workspace.management') }}">Management overview</a><a class="btn btn--outline" href="{{ url_for('workspace.categories') }}">Activity categories</a><a class="btn btn--outline" href="{{ url_for('workspace.imports') }}">Import data</a></nav>
   {% elif active_tab == 'deactivated' %}
     <section class="panel" id="deactivated-users">
       <header class="panel__header">
@@ -265,7 +183,7 @@
       <form class="filter-row admin-user-filters" method="get">
         <input type="hidden" name="tab" value="{{ active_tab }}">
         <label class="field">Search users<input class="input" name="search" value="{{ search }}" placeholder="Name or email"></label>
-        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director','admin'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
+        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
         <label class="field">College Affiliation<select class="select" name="college_affiliation"><option value="">All Affiliations</option>{% for value in college_affiliations %}<option value="{{ value }}" {% if selected_affiliation == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
         <button class="btn btn--primary" type="submit">Apply Filters</button>
         <a class="btn btn--ghost" href="{{ url_for('admin.admin_dash', tab=active_tab, campus_id=selected_campus) }}">Clear</a>

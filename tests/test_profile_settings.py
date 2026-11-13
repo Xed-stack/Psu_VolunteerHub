@@ -202,7 +202,7 @@ def test_save_failure_rolls_back_and_logs_no_credentials(app, client, member, mo
     assert 'sensitive-bind-placeholder' not in caplog.text
 
 
-@pytest.mark.parametrize('role', [None, 'admin', 'director', 'coordinator'])
+@pytest.mark.parametrize('role', [None, 'director', 'coordinator'])
 def test_endpoint_access_boundaries(app, client, role):
     if role:
         _login_as(client, _create_user(app, role=role))

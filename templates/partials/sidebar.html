@@ -1,125 +1,35 @@
 {% set endpoint = request.endpoint %}
 <aside class="role-sidebar" id="roleSidebar">
   <a class="role-brand" href="{{ url_for('home') }}">
-    <img
-      src="{{ url_for('static', filename='assets/PSU-logo.png') }}"
-      alt="PSU logo"
-      width="44"
-      height="44"
-    >
-    <span>
-      <strong>PSU Volunteer Hub</strong>
-      <small>
-        {% if current_user.role == 'coordinator' %}
-          Coordinator Console
-        {% elif current_user.role == 'director' %}
-          Director Console
-        {% elif current_user.role == 'admin' %}
-          Administration
-        {% else %}
-          Volunteer Portal
-        {% endif %}
-      </small>
-    </span>
-  </a>
-  <nav
-    class="role-nav"
-    aria-label="{{ current_user.role_display_name }} navigation"
-  >
+  <img
+    src="{{ url_for('static',filename='assets/PSU-logo.png') }}"
+    alt=""
+    width="44"
+    height="44"
+  ><span><strong>PSU Volunteer Hub</strong><small>{{ current_user.role_display_name }}</small></span></a>
+  <nav class="role-nav" aria-label="Main navigation">
     {% if current_user.role == 'volunteer' %}
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'events.volunteer_dash' }}"
-        href="{{ url_for('events.volunteer_dash') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
-        href="{{ url_for('events.opportunities') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">volunteer_activism</span>Opportunities</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'volunteer.profile_page' }}"
-        href="{{ url_for('volunteer.profile_page') }}"
-        data-tour-id="profile"
-      ><span class="material-symbols-outlined" aria-hidden="true">person</span>Profile</a>
-    {% elif current_user.role == 'coordinator' %}
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.coordinator_dash' }}"
-        href="{{ url_for('coordinator.coordinator_dash') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.create_activity' }}"
-        href="{{ url_for('coordinator.create_activity') }}"
-        data-tour-id="create-activity"
-      ><span class="material-symbols-outlined" aria-hidden="true">add_circle</span>Create Activity</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.attendance' }}"
-        href="{{ url_for('coordinator.attendance') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">fact_check</span>Attendance</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.cancellation_requests' }}"
-        href="{{ url_for('coordinator.cancellation_requests') }}"
-        data-tour-id="cancellations"
-      ><span class="material-symbols-outlined" aria-hidden="true">event_busy</span>Cancellation Requests</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'coordinator.analytics' }}"
-        href="{{ url_for('coordinator.analytics') }}"
-        data-tour-id="analytics"
-      ><span class="material-symbols-outlined" aria-hidden="true">analytics</span>Analytics</a>
-    {% elif current_user.role == 'director' %}
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'director.director_dash' }}"
-        href="{{ url_for('director.director_dash') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'events.opportunities' }}"
-        href="{{ url_for('events.opportunities') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">volunteer_activism</span>Opportunities</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'director.analytics' }}"
-        href="{{ url_for('director.analytics') }}"
-        data-tour-id="analytics"
-      ><span class="material-symbols-outlined" aria-hidden="true">analytics</span>Analytics</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'director.activity_calendar' }}"
-        href="{{ url_for('director.activity_calendar') }}"
-        data-tour-id="calendar"
-      ><span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>Activity Calendar</a>
+      {% set links = [('events.volunteer_dash', 'dashboard', 'Dashboard'), ('events.opportunities', 'volunteer_activism', 'Activities'), ('workspace.registrations', 'event_available', 'My registrations'), ('volunteer.profile_page', 'person', 'Profile')] %}
     {% else %}
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'admin.admin_dash' }}"
-        href="{{ url_for('admin.admin_dash') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">dashboard</span>Dashboard</a>
-      <a
-        class="navlink {{ 'navlink--active' if endpoint == 'admin.settings' }}"
-        href="{{ url_for('admin.settings') }}"
-      ><span class="material-symbols-outlined" aria-hidden="true">settings</span>Settings</a>
+      {% set links = [('workspace.overview', 'dashboard', 'Overview'), ('workspace.activities', 'event', 'Activities'), ('workspace.reports', 'bar_chart', 'Reports'), ('goals.workspace', 'flag', 'Annual plans')] %}
+      {% if current_user.role == 'coordinator' %}
+        {% set links = links + [('workspace.partners','handshake','Partners')] %}
+      {% else %}
+        {% set links = links + [('workspace.management','manage_accounts','Management'),('workspace.imports','upload','Import data'),('admin.settings','settings','Settings')] %}
+      {% endif %}
     {% endif %}
+    {% for target, icon, label in links %}<a
+  class="navlink {{ 'navlink--active' if endpoint == target }}"
+  href="{{ url_for(target) }}"
+  {{ 'aria-current=page' if endpoint == target }}
+><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span>{{ label }}</a>{% endfor %}
     <a
-      class="navlink {{ 'navlink--active' if endpoint == 'help_page' }}"
-      href="{{ url_for('help_page') }}"
-      data-tour-id="help"
-    ><span class="material-symbols-outlined" aria-hidden="true">help</span>Help</a>
-  </nav>
-  <div class="role-user">
-    <img
-      src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
-      alt="Profile"
-      width="40"
-      height="40"
-    >
-    <span>
-      <strong>{{ current_user.name }}</strong>
-      <small>{{ current_user.role_display_name }}</small>
-    </span>
-    <form method="post" action="{{ url_for('auth.logout') }}">
-      {% include 'partials/csrf_field.html' %}
-      <button
-        class="role-user__logout"
-        type="submit"
-        aria-label="Log Out"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">logout</span>
-        <span class="role-user__logout-label">Log Out</span>
-      </button>
-    </form>
-  </div>
-</aside>
+      class="navlink {{ 'navlink--active' if endpoint == 'workspace.draft_list' }}"
+      href="{{ url_for('workspace.draft_list') }}"
+    ><span class="material-symbols-outlined" aria-hidden="true">draft</span>Saved drafts</a><a class="navlink" href="{{ url_for('help_page') }}"><span class="material-symbols-outlined" aria-hidden="true">help</span>Help</a><a class="navlink" href="{{ url_for('workspace.about') }}"><span class="material-symbols-outlined" aria-hidden="true">info</span>About PSU Volunteer Hub</a>
+  </nav><div class="role-user"><img
+  src="{{ url_for('static',filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
+  alt=""
+  width="40"
+  height="40"
+><span><strong>{{ current_user.name }}</strong><small>{{ current_user.campus.name if current_user.campus else 'University office' }}</small></span><form method="post" action="{{ url_for('auth.logout') }}">{% include 'partials/csrf_field.html' %}<button class="role-user__logout" type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</button></form></div></aside>

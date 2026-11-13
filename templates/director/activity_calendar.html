@@ -1,7 +1,7 @@
 {% extends 'layouts/role_base.html' %}
 {% block title %}University Activity Calendar · PSU Volunteer Hub{% endblock %}
 {% block content %}
-<header class="page-heading"><div><h1>University Activity Calendar</h1><p>Read-only schedule across PSU campuses.</p></div><a class="btn btn--outline" href="{{ url_for('director.analytics') }}">Analytics</a></header>
+<header class="page-heading"><div><h1>University Activity Calendar</h1><p>Read-only schedule across PSU campuses.</p></div><a class="btn btn--outline" href="{{ url_for('director.analytics') }}">Reports</a></header>
 <section class="panel">
   <form class="filter-row" method="get">
     <input type="hidden" name="year" value="{{ calendar_year }}"><input type="hidden" name="month" value="{{ calendar_number }}">

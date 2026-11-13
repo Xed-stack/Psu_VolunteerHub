@@ -5,6 +5,7 @@ Models for activities/events, registrations, attendance tracking,
 milestones, campuses, recommendation logs, and analytics summaries.
 """
 from datetime import datetime
+from app.services.activity_workflow import local_now
 from app.models import db
 from app.models.user import Skill
 from sqlalchemy.orm import query_expression, with_expression
@@ -61,6 +62,14 @@ class Event(db.Model):
     location = db.Column(db.String(500), default='')
     slots = db.Column(db.Integer, default=0)
     target_participants = db.Column(db.Integer, nullable=True)
+    lifecycle_status = db.Column(db.String(16), nullable=False, default='approved')
+    cancellation_reason = db.Column(db.Text)
+    cancelled_at = db.Column(db.DateTime)
+    proposal_document = db.Column(db.JSON)
+    conducting_department = db.Column(db.String(150))
+    participant_type = db.Column(db.String(100))
+    audience = db.Column(db.JSON, nullable=False, default=dict)
+    agreement_id = db.Column(db.Integer, db.ForeignKey('partner_agreements.id', ondelete='RESTRICT'))
     participation_agreement_text = db.Column(db.Text, nullable=True)
     participation_agreement_version = db.Column(db.String(30), nullable=True)
     nda_required = db.Column(db.Boolean, default=False, nullable=False)
@@ -156,6 +165,7 @@ class ExternalParticipant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     id_number = db.Column(db.String(50), nullable=False, unique=True)
     name = db.Column(db.String(100), nullable=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('external_groups.id', ondelete='SET NULL'))
     contact_number = db.Column(db.String(50), nullable=True)
     address = db.Column(db.Text, nullable=True)
     email = db.Column(db.String(120), nullable=True)
@@ -225,7 +235,9 @@ class Registration(db.Model):
         """Eligibility requires completed participation recorded by attendance."""
         attendance = self.attendance_record
         return bool(
-            self.status == 'completed'
+            (self.status == 'completed' or (self.status == 'confirmed'
+             and self.event.end_date is not None and self.event.end_date <= local_now()))
+            and self.event.lifecycle_status == 'approved'
             and attendance
             and attendance.status == 'present'
         )

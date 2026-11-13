@@ -1,0 +1,15 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Annual Operational Plan · PSU Volunteer Hub{% endblock %}
+{% from 'workspace/components.html' import heading, filters, chart_scripts with context %}
+{% block content %}{{ heading('Annual Operational Plan','Annual targets and verified actual results. Different units remain separate.',url_for('workspace.reports'),'Back to reports') }}{{ filters(year, 'annual', 1, campuses, campus_id) }}<p class="mb-5">{{ goals.plans.AOP.met }} of {{ goals.plans.AOP.total }} AOP targets achieved for {{ year }}. Missing or pending evidence remains unknown.</p><nav class="mb-6 flex flex-wrap gap-3" aria-label="AOP exports">{% for format in ['pdf','xlsx','csv'] %}<a class="btn btn--outline" href="{{ url_for('workspace.export',format=format,**dict(request.args,report='aop')) }}">{{ 'Print / export PDF' if format == 'pdf' else 'Export ' ~ format|upper }}</a>{% endfor %}</nav>
+{% for row in goals.rows if 'AOP' in row.plan_types %}<section class="panel mb-5"><h2>{{ row.name }}</h2><p class="my-3">{{ row.code }} · {{ row.unit }} · {{ row.status }}</p><dl class="grid gap-4 sm:grid-cols-3"><div><dt>Target</dt><dd class="text-2xl font-bold text-psu">{{ row.target }}</dd></div><div><dt>Verified actual</dt><dd class="text-2xl font-bold">{{ row.actual if row.verified else 'Evidence pending' }}</dd></div><div><dt>Evidence</dt><dd>{{ row.basis }}</dd></div></dl>{% if row.verified %}<div
+  data-target-chart
+  data-chart-values='{{ [row.target|float, row.actual|float]|tojson }}'
+  data-unit="{{ row.unit }}"
+  class="min-h-56"
+  aria-hidden="true"
+></div>{% endif %}<a
+  class="btn btn--outline mt-4"
+  href="{{ url_for('goals.details', year=year) }}"
+>Review indicator and evidence</a></section>{% else %}<div class="panel">No approved AOP targets are available in this scope.</div>{% endfor %}
+{% if campus_goals %}<section class="panel"><h2>Campus annual accomplishments</h2><table><thead><tr><th>Campus</th><th>AOP targets achieved</th></tr></thead><tbody>{% for campus in campus_goals %}<tr><td>{{ campus.campus }}</td><td>{{ campus.plans.AOP.met }} / {{ campus.plans.AOP.total }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}

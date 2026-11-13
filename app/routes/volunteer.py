@@ -7,6 +7,7 @@ preferred categories, and event recommendations).
 """
 from collections import Counter
 from datetime import datetime, timedelta
+from app.services.activity_workflow import local_now
 import os
 import uuid
 from pathlib import Path
@@ -206,8 +207,10 @@ def _render_profile(errors=None, selected_skills=None, selected_interests=None,
         user_id=current_user.id, status='present').count()
     completed_participation = Registration.query.join(
         Registration.attendance_record
-    ).filter(Registration.user_id == current_user.id,
-             Registration.status == 'completed', Attendance.status == 'present').count()
+    ).join(Event, Registration.event_id == Event.id).filter(Registration.user_id == current_user.id,
+             ((Registration.status == 'completed') | ((Registration.status == 'confirmed') &
+              Event.end_date.isnot(None) & (Event.end_date <= local_now()))), Attendance.status == 'present',
+             Event.lifecycle_status == 'approved').count()
     level = _level_progress(completed_participation)
 
     distinct_categories = db.session.query(Event.category).join(

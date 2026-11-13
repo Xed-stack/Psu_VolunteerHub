@@ -1,0 +1,39 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Volunteer dashboard · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Hello, ' ~ current_user.name, 'Find activities that fit your interests and follow your commitments.') }}
+  {% set view = request.args.get('view',default_view) %}<nav
+  class="mb-6 flex flex-wrap gap-3"
+  aria-label="Volunteer dashboard"
+><a
+  class="btn {{ 'btn--primary' if view == 'recommended' else 'btn--outline' }}"
+  href="{{ url_for('events.volunteer_dash',view='recommended') }}"
+>Recommended activities</a><a
+  class="btn {{ 'btn--primary' if view == 'calendar' else 'btn--outline' }}"
+  href="{{ url_for('events.volunteer_dash',view='calendar') }}"
+>Calendar</a><a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.registrations') }}"
+>Registration history</a><a
+  class="btn btn--outline"
+  href="{{ url_for('events.opportunities') }}"
+>Browse all activities</a></nav>
+  {% if view == 'calendar' %}<section class="panel"><header class="flex flex-wrap items-center justify-between gap-4"><h2>{{ calendar_month_name }}</h2><nav class="flex gap-3" aria-label="Calendar month"><a
+  class="btn btn--outline"
+  href="{{ url_for('events.volunteer_dash',view='calendar',calendar_year=previous_calendar[0],calendar_month=previous_calendar[1]) }}"
+>Previous</a><a
+  class="btn btn--outline"
+  href="{{ url_for('events.volunteer_dash',view='calendar',calendar_year=next_calendar[0],calendar_month=next_calendar[1]) }}"
+>Next</a></nav></header><div class="calendar-grid"><div class="calendar-weekdays">{% for day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<span>{{ day }}</span>{% endfor %}</div>{% for week in calendar_weeks %}{% for day in week %}<div class="calendar-day {{ 'calendar-day--empty' if not day }}">{% if day %}<strong>{{ day }}</strong>{% for reg in calendar_events.get(day,[]) %}<a
+  class="calendar-entry"
+  href="{{ url_for('workspace.registration',registration_id=reg.id) }}"
+>{{ reg.event.title }}<small>{{ reg.event.date.strftime("%H:%M") }}</small></a>{% endfor %}{% endif %}</div>{% endfor %}{% endfor %}</div>{% if not calendar_events %}<p class="mt-4">No upcoming commitments this month. Browse activities or choose another month.</p>{% endif %}</section>
+{% else %}<section><h2 class="mb-4">Recommended for your interests</h2><p class="mb-5 text-sm text-slate-600">Your preferred campus appears first. Within each group, activities are ranked by cosine similarity to your selected interests.</p><div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{% for item in recommendations %}<article class="panel"><p class="text-sm text-slate-600">{{ item.event.campus.name if item.event.campus else 'University' }} · {{ item.event.date.strftime("%d %b %Y") }}</p><h3 class="my-3"><a
+  class="text-psu hover:underline"
+  href="{{ url_for('events.opportunity_detail',event_id=item.event.id) }}"
+>{{ item.event.title }}</a></h3><p class="text-sm">{{ item.event.category }}</p><a
+  class="btn btn--outline mt-5"
+  href="{{ url_for('events.opportunity_detail',event_id=item.event.id) }}"
+>View activity</a></article>{% else %}<div class="panel md:col-span-2"><p>No activities currently match your selected interests. Update your interests or browse all available activities.</p><a
+  class="btn btn--outline mt-4"
+  href="{{ url_for('volunteer.profile_page') }}"
+>Review profile</a></div>{% endfor %}</div></section>{% endif %}{% endblock %}

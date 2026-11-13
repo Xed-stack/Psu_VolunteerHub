@@ -11,7 +11,7 @@
   <form method="post" enctype="multipart/form-data">
     {% include 'partials/csrf_field.html' %}
     <label class="field"><span class="field-label">CSV file</span><input class="input" type="file" name="file" accept=".csv,text/csv" required></label>
-    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('admin.admin_dash') }}">Cancel</a><button class="btn btn--primary" type="submit">Validate and import</button></div>
+    <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('workspace.imports') }}">Back to imports</a><button class="btn btn--primary" type="submit">Validate and preview</button></div>
   </form>
 </section>
 {% endblock %}

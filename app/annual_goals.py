@@ -16,6 +16,7 @@ from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget,
 from app.models.event import Campus, Registration, Event, Attendance, ExternalParticipant
 from app.models.user import User
 from app.reports import ReportError
+from app.services.activity_workflow import local_now
 
 RULES = {'gte': ('At least', operator.ge), 'lte': ('At most', operator.le), 'eq': ('Exactly', operator.eq)}
 BASES = {'approved_aggregate': 'Approved reported result', 'activities': 'Fully recorded ended activities',
@@ -44,7 +45,7 @@ def number(value):
 def selected_year(value=None):
     """Use current year when omitted; reject reporting years outside 1900-2100."""
     try:
-        year = int(value if value is not None else date.today().year)
+        year = int(value if value is not None else local_now().year)
         if not 1900 <= year <= 2100:
             raise ValueError()
         return year
@@ -86,7 +87,7 @@ def validate_definition(data):
 
 def cutoff_for(year):
     """Cap evidence at today or target year's December 31, whichever is earlier."""
-    return min(date.today(), date(year, 12, 31))
+    return min(local_now().date(), date(year, 12, 31))
 
 
 def registrations(year, campus_id=None, event_ids=None):
@@ -133,7 +134,9 @@ def participation(year, campus_id=None, basis='verified_attendance'):
     if basis != 'registrations':
         query = query.filter(Attendance.status == 'present')
     if basis == 'completed':
-        query = query.filter(Registration.status == 'completed')
+        query = query.filter((Registration.status == 'completed') | (
+            (Registration.status == 'confirmed') & Event.end_date.isnot(None) & (Event.end_date <= local_now())),
+            Event.lifecycle_status == 'approved')
     counts.update(dict(query.group_by(sex).all()))
     total = sum(counts.values())
     highest = max((counts[key] for key in SEX_LABELS if key != 'unrecorded'), default=0)

@@ -5,6 +5,7 @@ Read-only aggregates for director/coordinator views and historical exports.
 Attendance totals count participation records, not distinct people, unless
 explicitly stated. Each method documents its scope; not all share report filters.
 """
+from app.services.activity_workflow import local_now
 from datetime import datetime, timedelta
 from app.models import db
 from app.models.user import (User, Skill, Interest, user_skills,
@@ -311,7 +312,11 @@ class AnalyticsAggregator:
         end = datetime(year + 1, 1, 1)
         completed_counts = db.session.query(
             Registration.user_id.label('user_id'), db.func.count(Registration.id).label('completed')
-        ).join(Event).filter(Registration.status == 'completed', Event.date >= start, Event.date < end
+        ).join(Event).filter((Registration.status == 'completed') | (
+            (Registration.status == 'confirmed') & Event.end_date.isnot(None) &
+            (Event.end_date <= local_now()) &
+            Registration.attendance_record.has(Attendance.status == 'present')),
+            Event.lifecycle_status == 'approved', Event.date >= start, Event.date < end
         ).group_by(Registration.user_id).subquery()
         attended = db.func.count(Attendance.id)
         completed = db.func.coalesce(completed_counts.c.completed, 0)

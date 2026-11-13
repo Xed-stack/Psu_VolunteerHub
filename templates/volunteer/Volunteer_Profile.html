@@ -6,259 +6,288 @@
 {% block header_title %}Volunteer profile{% endblock %}
 {% block header_subtitle %}Your details, matching preferences, and participation{% endblock %}
 {% block content %}
-  <div class="profile-page stack">
-    <section
-      class="panel profile-identity"
-      aria-labelledby="profile-name"
-    >
-      <img
-        class="profile-photo"
-        width="96"
-        height="96"
-        src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
-        alt="{{ 'Profile photo' if current_user.profile_image_path else 'Placeholder profile photo' }}"
-      >
-      <div class="profile-identity__details">
-        <h1 id="profile-name">{{ current_user.name }}</h1>
-        <p>{{ current_user.email }}</p>
-        <dl class="profile-facts">
-          <div>
-            <dt>Campus</dt>
-            <dd>
-              {{ current_user.campus.name if current_user.campus else 'Not recorded' }}
-            </dd>
-          </div>
-          <div>
-            <dt>Volunteer type</dt>
-            <dd>
-              {{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}
-            </dd>
-          </div>
-        </dl>
-        <p class="help-text">Manage your name, campus, and password below.</p>
-      </div>
-      <div class="profile-photo-controls">
-        <label for="profile-image">Change profile photo</label>
-        <input
-          class="input"
-          id="profile-image"
-          form="profile-form"
-          name="profile_image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          aria-describedby="photo-help{% if errors.profile_image %} photo-error{% endif %}"
-          {% if errors.profile_image %}aria-invalid="true"{% endif %}
-        >
-        <small id="photo-help">Optional JPEG, PNG, or WebP, up to 3 MB. Saved with your profile.</small>
-        {% if errors.profile_image %}<p class="profile-error" id="photo-error">{{ errors.profile_image }}</p>{% endif %}
-        {% if current_user.profile_image_path %}
-          <form
-            method="post"
-            action="{{ url_for('volunteer.remove_profile_image') }}"
-          >
-            {% include 'partials/csrf_field.html' %}
-            <button class="btn btn--ghost" type="submit">Remove profile photo</button>
-          </form>
-        {% endif %}
-      </div>
-      <div class="profile-account-settings">
-        {% for section, label in [('name', 'Change name'), ('campus', 'Change campus'), ('password', 'Change password')] %}
-          {% set section_errors = account_errors if account_section == section else {} %}
-          <details id="change-{{ section }}" class="profile-account-section" {% if section_errors %}open{% endif %}>
-            <summary>{{ label }}</summary>
-            <form method="post" action="{{ url_for('volunteer.change_' ~ section) }}" data-profile-form>
-              {% include 'partials/csrf_field.html' %}
-              {% if section_errors %}
-                <div class="profile-error" role="alert" tabindex="-1" data-profile-errors>
-                  <p>{{ section_errors.get('save', 'Changes were not saved. Check the fields below.') }}</p>
-                  <ul>{% for key, message in section_errors.items() if key != 'save' %}<li><a href="#account-{{ key }}">{{ message }}</a></li>{% endfor %}</ul>
-                </div>
-              {% endif %}
-              {% if section == 'name' %}
-                <label for="account-name">Full name</label>
-                <input class="input" id="account-name" name="name" value="{{ account_values.name }}" maxlength="100" required autocomplete="name"
-                  {% if section_errors.name %}aria-invalid="true" aria-describedby="account-name-error"{% endif %}>
-                {% if section_errors.name %}<p id="account-name-error" class="profile-error">{{ section_errors.name }}</p>{% endif %}
-              {% elif section == 'campus' %}
-                <p class="help-text">Your campus changes immediately. Previous participation stays with the activity’s host campus.</p>
-                <label for="account-campus_id">Campus</label>
-                <select class="select" id="account-campus_id" name="campus_id" required autocomplete="off"
-                  {% if section_errors.campus_id %}aria-invalid="true" aria-describedby="account-campus_id-error"{% endif %}>
-                  <option value="">Select your campus</option>
-                  {% for campus in campuses %}<option value="{{ campus.id }}" {% if campus.id|string == account_values.campus_id %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}
-                </select>
-                {% if section_errors.campus_id %}<p id="account-campus_id-error" class="profile-error">{{ section_errors.campus_id }}</p>{% endif %}
-                <label for="account-college_affiliation">College affiliation</label>
-                <select class="select" id="account-college_affiliation" name="college_affiliation" required autocomplete="off"
-                  {% if section_errors.college_affiliation %}aria-invalid="true" aria-describedby="account-college_affiliation-error"{% endif %}>
-                  <option value="">Select your college</option>
-                  {% for college in affiliation_options.get(account_values.campus_id, []) %}<option value="{{ college }}" {% if college == account_values.college_affiliation %}selected{% endif %}>{{ college }}</option>{% endfor %}
-                </select>
-                {% if section_errors.college_affiliation %}<p id="account-college_affiliation-error" class="profile-error">{{ section_errors.college_affiliation }}</p>{% endif %}
-                <noscript><p class="help-text">After changing campus, save once to load its colleges, then select your college and save again.</p></noscript>
-              {% else %}
-                <p class="help-text" id="password-help">Use at least {{ password_min }} characters with uppercase, lowercase, a number, and a special character. This browser stays signed in; your other sessions will be signed out.</p>
-                {% for key, field_label, autocomplete in [('current_password', 'Current password', 'current-password'), ('new_password', 'New password', 'new-password'), ('password_confirmation', 'Confirm new password', 'new-password')] %}
-                  <label for="account-{{ key }}">{{ field_label }}</label>
-                  <div class="profile-password-input">
-                    <input class="input" id="account-{{ key }}" name="{{ key }}" type="password" required autocomplete="{{ autocomplete }}"
-                      {% if key != 'current_password' %}minlength="{{ password_min }}"{% endif %}
-                      aria-describedby="password-help{% if section_errors.get(key) %} account-{{ key }}-error{% endif %}"
-                      {% if section_errors.get(key) %}aria-invalid="true"{% endif %}>
-                    <button class="btn btn--ghost" type="button" data-profile-password="account-{{ key }}" aria-controls="account-{{ key }}" aria-label="Show {{ field_label|lower }}" aria-pressed="false" hidden>Show</button>
-                  </div>
-                  {% if section_errors.get(key) %}<p id="account-{{ key }}-error" class="profile-error">{{ section_errors[key] }}</p>{% endif %}
-                {% endfor %}
-                {{ password_feedback('account-new_password', 'account-password_confirmation', password_min) }}
-              {% endif %}
-              <div><button class="btn btn--primary" type="submit">{{ 'Change password' if section == 'password' else 'Save ' ~ section }}</button></div>
-            </form>
-          </details>
-        {% endfor %}
-      </div>
-    </section>
-    <section aria-label="Participation summary" class="summary-strip">
-      {{ metric('Registrations', user_stats.total_activities, 'All your registration records, including pending and cancelled registrations. This is not a completed-service count.') }}
-      {{ metric('Verified attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
-      {{ metric('Completed participation', user_stats.completed_participation, 'Registrations marked completed with attendance marked present. This is also the certificate eligibility rule.') }}
-    </section>
-    <section
-      class="panel profile-editor"
-      aria-labelledby="matching-title"
-    >
-      <header class="panel__header">
-        <h2 id="matching-title">Interests and skills</h2>
-      </header>
-      <p class="help-text">Select at least one of each to support your cosine-similarity recommendations. Skills and interests can be selected independently.</p>
-      {% if errors %}<p class="profile-error" role="alert">{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p>{% endif %}
-      <form
-        id="profile-form"
-        data-profile-form
-        method="post"
-        enctype="multipart/form-data"
-        action="{{ url_for('volunteer.profile_page') }}"
-      >
-        {% include 'partials/csrf_field.html' %}
-        {% for name, label, catalog, selected in [('interests', 'Interests', interest_catalog, selected_interests), ('skills', 'Skills', skill_catalog, selected_skills)] %}
-          <fieldset
-            class="profile-choices"
-            {% if errors.get(name) %}aria-describedby="{{ name }}-error" aria-invalid="true"{% endif %}
-          >
-            <legend>{{ label }}</legend>
-            {% if errors.get(name) %}<p id="{{ name }}-error" class="profile-error">{{ errors[name] }}</p>{% endif %}
-            <div class="profile-choice-grid">
-              {% for choice in catalog %}
-                <label class="profile-choice">
-                  <input
-                    type="checkbox"
-                    name="{{ name }}"
-                    value="{{ choice.id }}"
-                    {% if choice.id|string in selected %}checked{% endif %}
-                  >
-                  <span>{{ choice.name }}</span>
-                </label>
-              {% else %}
-                <p>No {{ name }} are available. Contact your coordinator before saving.</p>
-              {% endfor %}
-            </div>
-          </fieldset>
-        {% endfor %}
-        <div class="profile-save">
-          <button
-            class="btn btn--primary"
-            type="submit"
-            {% if not skill_catalog or not interest_catalog %}disabled{% endif %}
-          >Save profile</button>
-          <span class="help-text">Your choices are saved together with any new photo.</span>
-        </div>
-      </form>
-    </section>
-    <section class="panel">
-      {{ heading('Profile milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
-      <div class="profile-milestone">
-        <div>
-          <strong>{{ user_stats.cert_level }}: {{ user_stats.level_label }}</strong>
-          <p class="help-text">Based on {{ user_stats.completed_participation }} completed participation records. Separate from Director recognition.</p>
-          <label for="profile-progress">Progress within this level: {{ user_stats.level_percent }}%</label>
-          <progress
-            id="profile-progress"
-            value="{{ user_stats.level_percent }}"
-            max="100"
-          >{{ user_stats.level_percent }}%</progress>
-        </div>
-        <ul class="profile-badges">
-          {% for badge in badges %}
-            <li>
-              <strong>{{ badge.name }}</strong>
-              <span>{{ 'Earned' if badge.earned else 'Not yet earned' }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </section>
-    <div class="profile-support">
-      <section class="panel">
-        {{ heading('Recommended for you', 'Cosine similarity compares your saved skills and interests with available activities. Match scores support your choice and do not guarantee eligibility or acceptance.') }}
-        <ul class="profile-recommendations">
-          {% if recommendations_error %}
-            <li role="status">{{ recommendations_error }}</li>
-          {% else %}
-            {% for rec in recommendations %}
-              <li>
-                <a class="profile-recommendation-card" href="{{ url_for('events.opportunity_detail', event_id=rec.event.id) }}">
-                  <strong>{{ rec.event.title }}</strong>
-                  <span>{{ rec.percentage }}% match</span>
-                </a>
-              </li>
-            {% else %}
-              <li>No matching activities are available. Review your preferences or <a href="{{ url_for('events.opportunities') }}">browse opportunities</a>.</li>
-            {% endfor %}
-          {% endif %}
-        </ul>
-      </section>
-      <section class="panel">
-        {{ heading('Categories you’ve attended', 'Your three most frequent activity categories from attendance records marked present. This includes verified attendance even when the registration has not yet been marked completed.') }}
-        <ul class="profile-categories">
-          {% for category in preferred_categories %}
-            <li>{{ category }}</li>
-          {% else %}
-            <li>No verified category history yet.</li>
-          {% endfor %}
-        </ul>
-      </section>
+  {% set profile_view = 'account' if account_section else 'preferences' if errors else request.args.get('section','account') %}
+  <header class="page-heading">
+    <div>
+      <h1>Your profile</h1>
+      <p>Manage one part of your account at a time.</p>
     </div>
-    <section class="panel">
-      {{ heading('Recent registrations', 'Your five most recent registration records. Pending, cancelled, and absent records do not earn completed-participation milestones. Certificate eligibility requires completed status and present attendance.') }}
-      <a class="btn btn--ghost" href="{{ url_for('events.volunteer_dash') }}">View registrations</a>
-      <div class="table-scroll table-scroll--record" role="region" aria-label="Recent registrations" tabindex="0">
-        <table class="data-table data-table--record">
-          <thead>
-            <tr>
-              <th scope="col">Activity</th>
-              <th scope="col">Registered</th>
-              <th scope="col">Status</th>
-              <th scope="col">Certificate</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for reg in registrations %}
-              <tr>
-                <td data-label="Activity">{{ reg.event.title if reg.event else 'Not available' }}</td>
-                <td data-label="Registered">{{ reg.registered_at.strftime('%b %d, %Y') if reg.registered_at else 'Not available' }}</td>
-                <td data-label="Status">{{ reg.status|title }}</td>
-                <td data-label="Certificate">{{ 'Eligible' if reg.certificate_eligible else 'Not eligible' }}</td>
-              </tr>
-            {% else %}
-              <tr><td colspan="4">No registrations yet. Browse opportunities to find an activity.</td></tr>
+  </header>
+  <nav
+    class="mb-6 flex flex-wrap gap-3"
+    aria-label="Profile sections"
+  >{% for value,label in [('account','Account settings'),('preferences','Interests and photo'),('impact','Participation milestones')] %}<a
+  class="btn {{ 'btn--primary' if profile_view == value else 'btn--outline' }}"
+  href="{{ url_for('volunteer.profile_page',section=value) }}"
+  {{ 'aria-current=page' if profile_view == value }}
+>{{ label }}</a>{% endfor %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.registrations') }}"
+>Registration history</a></nav><div class="profile-page stack">
+    {% if profile_view == 'account' %}
+      <section
+        class="panel profile-identity"
+        aria-labelledby="profile-name"
+      >
+        <img
+          class="profile-photo"
+          width="96"
+          height="96"
+          src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
+          alt="{{ 'Profile photo' if current_user.profile_image_path else 'Placeholder profile photo' }}"
+        >
+        <div class="profile-identity__details">
+          <h2 id="profile-name">{{ current_user.name }}</h2>
+          <p>{{ current_user.email }}</p>
+          <dl class="profile-facts">
+            <div>
+              <dt>Campus</dt>
+              <dd>
+                {{ current_user.campus.name if current_user.campus else 'Not recorded' }}
+              </dd>
+            </div>
+            <div>
+              <dt>Volunteer type</dt>
+              <dd>
+                {{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}
+              </dd>
+            </div>
+          </dl>
+          <p class="help-text">Manage your name, campus, and password below.</p>
+        </div>
+        <div class="profile-account-settings">
+          {% for section, label in [('name', 'Change name'), ('campus', 'Change campus'), ('password', 'Change password')] %}
+            {% set section_errors = account_errors if account_section == section else {} %}
+            <details
+              id="change-{{ section }}"
+              class="profile-account-section"
+              {% if section_errors %}open{% endif %}
+            >
+              <summary>{{ label }}</summary>
+              <form
+                method="post"
+                action="{{ url_for('volunteer.change_' ~ section) }}"
+                data-profile-form
+              >
+                {% include 'partials/csrf_field.html' %}
+                {% if section_errors %}
+                  <div
+                    class="profile-error"
+                    role="alert"
+                    tabindex="-1"
+                    data-profile-errors
+                  >
+                    <p>{{ section_errors.get('save', 'Changes were not saved. Check the fields below.') }}</p>
+                    <ul>{% for key, message in section_errors.items() if key != 'save' %}<li><a href="#account-{{ key }}">{{ message }}</a></li>{% endfor %}</ul>
+                  </div>
+                {% endif %}
+                {% if section == 'name' %}
+                  <label for="account-name">Full name</label>
+                  <input
+                    class="input"
+                    id="account-name"
+                    name="name"
+                    value="{{ account_values.name }}"
+                    maxlength="100"
+                    required
+                    autocomplete="name"
+                    {% if section_errors.name %}aria-invalid="true" aria-describedby="account-name-error"{% endif %}
+                  >
+                  {% if section_errors.name %}<p id="account-name-error" class="profile-error">{{ section_errors.name }}</p>{% endif %}
+                {% elif section == 'campus' %}
+                  <p class="help-text">Your campus changes immediately. Previous participation stays with the activity’s host campus.</p>
+                  <label for="account-campus_id">Campus</label>
+                  <select
+                    class="select"
+                    id="account-campus_id"
+                    name="campus_id"
+                    required
+                    autocomplete="off"
+                    {% if section_errors.campus_id %}aria-invalid="true" aria-describedby="account-campus_id-error"{% endif %}
+                  >
+                    <option value="">Select your campus</option>
+                    {% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {% if campus.id|string == account_values.campus_id %}selected{% endif %}
+>{{ campus.name }}</option>{% endfor %}
+                  </select>
+                  {% if section_errors.campus_id %}<p id="account-campus_id-error" class="profile-error">{{ section_errors.campus_id }}</p>{% endif %}
+                  <label for="account-college_affiliation">College affiliation</label>
+                  <select
+                    class="select"
+                    id="account-college_affiliation"
+                    name="college_affiliation"
+                    required
+                    autocomplete="off"
+                    {% if section_errors.college_affiliation %}aria-invalid="true" aria-describedby="account-college_affiliation-error"{% endif %}
+                  >
+                    <option value="">Select your college</option>
+                    {% for college in affiliation_options.get(account_values.campus_id, []) %}<option
+  value="{{ college }}"
+  {% if college == account_values.college_affiliation %}selected{% endif %}
+>{{ college }}</option>{% endfor %}
+                  </select>
+                  {% if section_errors.college_affiliation %}<p
+  id="account-college_affiliation-error"
+  class="profile-error"
+>{{ section_errors.college_affiliation }}</p>{% endif %}
+                  <noscript>
+                    <p class="help-text">After changing campus, save once to load its colleges, then select your college and save again.</p>
+                  </noscript>
+                {% else %}
+                  <p class="help-text" id="password-help">Use at least {{ password_min }} characters with uppercase, lowercase, a number, and a special character. This browser stays signed in; your other sessions will be signed out.</p>
+                  {% for key, field_label, autocomplete in [('current_password', 'Current password', 'current-password'), ('new_password', 'New password', 'new-password'), ('password_confirmation', 'Confirm new password', 'new-password')] %}
+                    <label for="account-{{ key }}">{{ field_label }}</label>
+                    <div class="profile-password-input">
+                      <input
+                        class="input"
+                        id="account-{{ key }}"
+                        name="{{ key }}"
+                        type="password"
+                        required
+                        autocomplete="{{ autocomplete }}"
+                        {% if key != 'current_password' %}minlength="{{ password_min }}"{% endif %}
+                        aria-describedby="password-help{% if section_errors.get(key) %} account-{{ key }}-error{% endif %}"
+                        {% if section_errors.get(key) %}aria-invalid="true"{% endif %}
+                      >
+                      <button
+                        class="btn btn--ghost"
+                        type="button"
+                        data-profile-password="account-{{ key }}"
+                        aria-controls="account-{{ key }}"
+                        aria-label="Show {{ field_label|lower }}"
+                        aria-pressed="false"
+                        hidden
+                      >
+                        Show
+                      </button>
+                    </div>
+                    {% if section_errors.get(key) %}<p id="account-{{ key }}-error" class="profile-error">{{ section_errors[key] }}</p>{% endif %}
+                  {% endfor %}
+                  {{ password_feedback('account-new_password', 'account-password_confirmation', password_min) }}
+                {% endif %}
+                <div>
+                  <button class="btn btn--primary" type="submit">{{ 'Change password' if section == 'password' else 'Save ' ~ section }}</button>
+                </div>
+              </form>
+            </details>
+          {% endfor %}
+        </div>
+      </section>
+    {% elif profile_view == 'preferences' %}
+      <section
+        class="panel profile-editor"
+        aria-labelledby="matching-title"
+      >
+        <div class="profile-photo-controls">
+          <label for="profile-image">Change profile photo</label>
+          <input
+            class="input"
+            id="profile-image"
+            form="profile-form"
+            name="profile_image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-describedby="photo-help{% if errors.profile_image %} photo-error{% endif %}"
+            {% if errors.profile_image %}aria-invalid="true"{% endif %}
+          >
+          <small id="photo-help">Optional JPEG, PNG, or WebP, up to 3 MB. Saved with your profile.</small>
+          {% if errors.profile_image %}<p class="profile-error" id="photo-error">{{ errors.profile_image }}</p>{% endif %}
+          {% if current_user.profile_image_path %}
+            <form
+              method="post"
+              action="{{ url_for('volunteer.remove_profile_image') }}"
+            >
+              {% include 'partials/csrf_field.html' %}
+              <button class="btn btn--ghost" type="submit">Remove profile photo</button>
+            </form>
+          {% endif %}
+        </div>
+        <header class="panel__header">
+          <h2 id="matching-title">Interests and skills</h2>
+        </header>
+        <p class="help-text">Select at least one of each to support your cosine-similarity recommendations. Skills and interests can be selected independently.</p>
+        {% if errors %}<p class="profile-error" role="alert">{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p>{% endif %}
+        <form
+          id="profile-form"
+          data-profile-form
+          method="post"
+          enctype="multipart/form-data"
+          action="{{ url_for('volunteer.profile_page') }}"
+        >
+          {% include 'partials/csrf_field.html' %}
+          {% for name, label, catalog, selected in [('interests', 'Interests', interest_catalog, selected_interests), ('skills', 'Skills', skill_catalog, selected_skills)] %}
+            <fieldset
+              class="profile-choices"
+              {% if errors.get(name) %}aria-describedby="{{ name }}-error" aria-invalid="true"{% endif %}
+            >
+              <legend>{{ label }}</legend>
+              {% if errors.get(name) %}<p id="{{ name }}-error" class="profile-error">{{ errors[name] }}</p>{% endif %}
+              <div class="profile-choice-grid">
+                {% for choice in catalog %}
+                  <label class="profile-choice">
+                    <input
+                      type="checkbox"
+                      name="{{ name }}"
+                      value="{{ choice.id }}"
+                      {% if choice.id|string in selected %}checked{% endif %}
+                    >
+                    <span>{{ choice.name }}</span>
+                  </label>
+                {% else %}
+                  <p>No {{ name }} are available. Contact your coordinator before saving.</p>
+                {% endfor %}
+              </div>
+            </fieldset>
+          {% endfor %}
+          <div class="profile-save">
+            <button
+              class="btn btn--primary"
+              type="submit"
+              {% if not skill_catalog or not interest_catalog %}disabled{% endif %}
+            >Save profile</button>
+            <span class="help-text">Your choices are saved together with any new photo.</span>
+          </div>
+        </form>
+      </section>
+    {% else %}
+      <section aria-label="Participation summary" class="summary-strip">
+        {{ metric('Registrations', user_stats.total_activities, 'All your registration records, including pending and cancelled registrations. This is not a completed-service count.') }}
+        {{ metric('Verified attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
+        {{ metric('Completed participation', user_stats.completed_participation, 'Recorded presence at an approved activity whose scheduled end has passed.') }}
+      </section>
+      <section class="panel">
+        {{ heading('Profile milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
+        <div class="profile-milestone">
+          <div>
+            <strong>{{ user_stats.cert_level }}: {{ user_stats.level_label }}</strong>
+            <p class="help-text">Based on {{ user_stats.completed_participation }} completed participation records. Separate from Director recognition.</p>
+            <label for="profile-progress">Progress within this level: {{ user_stats.level_percent }}%</label>
+            <progress
+              id="profile-progress"
+              value="{{ user_stats.level_percent }}"
+              max="100"
+            >{{ user_stats.level_percent }}%</progress>
+          </div>
+          <ul class="profile-badges">
+            {% for badge in badges %}
+              <li>
+                <strong>{{ badge.name }}</strong>
+                <span>{{ 'Earned' if badge.earned else 'Not yet earned' }}</span>
+              </li>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          </ul>
+        </div>
+      </section>
+    {% endif %}
   </div>
 {% endblock %}
 {% block scripts %}
   <script type="application/json" id="profile-colleges">{{ affiliation_options|tojson }}</script>
-  <script src="{{ url_for('static', filename='scripts/profile-settings.js') }}"></script>
-  <script src="{{ url_for('static', filename='scripts/password-feedback.js') }}"></script>
+  <script
+    src="{{ url_for('static', filename='scripts/profile-settings.js') }}"
+  ></script>
+  <script
+    src="{{ url_for('static', filename='scripts/password-feedback.js') }}"
+  ></script>
 {% endblock %}

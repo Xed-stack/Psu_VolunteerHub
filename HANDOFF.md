@@ -1,5 +1,59 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Overhaul branch publication: 13 November 2026
+
+The user authorized committing the reviewed overhaul on
+`codex/ui-workflow-overhaul` and publishing that same branch to both `origin`
+(`Xed-stack/Psu_VolunteerHub`) and `thesis` (`arlrom003/PSU-Volunteer-Hub`).
+Main and watched deployment branches are outside this publication. The unrelated
+system documentation DOCX, local databases/uploads, and ignored QA/preview files
+are excluded. The implementation/verification notes below describe the prior
+uncommitted state; the feature branch now carries that work for review.
+No production migration or deployment is authorized by this branch publication.
+
+## Complete UI/workspace overhaul: 13 November 2026
+
+The user approved and requested implementation of the full UI and workflow plan.
+Source changes are local and uncommitted. No push, deployment, existing-database
+migration, data reset, or operational-account credential change was performed.
+The existing untracked system documentation DOCX remains untouched.
+
+Implemented compiled Tailwind with Flask/Jinja, shared components, connected
+task/detail screens, server-side allowlisted drafts and private staged uploads,
+four-step proposal-first activity publishing, agency/MOA records, audience
+targeting, combined Director/Admin permissions under Director, event cancellation
+without deletion, direct volunteer withdrawal, and attendance writes restricted
+to the scheduled event window. New Reports/dashboard screens use five explained
+KPIs, campus/monthly charts, approved annual evidence, and PDF/Excel/CSV exports.
+Interests-only positive cosine matches prioritize the preferred campus; profiles,
+registrations, administration, and historical records have separate destinations.
+
+Read `docs/operations/UI_WORKSPACE_OVERHAUL.md` before running against an existing
+database. The new columns/tables and role consolidation require the explicit
+workspace migration; development `create_all()` does not upgrade old tables.
+Use the standalone `scripts/migrate_workspace.py` for dry-run/apply without
+starting the application factory. No migration has been run on existing data.
+MySQL-specific DDL and the multi-stage Docker build still need staging validation;
+the local Docker daemon was unavailable.
+
+Verification: pinned Tailwind build, complete Jinja compilation, JavaScript syntax,
+and diff-whitespace checks passed. A focused suite passed 85 tests; overlapping
+supplemental runs passed 33 and 23 cases. The expanded disposable Chromium run
+passed 186 checks, including 320–1440px layouts, 200% text sizing, keyboard mobile
+navigation, creation steps, profile sections, and PDF print/export output. A
+separate nine-check re-run verified refresh restoration and cleanup using the
+actual form draft key. Do not add overlapping runs as a unique test total.
+The complete older repository suite was not rerun; some older UI tests encode
+intentionally replaced workflows. No full WCAG or production-capacity claim.
+
+QA evidence and the current Web Interface Guidelines/antislop delivery-gate notes
+are in `docs/qa/UI_WORKSPACE_OVERHAUL.md`. Skills used: antislop during work,
+antislop-ui, antislop-human, antislop-layoutmobile, frontend-design, ponytail full,
+KPI dashboard design, and web-design-guidelines. No new skills were installed.
+
+Next release step is review, staging backup/migration validation, and full target
+container verification. Publishing remains a separately authorized action.
+
 ## Startup connection retry fix: 12 November 2026
 
 User supplied logs showing MySQL connection-refused errors during production

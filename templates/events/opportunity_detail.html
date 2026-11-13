@@ -5,7 +5,7 @@
 {% block content %}
 {% if not current_user.is_authenticated %}{% include 'partials/opportunity_public_nav.html' %}<main id="main-content" tabindex="-1">{% endif %}
 <div class="activity-page">
-  <a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Back to opportunities</a>
+  <a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Back to activities</a>
   <header class="page-heading"><div><p class="activity-category">{{ event.category or 'General' }}</p><h1>{{ event.title }}</h1><p>Review the schedule and requirements before joining.</p></div></header>
   <div class="activity-layout">
     <section class="panel activity-key-facts" aria-labelledby="activity-facts-title">
@@ -31,7 +31,7 @@
       {% else %}
         <p>Volunteer accounts can join activities. Your current account can view these details.</p>
       {% endif %}
-      {% if opportunity_state.code in ['full', 'closed'] %}<a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Browse opportunities</a>{% endif %}
+      {% if opportunity_state.code in ['full', 'closed'] %}<a class="activity-back" href="{{ url_for('events.opportunities', **listing_query) }}">Browse activities</a>{% endif %}
     </aside>
     <section class="panel activity-description" aria-labelledby="activity-about-title">
       {% if event.cover_image_path %}<img class="activity-cover" src="{{ url_for('static', filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" width="960" height="540" loading="lazy">{% endif %}
@@ -42,7 +42,7 @@
       <h2>Sustainable Development Goals</h2>
       <ul class="activity-sdgs">{% for goal in event.sdgs %}<li>SDG {{ goal.number }}: {{ goal.name }}</li>{% else %}<li>No SDGs listed.</li>{% endfor %}</ul>
       <h2>Before you join</h2>
-      <p>A Participation Agreement is required.{% if event.nda_required %} A Non-Disclosure Agreement is also required.{% endif %} You can read and accept the required agreement(s) in the signed-in review step. Cancellation requests are subject to coordinator review.</p>
+      <p>A Participation Agreement is required.{% if event.nda_required %} A Non-Disclosure Agreement is also required.{% endif %} You can read and accept the required agreement(s) in the signed-in review step. You can withdraw directly before the withdrawal deadline.</p>
     </section>
   </div>
 </div>

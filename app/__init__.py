@@ -18,6 +18,7 @@ from app.models.event import (Event, Registration, Attendance, Milestone,
                               Campus, ExternalParticipant, ActivityCategory, SdgGoal)
 from app.models.notification import Notification
 from app.models.audit import AuditLog
+from app.models.workspace import FormDraft, PartnerAgency, PartnerAgreement, ExternalGroup
 from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                PrivacyAcknowledgement, ParticipationAgreementRevision)
 from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget, AnnualResult,
@@ -188,6 +189,8 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp)
     from app.routes.events import events_bp
     app.register_blueprint(events_bp)
+    from app.routes.workspace import workspace_bp
+    app.register_blueprint(workspace_bp)
     from app.routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp)
 
@@ -234,10 +237,12 @@ def create_app(config_name=None):
         from datetime import datetime
         from app.models.event import Event, HistoricalActivity, capacity_query
 
-        now = datetime.now()
+        from app.services.activity_workflow import local_now
+        now = local_now()
         featured_events = capacity_query(Event.query).filter(
             Event.date > now,
             Event.slots > 0,
+            Event.lifecycle_status == 'approved',
         ).options(joinedload(Event.campus)
         ).order_by(Event.date.asc()).limit(6).all()
         completed_at = db.func.coalesce(Event.end_date, Event.date)
@@ -250,7 +255,7 @@ def create_app(config_name=None):
                 HistoricalActivity.volunteer_count)).scalar() or 0),
         }
         return render_template(
-            'Homepage.html',
+            'workspace/home.html',
             featured_events=featured_events,
             completed_events=completed_events,
             historical_summary=historical_summary,
@@ -289,7 +294,7 @@ def create_app(config_name=None):
             endpoint = dashboard_routes.get(current_user.role)
             if endpoint:
                 dashboard_url = url_for(endpoint, tour=1)
-        return render_template('help.html', dashboard_url=dashboard_url)
+        return render_template('workspace/help.html', dashboard_url=dashboard_url)
 
     @app.route('/favicon.ico')
     def favicon():
@@ -473,7 +478,7 @@ def _seed_users(app):
             dict(name='Director User', email='director@psu.edu',
                  role='director', campus_id=1),
             dict(name='Admin User', email='admin@psu.edu',
-                 role='admin', campus_id=1),
+                 role='director', campus_id=1),
         ]
         for data in seed_users_data:
             u = User(name=data['name'], email=data['email'],

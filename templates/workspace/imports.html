@@ -1,0 +1,12 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Import data · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Import data', 'Choose a data type. Validate and review before confirming changes.') }}<nav class="grid gap-6 md:grid-cols-3" aria-label="Import types"><a
+  class="panel"
+  href="{{ url_for('admin.import_users_csv') }}"
+><h2>User accounts</h2><p class="mt-3">Upload CSV, review validation results, and confirm the import.</p></a><a
+  class="panel"
+  href="{{ url_for('workspace.import_dataset', kind='historical') }}"
+><h2>Historical activities</h2><p class="mt-3">Preview historical records before adding them to reporting.</p></a><a
+  class="panel"
+  href="{{ url_for('workspace.import_dataset', kind='annual') }}"
+><h2>Annual plans</h2><p class="mt-3">Validate approved AOP/ASP targets and results before import.</p></a></nav>{% endblock %}

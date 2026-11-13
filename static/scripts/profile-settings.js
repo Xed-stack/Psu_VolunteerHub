@@ -10,7 +10,7 @@
   const campus = document.getElementById('account-campus_id');
   const college = document.getElementById('account-college_affiliation');
   const colleges = JSON.parse(document.getElementById('profile-colleges').textContent);
-  campus.addEventListener('change', () => {
+  campus?.addEventListener('change', () => {
     college.replaceChildren(new Option('Select your college', ''));
     (colleges[campus.value] || []).forEach(name => college.add(new Option(name, name)));
   });
@@ -27,9 +27,13 @@
   });
   document.querySelector('[data-profile-errors]')?.focus();
   const snapshots = new Map();
-  const values = form => JSON.stringify([...new FormData(form)].filter(([key]) => key !== 'csrf_token')
+  const values = form => JSON.stringify([...new FormData(form)].filter(([key]) => !['csrf_token', '_draft_key'].includes(key))
     .map(([key, value]) => [key, value instanceof File ? [value.name, value.size, value.lastModified] : value]));
   forms.forEach(form => snapshots.set(form, values(form)));
+  forms.forEach(form => {
+    form.addEventListener('draft:saved', () => snapshots.set(form, values(form)));
+    form.addEventListener('draft:restored', () => snapshots.set(form, values(form)));
+  });
   let submitting = null;
   const restore = () => { submitting = null; };
   document.addEventListener('submit', event => {

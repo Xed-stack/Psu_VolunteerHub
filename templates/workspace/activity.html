@@ -1,0 +1,38 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% block title %}{{ event.title }} · PSU Volunteer Hub{% endblock %}
+{% block content %}
+  {{ heading(event.title, (event.campus.name if event.campus else 'Unassigned campus') ~ ' · ' ~ (event.conducting_department or 'Department not recorded'), url_for('workspace.activities', **request.args), 'Back to activities') }}
+  {% if event.lifecycle_status == 'approved' and event.end_date and event.end_date <= now and unrecorded %}<aside class="mb-6 rounded-lg border-2 border-amber-800 bg-amber-50 p-5 text-amber-950" role="status"><h2>Attendance incomplete</h2><p class="mt-2">{{ unrecorded }} registration records have no recorded attendance. The activity has ended and attendance is locked. Note any required corrections on the printed report.</p></aside>{% endif %}
+<div class="grid gap-6 xl:grid-cols-[2fr_1fr]"><section class="panel"><div class="mb-5 flex flex-wrap gap-3"><span
+  class="rounded-md bg-blue-50 px-3 py-2 font-semibold text-psu"
+>{{ event.lifecycle_status|title }}</span><span class="content-center">{{ 'To Be Conducted' if now < event.date else 'Ongoing' if event.end_date and now < event.end_date else 'Conducted' if event.end_date else 'End time not recorded' }}</span></div><p class="whitespace-pre-line leading-7">{{ event.description }}</p><dl class="mt-6 grid gap-5 sm:grid-cols-2"><div><dt class="text-sm text-slate-600">Schedule · Philippine time</dt><dd class="mt-1 font-medium">{{ event.date.strftime("%d %b %Y, %I:%M %p") }}<br>{{ event.end_date.strftime("%d %b %Y, %I:%M %p") if event.end_date else 'End time not recorded; attendance is read-only.' }}</dd></div><div><dt class="text-sm text-slate-600">Location</dt><dd>{{ event.location or 'Not recorded' }}</dd></div><div><dt class="text-sm text-slate-600">Type of Participants</dt><dd>{{ event.participant_type or 'Open to eligible volunteers' }}</dd></div><div><dt class="text-sm text-slate-600">Registration capacity</dt><dd>{{ event.slots }} slots</dd></div><div><dt class="text-sm text-slate-600">Required skills</dt><dd>{{ event.required_skills or 'No specific skills' }}</dd></div></dl>{% if event.cancellation_reason %}<p class="mt-5 border-l-4 border-red-700 p-4">Cancellation reason: {{ event.cancellation_reason }}</p>{% endif %}</section>
+    <nav
+      class="panel flex flex-col gap-3"
+      aria-label="Activity tasks"
+    ><h2>Activity workspace</h2><a class="btn btn--outline" href="{{ url_for('workspace.activity_registrations',event_id=event.id) }}">Registrations and expected audience</a>{% if current_user.role == 'coordinator' %}<a
+  class="btn btn--outline"
+  href="{{ url_for('coordinator.attendance', event_id=event.id) }}"
+>Internal attendance</a><a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.external', event_id=event.id) }}"
+>External volunteers</a><a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.activity_documents', event_id=event.id) }}"
+>Documents and announcements</a>{% if event.lifecycle_status == 'approved' and event.date > now %}<a
+  class="btn btn--outline"
+  href="{{ url_for('coordinator.edit_activity', event_id=event.id) }}"
+>Edit activity details</a>{% endif %}{% endif %}<a
+  class="btn btn--primary"
+  href="{{ url_for('workspace.report_results', event_id=event.id, year=event.date.year) }}"
+>Combined activity report</a>{% if event.proposal_document %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.proposal', event_id=event.id) }}"
+>Download approved proposal</a>{% else %}<p class="text-sm text-slate-600">No proposal attachment is recorded for this legacy activity.</p>{% endif %}</nav></div>
+  {% if current_user.role == 'coordinator' and event.lifecycle_status == 'approved' and (not event.end_date or event.end_date > now) %}<details class="panel mt-6"><summary>Cancel activity</summary><form
+  method="post"
+  action="{{ url_for('workspace.cancel_activity', event_id=event.id) }}"
+  class="mt-4"
+  data-confirm="Cancel this activity and notify registered volunteers? Records will be preserved."
+><label class="field">Reason *<textarea name="reason" minlength="3" maxlength="2000" required></textarea></label><button class="btn btn--danger mt-4">Confirm cancellation</button></form></details>{% endif %}
+{% endblock %}

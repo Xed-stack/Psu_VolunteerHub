@@ -44,7 +44,7 @@
       </label>
       <label class="field">
         Role
-        <select class="select" name="role">{% for role in ['volunteer', 'coordinator', 'director', 'admin'] %}<option
+        <select class="select" name="role">{% for role in ['volunteer', 'coordinator', 'director'] %}<option
   value="{{ role }}"
   {{ 'selected' if user and user.role == role }}
 >{{ role|title }}</option>{% endfor %}</select>

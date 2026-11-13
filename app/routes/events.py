@@ -21,6 +21,7 @@ from app.models.notification import notify, notify_campus_coordinators
 from app.utils.audit import log_activity
 from app.pagination import paginate
 from datetime import datetime
+from app.services.activity_workflow import local_now
 from calendar import Calendar
 
 events_bp = Blueprint('events', __name__, url_prefix='')
@@ -55,38 +56,12 @@ def _registration_query():
 
 
 def _cancellation_state(registration, now=None):
-    """Explain whether this PSU signup can request coordinator cancellation review.
-
-    Existing request history takes priority, even after rejection or rejoining;
-    one request per registration. Otherwise require pending/confirmed status,
-    no attendance record, and time strictly before deadline (or event start).
-    Return display state only; requesting cancellation does not free a slot.
-    """
+    from app.services.activity_workflow import local_now
     deadline = registration.event.cancellation_deadline or registration.event.date
-    cancellation = registration.cancellation_request
-    if cancellation:
-        if cancellation.status == 'pending':
-            code = 'pending'
-            message = 'Your cancellation request is awaiting coordinator review.'
-            if registration.status in ('pending', 'confirmed'):
-                message += ' Your registration remains active until approval.'
-        else:
-            code = cancellation.status
-            message = 'One cancellation request is allowed per registration. Another request is unavailable.'
-            if cancellation.status == 'approved' and registration.status != 'cancelled':
-                message = 'Your previous cancellation was approved, and you joined again. ' + message
-    elif registration.status == 'cancelled':
-        code, message = 'cancelled', 'This registration is cancelled.'
-    elif registration.status not in ('pending', 'confirmed'):
-        code, message = 'status', 'Only pending or confirmed registrations can request cancellation.'
-    elif registration.attendance_record is not None:
-        code, message = 'attendance', 'Cancellation is unavailable because attendance has been recorded.'
-    elif deadline <= (now or datetime.now()):
-        code, message = 'deadline', 'The cancellation deadline has passed.'
-    else:
-        code, message = 'available', 'You can request cancellation before the deadline. Coordinator approval is required.'
-    return {'can_request': code == 'available', 'code': code,
-            'message': message, 'deadline': deadline}
+    available = (registration.status in ('pending', 'confirmed') and not registration.attendance_record
+                 and registration.event.lifecycle_status == 'approved' and (now or local_now()) < deadline)
+    return {'can_request': available, 'code': 'available' if available else 'unavailable',
+            'message': 'You may withdraw directly before the deadline.' if available else 'Withdrawal is unavailable.', 'deadline': deadline}
 
 
 def _opportunity_state(event, registration=None, now=None, registration_status=None):
@@ -98,9 +73,11 @@ def _opportunity_state(event, registration=None, now=None, registration_status=N
     remaining = event.slots_remaining()
     if registration is not None:
         registration_status = registration.status or 'pending'
-    if registration_status is not None and registration_status != 'cancelled':
+    if event.lifecycle_status == 'cancelled':
+        code, label = 'closed', 'Activity cancelled'
+    elif registration_status is not None and registration_status != 'cancelled':
         code, label = 'registered', 'Registered'
-    elif event.date <= (now or datetime.now()):
+    elif event.date <= (now or local_now()):
         code, label = 'closed', 'Registration closed'
     elif event.slots > 0 and remaining <= 0:
         code, label = 'full', 'Full'
@@ -157,19 +134,7 @@ def _external_registration_from_token(token):
 
 
 def _external_cancellation_available(registration):
-    """Allow guest requests only before deadline, with no attendance/pending request.
-
-    Require pending/confirmed signup. This predicate blocks pending requests;
-    unlike PSU display state, it does not reject all reviewed request history.
-    """
-    event = registration.event
-    return (
-        registration.status in ('pending', 'confirmed')
-        and registration.attendance_record is None
-        and (event.cancellation_deadline or event.date) > datetime.now()
-        and not (registration.cancellation_request
-                 and registration.cancellation_request.status == 'pending')
-    )
+    return _cancellation_state(registration)['can_request']
 
 
 def _upsert_external_participant(id_number, campus_id, name=None, contact_number=None,
@@ -237,8 +202,8 @@ def opportunities():
         campus_mode = 'include'
     category = (request.args.get('category', type=str) or '').strip() or None
     search = (request.args.get('search', type=str) or '').strip() or None
-    now = datetime.now()
-    query = Event.query.filter(Event.date >= now, Event.slots > 0)
+    now = local_now()
+    query = Event.query.filter(Event.date >= now, Event.slots > 0, Event.lifecycle_status == 'approved')
     upcoming_query = query
     if filter_error:
         query = query.filter(db.false())
@@ -257,7 +222,10 @@ def opportunities():
     upcoming_count, filtered_count = db.session.query(
         upcoming_query.with_entities(func.count(Event.id)).scalar_subquery(),
         query.with_entities(func.count(Event.id)).scalar_subquery()).one()
-    query = capacity_query(query).options(joinedload(Event.campus)).order_by(Event.date.asc(), Event.id.asc())
+    query = capacity_query(query).options(joinedload(Event.campus))
+    if current_user.is_authenticated and current_user.role == 'volunteer':
+        query = query.order_by((Event.campus_id == current_user.campus_id).desc())
+    query = query.order_by(Event.date.asc(), Event.id.asc())
     if current_user.is_authenticated and current_user.role == 'volunteer':
         status = db.select(func.coalesce(Registration.status, 'pending')).where(
             Registration.user_id == current_user.id, Registration.event_id == Event.id).correlate(Event).scalar_subquery()
@@ -332,7 +300,7 @@ def register_for_event(event_id):
         abort(404)
     listing_query = _listing_query()
     details_url = url_for('events.opportunity_detail', event_id=event.id, **listing_query)
-    if event.date <= datetime.now():
+    if event.lifecycle_status != 'approved' or event.date <= local_now():
         flash('This activity has already started and cannot accept registrations.', 'error')
         return redirect(details_url)
     agreement = _agreement_for(event)
@@ -401,60 +369,16 @@ def register_for_event(event_id):
 @login_required
 @role_required('volunteer')
 def cancel_registration(registration_id):
-    """Submit one owned PSU signup's cancellation for coordinator review.
-
-    Enforce cancellation state/deadline and selected reason; Other needs detail.
-    Save request, audit, and campus notification together. Keep signup active
-    until coordinator approval. If simultaneous requests hit unique constraint,
-    roll back and show existing request rather than create another.
-    """
-    registration = db.session.get(Registration, registration_id)
-    if registration is None:
-        abort(404)
-    if registration.user_id != current_user.id:
-        abort(403)
-    event = registration.event
-    dashboard_query = _registration_query()
-    dashboard_url = url_for('events.volunteer_dash', _anchor=f'registration-{registration.id}', **dashboard_query)
-    state = _cancellation_state(registration)
-    if not state['can_request']:
-        flash(state['message'], 'warning')
-        return redirect(dashboard_url)
-    reason = request.form.get('reason', '').strip() if request.method == 'POST' else ''
-    details = request.form.get('details', '').strip() if request.method == 'POST' else ''
-    errors = {}
-    if request.method == 'POST':
-        if reason not in CANCELLATION_REASONS:
-            errors['reason'] = 'Choose a cancellation reason.'
-        if reason == 'Other' and not details:
-            errors['details'] = 'Explain your reason when choosing Other.'
-    if request.method == 'GET' or errors:
-        return render_template('events/cancellation_request.html', registration=registration,
-                               event=event, cancellation_state=state, dashboard_query=dashboard_query,
-                               dashboard_url=dashboard_url, reasons=CANCELLATION_REASONS,
-                               selected_reason=reason, submitted_details=details, errors=errors), 400 if errors else 200
-    cancellation = CancellationRequest(registration_id=registration.id,
-                                       reason=reason, details=details or None)
-    try:
-        db.session.add(cancellation)
-        db.session.flush()
-        log_activity('cancellation_requested', cancellation,
-                     {'event_id': event.id, 'reason': reason})
-        notify_campus_coordinators(
-            event.campus_id,
-            title=f'Cancellation request: {event.title}',
-            message=f'{current_user.name or current_user.email} requested cancellation for "{event.title}".',
-            notification_type='cancellation_requested',
-            related_event_id=event.id, commit=False)
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        if not CancellationRequest.query.filter_by(registration_id=registration.id).first():
-            raise
-        flash('A cancellation request already exists for this registration. Review its status below.', 'warning')
-        return redirect(dashboard_url)
-    flash(f'Your cancellation request for {event.title} was sent for coordinator review. Your registration remains active until approval.', 'success')
-    return redirect(dashboard_url)
+    registration = Registration.query.filter_by(id=registration_id, user_id=current_user.id).with_for_update().first_or_404()
+    if not _cancellation_state(registration)['can_request']:
+        abort(409, description='Withdrawal is unavailable after the deadline or attendance entry.')
+    if request.method == 'GET':
+        return render_template('workspace/withdraw.html', registration=registration)
+    registration.status = 'cancelled'
+    log_activity('volunteer_withdrawn', registration, {'event_id': registration.event_id})
+    db.session.commit()
+    flash('You have withdrawn. Your place is available to another volunteer.', 'success')
+    return redirect(url_for('events.volunteer_dash'))
 
 
 @events_bp.route('/volunteer_dash')
@@ -470,8 +394,8 @@ def volunteer_dash():
     Cancellation states explain review availability without changing signups.
     """
     profile = current_user.profile
-    candidates = Event.query.filter(Event.date >= datetime.now()).options(
-        load_only(Event.id, Event.date, Event.category), selectinload(Event.required_skills_rel)
+    candidates = Event.query.filter(Event.date >= local_now(), Event.lifecycle_status == 'approved').options(
+        load_only(Event.id, Event.date, Event.category, Event.campus_id, Event.lifecycle_status), selectinload(Event.required_skills_rel)
     ).order_by(Event.date, Event.id).all()
     recommendations = get_recommendations(
         profile, candidates, campus_id=current_user.campus_id, commit=False)
@@ -479,7 +403,7 @@ def volunteer_dash():
         user_id=current_user.id).count()
     cert_level = 'Active' if total_activities else 'New'
     user_stats = {'total_activities': total_activities, 'cert_level': cert_level}
-    now = datetime.now()
+    now = local_now()
     upcoming = Registration.query.filter_by(user_id=current_user.id).join(Event).filter(
         Event.date >= now, Registration.status.in_(('pending', 'confirmed'))
     ).options(joinedload(Registration.event)).order_by(Event.date.asc(), Registration.id).limit(5).all()
@@ -541,7 +465,7 @@ def volunteer_dash():
     upcoming_schedule = [{'event': r.event, 'date': r.event.date}
                          for r in upcoming]
     certification = {'level': cert_level}
-    response = render_template('volunteer/Volunteer_dash.html',
+    response = render_template('workspace/volunteer.html', default_view='calendar' if upcoming else 'recommended',
                            recommendations=recommendations,
                            user_stats=user_stats,
                            recent_activity=recent_activity,
@@ -625,44 +549,15 @@ def external_registration_manage(token):
 
 @events_bp.route('/external/registrations/<token>/cancel', methods=['POST'])
 def external_registration_cancel(token):
-    """Create guest cancellation request after token, state, and reason checks.
-
-    Keep signup active; coordinator approval performs cancellation. Save request
-    and audit before notifying campus coordinators. Notification save is a
-    separate commit, so request can remain saved if later notification fails.
-    """
     try:
         registration = _external_registration_from_token(token)
     except (BadSignature, SignatureExpired):
-        return render_template('events/external_registration_unavailable.html'), 404
+        abort(404)
+    registration = Registration.query.filter_by(id=registration.id).populate_existing().with_for_update().first_or_404()
     if not _external_cancellation_available(registration):
-        flash('Cancellation is unavailable because the deadline passed or a request is already pending.',
-              'error')
-        return redirect(url_for('events.external_registration_manage', token=token))
-    reason = request.form.get('reason', '').strip()
-    details = request.form.get('details', '').strip()
-    if reason not in CANCELLATION_REASONS or (reason == 'Other' and not details):
-        flash('Choose a cancellation reason. Explain Other reasons.', 'error')
-        return redirect(url_for('events.external_registration_manage', token=token))
-    cancellation = CancellationRequest(
-        registration_id=registration.id,
-        reason=reason,
-        details=details or None,
-    )
-    db.session.add(cancellation)
-    db.session.flush()
-    log_activity('cancellation_requested', cancellation,
-                 {'event_id': registration.event_id, 'reason': reason,
-                  'external': True})
+        abort(409, description='Withdrawal is unavailable.')
+    registration.status = 'cancelled'
+    log_activity('external_withdrawn', registration, {'event_id': registration.event_id})
     db.session.commit()
-    notify_campus_coordinators(
-        registration.event.campus_id,
-        title=f'Cancellation request: {registration.event.title}',
-        message=(f'{registration.external_participant.name or "External volunteer"} '
-                 f'requested cancellation for "{registration.event.title}".'),
-        notification_type='cancellation_requested',
-        related_event_id=registration.event_id,
-    )
-    db.session.commit()
-    flash('Your cancellation request was sent for coordinator review.', 'success')
+    flash('You have withdrawn from the activity.', 'success')
     return redirect(url_for('events.external_registration_manage', token=token))

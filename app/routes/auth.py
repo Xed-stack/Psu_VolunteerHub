@@ -27,7 +27,7 @@ import time
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 _recovery_delivery_slots = threading.BoundedSemaphore(4)
 
-VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
+VOLUNTEER_TYPES = {'student', 'faculty', 'staff', 'external'}
 SEXES = {'male', 'female', 'prefer_not_to_say'}
 AUTH_LIMITS = {'login': (5, timedelta(minutes=15)),
                'register': (5, timedelta(hours=1)),
@@ -190,7 +190,7 @@ def request_reactivation():
     user.reactivation_requested_at = datetime.utcnow()
     db.session.add(AuthSecurityEvent(
         action='reactivation', subject_hash=_throttle_key('reactivation', str(user_id))))
-    administrators = User.query.filter_by(role='admin', _is_active=True).all()
+    administrators = User.query.filter_by(role='director', _is_active=True).all()
     for administrator in administrators:
         db.session.add(Notification(
             user_id=administrator.id,
@@ -340,13 +340,13 @@ def register():
                 and password != password_confirmation):
             errors['password_confirmation'] = 'Password confirmation does not match.'
 
-        if not id_number:
+        if not id_number and volunteer_type != 'external':
             errors['id_number'] = 'PSU ID Number is required for volunteers.'
         if volunteer_type not in VOLUNTEER_TYPES:
-            errors['volunteer_type'] = 'Select Student, Faculty, or Staff.'
+            errors['volunteer_type'] = 'Select Student, Faculty, Staff, or External.'
         if sex not in SEXES:
             errors['sex'] = 'Select a sex response.'
-        if not college_affiliation:
+        if not college_affiliation and volunteer_type != 'external':
             errors['college_affiliation'] = 'College affiliation is required.'
         if active_terms and request.form.get('terms_accepted') != 'on':
             errors['terms_accepted'] = 'You must accept the current Terms of Use.'
@@ -364,7 +364,7 @@ def register():
         campus_obj = official_campus(campus_id) if campus_id else None
         if campus_obj is None:
             errors['campus'] = 'Select a valid PSU campus.'
-        elif college_affiliation not in campus_affiliations(campus_obj):
+        elif volunteer_type != 'external' and college_affiliation not in campus_affiliations(campus_obj):
             errors['college_affiliation'] = 'Select a College Affiliation for the selected campus.'
 
         selected_interest_ids = request.form.getlist('interests') or session.get(
@@ -444,6 +444,7 @@ def register():
         # Clear session keys after successful registration
         session.pop('selected_interests', None)
         session.pop('selected_skills', None)
+        session['clear_signup_draft'] = True
 
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('auth.login'))

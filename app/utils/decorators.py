@@ -47,8 +47,8 @@ def roles_required(*roles: str, abort_403: bool = True):
 
 
 def admin_only(abort_403: bool = True):
-    """Convenience wrapper for @role_required('admin')"""
-    return role_required('admin', abort_403=abort_403)
+    """Administrative actions belong to the combined Director role."""
+    return role_required('director', abort_403=abort_403)
 
 
 def coordinator_or_above(abort_403: bool = True):

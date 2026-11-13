@@ -1,6 +1,6 @@
 {% extends 'layouts/role_base.html' if current_user.is_authenticated else 'layouts/public_base.html' %}
-{% block title %}Opportunities | PSU Volunteer Hub{% endblock %}
-{% block header_title %}Opportunities{% endblock %}
+{% block title %}Activities | PSU Volunteer Hub{% endblock %}
+{% block header_title %}Activities{% endblock %}
 {% block header_subtitle %}Discover ways to serve{% endblock %}
 {% block content %}
   {% if not current_user.is_authenticated %}
@@ -10,7 +10,7 @@
   <div class="opportunities-page">
   <header class="page-heading">
     <div>
-      <h1>Volunteer Opportunities</h1>
+      <h1>Volunteer Activities</h1>
       <p aria-live="polite">{% if events %}Showing {{ first_result }}–{{ last_result }} of {{ total_count }} {{ 'opportunity' if total_count == 1 else 'opportunities' }}{% elif total_count %}Showing 0 of {{ total_count }} opportunities{% else %}0 opportunities{% endif %}</p>
     </div>
   </header>

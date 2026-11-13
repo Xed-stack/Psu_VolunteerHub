@@ -21,6 +21,8 @@ Pillow==10.4.0
 
 # Reports
 reportlab==4.2.2
+pypdf==5.9.0
+openpyxl==3.1.5
 
 # Utilities
 python-dotenv==1.0.1

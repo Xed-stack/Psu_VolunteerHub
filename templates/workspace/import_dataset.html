@@ -1,0 +1,13 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Import validation · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading, errors as show_errors with context %}
+{% block content %}{{ heading('Import ' ~ ('annual plans' if kind == 'annual' else 'historical activities'),'Validation uses the existing importer and duplicate-handling rules.',url_for('workspace.imports'),'Back to imports') }}{{ show_errors(errors) }}<form
+  class="panel max-w-3xl"
+  method="post"
+  enctype="multipart/form-data"
+  data-no-draft
+>{% if preview %}<h2>Validation preview</h2><pre
+  class="my-5 whitespace-pre-wrap break-words rounded-lg bg-slate-100 p-4"
+>{{ preview }}</pre><input type="hidden" name="token" value="{{ token }}"><button class="btn btn--primary" name="action" value="confirm">Confirm import</button><a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.import_dataset',kind=kind) }}"
+>Choose another file</a>{% else %}<label class="field">CSV file *<input type="file" name="dataset" accept=".csv" required></label><p class="my-4 text-sm text-slate-600">Use the existing institutional {{ kind }} CSV format. This preview does not commit changes.</p><button class="btn btn--primary" name="action" value="preview">Validate and preview</button>{% endif %}</form>{% endblock %}

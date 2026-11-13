@@ -1,0 +1,12 @@
+{
+  "name": "psu-volunteer-hub-ui",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i ./ui/app.css -o ./static/styles/app.css --minify",
+    "watch": "tailwindcss -i ./ui/app.css -o ./static/styles/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.0",
+    "tailwindcss": "4.3.0"
+  }
+}

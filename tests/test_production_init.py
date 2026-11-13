@@ -24,13 +24,13 @@ def invoke(production, answer='y', name='Initial Admin', email='admin@example.or
         input=f'{answer}\n{name}\n{email}\n{password}\n{password}\n')
 
 
-def test_initializes_reference_data_and_only_one_admin(production):
+def test_initializes_reference_data_and_only_one_director(production):
     result = invoke(production)
     assert result.exit_code == 0, result.output
     assert 'OnlyForTests-2026!' not in result.output
     with production.app_context():
         administrator = User.query.one()
-        assert administrator.role == 'admin' and administrator.email == 'admin@example.org'
+        assert administrator.role == 'director' and administrator.email == 'admin@example.org'
         assert administrator.check_password('OnlyForTests-2026!')
         assert administrator.password_hash != 'OnlyForTests-2026!'
         assert Campus.query.count() == 9 and SdgGoal.query.count() == 17
@@ -41,7 +41,7 @@ def test_initializes_reference_data_and_only_one_admin(production):
     token = re.search(r'const token = "([^"]+)"', page).group(1)
     response = client.post('/auth/login', base_url='https://localhost', headers={'Referer': 'https://localhost/auth/login'}, data={
         'identifier': 'admin@example.org', 'password': 'OnlyForTests-2026!', 'csrf_token': token})
-    assert response.status_code == 302 and '/admin_dash' in response.location
+    assert response.status_code == 302 and '/director_dash' in response.location
     repeated = invoke(production)
     assert repeated.exit_code != 0 and 'not empty' in repeated.output
     with production.app_context():

@@ -1,0 +1,3 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}Withdraw from activity · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Withdraw from activity',registration.event.title,url_for('events.volunteer_dash'),'Back to dashboard') }}<form method="post" class="panel max-w-2xl" data-no-draft><p class="mb-5">Withdrawing releases your place immediately. You can join again before registration closes if a place is still available.</p><button class="btn btn--danger">Confirm withdrawal</button></form>{% endblock %}

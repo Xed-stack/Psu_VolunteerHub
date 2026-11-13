@@ -17,6 +17,7 @@ from sqlalchemy.orm import joinedload, selectinload, load_only
 from app.models import db
 from app.models.event import Event, Registration, Attendance, Campus, SdgGoal
 from app.models.user import User
+from app.services.activity_workflow import local_now
 
 
 class ReportError(ValueError):
@@ -110,13 +111,13 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
     """
     from app.dashboard import ATTENTION_LABELS
     start, end = parse_date_range(start_date, end_date)
-    now = now or datetime.now()
+    now = now or local_now()
     if attention and attention not in ATTENTION_LABELS:
         raise ReportError('Choose a valid attention filter.')
     if attention == 'missed_targets' and sex:
         raise ReportError('Clear the sex filter to review whole-activity participant targets.')
 
-    query = Event.query
+    query = Event.query.filter(Event.lifecycle_status == 'approved')
     if event_ids is not None:
         query = query.filter(Event.id.in_(event_ids))
     if event_id is not None:
@@ -152,6 +153,9 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
     eligible = Registration.status != 'cancelled'
     valid = eligible & sex_scope
     attendance_eligible = eligible | Registration.status.is_(None)
+    derived_completed = ((Registration.status == 'confirmed') & (Attendance.status == 'present') &
+                         Event.end_date.isnot(None) & (Event.end_date <= now))
+    completed = (Registration.status == 'completed') | derived_completed
 
     def count_when(condition):
         """COUNT ignores NULL CASE results, counting only matching rows."""
@@ -163,14 +167,14 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             count_when(valid).label('registrations'),
             count_when(valid & Registration.user_id.isnot(None)).label('psu'),
             count_when(valid & Registration.external_participant_id.isnot(None)).label('external'),
-            count_when((Registration.status == 'completed') & sex_scope).label('completed'),
+            count_when(completed & sex_scope).label('completed'),
             count_when(Registration.status == 'cancelled').label('cancelled'),
             count_when(attendance_eligible & Attendance.id.is_(None)).label('missing'),
             count_when(attendance_eligible & (Attendance.status == 'present') &
-                       ((Registration.status != 'completed') | Registration.status.is_(None))).label('unconfirmed'),
+                       ~completed).label('unconfirmed'),
             count_when(valid & (Attendance.status == 'present')).label('outcome'),
-            count_when(valid & (Attendance.status == 'present') & (Registration.status == 'completed')).label('verified_completed'),
-        ).outerjoin(User, Registration.user_id == User.id).outerjoin(
+            count_when(valid & completed).label('verified_completed'),
+        ).join(Event, Registration.event_id == Event.id).outerjoin(User, Registration.user_id == User.id).outerjoin(
             Attendance, Attendance.registration_id == Registration.id).filter(
             Registration.event_id.in_(event_ids)).group_by(Registration.event_id).subquery()
     attendance_counts = db.session.query(

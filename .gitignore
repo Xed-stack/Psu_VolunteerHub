@@ -34,3 +34,8 @@ __pycache__/
 .qa-*.png
 .qa-*-temp/
 .pytest_cache/
+
+node_modules/
+.uv-cache/
+
+/pytest-cache-files-*/

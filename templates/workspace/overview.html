@@ -1,0 +1,40 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading, filters, charts, chart_scripts with context %}
+{% block title %}Overview · PSU Volunteer Hub{% endblock %}
+{% block content %}
+  {{ heading('Campus overview' if current_user.role == 'coordinator' else 'University overview', 'Activity delivery and verified achievements across ' ~ (current_user.campus.name if current_user.role == 'coordinator' else 'Pangasinan State University') ~ '.') }}
+  {{ filters(year, period, segment, campuses, campus_id, activity_choices, event_id, department) }}
+  <p class="mb-4 text-sm font-medium text-slate-600">{{ period_label }} · Philippine time</p>
+  <section
+    class="mb-8 grid gap-px overflow-hidden rounded-xl border border-slate-300 bg-slate-300 sm:grid-cols-2 xl:grid-cols-5"
+    aria-label="Key performance indicators"
+  >
+    {% for label, value, href, explanation in [
+      ('Approved activities', approved, url_for('workspace.report_results', **dict(request.args, delivery='approved')), 'Approved records starting in this period'),
+      ('Conducted activities', conducted, url_for('workspace.report_results', **dict(request.args, delivery='conducted')), 'Approved activities with a recorded end time that has passed'),
+      ('Volunteer accounts', accounts, url_for('workspace.volunteers', campus_id=campus_id), 'Registered accounts in this campus scope, all time'),
+      ('Verified attendees', attendees, url_for('workspace.report_results', **request.args), 'Recorded presences at conducted activities; repeat attendance counts again'),
+      ('AOP targets achieved', (goals.plans.AOP.met|string ~ ' / ' ~ goals.plans.AOP.total|string) if goals.plans.AOP.total else 'Not set', url_for('workspace.aop', **request.args), 'Approved annual AOP goals; annual context independent of period')
+      ] %}<a
+  href="{{ href }}"
+  class="group bg-white p-5 hover:bg-blue-50 focus-visible:z-10"
+><span class="text-sm font-semibold text-slate-600">{{ label }}</span><strong class="my-3 block text-3xl font-bold tabular-nums text-psu">{{ value }}</strong><span class="text-xs leading-5 text-slate-600">{{ explanation }}</span><span
+  class="mt-4 block text-sm font-semibold text-psu group-hover:underline"
+>View details</span></a>{% endfor %}
+  </section>
+  {{ charts(campus_chart, monthly, month_labels, period_label) }}
+  <nav
+    class="mt-8 grid gap-4 md:grid-cols-3"
+    aria-label="Related workspaces"
+  ><a
+  class="panel hover:border-psu"
+  href="{{ url_for('workspace.reports') }}"
+><h2>Reports</h2><p>Explore delivery, proposals, and printable achievements.</p></a><a
+  class="panel hover:border-psu"
+  href="{{ url_for('workspace.activities') }}"
+><h2>Activities</h2><p>Open an activity to review its details and records.</p></a><a
+  class="panel hover:border-psu"
+  href="{{ url_for('goals.workspace') }}"
+><h2>Annual plans</h2><p>Review campus targets, proposals, and evidence.</p></a></nav>
+{% endblock %}
+{% block scripts %}{{ chart_scripts() }}{% endblock %}

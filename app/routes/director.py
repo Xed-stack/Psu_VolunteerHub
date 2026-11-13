@@ -194,59 +194,7 @@ def _director_calendar(year, month, campus_id=None, category='', dashboard=False
 @login_required
 @roles_required('director', 'admin')
 def director_dash():
-    now = datetime.now()
-    try:
-        period = resolve_period(request.args, now)
-    except ReportError as exc:
-        flash(str(exc), 'error')
-        return redirect(url_for('director.director_dash'))
-    evidence = _live_report_context(period)
-    counts = Counter(row['campus_id'] for row in evidence['evidence_rows'])
-    campuses = [{'id': campus.id, 'name': campus.name, 'activities': counts[campus.id]}
-                for campus in evidence['campuses'] if not evidence['campus_error'] and
-                (not evidence['selected_campuses'] or
-                 ((campus.id in evidence['selected_campuses']) == (evidence['campus_mode'] == 'include')))]
-    with_activity = sum(campus['activities'] > 0 for campus in campuses)
-    evidence['annual_plan'] = annual_plan_summary(now.year)
-    if current_user.role == 'director':
-        grouped = defaultdict(list)
-        for row in evidence['evidence_rows']:
-            grouped[row['campus_id']].append(row)
-        assigned = {row[0] for row in db.session.query(User.campus_id).filter_by(
-            role='coordinator', _is_active=True).distinct().all()}
-        included = {campus['id'] for campus in campuses}
-        summaries = {campus['campus_id']: campus for campus in evidence['annual_plan']['campus_summaries']}
-        for campus in summaries.values():
-            records = goal_guidance(campus)
-            if campus['campus_id'] in included:
-                records += operational_guidance(grouped[campus['campus_id']], guidance_scope_label(period, request.args),
-                    show_targets=not evidence['selected_sex'], allow_scheduling=scheduling_scope(request.args))
-            campus['has_coordinator'] = campus['campus_id'] in assigned
-            campus['prescriptive_tips'] = present_guidance(records, campus['campus_id'],
-                evidence['annual_plan']['year'], evidence['live_query'])
-        for campus in campuses:
-            campus['guidance'] = summaries[campus['id']]['prescriptive_tips']
-            campus['has_coordinator'] = campus['id'] in assigned
-    else:
-        for campus in evidence['annual_plan']['campus_ranking']['rows']:
-            campus['has_coordinator'] = False
-            campus['prescriptive_tips'] = []
-    award_years = sorted({row[0] for row in db.session.query(
-        db.extract('year', Event.date)).distinct().all()}, reverse=True) or [now.year]
-    award_year = request.args.get('award_year', type=int)
-    if award_year not in award_years:
-        award_year = award_years[0]
-    state = {key: request.args.getlist(key) for key in
-             ('goal_year', 'sample', 'award_year', 'calendar_year', 'calendar_month') if key in request.args}
-    return render_template('director/Director_Dash.html', **evidence,
-                           **_director_calendar(request.args.get('calendar_year', type=int),
-                                                request.args.get('calendar_month', type=int), dashboard=True),
-                           award_years=award_years, award_year=award_year,
-                           leaderboards=AnalyticsAggregator.award_leaderboards(award_year),
-                           dashboard_state=state,
-                           campus_coverage={'campuses': campuses, 'total': len(campuses),
-                                            'with_activity': with_activity,
-                                            'without_activity': len(campuses) - with_activity}), (400 if evidence['campus_error'] else 200)
+    return redirect(url_for("workspace.overview", **request.args))
 
 
 @director_bp.route('/director/campus-follow-up', methods=['POST'])
@@ -357,70 +305,7 @@ def activity_calendar():
 @login_required
 @roles_required('director', 'admin')
 def analytics():
-    analytics_view = request.args.get('view', 'live').strip().lower()
-    if analytics_view not in {'live', 'historical'}:
-        analytics_view = 'live'
-    try:
-        period = resolve_period(request.args)
-    except ReportError as exc:
-        flash('Use valid report dates, with the start date on or before the end date. ' + str(exc), 'error')
-        return redirect(url_for('director.analytics'))
-    try:
-        parse_date_range(request.args.get('start_date'), request.args.get('end_date'))
-    except ReportError:
-        flash('Use valid report dates, with the start date on or before the end date.', 'error')
-        return redirect(url_for('director.analytics'))
-    filters = _historical_filters()
-    historical_query = dict(view='historical', **{key: value for key, value in filters.items() if value is not None})
-    if analytics_view == 'historical':
-        from app.models.event import HistoricalActivity
-        return render_template('director/Director_impact_anlaytics_dash.html',
-            analytics_view=analytics_view, historical_query=historical_query,
-            live_navigation_query={}, selected_filters=filters,
-            campuses=campus_query().order_by(Campus.name).all(),
-            historical_summary=AnalyticsAggregator.historical_summary(**filters),
-            historical_campus_data=AnalyticsAggregator.historical_campus_stats(**filters),
-            activity_types=[row[0] for row in db.session.query(HistoricalActivity.activity_type).filter(
-                HistoricalActivity.activity_type.isnot(None)).distinct().all()])
-    demographics = AnalyticsAggregator.role_demographics()
-
-    context = _live_report_context(period)
-    live_rows, live_summary = context['evidence_rows'], context['live_summary']
-    live_start = period['start']
-    live_end = period['end']
-    live_category = request.args.get('category', '').strip()
-    live_sex = context['selected_sex']
-    pagination = report_page(context['report_scope'], live_summary['event_count'], per_page=10)
-    department = context['selected_department']
-
-    # Supplementary profile evidence retains its independently labelled scope.
-    live_campus_filter = resolve_campus(request.args.get('campus_id'))
-    top_skills = AnalyticsAggregator.skill_distribution(limit=8)
-    top_interests = AnalyticsAggregator.interest_distribution(limit=8)
-    department_participants = AnalyticsAggregator.department_participants(
-        campus_id=live_campus_filter, department=department or None)
-    sex_participation = AnalyticsAggregator.sex_participation(
-        start_date=live_start, end_date=live_end,
-        category=live_category, sex=live_sex,
-        activity_name=request.args.get('activity_name', ''),
-        event_ids=[row['event_id'] for row in live_rows])
-    historical_query = {'view': 'historical'}
-    for key, value in filters.items():
-        if value is not None:
-            historical_query[key] = value
-
-    return render_template('director/Director_impact_anlaytics_dash.html',
-                            **context,
-                            analytics_view=analytics_view,
-                            demographics=demographics,
-                            historical_query=historical_query,
-                            selected_filters=filters,
-                            live_rows=pagination.items,
-                            report_page=pagination.page, report_total_pages=pagination.pages,
-                            top_skills=top_skills,
-                            top_interests=top_interests,
-                            department_participants=department_participants,
-                            sex_participation=sex_participation), (400 if context['campus_error'] else 200)
+    return redirect(url_for("workspace.historical" if request.args.get("view") == "historical" else "workspace.reports"))
 
 
 @director_bp.route('/reports/campus.csv')

@@ -1,3 +1,12 @@
+FROM node:22-bookworm-slim AS ui-build
+WORKDIR /ui
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY ui ./ui
+COPY templates ./templates
+COPY static/scripts ./static/scripts
+RUN npm run build
+
 FROM python:3.11-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 APP_ENV=production \
@@ -15,6 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY templates ./templates
 COPY static ./static
+COPY --from=ui-build /ui/static/styles/app.css ./static/styles/app.css
 COPY migrations ./migrations
 COPY data/historical_activities_2020_2025.csv ./data/historical_activities_2020_2025.csv
 COPY config.py wsgi.py ./

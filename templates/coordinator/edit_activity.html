@@ -63,11 +63,7 @@
 ><small>Maximum {{ max_slots or 100 }}.</small>
       </label>
       <label class="field">
-        Required skills<input
-  class="input"
-  name="required_skills"
-  value="{{ event.required_skills or '' }}"
->
+        Required skills<select name="required_skills" multiple size="5">{% for skill in skill_choices|default([]) %}<option value="{{ skill.name }}" {{ 'selected' if skill in event.required_skills_rel }}>{{ skill.name }}</option>{% endfor %}</select>
       </label>
       {% set selected_sdg_ids = request.form.getlist('sdg_ids') or event.sdgs|map(attribute='id')|map('string')|list %}
       <fieldset class="field field--wide choice-fieldset">
@@ -79,7 +75,7 @@
           {% endfor %}
         </div>
       </fieldset>
-      <label class="field"><span>Target participants</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', event.target_participants or '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
+      <label class="field"><span>Numeric participant target</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', event.target_participants or '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
       <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', event.participation_agreement_text or '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
       <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', event.participation_agreement_version or '') }}"></label>
       <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') or event.nda_required }}> <span>Require an event-specific NDA</span></label>
@@ -97,7 +93,7 @@
     <div class="form-actions">
       <a
         class="btn btn--ghost"
-        href="{{ url_for('coordinator.coordinator_dash') }}"
+        href="{{ url_for('workspace.activity',event_id=event.id) }}"
       >Cancel</a><button class="btn btn--primary" type="submit">Save Changes</button>
     </div>
   </form>

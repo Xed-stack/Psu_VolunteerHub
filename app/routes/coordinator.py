@@ -22,12 +22,13 @@ from app.utils.decorators import role_required, roles_required
 from app.models.notification import Notification, notify_campus_coordinators
 from app.models.notification import notify
 from app.utils.audit import log_activity
-from app.models.user import SystemSetting, User
+from app.models.user import SystemSetting, User, Skill
 from app.recommendation.analytics import AnalyticsAggregator
 from app.dashboard import summarize_report, resolve_period, dashboard_evidence, consolidate_attention, annual_plan_summary
 from app.reports import (
     build_events_report, batched_events_report, render_csv, render_pdf, ReportError, parse_date_range)
 from datetime import datetime, timedelta
+from app.services.activity_workflow import attendance_open, local_now
 
 coordinator_bp = Blueprint('coordinator', __name__, url_prefix='')
 
@@ -75,37 +76,22 @@ def _selected_sdgs(form):
 def _activity_form_context(**context):
     """Supply category/SDG choices and slot ceiling without replacing caller overrides."""
     context.setdefault('categories', _activity_categories())
+    context.setdefault('skill_choices', Skill.query.order_by(Skill.name).all())
     context.setdefault('sdgs', SdgGoal.query.order_by(SdgGoal.number).all())
     context.setdefault('max_slots', _max_event_slots())
     return context
 
 
 def _attendance_state(event, now):
-    """Describe check-in phase without writing attendance.
-
-    Locked until 30 minutes before start, active until end, then final due.
-    If no end_date exists, start time also acts as end. Final due is a prompt,
-    not proof that attendance has been saved or completed.
-    """
-    opens_at = event.date - timedelta(minutes=30)
-    ends_at = event.end_date or event.date
-    if now < opens_at:
-        return {
-            'kind': 'locked',
-            'label': 'Check-in Opens',
-            'time': opens_at,
-        }
-    if now >= ends_at:
-        return {
-            'kind': 'final',
-            'label': 'Final Attendance Due',
-            'time': ends_at,
-        }
-    return {
-        'kind': 'active',
-        'label': 'Check-in Active',
-        'time': ends_at,
-    }
+    if event.end_date is None:
+        return {'kind': 'locked', 'label': 'End time not recorded · read-only', 'time': event.date}
+    if event.lifecycle_status == 'cancelled':
+        return {'kind': 'locked', 'label': 'Activity cancelled · read-only', 'time': event.date}
+    if now < event.date:
+        return {'kind': 'locked', 'label': 'Attendance opens at activity start', 'time': event.date}
+    if now >= event.end_date:
+        return {'kind': 'closed', 'label': 'Attendance locked', 'time': event.end_date}
+    return {'kind': 'active', 'label': 'Attendance open', 'time': event.end_date}
 
 
 def _save_event_cover(file):
@@ -192,7 +178,7 @@ def _parse_event_schedule(form):
 
     Accept 0-365 days before start, default 2. End must follow start when
     supplied. Return (schedule, None) or (None, error); caller displays errors
-    before writes. This validator does not require start to be in future.
+    before writes. Start must be in the future and an end time is required.
     """
     try:
         start = datetime.fromisoformat(form.get('date', '').strip())
@@ -208,6 +194,10 @@ def _parse_event_schedule(form):
     if not 0 <= cancellation_days <= 365:
         return None, 'Cancellation must close from 0 to 365 days before the activity.'
     deadline = start - timedelta(days=cancellation_days)
+    if start.tzinfo or (end and end.tzinfo):
+        return None, 'Use Philippine local time without a timezone suffix.'
+    if start <= local_now() or end is None:
+        return None, 'A future start and an end date/time are required.'
     if end and end <= start:
         return None, 'The end date and time must be after the start.'
     return (start, end, deadline), None
@@ -220,7 +210,7 @@ def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
     year/month falls back to current month; stop navigation at supported year
     limits. Dashboard links preserve query state and point to calendar anchor.
     """
-    now = datetime.now()
+    now = local_now()
     year, month = year or now.year, month or now.month
     if not 1 <= year <= 9999 or not 1 <= month <= 12:
         year, month = now.year, now.month
@@ -256,87 +246,7 @@ def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
 @login_required
 @role_required('coordinator')
 def coordinator_dash():
-    """Assemble campus workspace with independently scoped performance/calendar data.
-
-    Performance uses chosen period; incomplete-attendance backlog spans all
-    dates so old unfinished work remains visible. Merge findings by activity
-    and page five at a time. Workspace status/category/date filters select
-    activity list and recent signup scope, not annual goals or calendar month.
-    All activity data uses assigned campus; cancelled list means activities
-    with cancelled registrations, not a separate activity cancellation status.
-    """
-    campus_id = _coordinator_campus_id()
-    # Workspace dates remain independent of the performance-period selector.
-    try:
-        period = resolve_period({'period': request.args.get('period', 'this_month')})
-    except ReportError as exc:
-        flash(str(exc), 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
-    evidence = dashboard_evidence({'campus_id': campus_id}, period)
-    pending, _ = build_events_report(campus_id=campus_id, attention='pending_attendance', include_sdgs=False)
-    pending.sort(key=lambda row: (row['end_date'], row['event_id']))
-    evidence['attention_items'] = consolidate_attention(evidence['performance'], pending)
-    for item in evidence['attention_items']:
-        for tip in item['guidance']:
-            tip['scope_label'] = 'All-date attendance backlog' if tip['code'] == 'pending_attendance' else period['label']
-    attention_total = len(evidence['attention_items'])
-    attention_pages = max(1, (attention_total + 4) // 5)
-    attention_page = min(max(request.args.get('attention_page', 1, type=int) or 1, 1), attention_pages)
-    evidence['attention_pagination'] = {
-        'page': attention_page, 'pages': attention_pages,
-        'start': (attention_page - 1) * 5, 'stop': min(attention_page * 5, attention_total),
-    }
-    status = request.args.get('status', 'upcoming')
-    category = request.args.get('category', '').strip()
-    start_date = request.args.get('start_date', '').strip()
-    end_date = request.args.get('end_date', '').strip()
-    events = Event.query.filter_by(campus_id=campus_id)
-    if status == 'upcoming':
-        events = events.filter(Event.date >= datetime.now())
-    elif status == 'completed':
-        events = events.filter(Event.date < datetime.now())
-    elif status == 'cancelled':
-        events = events.join(Registration).filter(Registration.status == 'cancelled')
-    if category:
-        events = events.filter(Event.category == category)
-    for value, column in ((start_date, 'start'), (end_date, 'end')):
-        if value:
-            try:
-                date_value = datetime.fromisoformat(value)
-                events = events.filter(Event.date >= date_value if column == 'start'
-                                       else Event.date <= date_value.replace(hour=23, minute=59, second=59))
-            except ValueError:
-                flash('Use valid dates when filtering activities.', 'error')
-    events = events.distinct()
-    activity_ids = events.with_entities(Event.id).statement
-    pagination = paginate(capacity_query(events).options(selectinload(Event.sdgs)).order_by(
-        Event.date.asc() if status == 'upcoming' else Event.date.desc(), Event.id))
-    events = pagination.items
-    calendar = _campus_calendar(campus_id, request.args.get('calendar_year', type=int),
-                                request.args.get('calendar_month', type=int), dashboard=True)
-    pending_cancellations = CancellationRequest.query.join(Registration).join(Event).filter(
-        Event.campus_id == campus_id,
-        CancellationRequest.status == 'pending').count()
-    recent_activities = Registration.query.filter(
-        Registration.event_id.in_(activity_ids)
-    ).options(joinedload(Registration.event), joinedload(Registration.user),
-              joinedload(Registration.external_participant)).order_by(
-        Registration.registered_at.desc(), Registration.id.desc()).limit(5).all()
-
-    campus_name = current_user.campus.name if current_user.campus else 'Campus'
-
-    evidence['annual_plan'] = annual_plan_summary(datetime.now().year, campus_id)
-    return render_template('coordinator/Coordinator_dash.html',
-                            **evidence,
-                            **calendar,
-                            events=events,
-                            pagination=pagination,
-                            recent_activities=recent_activities,
-                            selected_status=status,
-                            selected_category=category, start_date=start_date,
-                            end_date=end_date, categories=_activity_categories(),
-                            pending_cancellations=pending_cancellations,
-                            campus_name=campus_name)
+    return redirect(url_for("workspace.overview", **request.args))
 
 
 @coordinator_bp.route('/coordinator/calendar')
@@ -354,164 +264,14 @@ def activity_calendar():
 @login_required
 @role_required('coordinator')
 def cancellation_requests():
-    """List/review signup cancellation requests within coordinator's campus.
-
-    Optional activity/status filters narrow listing. POST locks request and
-    rechecks campus plus pending state; approved sets signup to cancelled,
-    rejected leaves signup unchanged. Save reviewer/time/note/audit and PSU
-    notification together. External signups have no account notification.
-    """
-    status = request.args.get('status', 'pending')
-    if status not in ('pending', 'approved', 'rejected', 'all'):
-        status = 'pending'
-    event_id = request.args.get('event_id', type=int)
-    selected_event = None
-    if request.args.get('event_id'):
-        selected_event = Event.query.filter_by(
-            id=event_id, campus_id=current_user.campus_id).first()
-        if selected_event is None:
-            abort(403)
-    query = CancellationRequest.query.join(Registration).join(Event).filter(
-        Event.campus_id == current_user.campus_id)
-    if selected_event:
-        query = query.filter(Registration.event_id == selected_event.id)
-    if status in ('pending', 'approved', 'rejected'):
-        query = query.filter(CancellationRequest.status == status)
-    if request.method == 'POST':
-        cancellation = CancellationRequest.query.filter_by(id=request.form.get('request_id', type=int)).with_for_update().first()
-        decision = request.form.get('decision')
-        note = request.form.get('review_note', '').strip()
-        if cancellation is None or cancellation.registration.event.campus_id != current_user.campus_id:
-            abort(403)
-        if cancellation.status != 'pending' or decision not in ('approved', 'rejected'):
-            flash('This request is no longer available for review.', 'error')
-        else:
-            cancellation.status = decision
-            cancellation.reviewed_by_id = current_user.id
-            cancellation.reviewed_at = datetime.utcnow()
-            cancellation.review_note = note or None
-            if decision == 'approved':
-                cancellation.registration.status = 'cancelled'
-            db.session.flush()
-            log_activity(f'cancellation_{decision}', cancellation,
-                         {'event_id': cancellation.registration.event_id})
-            if cancellation.registration.user_id:
-                notify(cancellation.registration.user_id,
-                       title=f'Cancellation request {decision}',
-                       message=f'Your request for "{cancellation.registration.event.title}" was {decision}.',
-                       notification_type=f'cancellation_{decision}',
-                       related_event_id=cancellation.registration.event_id, commit=False)
-            db.session.commit()
-            flash(f'Cancellation request {decision}.', 'success')
-        return redirect(url_for('coordinator.cancellation_requests', status=status,
-                                event_id=event_id, page=request.args.get('page', 1, type=int)))
-    pagination = paginate(query.options(
-        joinedload(CancellationRequest.registration).joinedload(Registration.event),
-        joinedload(CancellationRequest.registration).joinedload(Registration.user),
-        joinedload(CancellationRequest.registration).joinedload(Registration.external_participant)
-    ).order_by(CancellationRequest.requested_at.asc(), CancellationRequest.id.asc()))
-    return render_template('coordinator/cancellation_requests.html',
-                           requests=pagination.items, pagination=pagination,
-                           events=Event.query.filter_by(campus_id=current_user.campus_id)
-                               .order_by(Event.date.desc(), Event.id.desc()).all(),
-                           selected_event=selected_event,
-                           selected_status=status)
+    return redirect(url_for("workspace.activities"))
 
 
 @coordinator_bp.route('/create_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('coordinator')
 def create_activity():
-    """Create activity under coordinator's assigned campus, never submitted campus ID.
-
-    Validate required text, category, SDG selection, positive slots within
-    configured ceiling, optional positive target, schedule, and policy versions.
-    Required NDA needs text/version. Validate/save optional cover before storing
-    event, SDG links, and upload metadata. Target participants and slot capacity
-    are separate values; creation does not derive one from the other.
-    """
-    campuses = [current_user.campus] if current_user.campus else []
-    categories = _activity_categories()
-    if request.method == 'POST':
-        title = request.form.get('title', '').strip()
-        description = request.form.get('description', '').strip()
-        date_str = request.form.get('date', '').strip()
-        location = request.form.get('location', '').strip()
-        required_skills = request.form.get('required_skills', '').strip()
-        category = request.form.get('category', 'General').strip()
-        slots = request.form.get('slots', 0, type=int)
-        target_participants = request.form.get('target_participants', type=int)
-        agreement_text = request.form.get('participation_agreement_text', '').strip()
-        agreement_version = request.form.get('participation_agreement_version', '').strip()
-        nda_required = request.form.get('nda_required') == 'on'
-        nda_text = request.form.get('nda_text', '').strip()
-        nda_version = request.form.get('nda_version', '').strip()
-        max_slots = _max_event_slots()
-        campus_id = current_user.campus_id
-        if campus_id is None:
-            flash('Your account must be assigned to a campus before creating activities.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', **_activity_form_context(campuses=campuses))
-        if not title or not description or not date_str:
-            flash('Title, description, and date are required.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', **_activity_form_context(campuses=campuses))
-        if category not in categories:
-            flash('Select a valid activity category.', 'error')
-            return render_template('coordinator/create_act_scrn1.html',
-                                   campuses=campuses, categories=categories,
-                                   max_slots=max_slots)
-        sdgs = _selected_sdgs(request.form)
-        if SdgGoal.query.count() and not sdgs:
-            flash('Select at least one Sustainable Development Goal.', 'error')
-            return render_template('coordinator/create_act_scrn1.html',
-                                   **_activity_form_context(campuses=campuses))
-        if slots < 1 or slots > max_slots:
-            flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
-            return render_template('coordinator/create_act_scrn1.html',
-                                   campuses=campuses, max_slots=max_slots)
-        if target_participants is not None and target_participants < 1:
-            flash('Target participants must be a positive number when provided.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
-                                   categories=categories, max_slots=max_slots)
-        if (agreement_text and not agreement_version) or (nda_required and (not nda_text or not nda_version)):
-            flash('Provide a version for a custom agreement and text/version for a required NDA.', 'error')
-            return render_template('coordinator/create_act_scrn1.html', campuses=campuses,
-                                   categories=categories, max_slots=max_slots)
-        schedule, error = _parse_event_schedule(request.form)
-        if error:
-            flash(error, 'error')
-            return render_template('coordinator/create_act_scrn1.html',
-                                   campuses=campuses, categories=categories,
-                                   max_slots=max_slots)
-        date, end_date, cancellation_deadline = schedule
-        try:
-            cover = _save_event_cover(request.files.get('cover_image'))
-        except ValueError as exc:
-            flash(str(exc), 'error')
-            return render_template('coordinator/create_act_scrn1.html',
-                                   campuses=campuses, max_slots=max_slots)
-        event = Event(title=title, description=description, date=date,
-                      end_date=end_date,
-                      cancellation_deadline=cancellation_deadline,
-                      category=category, location=location,
-                      required_skills=required_skills, slots=slots,
-                      target_participants=target_participants,
-                      participation_agreement_text=agreement_text or None,
-                      participation_agreement_version=agreement_version or None,
-                      nda_required=nda_required, nda_text=nda_text or None,
-                      nda_version=nda_version or None,
-                      campus_id=campus_id,
-                      created_by_id=current_user.id,
-                      cover_image_path=cover['path'] if cover else None,
-                      cover_image_name=cover['original_name'] if cover else None,
-                      cover_uploaded_by_id=current_user.id if cover else None,
-                      cover_uploaded_at=datetime.utcnow() if cover else None)
-        db.session.add(event)
-        event.sdgs = sdgs
-        db.session.commit()
-        flash('Activity created successfully!', 'success')
-        return redirect(url_for('coordinator.coordinator_dash'))
-    return render_template('coordinator/create_act_scrn1.html',
-                           **_activity_form_context(campuses=campuses))
+    return redirect(url_for("workspace.create_activity", step=1))
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/edit', methods=['GET', 'POST'])
@@ -526,11 +286,14 @@ def edit_activity(event_id):
     Save new cover reference, commit, then remove replaced cover from disk.
     Ownership check is server-side; submitted campus_id cannot move activity.
     """
-    event = db.session.get(Event, event_id)
+    event = Event.query.filter_by(id=event_id).with_for_update().first()
     if event is None:
         abort(404)
     if event.campus_id != current_user.campus_id:
         abort(403)
+
+    if event.lifecycle_status != 'approved' or event.date <= local_now():
+        abort(409, description='Started or cancelled activities cannot be edited.')
 
     categories = _activity_categories()
 
@@ -539,7 +302,10 @@ def edit_activity(event_id):
         description = request.form.get('description', '').strip()
         date_str = request.form.get('date', '').strip()
         location = request.form.get('location', '').strip()
-        required_skills = request.form.get('required_skills', '').strip()
+        required_skills = ', '.join(request.form.getlist('required_skills'))
+        available_skills = {skill.name for skill in Skill.query.all()}
+        if not set(request.form.getlist('required_skills')) <= available_skills:
+            abort(400, description='Select available skills from the dropdown.')
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
         target_participants = request.form.get('target_participants', type=int)
@@ -624,7 +390,7 @@ def edit_activity(event_id):
             if os.path.isfile(old_path):
                 os.remove(old_path)
         flash('Activity updated successfully!', 'success')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity',event_id=event.id))
 
     return render_template('coordinator/edit_activity.html', event=event,
                            **_activity_form_context())
@@ -634,42 +400,7 @@ def edit_activity(event_id):
 @login_required
 @role_required('coordinator')
 def delete_activity(event_id):
-    """Delete owned activity and related records through configured ORM/DB cascades.
-
-    Queue account notifications before deletion, commit, then remove cover file.
-    This is permanent event deletion, unlike reviewing one signup cancellation.
-    External registrations receive no account notifications.
-    """
-    event = db.session.get(Event, event_id)
-    if event is None:
-        abort(404)
-    if event.campus_id != current_user.campus_id:
-        abort(403)
-
-    registrations = Registration.query.filter_by(event_id=event.id).all()
-    affected_volunteers = [r.user_id for r in registrations if r.user_id is not None]
-    for user_id in affected_volunteers:
-        db.session.add(Notification(
-            user_id=user_id,
-            title=f'Activity cancelled: {event.title}',
-            message=f'The activity "{event.title}" has been removed by its '
-                    'coordinator. Your registration was cancelled.',
-            notification_type='event_cancelled'))
-
-    cover_path = event.cover_image_path
-    registration_count = len(registrations)
-    db.session.delete(event)
-    db.session.commit()
-    if cover_path:
-        file_path = os.path.join(current_app.static_folder, cover_path)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-    if registration_count:
-        flash(f'Activity removed. {registration_count} registration(s) were cancelled.',
-              'success')
-    else:
-        flash('Activity removed.', 'success')
-    return redirect(url_for('coordinator.coordinator_dash'))
+    abort(405, description="Activities are preserved. Cancel an activity with a reason instead.")
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/announcements',
@@ -693,10 +424,10 @@ def publish_announcement(event_id):
     allowed = {'last_call', 'event_update', 'cancelled_postponed'}
     if announcement_type not in allowed or not message:
         flash('Select an announcement type and enter a message.', 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity_documents',event_id=event.id))
     if len(message) > 1000:
         flash('Announcement must be 1,000 characters or fewer.', 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity_documents',event_id=event.id))
 
     db.session.add(EventAnnouncement(
         event_id=event.id,
@@ -720,7 +451,7 @@ def publish_announcement(event_id):
     db.session.commit()
     flash(f'Announcement published to {len(registrations)} volunteer(s).',
           'success')
-    return redirect(url_for('coordinator.coordinator_dash'))
+    return redirect(url_for('workspace.activity_documents',event_id=event.id))
 
 
 @coordinator_bp.route('/attendance', methods=['GET', 'POST'])
@@ -741,7 +472,7 @@ def attendance():
     be saved after end for completion/certificate eligibility.
     Bulk update existing rows, insert missing attendance, then commit together.
     """
-    now = datetime.now()
+    now = local_now()
     volunteer_search = request.args.get('volunteer_search', '').strip()
     attendance_filter = request.args.get('attendance_status', '')
     if attendance_filter not in ('', 'present', 'absent', 'excused', 'unmarked'):
@@ -772,6 +503,7 @@ def attendance():
             events.append(selected_event)
         roster = Registration.query.filter(
             Registration.event_id == selected_event.id,
+            Registration.user_id.isnot(None),
             Registration.status != 'cancelled',
         )
         if volunteer_search:
@@ -819,9 +551,9 @@ def attendance():
         }
         if len(registrations_by_id) != len(registration_ids):
             abort(403)
-        now = datetime.now()
-        if now < selected_event.date - timedelta(minutes=30):
-            flash('Check-in is not open yet. It opens 30 minutes before the activity starts.', 'error')
+        now = local_now()
+        if not attendance_open(selected_event, now):
+            flash('Attendance is editable only while the activity is ongoing. Ended or unscheduled activities are read-only.', 'error')
             return redirect(url_for('coordinator.attendance', event_id=selected_event.id))
         activity_ended = now >= (selected_event.end_date or selected_event.date)
         registration_updates, attendance_updates, attendance_inserts = [], [], []
@@ -832,7 +564,7 @@ def attendance():
                 continue
             if status not in {'present', 'absent', 'excused'}:
                 abort(400)
-            registration_updates.append(dict(id=reg.id, status='completed' if status == 'present' and activity_ended else 'confirmed'))
+            registration_updates.append(dict(id=reg.id, status='confirmed'))
             existing = reg.attendance_record
             if existing:
                 attendance_updates.append(dict(id=existing.id, status=status))
@@ -846,20 +578,22 @@ def attendance():
                     status=case(values, value=model.id)), execution_options={'synchronize_session': False})
         if attendance_inserts:
             db.session.execute(insert(Attendance).values(attendance_inserts))
+        if not attendance_open(selected_event):
+            db.session.rollback()
+            abort(409, description='The activity ended before attendance was saved.')
         db.session.commit()
-        flash('Attendance updated successfully!' if activity_ended else
-              'Check-in saved. Save final attendance after the activity ends to confirm completion and certificate eligibility.', 'success')
+        flash('Attendance saved. Recorded presence confirms participation when the activity ends.', 'success')
         return redirect(url_for('coordinator.attendance', event_id=event_id,
                                 volunteer_search=volunteer_search, attendance_status=attendance_filter,
                                 activity_search=search,
                                 page=request.args.get('page', 1, type=int)))
-    attendance_opens_at = selected_event.date - timedelta(minutes=30) if selected_event else None
+    attendance_opens_at = selected_event.date if selected_event else None
     attendance_counts = {'registered': len(registrations), 'present': 0,
                          'absent': 0, 'excused': 0, 'unmarked': 0}
     for registration in registrations:
         status = registration.attendance_record.status if registration.attendance_record else 'unmarked'
         attendance_counts[status] += 1
-    return render_template('coordinator/attendance_MnGmt.html', events=events,
+    return render_template('workspace/attendance.html', events=events, now=now,
                            pagination=pagination, activity_search=search,
                            volunteer_search=volunteer_search, attendance_filter=attendance_filter,
                            registrations=registrations, selected_event=selected_event,
@@ -868,7 +602,7 @@ def attendance():
                                              if selected_event else None),
                            attendance_counts=attendance_counts,
                            attendance_opens_at=attendance_opens_at,
-                           attendance_locked=bool(attendance_opens_at and now < attendance_opens_at),
+                           attendance_locked=bool(selected_event and not attendance_open(selected_event, now)),
                            activity_ended=bool(selected_event and now >= (selected_event.end_date or selected_event.date)))
 
 
@@ -888,17 +622,17 @@ def upload_milestone(event_id):
         abort(403)
     if 'file' not in request.files:
         flash('No file selected.', 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity_documents',event_id=event.id))
     file = request.files['file']
     if file.filename == '':
         flash('No file selected.', 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity_documents',event_id=event.id))
     category = request.form.get('category', 'photo')
     try:
         ext = _validate_milestone(file)
     except ValueError as exc:
         flash(str(exc), 'error')
-        return redirect(url_for('coordinator.coordinator_dash'))
+        return redirect(url_for('workspace.activity_documents',event_id=event.id))
     upload_dir = os.path.join(current_app.config['PRIVATE_UPLOAD_FOLDER'], 'milestones')
     os.makedirs(upload_dir, exist_ok=True)
     filename = f"{uuid.uuid4().hex}.{ext}"
@@ -914,7 +648,7 @@ def upload_milestone(event_id):
     db.session.add(milestone)
     db.session.commit()
     flash('Milestone uploaded successfully!', 'success')
-    return redirect(url_for('coordinator.coordinator_dash'))
+    return redirect(url_for('workspace.activity_documents',event_id=event.id))
 
 
 @coordinator_bp.route('/milestones/<int:milestone_id>/download')
@@ -1025,54 +759,7 @@ def _date_range_label(start_date, end_date):
 @login_required
 @role_required('coordinator')
 def analytics():
-    """Build campus analytics from authorized report evidence and shared chart groups.
-
-    Main KPIs/charts/full export scope share period/category/title/attention
-    filters; detail rows paginate separately. Attendance Snapshot uses latest
-    campus activities across all dates/categories. Annual plan retains its own
-    year scope. These sections intentionally need not show matching totals.
-    """
-    campus_id = _coordinator_campus_id()
-    try:
-        period = resolve_period(request.args)
-    except ReportError:
-        flash('Use valid report dates, with the start date on or before the end date.', 'error')
-        return redirect(url_for('coordinator.analytics'))
-    # All aggregations scoped to the coordinator's own campus so the page
-    # reflects the coordinator's reality, not the whole university.
-    campus_name = current_user.campus.name if current_user.campus else 'Campus'
-    attendance_summary = AnalyticsAggregator.attendance_summary(
-        campus_id=campus_id)
-    categories = [row[0] for row in db.session.query(Event.category).filter(
-        Event.campus_id == campus_id,
-        Event.category.isnot(None)).distinct().order_by(Event.category).all()]
-
-    start_date = period['start']
-    end_date = period['end']
-    category = request.args.get('category', '').strip()
-    try:
-        scope = dict(campus_id=campus_id, category=category,
-            activity_name=request.args.get('activity_name', ''),
-            attention=request.args.get('attention', ''), event_id=request.args.get('event_id'))
-        evidence = dashboard_evidence(scope, period)
-    except ReportError as exc:
-        abort(400, description=str(exc))
-    report_rows, report_summary = evidence['evidence_rows'], evidence['evidence_summary']
-    pagination = report_page(dict(scope, start_date=start_date, end_date=end_date),
-                             report_summary['event_count'])
-    report_query = request.args.to_dict()
-    report_query.update(start_date=start_date, end_date=end_date)
-
-    annual_plan = annual_plan_summary(request.args.get('year', datetime.now().year, type=int), campus_id)
-    return render_template('coordinator/coordinator_analytics.html',
-                            **evidence, report_query=report_query,
-                            annual_plan=annual_plan,
-                            campus_name=campus_name,
-                            attendance_summary=attendance_summary,
-                            categories=categories,
-                            report_rows=pagination.items, pagination=pagination,
-                            report_summary=report_summary,
-                            dashboard_data=summarize_report(report_rows))
+    return redirect(url_for("workspace.historical" if request.args.get("view") == "historical" else "workspace.reports"))
 
 
 # ── Outsider (External Volunteer) manual encoding ───────────────────────────────
@@ -1081,54 +768,6 @@ def analytics():
 @login_required
 @role_required('coordinator')
 def add_external_participant(event_id):
-    """Manually register external volunteer for an owned campus activity.
-
-    Require ID number; gender is optional but must use allowed response.
-    Reuse only campus-safe guest records and fill missing optional details.
-    Insert confirmed signup only if participant/event pair has no existing row;
-    existing rows are not restored or duplicated. Notify campus after signup
-    commit. This manual path does not apply public join date/slot/consent checks.
-    """
-    event = db.session.get(Event, event_id)
-    if event is None:
-        abort(404)
-    if event.campus_id != current_user.campus_id:
-        abort(403)
-
     if request.method == 'POST':
-        id_number = request.form.get('id_number', '').strip()
-        sex = request.form.get('sex', '').strip().lower() or None
-        if not id_number:
-            flash('ID number is required for outsider registration.', 'error')
-            return render_template(
-                'coordinator/add_external.html', event=event), 400
-        if sex not in (None, 'male', 'female', 'prefer_not_to_say'):
-            flash('Choose a valid gender response.', 'error')
-            return render_template('coordinator/add_external.html', event=event), 400
-        from app.models.event import Registration
-        from app.routes.events import _upsert_external_participant
-        participant = _upsert_external_participant(
-            id_number, event.campus_id,
-            name=request.form.get('name', '').strip(),
-            contact_number=request.form.get('contact_number', '').strip(),
-            address=request.form.get('address', '').strip(),
-            email=request.form.get('email', '').strip(), sex=sex)
-        existing = Registration.query.filter_by(
-            external_participant_id=participant.id, event_id=event.id).first()
-        if existing is None:
-            db.session.add(Registration(
-                external_participant_id=participant.id, event_id=event.id,
-                status='confirmed'))
-            db.session.commit()
-            notify_campus_coordinators(
-                event.campus_id,
-                title=f'New external volunteer: {event.title}',
-                message=f'An external volunteer ({participant.name or participant.id_number}) '
-                        f'was added to "{event.title}" by a coordinator.',
-                notification_type='external_registration',
-                related_event_id=event.id)
-            db.session.commit()
-        flash('External volunteer added to the activity.', 'success')
-        return redirect(url_for('coordinator.attendance', event_id=event.id))
-
-    return render_template('coordinator/add_external.html', event=event)
+        abort(405, description='Use the named external roster in the activity workspace.')
+    return redirect(url_for('workspace.external', event_id=event_id))

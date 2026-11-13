@@ -1,7 +1,7 @@
 {% extends 'layouts/public_base.html' %}
 {% block title %}Institutional Activity Records | PSU Volunteer Hub{% endblock %}
 {% block body %}
-  <nav class="public-nav" aria-label="Public navigation"><a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><span>PSU Volunteer Hub</span></a><div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Opportunities</a><a href="{{ url_for('help_page') }}">Help</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div></nav>
+  <nav class="public-nav" aria-label="Public navigation"><a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt=""><span>PSU Volunteer Hub</span></a><div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Activities</a><a href="{{ url_for('help_page') }}">Help</a><a class="button button--primary" href="{{ url_for('auth.login') }}">Sign in</a></div></nav>
   <main class="public-main public-main--records">
     <header class="records-heading"><p class="home-eyebrow">Official institutional dataset</p><h1>Volunteer activities, CY 2020–2025</h1><p>{{ total_count }} aggregate records. Participant counts are reported totals, not unique volunteer accounts or individual attendance records.</p></header>
     <div class="record-list">

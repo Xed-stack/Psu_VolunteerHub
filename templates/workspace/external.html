@@ -1,0 +1,21 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}External volunteers · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading, input, errors as show_errors with context %}
+{% block content %}{{ heading('External volunteers',event.title,url_for('workspace.activity',event_id=event.id),'Back to activity') }}{{ show_errors(errors) }}<nav class="mb-6 flex gap-3" aria-label="Volunteer rosters"><a
+  class="btn btn--outline"
+  href="{{ url_for('coordinator.attendance',event_id=event.id) }}"
+>Internal volunteers</a><a
+  class="btn btn--primary"
+  aria-current="page"
+  href="{{ url_for('workspace.external',event_id=event.id) }}"
+>External volunteers</a></nav><section class="panel"><h2>Named group roster</h2><form method="post" data-no-draft><input type="hidden" name="action" value="attendance"><div class="overflow-x-auto"><table><thead><tr><th>Name</th><th>Email</th><th>Group</th><th>Attendance</th></tr></thead><tbody>{% for reg in registrations %}{% set person = reg.external_participant %}<tr><td>{{ person.name }}</td><td>{{ person.email or 'Not provided' }}</td><td>{% for group in groups if group.id == person.group_id %}{{ group.name }}{% endfor %}</td><td><input type="hidden" name="registration_id" value="{{ reg.id }}"><label class="sr-only" for="external-status-{{ reg.id }}">Attendance for {{ person.name }}</label><select
+  name="status"
+  id="external-status-{{ reg.id }}"
+  {{ 'disabled' if not editable }}
+><option value="">Unrecorded</option>{% for value,label in [('present','Attending'),('absent','Not Attended'),('excused','Excused')] %}<option
+  value="{{ value }}"
+  {{ 'selected' if reg.attendance_record and reg.attendance_record.status == value }}
+>{{ label }}</option>{% endfor %}</select></td></tr>{% else %}<tr><td colspan="4">No named external volunteers recorded.</td></tr>{% endfor %}</tbody></table></div>{% if editable and registrations %}<button class="btn btn--primary mt-5">Save external attendance</button>{% endif %}</form></section>{% if editable %}<form
+  class="panel mt-6"
+  method="post"
+  enctype="multipart/form-data"
+><h2 class="mb-5">Add individuals or a group</h2>{{ input('group_name', 'Group name (optional)') }}<label class="field mt-4">Named volunteers<textarea name="roster" rows="6" placeholder="Name,email"></textarea><small>One person per line, up to 100. Email is optional. Do not include a header row.</small></label><label class="field mt-4">Or upload named roster<input type="file" name="roster_file" accept=".csv"><small>UTF-8 CSV using the same name,email format.</small></label><label class="check-row my-4"><input type="checkbox" name="mark_present" value="yes">Mark all people in this submission as Attending</label><button class="btn btn--primary">Save named roster</button></form>{% else %}<p class="panel mt-6">External attendance entry is available only while this activity is ongoing. Afterward, use the printed report for corrections.</p>{% endif %}{% endblock %}

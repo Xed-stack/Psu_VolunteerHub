@@ -1,0 +1,66 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading, input, errors as show_errors with context %}
+{% block title %}Create activity · Step {{ step }} · PSU Volunteer Hub{% endblock %}
+{% block content %}
+  {{ heading('Create activity', 'Your draft is saved between steps and restored after refresh. Fields marked * are required.', url_for('workspace.activities'), 'Back to activities') }}
+  <nav
+    class="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4"
+    aria-label="Activity creation steps"
+  >{% for label in ['Approved proposal','Activity details','Audience and partners','Review and publish'] %}<a
+  class="rounded-lg border p-4 {{ 'border-psu bg-psu text-white' if step == loop.index else 'border-slate-300 bg-white text-psu' }}"
+  href="{{ url_for('workspace.create_activity', step=loop.index) }}"
+  {{ 'aria-current=step' if step == loop.index }}
+><span class="mr-2 font-bold">{{ loop.index }}</span>{{ label }}</a>{% endfor %}</nav>
+  {{ show_errors(errors) }}
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="panel mx-auto max-w-4xl"
+    data-draft-key="activity:new"
+  >
+    {% if step == 1 %}<h2>Upload the approved proposal</h2><p class="my-4 text-slate-600">PDF or DOCX, up to 10 MB. Readable fields are extracted for review. Scanned documents require manual entry.</p>{% if proposal %}<p class="mb-4 rounded-lg bg-blue-50 p-4">Saved attachment: <strong>{{ proposal.name }}</strong>. Upload a new file only to replace it.</p>{% endif %}<label class="field">Approved proposal *<input
+  type="file"
+  name="proposal"
+  accept=".pdf,.docx"
+  {{ 'required' if not proposal }}
+></label>
+{% elif step == 2 %}<h2>Review activity details</h2><p class="my-4 text-slate-600">Check extracted information against the approved document. All times use Philippine time.</p><div class="grid gap-5 sm:grid-cols-2"><div class="sm:col-span-2">{{ input('title','Activity title',data.get('title',''),'text',true) }}</div><label class="field sm:col-span-2">Description *<textarea name="description" required rows="5">{{ data.get('description','') }}</textarea></label>{{ input('date','Start date and time',data.get('date',''),'datetime-local',true,minimum=now.strftime('%Y-%m-%dT%H:%M')) }}{{ input('end_date','End date and time',data.get('end_date',''),'datetime-local',true,minimum=now.strftime('%Y-%m-%dT%H:%M')) }}{{ input('location','Location',data.get('location','')) }}<label class="field">Category *<select name="category" required>{% for category in categories %}<option {{ 'selected' if data.get("category") == category }}>{{ category }}</option>{% endfor %}</select></label><label class="field">Volunteer slots *<input
+  name="slots"
+  type="number"
+  min="1"
+  max="{{ max_slots }}"
+  value="{{ data.get('slots', '20') }}"
+  required
+></label>{{ input('cancellation_days','Withdrawal closes: days before start',data.get('cancellation_days','2'),'number',true) }}<label class="field sm:col-span-2">Required skills<select name="required_skills" multiple size="5">{% for skill in skills %}<option
+  value="{{ skill.id }}"
+  {{ 'selected' if skill.id|string in data.getlist("required_skills") }}
+>{{ skill.name }}</option>{% endfor %}</select><small>Select all relevant skills. Hold Ctrl/Command to select multiple on desktop.</small></label><fieldset class="sm:col-span-2"><legend class="font-semibold">Sustainable Development Goals *</legend><div class="mt-3 grid gap-2 sm:grid-cols-2">{% for sdg in sdgs %}<label class="check-row"><input
+  type="checkbox"
+  name="sdg_ids"
+  value="{{ sdg.id }}"
+  {{ 'checked' if sdg.id|string in data.getlist("sdg_ids") }}
+>SDG {{ sdg.number }}: {{ sdg.name }}</label>{% endfor %}</div></fieldset></div>
+{% elif step == 3 %}<h2>Audience and partners</h2><p class="my-4 text-slate-600">Targeting helps notify volunteers; it does not restrict eligible registrations.</p><div class="grid gap-5 sm:grid-cols-2">{{ input('participant_type','Type of Participants',data.get('participant_type','')) }}{{ input('conducting_department','Conducting department',data.get('conducting_department','')) }}<label class="field">Audience departments<select name="departments" multiple>{% for department in departments %}<option
+  {{ 'selected' if department in data.getlist("departments") }}
+>{{ department }}</option>{% endfor %}</select><small>Departments within {{ current_user.campus.name }}.</small></label><label class="field">Specific volunteers<select name="volunteer_ids" multiple>{% for user in volunteers %}<option
+  value="{{ user.id }}"
+  {{ 'selected' if user.id|string in data.getlist("volunteer_ids") }}
+>{{ user.name }}</option>{% endfor %}</select></label>{{ input('target_participants','Numeric participant target',data.get('target_participants',''),'number') }}<label class="field">Existing partner / MOA<select name="agreement_id"><option value="">No MOA selected</option>{% for agency in agencies %}{% for agreement in agency.agreements %}<option
+  value="{{ agreement.id }}"
+  {{ 'selected' if data.get("agreement_id") == agreement.id|string }}
+>{{ agency.name }} · {{ agreement.reference }}</option>{% endfor %}{% endfor %}</select><a
+  class="min-h-11 content-center text-psu underline"
+  href="{{ url_for('workspace.partners') }}"
+>Add a partner agency or new MOA</a><small>Your activity draft remains available when you return.</small></label><label class="field sm:col-span-2">Event Participation Agreement<textarea name="participation_agreement_text" rows="5">{{ data.get('participation_agreement_text','') }}</textarea><small>Leave blank to use the published default agreement. Version tracking is internal.</small></label></div>
+{% else %}<h2>Review before publishing</h2><p class="my-4 text-slate-600">The uploaded proposal authorizes publishing this activity as Approved.</p><dl class="grid gap-5 sm:grid-cols-2"><div><dt>Approved proposal</dt><dd class="font-semibold">{{ proposal.name }}</dd></div>{% for key, label in [('title','Activity'),('date','Start'),('end_date','End'),('location','Location'),('category','Category'),('slots','Volunteer slots'),('participant_type','Type of Participants'),('conducting_department','Conducting department')] %}<div><dt class="text-sm text-slate-600">{{ label }}</dt><dd class="mt-1 font-semibold">{{ data.get(key) or 'Not specified' }}</dd></div>{% endfor %}</dl><h3 class="mt-6 font-semibold">Description</h3><p class="mt-2 whitespace-pre-line">{{ data.get('description', '') }}</p>{% endif %}
+<div
+  class="mt-8 flex flex-wrap justify-between gap-3 border-t border-slate-200 pt-5"
+>{% if step > 1 %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.create_activity', step=step-1) }}"
+>Previous step</a>{% else %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.draft_list') }}"
+>Saved drafts</a>{% endif %}<button class="btn btn--primary">{{ 'Publish approved activity' if step == 4 else 'Keep saved proposal and continue' if step == 1 and proposal else 'Save and continue' }}</button></div>
+</form>
+{% endblock %}

@@ -29,9 +29,9 @@ def init_production(database):
     if inspector.get_table_names() or inspector.get_view_names():
         raise click.ClickException('Database is not empty. Refusing initialization; use reviewed migrations for existing databases.')
     click.echo(f'Target: {db.engine.url.host or "local"} / {database}')
-    click.confirm('Create the schema, reference data, and first Admin in this empty database?', abort=True)
-    name = click.prompt('Admin name').strip()
-    email = click.prompt('Admin email').strip()
+    click.confirm('Create the schema, reference data, and first Director in this empty database?', abort=True)
+    name = click.prompt('Director name').strip()
+    email = click.prompt('Director email').strip()
     if not name or len(name) > 100:
         raise click.ClickException('Admin name must contain 1 to 100 characters.')
     try:
@@ -43,7 +43,7 @@ def init_production(database):
     password = click.prompt('Admin password (at least 12 characters)', hide_input=True, confirmation_prompt=True)
     if len(password) < 12 or not password.strip():
         raise click.ClickException('Administrator password must contain at least 12 characters.')
-    administrator = User(name=name, email=email, role='admin')
+    administrator = User(name=name, email=email, role='director')
     administrator.set_password(password)
     # Only run once, offline: MariaDB/MySQL schema DDL cannot be rolled back.
     from app import _seed_campuses, _seed_interests_skills, _seed_sdgs
@@ -57,7 +57,7 @@ def init_production(database):
     except SQLAlchemyError:
         db.session.rollback()
         raise click.ClickException('Initialization failed. Schema may remain; inspect it manually before any recovery. No automatic retry or table deletion performed.') from None
-    click.echo('Production initialized: reference data and one Admin; no demo users or activities.')
+    click.echo('Production initialized: reference data and one Director; no demo users or activities.')
 
 
 def _optional_int(value, field, line_number):
@@ -297,6 +297,7 @@ def register_commands(app):
     app.cli.add_command(migrate_performance_indexes)
     app.cli.add_command(migrate_annual_goals_command)
     app.cli.add_command(sync_campuses)
+    app.cli.add_command(migrate_workspace_command)
 
 
 @click.command('sync-campus-catalogue')
@@ -327,3 +328,19 @@ def migrate_annual_goals_command(database, dry_run):
     for statement in statements:
         click.echo(statement)
     click.echo(f'{"Dry run: " if dry_run else "Applied: "}{len(statements)} schema changes.')
+
+
+@click.command('migrate-workspace')
+@click.option('--database', required=True, help='Exact configured database name.')
+@click.option('--dry-run', is_flag=True, help='Inspect without changing schema or data.')
+@with_appcontext
+def migrate_workspace_command(database, dry_run):
+    """Add workspace tables/fields and consolidate existing Admins into Directors."""
+    from app.workspace_migration import migrate_workspace
+    try:
+        statements = migrate_workspace(db.engine, database, dry_run)
+    except (ValueError, SQLAlchemyError) as exc:
+        raise click.ClickException(str(exc) if isinstance(exc, ValueError) else
+                                   'Migration interrupted. Inspect schema and rerun; MySQL DDL commits independently.') from None
+    for statement in statements:
+        click.echo(statement)
