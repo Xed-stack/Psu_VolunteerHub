@@ -20,6 +20,32 @@ def attendance_open(event, now=None):
             and event.date <= now < event.end_date)
 
 
+def validate_cover(content, filename):
+    from PIL import Image, UnidentifiedImageError
+    suffix = Path(filename).suffix.lower()
+    if suffix not in ('.jpg','.jpeg','.png','.webp') or len(content) > 5 * 1024 * 1024:
+        raise ValueError('Choose a JPEG, PNG, or WebP cover image up to 5 MB.')
+    try:
+        with Image.open(io.BytesIO(content)) as image:
+            detected = image.format
+            image.verify()
+        if suffix not in {'JPEG':('.jpg','.jpeg'),'PNG':('.png',),'WEBP':('.webp',)}.get(detected,()):
+            raise ValueError('The image contents must match its filename.')
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError('Choose a valid cover image.') from exc
+
+
+def stage_cover(file):
+    content = file.read(5 * 1024 * 1024 + 1)
+    name = secure_filename(file.filename)
+    validate_cover(content,name)
+    folder = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'draft-uploads'
+    folder.mkdir(parents=True,exist_ok=True)
+    stored = uuid.uuid4().hex
+    (folder / stored).write_bytes(content)
+    return dict(path=stored,name=name)
+
+
 def save_document(file):
     if not file or not file.filename:
         raise ValueError('Choose a PDF or DOCX document.')

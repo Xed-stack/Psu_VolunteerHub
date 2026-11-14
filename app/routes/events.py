@@ -37,10 +37,10 @@ EXTERNAL_LINK_MAX_AGE = 60 * 60 * 24 * 30
 def _listing_query():
     """Preserve allowed multi-value listing filters in internal return links.
 
-    Never copy a caller-supplied return URL; navigation stays on app routes.
+    Return context is displayed only through the validated shared Back helper.
     """
     return {key: request.args.getlist(key)
-            for key in ('page', 'search', 'category', 'campus', 'campus_mode')
+            for key in ('page', 'search', 'category', 'campus', 'campus_mode', 'return_to')
             if key in request.args}
 
 
@@ -60,8 +60,15 @@ def _cancellation_state(registration, now=None):
     deadline = registration.event.cancellation_deadline or registration.event.date
     available = (registration.status in ('pending', 'confirmed') and not registration.attendance_record
                  and registration.event.lifecycle_status == 'approved' and (now or local_now()) < deadline)
+    message = 'You may withdraw directly before the deadline.'
+    if not available:
+        message = ('This activity has been cancelled.' if registration.event.lifecycle_status == 'cancelled' else
+                   'You have already withdrawn from this activity.' if registration.status == 'cancelled' else
+                   'The withdrawal deadline has passed.' if (now or local_now()) >= deadline else
+                   'Withdrawal is unavailable after attendance is recorded.' if registration.attendance_record else
+                   'This registration is no longer eligible for withdrawal.')
     return {'can_request': available, 'code': 'available' if available else 'unavailable',
-            'message': 'You may withdraw directly before the deadline.' if available else 'Withdrawal is unavailable.', 'deadline': deadline}
+            'message': message, 'deadline': deadline}
 
 
 def _opportunity_state(event, registration=None, now=None, registration_status=None):
@@ -102,7 +109,7 @@ def _agreement_for(event):
                 'title': 'Event Participation Agreement',
                 'version': 'system-default',
                 'body': ('By joining this activity, I commit to participate, follow PSU '
-                         'guidelines, and submit a cancellation request if I cannot attend.'),
+                         'guidelines, and withdraw before the withdrawal deadline if I cannot attend.'),
             })
 
 
@@ -201,7 +208,7 @@ def opportunities():
         filter_error = 'Choose whether to show only or exclude the selected campuses, then apply filters again.'
         campus_mode = 'include'
     category = (request.args.get('category', type=str) or '').strip() or None
-    search = (request.args.get('search', type=str) or '').strip() or None
+    search = (request.args.get('search', type=str) or '').strip()[:200] or None
     now = local_now()
     query = Event.query.filter(Event.date >= now, Event.slots > 0, Event.lifecycle_status == 'approved')
     upcoming_query = query
@@ -216,9 +223,8 @@ def opportunities():
     if category:
         query = query.filter(Event.category == category)
     if search:
-        like = f'%{search}%'
-        query = query.filter(Event.title.ilike(
-            like) | Event.description.ilike(like))
+        query = query.filter(Event.title.icontains(search, autoescape=True)
+                             | Event.description.icontains(search, autoescape=True))
     upcoming_count, filtered_count = db.session.query(
         upcoming_query.with_entities(func.count(Event.id)).scalar_subquery(),
         query.with_entities(func.count(Event.id)).scalar_subquery()).one()
@@ -362,7 +368,7 @@ def register_for_event(event_id):
         related_event_id=event.id, commit=False)
     db.session.commit()
     flash(success_message, 'success')
-    return redirect(details_url)
+    return redirect(url_for('workspace.registration', registration_id=registration.id, **listing_query))
 
 
 @events_bp.route('/registrations/<int:registration_id>/cancel', methods=['GET', 'POST'])
@@ -378,7 +384,8 @@ def cancel_registration(registration_id):
     log_activity('volunteer_withdrawn', registration, {'event_id': registration.event_id})
     db.session.commit()
     flash('You have withdrawn. Your place is available to another volunteer.', 'success')
-    return redirect(url_for('events.volunteer_dash'))
+    from app.ui import linked_url
+    return redirect(linked_url('workspace.registration', registration_id=registration.id))
 
 
 @events_bp.route('/volunteer_dash')
@@ -395,7 +402,8 @@ def volunteer_dash():
     """
     profile = current_user.profile
     candidates = Event.query.filter(Event.date >= local_now(), Event.lifecycle_status == 'approved').options(
-        load_only(Event.id, Event.date, Event.category, Event.campus_id, Event.lifecycle_status), selectinload(Event.required_skills_rel)
+        load_only(Event.id, Event.title, Event.location, Event.date, Event.category, Event.campus_id, Event.lifecycle_status),
+        joinedload(Event.campus), selectinload(Event.required_skills_rel)
     ).order_by(Event.date, Event.id).all()
     recommendations = get_recommendations(
         profile, candidates, campus_id=current_user.campus_id, commit=False)
@@ -462,7 +470,7 @@ def volunteer_dash():
     campuses = campus_query().order_by(Campus.name).all()
     categories = [row[0] for row in db.session.query(Event.category).join(Registration).filter(
         Registration.user_id == current_user.id, Event.category.isnot(None)).distinct().order_by(Event.category).all()]
-    upcoming_schedule = [{'event': r.event, 'date': r.event.date}
+    upcoming_schedule = [{'event': r.event, 'date': r.event.date, 'registration_id':r.id}
                          for r in upcoming]
     certification = {'level': cert_level}
     response = render_template('workspace/volunteer.html', default_view='calendar' if upcoming else 'recommended',

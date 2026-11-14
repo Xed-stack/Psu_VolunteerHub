@@ -3,10 +3,10 @@
 {% block title %}Sign in | PSU Volunteer Hub{% endblock %}
 {% block body %}
   <main class="auth-shell" id="main-content" tabindex="-1">
-    {{ brand('Serve with purpose.', 'Connect your service with the communities that need it.') }}
+    {{ brand('Serve with Purpose.', 'Connect your service with the communities that need it.') }}
     <section class="auth-form" aria-labelledby="login-title">
       <header class="auth-form__heading">
-        <h1 id="login-title">Sign in</h1>
+        <h1 id="login-title">Sign In</h1>
         <p>Access your university volunteer portal.</p>
       </header>
       {% if form_error %}
@@ -17,22 +17,22 @@
       <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post">
         {% include 'partials/csrf_field.html' %}
         <div class="field">
-          <label for="identifier">Email or ID number</label>
+          <label for="identifier">Email or ID Number <span aria-hidden="true">*</span></label>
           <input class="input" id="identifier" name="identifier" required
             autocomplete="username" spellcheck="false" autocapitalize="none"
             value="{{ request.form.get('identifier', '') }}"
             {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
         </div>
         <div class="field">
-          <label for="password">Password</label>
+          <label for="password">Password <span aria-hidden="true">*</span></label>
           <div class="password-input">
             <input class="input" id="password" type="password" name="password" required autocomplete="current-password"
               {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
-            <button class="button button--secondary" type="button" data-toggle-password="password" aria-controls="password" aria-label="Show password" aria-pressed="false" hidden>Show</button>
+            <button class="button button--secondary" type="button" data-toggle-password="password" aria-controls="password" aria-label="Show Password" aria-pressed="false" hidden>Show</button>
           </div>
         </div>
-        <a class="auth-text-link auth-forgot" href="{{ url_for('auth.forgot_password') }}">Forgot your password?</a>
-        <button class="button button--primary button--block" type="submit">Sign in</button>
+        <a class="auth-text-link auth-forgot" href="{{ url_for('auth.forgot_password') }}">Forgot Your Password?</a>
+        <button class="button button--primary button--block" type="submit">Sign In</button>
       </form>
       <p class="auth-switch">New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an account</a></p>
     </section>
@@ -40,21 +40,21 @@
   {% if show_reactivation_modal %}
     <dialog class="auth-modal" aria-labelledby="reactivation-title" aria-describedby="reactivation-description" data-auto-open>
       <div class="auth-modal__card">
-        <h2 id="reactivation-title">Account deactivated</h2>
+        <h2 id="reactivation-title">Account Deactivated</h2>
         <p id="reactivation-description">Your account is currently deactivated. You can ask an administrator to review and reactivate it.</p>
         <form method="post" action="{{ url_for('auth.request_reactivation') }}">
           {% include 'partials/csrf_field.html' %}
-          <button class="button button--primary button--block" type="submit" autofocus>Request reactivation</button>
+          <button class="button button--primary button--block" type="submit" autofocus>Request Reactivation</button>
         </form>
-        <a class="auth-text-link" href="{{ url_for('auth.login') }}">Return to sign in</a>
+        <a class="auth-text-link" href="{{ url_for('auth.login') }}">Return to Sign In</a>
       </div>
     </dialog>
     <noscript>
-      <section class="auth-notice" aria-label="Account deactivated">
+      <section class="auth-notice" aria-label="Account Deactivated">
         <p>Your account is deactivated. You can request an administrator's review.</p>
         <form method="post" action="{{ url_for('auth.request_reactivation') }}">
           {% include 'partials/csrf_field.html' %}
-          <button class="button button--primary" type="submit">Request reactivation</button>
+          <button class="button button--primary" type="submit">Request Reactivation</button>
         </form>
       </section>
     </noscript>

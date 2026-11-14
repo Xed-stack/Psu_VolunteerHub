@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>document.documentElement.dataset.js = "true";</script>
     <meta charset="utf-8">
     <meta
       name="viewport"
@@ -29,7 +30,7 @@
     data-tour-first-use="{{ 'true' if tour_page|default(false) and current_user.first_use_guide_dismissed_at is none else 'false' }}"
     data-tour-replay="{{ 'true' if tour_page|default(false) and request.args.get('tour') == '1' else 'false' }}"
   >
-    <a class="skip-link" href="#main-content">{{ 'Skip to Main Content' if reporting_page else 'Skip to main content' }}</a>
+    <a class="skip-link" href="#main-content">{{ 'Skip to Main Content' if reporting_page else 'Skip to Main Content' }}</a>
     <div
       class="shell-overlay"
       id="shellOverlay"
@@ -43,13 +44,13 @@
           class="icon-button role-menu-button"
           type="button"
           data-sidebar-toggle
-          aria-label="{{ 'Open Navigation' if reporting_page else 'Open navigation' }}"
+          aria-label="{{ 'Open Navigation' if reporting_page else 'Open Navigation' }}"
           aria-controls="roleSidebar"
           aria-expanded="false"
         >
           <span class="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
-        <div class="role-topbar__title"><strong>{% block header_title %}PSU Volunteer Hub{% endblock %}</strong><span>{% block header_subtitle %}{% endblock %}</span></div>
+        <div class="role-topbar__title"><strong>{% block header_title %}{{ ui_page_title }}{% endblock %}</strong><span>{% block header_subtitle %}{{ 'University office' if current_user.role in ['director','admin'] else current_user.campus.name if current_user.campus else 'Campus not assigned' }}{% endblock %}</span></div>
         <div class="role-topbar__actions">
           <a
             class="icon-button notification-bell"
@@ -64,40 +65,44 @@
       </header>
       {% include 'partials/flash_messages.html' %}
       <main class="role-content" id="main-content" tabindex="-1">
+        {% include 'partials/workspace_context.html' %}
         {% block content %}{% endblock %}
       </main>
       <footer class="role-footer">
         <span><strong>PSU Volunteer Hub</strong> · © 2026 Pangasinan State University</span><span>Excellence in Service</span>
       </footer>
+      {% include 'partials/mobile_nav.html' %}
     </div>
     <script>
       (() => {
         const sidebar = document.getElementById('roleSidebar');
         const overlay = document.getElementById('shellOverlay');
-        const toggle = document.querySelector('[data-sidebar-toggle]');
+        const toggles = [...document.querySelectorAll('[data-sidebar-toggle]')];
+        let toggle = toggles[0];
         const shell = document.querySelector('.role-shell');
         const close = (restoreFocus = false) => {
           sidebar?.classList.remove('is-open');
           overlay?.classList.remove('is-visible');
           document.body.classList.remove('sidebar-open');
-          toggle?.setAttribute('aria-expanded', 'false');
+          toggles.forEach(button => button.setAttribute('aria-expanded', 'false'));
           if (sidebar) sidebar.inert = window.innerWidth < 768;
           if (shell) shell.inert = false;
           if (restoreFocus) toggle?.focus();
         };
-        toggle?.addEventListener('click', () => {
+        toggles.forEach(button => button.addEventListener('click', () => {
+          toggle = button;
           const open = sidebar.classList.toggle('is-open');
           overlay.classList.toggle('is-visible', open);
           document.body.classList.toggle('sidebar-open', open);
           sidebar.inert = window.innerWidth < 768 && !open;
-          toggle.setAttribute('aria-expanded', String(open));
+          toggles.forEach(button => button.setAttribute('aria-expanded',String(open)));
           shell.inert = open && window.innerWidth < 768;
           if (open) sidebar.querySelector('a')?.focus();
-        });
+        }));
         document.querySelectorAll('[data-sidebar-close]').forEach(el => el.addEventListener('click', close));
         sidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => close()));
         window.addEventListener('keydown', event => {
-          if (event.key === 'Escape') close(true);
+          if (event.key === 'Escape' && sidebar.classList.contains('is-open')) close(true);
           if (event.key === 'Tab' && window.innerWidth < 768 && sidebar.classList.contains('is-open')) {
             const items = [...sidebar.querySelectorAll('a, button')];
             const first = items[0], last = items.at(-1);

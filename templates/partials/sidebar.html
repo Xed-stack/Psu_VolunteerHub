@@ -1,35 +1,53 @@
-{% set endpoint = request.endpoint %}
-<aside class="role-sidebar" id="roleSidebar">
-  <a class="role-brand" href="{{ url_for('home') }}">
+{% macro nav_item(target, icon, label, sections) %}
+  {% set active = ui_section in sections %}<a
+  class="navlink {{ 'navlink--active' if active }}"
+  href="{{ url_for(target) }}"
+  {% if active %}aria-current="page"{% endif %}
+><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span><span>{{ label }}</span></a>
+{% endmacro %}
+<aside
+  class="role-sidebar"
+  id="roleSidebar"
+  aria-label="Workspace Navigation"
+>
+  <a
+    class="role-brand"
+    href="{{ url_for('events.volunteer_dash' if current_user.role == 'volunteer' else 'workspace.overview') }}"
+  >
   <img
     src="{{ url_for('static',filename='assets/PSU-logo.png') }}"
     alt=""
     width="44"
     height="44"
   ><span><strong>PSU Volunteer Hub</strong><small>{{ current_user.role_display_name }}</small></span></a>
-  <nav class="role-nav" aria-label="Main navigation">
+  <nav class="role-nav" aria-label="Main Navigation">
+    <p class="nav-group-label">Your Workspace</p>
     {% if current_user.role == 'volunteer' %}
-      {% set links = [('events.volunteer_dash', 'dashboard', 'Dashboard'), ('events.opportunities', 'volunteer_activism', 'Activities'), ('workspace.registrations', 'event_available', 'My registrations'), ('volunteer.profile_page', 'person', 'Profile')] %}
+      {{ nav_item('events.volunteer_dash', 'space_dashboard', 'Dashboard', ['dashboard']) }}
+      {{ nav_item('events.opportunities', 'volunteer_activism', 'Find Activities', ['activities']) }}
+      {{ nav_item('workspace.registrations', 'event_available', 'My Registrations', ['registrations']) }}
+      <p class="nav-group-label mt-5">Your Account</p>
+      {{ nav_item('volunteer.profile_page', 'person', 'Profile', ['profile']) }}
     {% else %}
-      {% set links = [('workspace.overview', 'dashboard', 'Overview'), ('workspace.activities', 'event', 'Activities'), ('workspace.reports', 'bar_chart', 'Reports'), ('goals.workspace', 'flag', 'Annual plans')] %}
-      {% if current_user.role == 'coordinator' %}
-        {% set links = links + [('workspace.partners','handshake','Partners')] %}
-      {% else %}
-        {% set links = links + [('workspace.management','manage_accounts','Management'),('workspace.imports','upload','Import data'),('admin.settings','settings','Settings')] %}
-      {% endif %}
-    {% endif %}
-    {% for target, icon, label in links %}<a
-  class="navlink {{ 'navlink--active' if endpoint == target }}"
-  href="{{ url_for(target) }}"
-  {{ 'aria-current=page' if endpoint == target }}
-><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span>{{ label }}</a>{% endfor %}
-    <a
-      class="navlink {{ 'navlink--active' if endpoint == 'workspace.draft_list' }}"
-      href="{{ url_for('workspace.draft_list') }}"
-    ><span class="material-symbols-outlined" aria-hidden="true">draft</span>Saved drafts</a><a class="navlink" href="{{ url_for('help_page') }}"><span class="material-symbols-outlined" aria-hidden="true">help</span>Help</a><a class="navlink" href="{{ url_for('workspace.about') }}"><span class="material-symbols-outlined" aria-hidden="true">info</span>About PSU Volunteer Hub</a>
-  </nav><div class="role-user"><img
-  src="{{ url_for('static',filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
+      {{ nav_item('workspace.overview', 'space_dashboard', 'Overview', ['overview']) }}
+      {{ nav_item('workspace.activities', 'event', 'Activities', ['activities']) }}
+      {{ nav_item('coordinator.activity_calendar' if current_user.role == 'coordinator' else 'director.activity_calendar','calendar_month','Calendar',['calendar']) }}
+      {{ nav_item('workspace.follow_up', 'checklist', 'Needs Attention', ['follow_up']) }}
+      <p class="nav-group-label mt-5">Planning and Evidence</p>
+      {{ nav_item('goals.workspace', 'flag', 'Annual Plans', ['goals']) }}
+      {{ nav_item('workspace.reports', 'monitoring', 'Reports', ['reports']) }}
+      {% if current_user.role == 'coordinator' %}{{ nav_item('workspace.partners', 'handshake', 'Partners', ['partners']) }}
+    {% else %}{{ nav_item('workspace.management', 'manage_accounts', 'Management', ['management', 'settings', 'imports']) }}{% endif %}
+  {% endif %}
+  <p class="nav-group-label mt-5">Support</p>
+  {{ nav_item('workspace.draft_list', 'draft', 'Saved Drafts', ['drafts']) }}
+  <a class="navlink" href="{{ url_for('help_page') }}"><span class="material-symbols-outlined" aria-hidden="true">help</span>Help and Guides</a>
+  <a class="navlink" href="{{ url_for('workspace.about') }}"><span class="material-symbols-outlined" aria-hidden="true">info</span>About the Hub</a>
+</nav>
+<div class="role-user">{% if current_user.profile_image_path %}<img
+  src="{{ url_for('static',filename=current_user.profile_image_path) }}"
   alt=""
   width="40"
   height="40"
-><span><strong>{{ current_user.name }}</strong><small>{{ current_user.campus.name if current_user.campus else 'University office' }}</small></span><form method="post" action="{{ url_for('auth.logout') }}">{% include 'partials/csrf_field.html' %}<button class="role-user__logout" type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log out</button></form></div></aside>
+>{% else %}<span class="avatar" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}<span><strong>{{ current_user.name }}</strong><small>{{ current_user.campus.name if current_user.campus else 'University office' }}</small></span><form method="post" action="{{ url_for('auth.logout') }}">{% include 'partials/csrf_field.html' %}<button class="role-user__logout" type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log Out</button></form></div>
+</aside>

@@ -235,7 +235,7 @@ def test_confirmation_required_for_user_import(client, app, actors):
     writer.writerow({'name':'Imported volunteer','email':'new@example.org','password':'StrongPassword1!','role':'volunteer','campus_code':'LINGAYEN'})
     response = client.post('/admin/users/import',data={'file':(io.BytesIO(output.getvalue().encode()),'users.csv')})
     assert response.status_code == 200
-    assert b'Review user import' in response.data
+    assert b'Review User Import' in response.data
     with app.app_context():
         assert User.query.filter_by(email='new@example.org').count() == 0
     with client.session_transaction() as session:

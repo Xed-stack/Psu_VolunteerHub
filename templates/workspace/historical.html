@@ -1,9 +1,21 @@
-{% extends 'layouts/role_base.html' %}
-{% from 'workspace/components.html' import heading with context %}
-{% from 'partials/pagination.html' import pages with context %}
-{% block title %}Historical source records · PSU Volunteer Hub{% endblock %}
-{% block content %}
-{{ heading('Historical source records','Imported aggregate records are separate from live registrations and verified annual achievements.',url_for('workspace.reports'),'Back to reports') }}
-<form method="get" class="mb-6 flex flex-wrap items-end gap-3"><label class="field">Year<input type="number" name="year" value="{{ request.args.get('year','') }}" min="1900" max="9998"></label><button class="btn btn--outline">Filter records</button></form>
-<section class="panel"><div class="overflow-x-auto"><table><thead><tr><th>Activity</th><th>Campus / unit</th><th>Year</th><th>Reported participations</th><th>Source</th></tr></thead><tbody>{% for activity in pagination.items %}<tr><td>{{ activity.title }}</td><td>{{ activity.unit_name }}</td><td>{{ activity.year_conducted or 'Not recorded' }}</td><td>{{ activity.volunteer_count if activity.volunteer_count is not none else 'Not recorded' }}</td><td>{{ activity.source_document or 'Not recorded' }}</td></tr>{% else %}<tr><td colspan="5">No imported historical records match this scope.</td></tr>{% endfor %}</tbody></table></div><p class="mt-4 text-sm text-slate-600">Reported participations are activity-level counts, not unique volunteer accounts.</p></section>{{ pages(pagination) }}
-{% endblock %}
+{% from 'partials/filter_ui.html' import more,actions,context_fields with context %}
+{% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading,chart_scripts with context %}{% from 'partials/search_ui.html' import search_input,results,empty with context %}{% from 'partials/pagination.html' import pages with context %}
+{% block title %}Historical Source Records · PSU Volunteer Hub{% endblock %}{% block content %}<div class="report-page">{{ heading('Historical Source Records','Explore imported aggregate records separately from live registrations and verified annual evidence.',back_url('workspace.reports'),'Back to Reports') }}
+<form method="get" class="panel filter-form mb-6">{{ context_fields(['q','year','start_year','end_year','activity_type','campus_id']) }}<div class="filter-grid">{{ search_input('q','Search Records','Activity title or campus / unit') }}<label class="field"><span>Year</span><input type="number" name="year" min="1900" max="2100" value="{{ request.args.get('year','') }}" placeholder="All years"></label>{% if current_user.role != 'coordinator' %}<label class="field"><span>Campus</span><select name="campus_id"><option value="">All Campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if request.args.get('campus_id',type=int) == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>{% endif %}</div>
+{% call more(['start_year','end_year','activity_type']) %}<label class="field"><span>From Year</span><input type="number" name="start_year" min="1900" max="2100" value="{{ request.args.get('start_year','') }}"></label><label class="field"><span>To Year</span><input type="number" name="end_year" min="1900" max="2100" value="{{ request.args.get('end_year','') }}"></label><label class="field"><span>Activity Type</span><select name="activity_type"><option value="">All Types</option>{% for value in activity_types %}<option value="{{ value }}" {{ 'selected' if request.args.get('activity_type') == value }}>{{ value }}</option>{% endfor %}</select></label><p class="filter-help">A selected year also narrows the year range. Clear Year to use the full range.</p>{% endcall %}{{ actions() }}</form>
+<div class="report-toolbar">{{ results(pagination.total,request.args.get('q',''),'year, latest first; title, A–Z') }}<nav class="form-actions" aria-label="Historical Exports">{% for format in ['pdf','xlsx','csv'] %}<a
+  class="btn btn--outline"
+  href="{{ url_for('workspace.historical_export',format=format,**request.args.to_dict(flat=False)) }}"
+>Export {{ format|upper }}</a>{% endfor %}</nav></div>
+<section class="workspace-section mb-6"><header class="section-top"><h2>Reported Participation by Campus / Unit</h2></header><p class="text-sm text-slate-600">Historical aggregate participations are not unique accounts. Bars total known values only; records with missing counts remain unknown.</p>{% if historical_chart %}<div
+  class="min-h-72"
+  data-historical-chart
+  data-chart-values='{{ historical_chart|tojson }}'
+  aria-hidden="true"
+></div><details><summary>View Values and Missing Counts</summary><div class="table-wrap"><table><thead><tr><th>Campus / Unit</th><th>Known Reported Participations</th><th>Records with Missing Counts</th></tr></thead><tbody>{% for row in historical_chart %}<tr><td>{{ row.name }}</td><td>{{ row.count if row.count is not none else 'Unknown' }}</td><td>{{ row.missing }}</td></tr>{% endfor %}</tbody></table></div></details>{% else %}<p class="empty-state mt-4">No source records in this scope.</p>{% endif %}</section>
+<section class="workspace-section"><div
+  class="table-wrap"
+  tabindex="0"
+  role="region"
+  aria-label="Historical Records"
+><table><thead><tr><th>Activity</th><th>Campus / Unit</th><th>Year / Type</th><th>Reported Participations</th><th>Source</th></tr></thead><tbody>{% for activity in pagination.items %}<tr><td>{{ highlight(activity.title,request.args.get('q','')) }}</td><td>{{ activity.unit_name }}</td><td>{{ activity.year_conducted or 'Not recorded' }}<p class="text-xs text-slate-600">{{ activity.activity_type or 'Not recorded' }}</p></td><td>{{ activity.volunteer_count if activity.volunteer_count is not none else 'Unknown' }}</td><td>{{ activity.source_document }} · p. {{ activity.source_page }}</td></tr>{% else %}<tr><td colspan="5">{{ empty(request.args.get('q',''),'historical records') }}</td></tr>{% endfor %}</tbody></table></div></section>{{ pages(pagination) }}</div>{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}

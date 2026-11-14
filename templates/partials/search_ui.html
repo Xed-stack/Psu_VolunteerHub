@@ -1,0 +1,27 @@
+{% macro chips() %}
+  {% if ui_filters %}<section class="applied-filters" aria-label="Applied Filters"><span class="applied-filters__label">Filtered by</span>{% for chip in ui_filters %}<a
+  class="filter-chip"
+  href="{{ chip.url }}"
+  aria-label="Remove {{ chip.label }}: {{ chip.value }}"
+><span>{{ chip.label }}: <strong>{{ chip.value }}</strong></span><span aria-hidden="true">×</span></a>{% endfor %}<a class="filter-clear" href="{{ ui_clear_url }}">Clear All Filters</a></section>{% endif %}
+{% endmacro %}
+{% macro search_input(name, label, placeholder, value=none) %}
+  <label class="field search-field"><span>{{ label }}</span><span class="search-field__control"><span class="material-symbols-outlined" aria-hidden="true">search</span><input
+  type="search"
+  name="{{ name }}"
+  value="{{ request.args.get(name, '') if value is none else value }}"
+  placeholder="{{ placeholder }}"
+  autocomplete="off"
+>{% if request.args.get(name) %}<a
+  class="search-field__clear"
+  href="{{ query_url(remove=name) }}"
+  aria-label="Clear Search"
+><span aria-hidden="true">×</span></a>{% endif %}</span></label>
+{% endmacro %}
+{% macro results(total, query='', sort='') %}
+  <p class="result-summary" role="status"><span>{{ total }} {{ 'result' if total == 1 else 'results' }}{% if query %} for <strong>“{{ query }}”</strong>{% endif %}</span>{% if sort %}<span class="result-summary__sort">Sorted by {{ sort }}</span>{% endif %}</p>
+{% endmacro %}
+{% macro empty(query='', noun='records') %}
+  {% set display_noun={'activities':'Activities','records':'Records','registrations':'Registrations','volunteers':'Volunteers','external volunteers':'External Volunteers','volunteer accounts':'Volunteer Accounts','historical records':'Historical Records','partners':'Partners','agencies':'Agencies'}.get(noun,noun) %}
+  <div class="search-empty"><span class="material-symbols-outlined" aria-hidden="true">search_off</span><h2>{{ 'No Matching ' ~ display_noun if query or ui_filters else 'No ' ~ display_noun ~ ' Yet' }}</h2><p>{% if query %}No results for “{{ query }}”. Try a shorter name or a broader term.{% elif ui_filters %}No {{ noun }} match these filters. Remove a filter to widen your results.{% else %}Available {{ noun }} will appear here. Return to the previous screen to continue.{% endif %}</p>{% if query or ui_filters %}<a class="btn btn--outline" href="{{ ui_clear_url }}">Clear Search and Filters</a>{% endif %}</div>
+{% endmacro %}

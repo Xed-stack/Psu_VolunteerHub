@@ -1,0 +1,8 @@
+{% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading,filters with context %}{% from 'workspace/reimagined_components.html' import follow_up_list with context %}
+{% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}{% block content %}{{ heading('Needs Attention','Review evidence, open the relevant workspace, and follow up without changing locked attendance.',url_for('workspace.overview',**request.args.to_dict(flat=False)),'Back to Overview') }}{{ filters(year,period,segment,campuses,campus_id,activity_choices,event_id,department) }}<section class="workspace-section"><header class="section-top"><h2>{{ total }} Follow-up Findings</h2><p class="text-sm text-slate-600">{{ period_label }}</p></header><p class="mb-5 text-sm text-slate-600">Activity findings use the selected report scope. Annual-plan findings use the full reporting year, labelled on each record. Notify Coordinator is available where an active coordinator is assigned; equivalent unread reminders are not resent.</p>{{ follow_up_list(items) }}</section><nav class="pagination" aria-label="Follow-up Pages">{% if page > 1 %}<a
+  class="btn btn--outline"
+  href="{{ query_url(page=page-1) }}"
+>Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a
+  class="btn btn--outline"
+  href="{{ query_url(page=page+1) }}"
+>Next</a>{% endif %}</nav>{% endblock %}

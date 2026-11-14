@@ -1,9 +1,15 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Registration details · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading(registration.event.title,'Registration details',url_for('workspace.registrations',**request.args),'Back to registrations') }}<section class="panel max-w-3xl"><h2>{{ registration.status|title }}</h2><p class="my-4">{{ registration.event.date.strftime("%d %b %Y, %I:%M %p") }} · Philippine time</p><p>Attendance: {{ {'present':'Attending','absent':'Not Attended','excused':'Excused'}.get(registration.attendance_record.status,'Unrecorded') if registration.attendance_record else 'Unrecorded' }}</p><p>{{ 'Participation verified' if registration.certificate_eligible else 'Participation is not yet verified' }}</p><div class="mt-5 flex flex-wrap gap-3"><a
-  class="btn btn--outline"
-  href="{{ url_for('events.opportunity_detail',event_id=registration.event_id) }}"
->Activity details</a>{% if can_withdraw %}<a
-  class="btn btn--outline"
-  href="{{ url_for('events.cancel_registration',registration_id=registration.id) }}"
->Withdraw</a>{% endif %}</div></section>{% endblock %}
+{% block title %}Registration Details · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{% set event = registration.event %}
+<div class="journey-page">
+  <a class="activity-back" href="{{ back_url('workspace.registrations') }}">{{ ui_return_label or 'Back to Registrations' }}</a>
+  <header class="journey-heading"><div><p class="journey-meta">Registration #{{ registration.id }} · {{ event.campus.name if event.campus else 'University' }}</p><h1>{{ event.title }}</h1></div><span class="badge">{{ {'pending':'Pending','confirmed':'Confirmed','completed':'Completed','cancelled':'Cancelled'}.get(registration.status,registration.status) }}</span></header>
+  {% if event.lifecycle_status == 'cancelled' %}<aside class="flash flash--error"><strong>Activity Cancelled</strong><p>{{ event.cancellation_reason or 'The activity was cancelled. Your registration remains available as a record.' }}</p></aside>{% endif %}
+  <div class="journey-detail-layout">
+    <section class="journey-surface"><h2>Your Registration</h2><dl class="activity-facts journey-facts"><div><dt>Starts · Philippine Time</dt><dd>{{ event.date.strftime('%d %b %Y, %I:%M %p') }}</dd></div><div><dt>Ends · Philippine Time</dt><dd>{{ event.end_date.strftime('%d %b %Y, %I:%M %p') if event.end_date else 'End time not recorded' }}</dd></div><div><dt>Location</dt><dd>{{ event.location or 'Not recorded' }}</dd></div><div><dt>Registration Status</dt><dd>{{ {'pending':'Pending','confirmed':'Confirmed','completed':'Completed','cancelled':'Cancelled'}.get(registration.status,registration.status) }}</dd></div></dl><div class="journey-section"><h2>Participation Record</h2><p>Attendance: <strong>{{ {'present':'Attending','absent':'Not Attended','excused':'Excused'}.get(registration.attendance_record.status,'Unrecorded') if registration.attendance_record else 'Unrecorded' }}</strong></p><p>{{ 'Participation verified' if registration.certificate_eligible else 'Participation is not yet verified' }}</p></div><a class="text-link" href="{{ url_for('events.opportunity_detail',event_id=event.id,return_to=request.full_path.rstrip('?')) }}">View Activity Details</a></section>
+    <aside class="journey-rail"><h2>Withdrawal Deadline</h2><p class="journey-deadline">{{ withdrawal.deadline.strftime('%d %b %Y, %I:%M %p') }}</p><p class="scope-note">Philippine time</p><p>{{ withdrawal.message }}</p>{% if can_withdraw %}<a class="btn btn--outline" href="{{ linked_url('events.cancel_registration',registration_id=registration.id) }}">Withdraw</a>{% endif %}</aside>
+  </div>
+  {% if registration.cancellation_request %}<section class="journey-surface"><h2>Historical Cancellation Decision</h2><p>{{ registration.cancellation_request.status|title }}. This is a preserved record from the previous cancellation-request process.</p>{% include 'partials/cancellation_decision.html' %}{% if registration.cancellation_request.reviewed_by %}<p>Reviewed by {{ registration.cancellation_request.reviewed_by.name }}</p>{% endif %}</section>{% endif %}
+</div>
+{% endblock %}

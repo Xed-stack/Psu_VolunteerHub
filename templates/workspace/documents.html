@@ -1,9 +1,9 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Documents and announcements · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading('Documents and announcements',event.title,url_for('workspace.activity',event_id=event.id),'Back to activity') }}<div class="grid gap-6 lg:grid-cols-2"><section class="panel"><h2>Activity documents</h2>{% if event.proposal_document %}<a
+{% block title %}Documents and Announcements · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Documents and Announcements',event.title,back_url('workspace.activity',event_id=event.id),'Back to Activity') }}<div class="grid gap-6 lg:grid-cols-2"><section class="panel"><h2>Activity Documents</h2>{% if event.proposal_document %}<a
   class="btn btn--outline my-4"
   href="{{ url_for('workspace.proposal',event_id=event.id) }}"
->Approved proposal</a>{% endif %}<ul>{% for item in event.milestones %}<li class="py-3"><a
+>Approved Proposal</a>{% endif %}<ul>{% for item in event.milestones %}<li class="py-3"><a
   class="text-psu underline"
   href="{{ url_for('coordinator.download_milestone', milestone_id=item.id) }}"
 >{{ item.filename }}</a></li>{% endfor %}</ul><form
@@ -11,7 +11,7 @@
   enctype="multipart/form-data"
   action="{{ url_for('coordinator.upload_milestone',event_id=event.id) }}"
   class="mt-5"
-><label class="field">Supporting evidence<input type="file" name="file" required></label><input type="hidden" name="category" value="report"><button class="btn btn--outline mt-4">Upload evidence</button></form></section><section class="panel"><h2>Announcements</h2><ul class="my-4 divide-y divide-slate-200">{% for note in event.announcements %}<li class="py-4">{{ note.message }}</li>{% else %}<li>No announcements.</li>{% endfor %}</ul><form
+><label class="field">Supporting Evidence<input type="file" name="file" required></label><input type="hidden" name="category" value="report"><button class="btn btn--outline mt-4">Upload Evidence</button></form></section><section class="panel"><h2>Announcements</h2><ul class="my-4 divide-y divide-slate-200">{% for note in event.announcements %}<li class="py-4">{{ note.message }}</li>{% else %}<li>No announcements.</li>{% endfor %}</ul><form
   method="post"
   action="{{ url_for('coordinator.publish_announcement',event_id=event.id) }}"
-><label class="field">Announcement type<select name="announcement_type"><option value="event_update">Event update</option><option value="last_call">Last call</option><option value="cancelled_postponed">Schedule notice</option></select></label><label class="field mt-4">Message *<textarea name="message" maxlength="1000" required></textarea></label><button class="btn btn--primary mt-4">Publish announcement</button></form></section></div>{% endblock %}
+><label class="field">Announcement Type<select name="announcement_type"><option value="event_update">Event Update</option><option value="last_call">Last Call</option><option value="cancelled_postponed">Schedule Notice</option></select></label><label class="field mt-4">Message *<textarea name="message" maxlength="1000" required></textarea></label><button class="btn btn--primary mt-4">Publish Announcement</button></form></section></div>{% endblock %}

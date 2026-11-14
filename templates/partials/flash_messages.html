@@ -9,9 +9,9 @@
             <span>{{ message }}</span>
           </div>
           {% if category == 'session-expired' %}
-            <a class="flash__action" href="{{ url_for('auth.login') }}">Sign in</a>
+            <a class="flash__action" href="{{ url_for('auth.login') }}">Sign In</a>
           {% endif %}
-          <button class="flash__dismiss" type="button" data-flash-dismiss aria-label="Dismiss notification">Dismiss</button>
+          <button class="flash__dismiss" type="button" data-flash-dismiss aria-label="Dismiss Notification">Dismiss</button>
         </div>
       {% endfor %}
     </div>

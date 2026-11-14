@@ -1,100 +1,22 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Edit Activity | PSU Volunteer Hub{% endblock %}
-{% block header_title %}Coordinator Console{% endblock %}
-{% block header_subtitle %}Edit volunteer opportunity{% endblock %}
+{% from 'workspace/components.html' import input with context %}
+{% from 'partials/choice_panel.html' import choice_panel %}
+{% block title %}Edit Activity · PSU Volunteer Hub{% endblock %}
 {% block content %}
-  <header class="page-heading">
-    <div>
-      <h1>Edit Activity</h1>
-      <p>Update this opportunity for {{ current_user.campus.name if current_user.campus else 'your campus' }}.</p>
-    </div>
-  </header>
-  <form class="panel" method="post" enctype="multipart/form-data">
-    <div class="form-grid">
-      <label class="field field--wide">
-        Activity title<input
-  class="input"
-  name="title"
-  required
-  value="{{ event.title or '' }}"
->
-      </label>
-      <label class="field field--wide">
-        Description<textarea class="input" name="description" required>{{ event.description or '' }}</textarea>
-      </label>
-      <label class="field">
-        Start date and time<input
-  class="input"
-  name="date"
-  type="datetime-local"
-  required
-  value="{{ event.date.strftime('%Y-%m-%dT%H:%M') if event.date else '' }}"
->
-      </label>
-      <label class="field">
-        End date and time<input class="input" name="end_date" type="datetime-local" value="{{ event.end_date.strftime('%Y-%m-%dT%H:%M') if event.end_date else '' }}">
-      </label>
-      <label class="field">
-        Cancellation closes<input class="input" name="cancellation_days" type="number" min="0" max="365" step="1" value="{{ request.form.get('cancellation_days', ((event.date - (event.cancellation_deadline or event.date)).days if event.date else 2)) }}" required>
-        <small>Whole days before the activity. Use 0 to allow cancellation until the start time.</small>
-      </label>
-      <label class="field">
-        Location<input
-  class="input"
-  name="location"
-  value="{{ event.location or '' }}"
->
-      </label>
-      <label class="field">
-        Category<select class="select" name="category" required>
-          {% for category in categories %}
-            <option value="{{ category }}" {{ 'selected' if (event.category or 'General') == category }}>{{ category }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label class="field">
-        Volunteer slots<input
-  class="input"
-  name="slots"
-  type="number"
-  min="1"
-  max="{{ max_slots or 100 }}"
-  value="{{ event.slots or 1 }}"
-><small>Maximum {{ max_slots or 100 }}.</small>
-      </label>
-      <label class="field">
-        Required skills<select name="required_skills" multiple size="5">{% for skill in skill_choices|default([]) %}<option value="{{ skill.name }}" {{ 'selected' if skill in event.required_skills_rel }}>{{ skill.name }}</option>{% endfor %}</select>
-      </label>
-      {% set selected_sdg_ids = request.form.getlist('sdg_ids') or event.sdgs|map(attribute='id')|map('string')|list %}
-      <fieldset class="field field--wide choice-fieldset">
-        <legend>Sustainable Development Goals</legend>
-        <small>Select every goal this activity can contribute to.</small>
-        <div class="check-grid">
-          {% for sdg in sdgs %}
-            <label class="check-row"><input type="checkbox" name="sdg_ids" value="{{ sdg.id }}" {{ 'checked' if sdg.id|string in selected_sdg_ids }}> <span>SDG {{ sdg.number }} — {{ sdg.name }}</span></label>
-          {% endfor %}
-        </div>
-      </fieldset>
-      <label class="field"><span>Numeric participant target</span><input class="input" name="target_participants" type="number" min="1" value="{{ request.form.get('target_participants', event.target_participants or '') }}"><small>Optional goal; actual participants use verified attendance.</small></label>
-      <label class="field field--wide"><span>Event Participation Agreement</span><textarea class="input" name="participation_agreement_text" rows="5">{{ request.form.get('participation_agreement_text', event.participation_agreement_text or '') }}</textarea><small>Leave blank to use the administrator-published default agreement.</small></label>
-      <label class="field"><span>Agreement version</span><input class="input" name="participation_agreement_version" value="{{ request.form.get('participation_agreement_version', event.participation_agreement_version or '') }}"></label>
-      <label class="check-row field--wide"><input type="checkbox" name="nda_required" {{ 'checked' if request.form.get('nda_required') or event.nda_required }}> <span>Require an event-specific NDA</span></label>
-      <label class="field field--wide"><span>NDA text</span><textarea class="input" name="nda_text" rows="5">{{ request.form.get('nda_text', event.nda_text or '') }}</textarea></label>
-      <label class="field"><span>NDA version</span><input class="input" name="nda_version" value="{{ request.form.get('nda_version', event.nda_version or '') }}"></label>
-      <label class="field">
-        Replace cover image<input
-  class="input"
-  name="cover_image"
-  type="file"
-  accept="image/jpeg,image/png,image/webp"
-><small>{{ event.cover_image_name or 'No cover uploaded' }}{% if event.cover_uploaded_by %} · Uploaded by {{ event.cover_uploaded_by.name }} on {{ event.cover_uploaded_at.strftime('%b %d, %Y') if event.cover_uploaded_at else 'unknown date' }}{% endif %}</small>
-      </label>
-    </div>
-    <div class="form-actions">
-      <a
-        class="btn btn--ghost"
-        href="{{ url_for('workspace.activity',event_id=event.id) }}"
-      >Cancel</a><button class="btn btn--primary" type="submit">Save Changes</button>
-    </div>
-  </form>
+<div class="journey-page"><header class="journey-heading"><div><h1>Edit Activity</h1><p>Update the activity for {{ current_user.campus.name if current_user.campus else 'your campus' }}. Fields marked * are required.</p></div><a class="text-link" href="{{ linked_url('workspace.activity',event_id=event.id) }}">Back to Activity</a></header>
+{% set values = request.form if request.method == 'POST' else {} %}
+{% set selected_skills = request.form.getlist('required_skills') if request.method == 'POST' else event.required_skills_rel|map(attribute='name')|list %}
+{% set selected_sdgs = request.form.getlist('sdg_ids') if request.method == 'POST' else event.sdgs|map(attribute='id')|map('string')|list %}
+<form class="panel activity-entry-form" method="post" enctype="multipart/form-data"><div class="form-grid">
+<div class="field--wide">{{ input('title','Activity Title',values.get('title',event.title or ''),'text',true) }}</div><label class="field field--wide">Description *<textarea name="description" required rows="5">{{ values.get('description',event.description or '') }}</textarea></label>
+<div class="field--wide activity-cover-field"><label class="field">Replace Cover Image<input name="cover_image" type="file" accept="image/jpeg,image/png,image/webp"><small>JPEG, PNG, or WebP up to 5 MB. {{ event.cover_image_name or 'No cover uploaded' }}{% if event.cover_uploaded_by %} · Uploaded by {{ event.cover_uploaded_by.name }} on {{ event.cover_uploaded_at.strftime('%b %d, %Y') if event.cover_uploaded_at else 'unknown date' }}{% endif %}</small></label></div>
+{{ input('date','Start Date and Time',values.get('date',event.date.strftime('%Y-%m-%dT%H:%M') if event.date else ''),'datetime-local',true) }}{{ input('end_date','End Date and Time',values.get('end_date',event.end_date.strftime('%Y-%m-%dT%H:%M') if event.end_date else ''),'datetime-local',true) }}
+{{ input('cancellation_days','Withdrawal Closes: Days Before Start',values.get('cancellation_days',(event.date - (event.cancellation_deadline or event.date)).days if event.date else 2),'number',true,help='Whole days before the start. Use 0 to allow withdrawal until the start time.',minimum=0) }}{{ input('location','Location',values.get('location',event.location or '')) }}
+<label class="field">Category *<select name="category" required>{% for category in categories %}<option value="{{ category }}" {{ 'selected' if values.get('category',event.category or 'General') == category }}>{{ category }}</option>{% endfor %}</select></label>
+<label class="field">Volunteer Slots *<input name="slots" type="number" min="1" max="{{ max_slots }}" value="{{ values.get('slots',event.slots or 1) }}" required><small>Maximum {{ max_slots }}.</small></label>
+<div class="field--wide">{{ choice_panel('required_skills','Required Skills',skill_choices,selected_skills,value_attr='name',help='Choose the skills volunteers will use. Leave empty if no specific skill is required.') }}</div>
+<div class="field--wide">{{ choice_panel('sdg_ids','Sustainable Development Goals',sdgs,selected_sdgs,sdg=true,required=true,help='Select at least one goal this activity contributes to.') }}</div>
+{{ input('target_participants','Numeric Participant Target',values.get('target_participants',event.target_participants or ''),'number',help='Optional goal, separate from registration capacity and recorded attendance.',minimum=1) }}
+</div>{% if event.participation_agreement_text or event.nda_required %}<p class="scope-note mt-5">This activity retains its existing participant consent requirements.</p>{% endif %}<div class="form-actions mt-6 border-t border-slate-200 pt-5"><a class="btn btn--outline" href="{{ linked_url('workspace.activity',event_id=event.id) }}">Cancel</a><button class="btn btn--primary" type="submit">Save Changes</button></div></form></div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='scripts/choice-panels.js') }}"></script>{% endblock %}

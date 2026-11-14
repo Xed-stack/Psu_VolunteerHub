@@ -17,7 +17,7 @@ from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget, A
                                    AnnualActivityMapping, AnnualGoalProposal)
 from app.models.event import Campus, Event
 from app.utils.decorators import roles_required
-from app.annual_goals import (summary, comparisons, participation, validate_definition, selected_year,
+from app.annual_goals import (summary, comparisons, validate_definition, selected_year,
                               number, RULES, BASES, cutoff_for)
 from app.reports import ReportError, csv_safe
 
@@ -149,9 +149,37 @@ def details():
     return render_template('goals/details.html', plan=plan, rows=rows[(page-1)*10:page*10],
         row_count=len(rows), page=page, pages=pages, query=query, filters=filters, programs=programs,
         offices=offices, campuses=campus_query().order_by(Campus.name).all() if university_reader else [],
-        campus_rows=campus_rows, participation=participation(year, campus_id, basis), basis=basis,
+        campus_rows=campus_rows, basis=basis,
         director=university_reader, sample=sample, campus_id=campus_id,
         scope_name=(db.session.get(Campus, campus_id).name + ' campus') if campus_id is not None else 'University')
+
+
+@goals_bp.route('/targets/<int:target_id>')
+@login_required
+@roles_required('coordinator', 'director', 'admin')
+def target_detail(target_id):
+    """Resolve a member through the merged approved obligation, preserving conflicts."""
+    if request.args.get('sample') == '1':
+        abort(400, description='Sample indicators do not have official evidence records.')
+    target = db.get_or_404(AnnualTarget, target_id)
+    if current_user.role == 'coordinator' and (current_user.campus_id is None or target.campus_id != current_user.campus_id):
+        abort(403)
+    if not target.is_active or target.indicator.plan.status != 'approved':
+        abort(404)
+    year = target.indicator.plan.year
+    plan = summary(year, target.campus_id)
+    key = target.indicator.shared_key
+    row = next((row for row in plan['rows'] if (row['shared_key'] == key if key else row['target_id'] == target.id)), None)
+    if row is None:
+        abort(404)
+    members = AnnualTarget.query.join(AnnualIndicator).join(AnnualPlan).filter(
+        AnnualPlan.year == year, AnnualPlan.status == 'approved', AnnualTarget.is_active.is_(True),
+        AnnualTarget.campus_id == target.campus_id,
+        AnnualIndicator.shared_key == key if key else AnnualTarget.id == target.id
+    ).options(joinedload(AnnualTarget.indicator).joinedload(AnnualIndicator.plan),
+              joinedload(AnnualTarget.results)).order_by(AnnualTarget.id).all()
+    return render_template('goals/target_detail.html', target=target, row=row, plan=plan,
+                           members=members, director=director(), sample=False)
 
 
 def export_rows(rows, plan, filters, kind):
@@ -164,7 +192,7 @@ def export_rows(rows, plan, filters, kind):
         abort(400)
     columns = ['Code', 'Indicator', 'Plans', 'Program', 'Actual', 'Target', 'Unit', 'Rule', 'Office', 'Status', 'Source', 'Coverage']
     data = [[row['code'], row['name'], '/'.join(row['plan_types']), row['program'],
-             row['actual'] if row['actual'] is not None else 'Not available', row['target'], row['unit'],
+             row['actual'] if row['verified'] else 'Not available', row['target'], row['unit'],
              row['rule_label'], row['responsible_office'], row['status'], row['source_document'], row['coverage_note'] or ''] for row in rows]
     scope = f"{plan['scope']} targets; campus={plan['campus_id'] or 'university'}; year={plan['year']}; cutoff={plan['cutoff']}; filters={filters}"
     if kind == 'csv':
@@ -400,7 +428,7 @@ def target_activities(target_id):
     target assessment separately checks cutoff, ended state, and attendance.
     """
     target = db.get_or_404(AnnualTarget, target_id)
-    if current_user.role == 'coordinator' and target.campus_id != current_user.campus_id:
+    if current_user.role == 'coordinator' and (current_user.campus_id is None or target.campus_id != current_user.campus_id):
         abort(403)
     year = target.indicator.plan.year
     query = Event.query.join(AnnualActivityMapping).filter(
@@ -459,7 +487,8 @@ def evidence(target_id):
                     source_document=source, coverage_note=note, coverage_start=start, coverage_end=end))
             db.session.commit()
             flash('Evidence saved. Approved aggregate snapshots replace earlier snapshots; they are never added together.', 'success')
-            return redirect(url_for('goals.details', year=year, campus=target.campus_id))
+            from app.ui import back_url
+            return redirect(back_url('goals.target_detail', target_id=target.id))
         except ReportError as exc:
             db.session.rollback()
             error = str(exc)

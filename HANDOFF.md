@@ -1,5 +1,241 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Branch publication instruction: 14 November 2026
+
+The user authorized committing and pushing the accumulated implementation to
+`codex/ui-workflow-overhaul` on both `origin` (Xed-stack/Psu_VolunteerHub) and
+`thesis` (arlrom003/PSU-Volunteer-Hub). Earlier local-only/no-push notes below
+describe the boundaries of those implementation passes. Main and deployment
+branches remain outside this publication action. The unrelated DOCX, local
+databases/uploads, preview files and ignored QA artifacts are excluded.
+
+## Current handoff: Simplified Activity Forms, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`. Cover upload is visible in
+Activity Details (step 2), not a disclosure. Custom event agreement/NDA and Specific
+Volunteers controls are removed from Create/Edit/review. New activities use the
+published default agreement and department targeting; existing activity consent,
+versions, acceptances and historical audience data remain untouched. Scoped draft
+cleanup ignores obsolete fields while retaining ordinary values and upload metadata.
+
+Departments in creation and Skills/SDGs in creation/edit now use native checkbox
+panels with button/Enter filtering, selected summaries/removal, clear, bounded lists,
+44px rows and no-JS fallback. Empty selections survive validation/refresh. Edit uses
+catalogue records directly, including skill names containing commas. A browser-found
+clean-draft submit retry issue was fixed by deferring requestSubmit to the next task.
+
+Analysis, wireframes, preservation, implementation, test evidence, audit and rollback:
+`docs/qa/ACTIVITY_FORM_SIMPLIFICATION.md`. Completed overlapping evidence: 17 focused
+pytest cases; six final cases; 50 workflow/registration cases passing before an old
+registration-redirect assertion failed; 30 final form and 23 existing polish browser
+check groups. Build, scripts, templates, source/contrast checks and three-role local
+login smoke passed. The historical redirect assertion and plotting warnings remain
+documented; do not claim the full historical suite passed.
+
+Preview is RUNNING at `http://127.0.0.1:5000`, reusing the existing private database
+and uploads without reseeding and with mail suppressed. Sign in again after restart.
+Fresh fixture before/after, selected/mobile/200% and live screenshots are under
+`.qa-overhaul-temp/activity-forms/`. Prior stopped-preview notes below are history.
+No commit/push/deploy, schema/new dependency/imagery or unrelated cleanup. Next step:
+local review of Create Activity steps 2/3/4 and Edit Activity.
+
+## Current handoff: Reports and Annual Plans, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`: grouped Reports directory;
+Summary/Activity Records/Participation Records views; read-only combined activity
+report with paginated roster/full exports; annual campus rollup separate from
+university targets; unit-grouped verified charts; exact merged indicator details,
+source/coverage/member actions/history; consistent evidence/proposal/report shells.
+Legacy view/filter links, safe Back context, shared obligations and unknown evidence
+are preserved. Residual live annual participation-breakdown panel is removed.
+
+Design/analysis/preservation: `docs/qa/REPORT_JOURNEYS_DESIGN.md`.
+Implementation, tests, audit, limitations and rollback:
+`docs/qa/REPORT_JOURNEYS_DELIVERY.md`. Completed overlapping evidence: 28 pytest
+regressions; five new report tests and 15 preservation assertions directly rerun
+with fresh in-memory fixtures; 142 report, 129 filter and 23 polish browser checks.
+Final build, script syntax, complete template compilation and source checks passed.
+Two old annual tests expect non-redirect responses at legacy routes; documented
+separately. Final large pytest session completion was unavailable after tool-session
+change; retry hit Windows temporary-directory denial. Do not claim the full suite.
+
+IMPORTANT: localhost preview is currently STOPPED. Its restart was rejected because
+automatic approval review hit a usage limit, not because it found an unsafe action.
+Do not bypass approval. Restart the existing isolated launcher when execution is
+available, then capture `scripts/qa_reports_preview.py --stage after`. Before private
+preview and after disposable-fixture screenshots are already saved separately under
+`.qa-overhaul-temp/report-journeys/`; matching after private captures are pending.
+
+No commit/push/deploy, operational data/schema change, new dependency/imagery or broad
+cleanup. Earlier working changes and unrelated DOCX preserved. Next step: restore
+the local preview, capture matching after images, then local user review.
+
+## Current handoff: Activity Journeys, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`, following analyze → design →
+implement → test. Compact Volunteer workspace, phone calendar agenda, schedule-row
+discovery, focused activity/consent/registration screens and contextual staff next
+actions replace the prior banner/action stacks. Workspace tabs retain connected
+destinations. Root activity overview no longer repeats the identity title.
+
+Registered activity details now open the actual registration. Successful join and
+withdrawal return to that record with filtered-origin context. Cancelled copy and
+the built-in fallback agreement now match direct withdrawal. Published/authored
+policies, recommendation ranking, default calendar rule, drafts/uploads, campus
+authorization and attendance locks remain unchanged. Removed only unused styles
+for the replaced components; unrelated working changes and DOCX are preserved.
+
+Analysis/wireframes/preservation checklist: `docs/qa/ACTIVITY_JOURNEYS_DESIGN.md`.
+Delivery, audit, evidence and scoped rollback: `docs/qa/ACTIVITY_JOURNEYS_DELIVERY.md`.
+Completed overlapping evidence: 68 focused workflow tests; 12 prior staff/filter
+tests; six final navigation/template checks; 113 final journey Chromium checks;
+23 existing polish browser checks. Build, script syntax, source diff and contrast
+checks passed. Prior plotting deprecations remain; physical-device/screen-reader
+certification and full historical suite are not claimed.
+
+The private preview is refreshed at `http://127.0.0.1:5000`, reusing its private
+database/uploads without reseeding and suppressing mail. Sign in again after restart.
+Before/after screenshots and disposable QA evidence are under
+`.qa-overhaul-temp/activity-journeys/`. No commit/push/deploy, operational data change,
+new schema, dependency or imagery. Next step is local user review.
+
+## Current handoff: Minimal Filters and Newspaper Case, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul` using analyze → design →
+implement → test. No commit/push/deploy, operational data changes, new schema,
+application library, generated imagery, search service/logging or broad cleanup.
+Prior mixed working changes and unrelated DOCX are preserved.
+
+Reports now has five primary fields, one collapsed More Filters section with an
+active count, relevant-only Quarter/Half-Year/Custom Date controls, and one
+Apply/Reset pair. AOP shows only year/campus. Active activity/history/evidence/
+account lists follow the approved primary/More inventory; simple lists omit More.
+Selections stay enabled when collapsed. Existing GET names, repeated campuses,
+legacy aliases, literal search, authorization, Back/pagination and export values
+are preserved. Stale selected options retain their constraints. Annual scopes and
+the five KPI definitions are unchanged; the staff Overview fix remains intact.
+
+Headline-style labels and sentence-style prose were reviewed across 89 active
+templates/partials, with 83 existing templates changed. Python/Jinja presentation
+labels and guide/generated-control copy were also aligned. No runtime generic
+casing of database/user values; authored content and export field names remain.
+
+Design/inventory: `docs/qa/MINIMAL_FILTERS_DESIGN.md`. Verification, screenshots,
+commands, limitations and scoped rollback: `docs/qa/MINIMAL_FILTERS_DELIVERY.md`.
+Completed overlapping evidence: 26 focused tests; 85 workflow/report/profile tests
+plus one corrected import-heading assertion passing separately; later nine focused
+checks; final seven filter/template checks; 129 final filter/browser checks and
+23 final guide/draft/navigation checks. Build, scripts and diff checks passed.
+Existing plotting deprecations and unverified physical screen-reader/device/
+production capacity remain documented. Do not sum overlapping runs.
+
+The private preview at `http://127.0.0.1:5000` was refreshed without reseeding;
+all three role logins/dashboard smoke checks passed. Fresh same-preview screenshots
+and separate disposable QA evidence are under `.qa-overhaul-temp/minimal-filters/`.
+Sign in again after restart. Next step: local user review; release actions remain
+separate.
+
+## Current handoff: focused staff Overview redesign, 14 November 2026
+
+Implemented the approved analyze → design → implement → test pass locally on
+`codex/ui-workflow-overhaul`, preserving prior mixed working changes and unrelated
+DOCX. No commit/push/deploy, operational data changes, new schema, application
+dependency, imagery, or broad cleanup. Three approved skills are installed in the
+user skill directory: codebase-analysis (plus required support modules),
+design-system and webapp-testing. Existing frontend-design was preserved/applied;
+UI/UX Pro Max remained a supporting reference. No other repository configuration
+or skill imported.
+
+Director Overview now leads with a campus comparison table and restored weighted
+campus annual rollup, explicitly separate from university-wide targets. The five
+headline KPI definitions remain unchanged. Repeated findings are grouped with the
+individual evidence/reminders retained in the full queue. Coordinator Overview
+uses a compact chronological five-activity agenda and urgent work/annual summary
+side column. The user selected this agenda instead of an embedded full calendar;
+the full calendar remains linked. Staff-only CSS avoids reshaping other screens.
+
+Analysis, source evidence and checked preservation list:
+`docs/qa/STAFF_OVERVIEW_ANALYSIS.md`. Pre-build wireframes/tokens/components:
+`docs/qa/STAFF_OVERVIEW_DESIGN.md`. Exact test results, artifact paths, skill
+installation details, limitations and rollback:
+`docs/qa/STAFF_OVERVIEW_DELIVERY.md`.
+
+Completed overlapping runs: 20 focused tests; 57 workflow/query tests; final seven
+staff/template checks; 27 staff browser checks and 23 existing polish checks.
+Build, scripts and diff checks passed. Rollup presentation executes zero SQL;
+populated-goal query growth regression passed. Existing plotting deprecations and
+unverified physical screen-reader/device/production load remain documented.
+
+The private preview at `http://127.0.0.1:5000` was refreshed without reseeding;
+all three role login/dashboard smoke checks passed. Fresh same-preview before/
+after screenshots and separate disposable populated/empty screenshots are under
+`.qa-overhaul-temp/staff-overview/`. Sign in again after restart. Next: user review
+of staff Overviews; broader website and panel gaps remain separate work.
+
+## Current handoff: complete UI reimagining, 14 November 2026
+
+The approved reimagining is implemented locally on `codex/ui-workflow-overhaul`,
+preserving earlier working changes and the unrelated documentation DOCX. This
+pass used UI/UX Pro Max as its sole design/review skill, per the user's explicit
+direction. No commit, push, deployment, schema migration, operational database
+change, new library, image generation, or skill installation was performed.
+
+The shared shell and three role dashboards now use task-led navigation/layouts.
+Restored destinations include staff calendars, consolidated follow-up and campus
+details, annual recognition, AOP/ASP context, supplemental Reports measures and
+advanced scopes/filters, historical exports, profile insights, registration
+filters/deadlines/history, and pre-publication cover/NDA options. Shared activity
+identity and safe contextual Back links keep connected tasks navigable. Existing
+drafts, permissions, direct withdrawal, attendance locks, and permanent records
+remain in force. Legacy Analytics links translate old affiliation semantics.
+
+Read `docs/qa/UI_REIMAGINING.md` for the feature checklist, definitions, exact
+destinations, screenshot locations, UI/UX Pro Max review, limitations, commands
+and rollback instructions. Completed overlapping evidence: 51 focused tests;
+14 final reimagining/UI tests; 245 full Chromium checks followed by bounded
+35-screen and 23-polish checks. All completed browser runs have zero errors.
+Tailwind, complete template compilation, script syntax and diff checks passed.
+Do not sum overlapping runs. Existing plotting-library deprecations remain;
+physical screen readers/devices and production-scale load are not certified.
+
+The refreshed isolated preview is running at `http://127.0.0.1:5000`; all three
+role logins/dashboard smoke checks passed. Its existing private database copy
+and uploads remain under `.qa-overhaul-temp/`, with mail suppressed. Sign in again
+after restart. The next step is local review; release actions remain separate.
+
+## Current handoff: UI polish, 14 November 2026
+
+The approved professional UI/search/guidance pass is implemented locally on
+`codex/ui-workflow-overhaul`, over the previously published overhaul baseline.
+These new changes remain uncommitted and unpushed. Main/deployment branches,
+operational databases, existing credentials, and the unrelated untracked DOCX
+were not changed. No new migration, imagery, frontend library, or skill installed.
+
+Shared Tailwind/Jinja components now cover search controls/chips, literal escaped
+matching and highlighting, list context through nested Back links, scoped report
+department choices, child navigation selection, aligned KPI links, accessible
+information tips, and the restored three-role dashboard guides. Guide dismissal
+uses the existing endpoint/preference; replay is available on dashboards and Help.
+Native validation has inline messages and linked summaries; role changes use an
+explicit Apply role action. Business rules, drafts, recommendations, and reports
+remain backed by the existing implementations.
+
+Read `docs/qa/UI_POLISH_SEARCH_GUIDANCE.md` for the design read, skills used,
+verification, current Web Interface Guidelines review, antislop delivery gate,
+screenshots, limitations, and local reproduction/rollback instructions. Completed
+runs: 86 focused regressions; a later overlapping 55-case run; six new UI/search
+tests; complete template compilation; 204 browser checks and a focused 18-check
+post-fix pass, followed by a final 19-check pass including Apply role. Do not add
+overlapping runs into one test total. A repeated full
+browser run hit Windows `ERR_NO_BUFFER_SPACE`; that interruption is documented
+separately from completed results.
+
+The local preview is running at `http://127.0.0.1:5000` using its existing private
+database copy and uploads under `.qa-overhaul-temp/`. Director, Coordinator, and
+Volunteer preview login/dashboard smoke checks passed. Rebuild Tailwind after
+style changes and restart this isolated launcher after Python edits. The next
+step is local review; publishing or operational migration requires its own action.
+
 ## Overhaul branch publication: 13 November 2026
 
 The user authorized committing the reviewed overhaul on

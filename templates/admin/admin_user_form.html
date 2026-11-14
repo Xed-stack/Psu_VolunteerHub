@@ -3,7 +3,7 @@
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}User management{% endblock %}
 {% block content %}
-  <header class="page-heading">
+  <a class="activity-back mb-4" href="{{ back_url('admin.admin_dash') }}">Back to Users</a><header class="page-heading">
     <div>
       <h1>{{ 'Edit User' if user else 'Create User' }}</h1>
       <p>{{ 'Update account details and access.' if user else 'Add a new account to the volunteer hub.' }}</p>
@@ -12,7 +12,7 @@
   <form class="panel" method="post">
     <div class="form-grid">
       <label class="field">
-        Full name<input
+        Full Name *<input
   class="input"
   name="name"
   value="{{ user.name if user else request.form.get('name', '') }}"
@@ -20,7 +20,7 @@
 >
       </label>
       <label class="field">
-        Email<input
+        Email *<input
   class="input"
   name="email"
   type="email"
@@ -28,7 +28,7 @@
   required
 >
       </label>
-      {% if not user %}<label class="field">Password<input
+      {% if not user %}<label class="field">Password *<input
   class="input"
   name="password"
   type="password"
@@ -51,26 +51,26 @@
       </label>
       <label class="field">
         Campus
-        <select class="select" name="campus_id"><option value="">No campus</option>{% for campus in campuses %}<option
+        <select class="select" name="campus_id"><option value="">No Campus</option>{% for campus in campuses %}<option
   value="{{ campus.id }}"
   {{ 'selected' if user and user.campus_id == campus.id }}
 >{{ campus.name }}</option>{% endfor %}</select>
       </label>
       <label class="field">
-        Volunteer category
-        <select class="select" name="volunteer_type"><option value="">Not applicable</option>{% for value in ['student', 'faculty', 'staff'] %}<option
+        Volunteer Category
+        <select class="select" name="volunteer_type"><option value="">Not Applicable</option>{% for value in ['student', 'faculty', 'staff'] %}<option
   value="{{ value }}"
   {{ 'selected' if user and user.volunteer_type == value }}
 >{{ value|title }}</option>{% endfor %}</select>
       </label>
       <label class="field">
-        {% if college_affiliations %}<select class="select" name="college_affiliation"><option value="">No affiliation</option>{% for affiliation in college_affiliations %}<option value="{{ affiliation }}" {% if (user and user.college_affiliation == affiliation) or (not user and request.form.get('college_affiliation') == affiliation) %}selected{% endif %}>{{ affiliation }}</option>{% endfor %}</select>{% else %}<input class="input" name="college_affiliation" value="{{ user.college_affiliation or '' if user else request.form.get('college_affiliation', '') }}">{% endif %}
+        College Affiliation {% if college_affiliations %}<select class="select" name="college_affiliation"><option value="">No Affiliation</option>{% for affiliation in college_affiliations %}<option value="{{ affiliation }}" {% if (user and user.college_affiliation == affiliation) or (not user and request.form.get('college_affiliation') == affiliation) %}selected{% endif %}>{{ affiliation }}</option>{% endfor %}</select>{% else %}<input class="input" name="college_affiliation" value="{{ user.college_affiliation or '' if user else request.form.get('college_affiliation', '') }}">{% endif %}
       </label>
     </div>
     <div class="form-actions">
       <a
         class="btn btn--ghost"
-        href="{{ url_for('admin.admin_dash') }}"
+        href="{{ back_url('admin.admin_dash') }}"
       >Cancel</a><button class="btn btn--primary" type="submit">{{ 'Save Changes' if user else 'Create User' }}</button>
     </div>
   </form>
@@ -86,11 +86,11 @@
         {% include 'partials/csrf_field.html' %}
         <div class="form-grid">
           <label class="field">
-            New Password<input class="input" name="new_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
+            New Password *<input class="input" name="new_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
             <small>At least {{ password_min }} characters with uppercase, lowercase, a number, and a special character.</small>
           </label>
           <label class="field">
-            Confirm New Password<input class="input" name="confirm_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
+            Confirm New Password *<input class="input" name="confirm_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
           </label>
         </div>
         <div class="form-actions">

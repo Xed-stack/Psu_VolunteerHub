@@ -64,8 +64,8 @@
     </div>
     {% if plan.campus_rollup is defined %}
     <p class="goal-scope-note">Campus achievement combines each campus’s approved goals. Pending evidence stays in the denominator. Shared AOP/ASP goals count once overall and appear in both plan totals.</p>
-    <section class="goal-university" aria-label="University-wide targets">
-      <div><h3>University-wide targets</h3><p>Separate from campus goals.</p></div>
+    <section class="goal-university" aria-label="University-Wide Targets">
+      <div><h3>University-Wide Targets</h3><p>Separate from campus goals.</p></div>
       <div><strong>{{ plan.status }}</strong><p>{{ plan.met }} of {{ plan.total }} goals achieved; {{ plan.pending }} awaiting evidence.</p><p>AOP {{ plan.plans.AOP.met }}/{{ plan.plans.AOP.total }} · ASP {{ plan.plans.ASP.met }}/{{ plan.plans.ASP.total }}</p></div>
       <nav class="goal-overview__actions goal-university__actions" aria-label="University Goal Actions">
         <a class="btn btn--outline" href="{{ plan.detail_url }}">View University Targets</a>

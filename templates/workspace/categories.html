@@ -1,10 +1,10 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Activity categories · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading('Activity categories','Categories available to campus coordinators.',url_for('workspace.management'),'Back to management') }}<section class="panel max-w-3xl"><form
+{% block title %}Activity Categories · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% block content %}{{ heading('Activity Categories','Categories available to campus coordinators.',url_for('workspace.management'),'Back to Management') }}<section class="panel max-w-3xl"><form
   method="post"
   action="{{ url_for('admin.create_category') }}"
   class="mb-6 flex flex-wrap items-end gap-3"
-><label class="field grow">New category *<input name="name" maxlength="50" required></label><button class="btn btn--primary">Add category</button></form><ul class="divide-y divide-slate-200">{% for category in categories %}<li class="flex items-center justify-between gap-3 py-3"><strong>{{ category.name }}</strong>{% if category.name != 'General' %}<form
+><label class="field grow">New Category *<input name="name" maxlength="50" required></label><button class="btn btn--primary">Add Category</button></form><ul class="divide-y divide-slate-200">{% for category in categories %}<li class="flex items-center justify-between gap-3 py-3"><strong>{{ category.name }}</strong>{% if category.name != 'General' %}<form
   method="post"
   action="{{ url_for('admin.delete_category',category_id=category.id) }}"
   data-no-draft

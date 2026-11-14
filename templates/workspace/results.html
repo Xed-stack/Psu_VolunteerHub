@@ -1,21 +1,37 @@
-{% extends 'layouts/role_base.html' %}
-{% block title %}Activity accomplishments · PSU Volunteer Hub{% endblock %}
-{% from 'workspace/components.html' import heading, filters, charts, chart_scripts with context %}
-{% block content %}{{ heading('Activity accomplishments','Review delivery, proposals, and recorded attendance in one report.',url_for('workspace.reports'),'Back to reports') }}
-  {{ filters(year, period, segment, campuses, campus_id, activity_choices, event_id, department) }}
-  <nav
-    class="mb-6 flex flex-wrap gap-3"
-    aria-label="Report exports"
-  >{% for format in ['pdf','xlsx','csv'] %}<a
+{% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading,filters,charts,chart_scripts with context %}{% from 'partials/info_tip.html' import info_tip with context %}
+{% block title %}Activity Accomplishments · PSU Volunteer Hub{% endblock %}{% block content %}
+{% from 'workspace/report_ui.html' import exports,report_tabs with context %}
+{% from 'workspace/staff_overview_components.html' import metrics with context %}
+<div class="report-page">
+{{ heading('Activity Accomplishments','Review delivery and verified participation, then open the source activity or its approved proposal.',back_url('workspace.reports'),ui_return_label or 'Back to Reports') }}
+{{ filters(year,period,segment,campuses,campus_id,activity_choices,event_id,department) }}
+<div class="report-toolbar"><p>{{ period_label }} · Philippine time<br>{{ scope_label }}<br>{{ total }} matching activities. Exports include all matching records and participation measures, regardless of the selected view.</p>{{ exports(request.args.to_dict(flat=False)) }}</div>
+{{ report_tabs(report_view) }}
+{% if event_id and rows %}<a class="text-link" href="{{ url_for('workspace.activity_report',**dict(request.args.to_dict(flat=False),event_id=event_id,return_to=request.full_path.rstrip('?'))) }}">Open Combined Activity Report</a>{% endif %}
+{% if report_view == 'summary' %}<div class="report-headlines">{{ metrics(true) }}</div>{{ charts(campus_chart,monthly,month_labels,period_label) }}<p class="scope-note">Open Activity Records for delivery and proposals, or Participation Records for attendance and numeric targets.</p>{% endif %}
+{% if report_view == 'activities' %}
+<section class="workspace-section mt-6"><header class="section-top"><h2>Activity Delivery and Proposals</h2></header><div
+  class="table-wrap"
+  tabindex="0"
+  role="region"
+  aria-label="Activity Delivery Records"
+><table class="activity-report-table"><thead><tr><th>Activity / Date</th><th>Campus / Department</th><th>Delivery</th><th>Verified Attendees</th><th>Proposal</th></tr></thead><tbody>{% for row in rows %}<tr><td><a
+  href="{{ url_for('workspace.activity_report',**dict(request.args.to_dict(flat=False),event_id=row.event.id,page=none,return_to=request.full_path.rstrip('?'))) }}"
+>{{ highlight(row.event.title,request.args.get('activity_name',request.args.get('q',''))) }}</a><p class="text-xs text-slate-600">{{ row.event.date.strftime("%d %b %Y") }}</p></td><td>{{ row.event.campus.name if row.event.campus else 'Unassigned' }}<p class="text-xs text-slate-600">{{ row.event.conducting_department or 'Department not recorded' }}</p></td><td>{{ 'Conducted' if row.conducted else row.event.lifecycle_status|title }}</td><td>{{ row.attendees }}</td><td>{% if row.event.proposal_document %}<a
+  href="{{ url_for('workspace.proposal',event_id=row.event.id) }}"
+>Download<span class="sr-only"> Proposal for {{ row.event.title }}</span></a>{% else %}Not recorded{% endif %}</td></tr>{% else %}<tr><td colspan="5">No activities match this scope. Remove a filter or choose another period.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}{% if report_view == 'participation' %}<section class="workspace-section mt-6"><header class="section-top"><h2>Registrations, Attendance, and Numeric Targets</h2>{{ info_tip('Participation Measures', 'Registrations exclude withdrawals. Recorded present counts use non-cancelled registrations. Completed participation derives from presence after the recorded end. Rates and numeric-target judgments require complete recording; participant-filtered targets are not assessed.') }}</header><p class="mb-4 text-sm text-slate-600">Unmarked attendance is unrecorded, not absent. All measures use the selected participant filters. The 75% threshold is an existing review guide, not a quality rating.</p><div
+  class="table-wrap"
+  tabindex="0"
+  role="region"
+  aria-label="Participation Measures"
+><table class="participation-report-table"><thead><tr><th>Activity</th><th>Registrations</th><th>Internal</th><th>External</th><th>Present</th><th>Completed</th><th>Attendance Rate</th><th>Numeric Target</th><th>Target Outcome</th><th>Recording</th></tr></thead><tbody>{% for row in rows %}<tr><td><a
+  href="{{ url_for('workspace.activity_report',**dict(request.args.to_dict(flat=False),event_id=row.event.id,page=none,return_to=request.full_path.rstrip('?'))) }}"
+>{{ row.event.title }}</a></td><td>{{ row.metrics.registrations }}</td><td>{{ row.metrics.internal }}</td><td>{{ row.metrics.external }}</td><td>{{ row.metrics.present }}</td><td>{{ row.metrics.completed }}</td><td>{{ (row.metrics.rate|string ~ '%') if row.metrics.rate is not none else 'Pending / unavailable' }}</td><td>{{ row.event.target_participants if row.event.target_participants is not none else 'Not set' }}</td><td>{{ 'Met' if row.metrics.target_met is sameas true else 'Not reached' if row.metrics.target_met is sameas false else 'Pending / unavailable' }}</td><td>{{ 'Complete' if row.metrics.complete else 'End time not recorded' if not row.event.end_date else 'Incomplete' if row.conducted else 'Upcoming / ongoing' }}</td></tr>{% else %}<tr><td colspan="10">No participation rows in this scope.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}{% if report_view != 'summary' %}<nav class="pagination" aria-label="Report Pages">{% if page > 1 %}<a
   class="btn btn--outline"
-  href="{{ url_for('workspace.export', format=format, **request.args) }}"
->Export {{ format|upper }}</a>{% endfor %}<button class="btn btn--outline" type="button" data-print>Print report</button></nav>
-  {{ charts(campus_chart, monthly, month_labels, period_label) }}
-  <section class="panel mt-6"><h2>Activity details and approved proposals</h2><p class="my-3 text-sm text-slate-600">{{ period_label }}. Recorded attendees include present internal and named external volunteers. Unrecorded attendance is not proof of absence.</p><div class="overflow-x-auto"><table><thead><tr><th>Activity</th><th>Campus / department</th><th>Delivery</th><th>Recorded attendees</th><th>Approved proposal</th></tr></thead><tbody>{% for row in rows %}<tr><td><a
-  href="{{ url_for('workspace.activity', event_id=row.event.id) }}"
->{{ row.event.title }}</a><br><small>{{ row.event.date.strftime("%d %b %Y") }}</small></td><td>{{ row.event.campus.name if row.event.campus else 'Unassigned' }}<br>{{ row.event.conducting_department or 'Department not recorded' }}</td><td>{{ 'Conducted' if row.conducted else row.event.lifecycle_status|title }}</td><td>{{ row.attendees }}</td><td>{% if row.event.proposal_document %}<a
-  href="{{ url_for('workspace.proposal', event_id=row.event.id) }}"
->Download proposal<span class="sr-only"> for {{ row.event.title }}</span></a>{% else %}Not recorded{% endif %}</td></tr>{% else %}<tr><td colspan="5">No activity records match these filters.</td></tr>{% endfor %}</tbody></table></div></section>
-  {% if event_id and rows and rows[0].event.date <= now %}<section class="panel mt-6"><h2>Named attendance roster</h2><p class="my-3">Printed corrections may be noted on this report. The stored record remains locked after the event ends.</p><table><thead><tr><th>Volunteer</th><th>Type</th><th>Registration</th><th>Attendance</th></tr></thead><tbody>{% for reg in rows[0].event.registrations %}<tr><td>{{ reg.participant.name if reg.participant else 'Unknown' }}</td><td>{{ 'External' if reg.is_external else 'Account' }}</td><td>{{ reg.status|title }}</td><td>{{ {'present':'Attending','absent':'Not Attended','excused':'Excused'}.get(reg.attendance_record.status, 'Unrecorded') if reg.attendance_record else 'Unrecorded' }}</td></tr>{% endfor %}</tbody></table></section>{% endif %}
-<nav class="mt-6 flex flex-wrap items-center gap-4" aria-label="Report pages">{% if page > 1 %}<a class="btn btn--outline" href="{{ url_for('workspace.report_results', **dict(request.args,page=page-1)) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }} · {{ total }} activities. Exports include all matching records.</span>{% if page < pages %}<a class="btn btn--outline" href="{{ url_for('workspace.report_results', **dict(request.args,page=page+1)) }}">Next</a>{% endif %}</nav>
-{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}
+  href="{{ query_url(page=page-1) }}"
+>Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a
+  class="btn btn--outline"
+  href="{{ query_url(page=page+1) }}"
+>Next</a>{% endif %}</nav>{% endif %}</div>{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}

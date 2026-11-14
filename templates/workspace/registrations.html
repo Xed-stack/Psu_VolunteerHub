@@ -1,14 +1,10 @@
+{% from 'partials/filter_ui.html' import more,actions,context_fields with context %}
 {% extends 'layouts/role_base.html' %}
-{% block title %}Registration history · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading('Registration history','Open a registration to review its status or withdraw.',url_for('events.volunteer_dash'),'Back to dashboard') }}<div class="panel"><ul class="divide-y divide-slate-200">{% for reg in pagination.items %}<li
+{% block title %}Registration History · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
+{% from 'partials/search_ui.html' import search_input, results, empty with context %}
+{% block content %}{{ heading('Registration History','Open a registration to review its status or withdraw.',url_for('events.volunteer_dash'),'Back to Dashboard') }}<form method="get" class="panel filter-form mb-6">{{ context_fields(['q','status','campus','category','start_date','end_date']) }}<div class="filter-grid">{{ search_input('q','Search Registrations','Activity title') }}<label class="field">Status<select name="status"><option value="">All Statuses</option>{% for value in ['pending','confirmed','completed','cancelled'] %}<option value="{{ value }}" {{ 'selected' if request.args.get('status') == value }}>{{ value|title }}</option>{% endfor %}</select></label></div>{% call more(['campus','category','start_date','end_date']) %}<label class="field">Campus<select name="campus"><option value="">All Campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if request.args.get('campus',type=int) == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label><label class="field">Category<select name="category"><option value="">All Categories</option>{% for value in categories %}<option value="{{ value }}" {{ 'selected' if request.args.get('category') == value }}>{{ value }}</option>{% endfor %}</select></label><label class="field">From Date<input type="date" name="start_date" value="{{ request.args.get('start_date','') }}"></label><label class="field">To Date<input type="date" name="end_date" value="{{ request.args.get('end_date','') }}"></label>{% endcall %}{{ actions() }}</form>{{ results(pagination.total,request.args.get('q',''),'registration date, latest first') }}<div class="panel"><ul class="divide-y divide-slate-200">{% for reg in pagination.items %}<li
   class="flex flex-wrap items-center justify-between gap-3 py-5"
 ><a
   class="min-h-11 content-center font-semibold text-psu"
-  href="{{ url_for('workspace.registration',registration_id=reg.id,page=pagination.page) }}"
->{{ reg.event.title }}</a><span>{{ reg.status|title }} · {{ reg.event.date.strftime("%d %b %Y") }}</span></li>{% else %}<li>No registrations yet.</li>{% endfor %}</ul></div><nav class="mt-5 flex gap-3" aria-label="Pagination">{% if pagination.has_prev %}<a
-  class="btn btn--outline"
-  href="{{ url_for('workspace.registrations',page=pagination.prev_num) }}"
->Previous</a>{% endif %}{% if pagination.has_next %}<a
-  class="btn btn--outline"
-  href="{{ url_for('workspace.registrations',page=pagination.next_num) }}"
->Next</a>{% endif %}</nav>{% endblock %}
+  href="{{ linked_url('workspace.registration',registration_id=reg.id,page=pagination.page) }}"
+>{{ highlight(reg.event.title,request.args.get('q','')) }}</a><span>{{ reg.status|title }} · {{ reg.event.date.strftime("%d %b %Y") }}</span></li>{% else %}<li>{{ empty(request.args.get('q',''),'registrations') }}</li>{% endfor %}</ul></div>{% from 'partials/pagination.html' import pages with context %}{{ pages(pagination) }}{% endblock %}

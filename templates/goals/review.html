@@ -1,11 +1,11 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Goal proposal review · PSU Volunteer Hub{% endblock %}
-{% block header_title %}Annual goals{% endblock %}
+{% block title %}Goal Proposal Review · PSU Volunteer Hub{% endblock %}
+{% block header_title %}Annual Goals{% endblock %}
 {% block header_subtitle %}Proposal review{% endblock %}
-{% block content %}
-<header class="page-heading"><div><h1>{{ proposal.payload.name }}</h1><p>{{ proposal.campus.name if proposal.campus else 'University' }} · {{ proposal.status|capitalize }}</p></div><a class="btn btn--outline" href="{{ url_for('goals.workspace') }}">Back to workspace</a></header>
+{% block content %}<div class="journey-page report-page">
+<header class="journey-heading"><div><h1>{{ proposal.payload.name }}</h1><p>{{ proposal.campus.name if proposal.campus else 'University' }} · {{ proposal.status|capitalize }}</p></div><a class="text-link" href="{{ back_url('goals.workspace') }}">Back to Workspace</a></header>
 {% if error %}<p role="alert" class="goal-form-error">{{ error }}</p>{% endif %}
-<dl class="goal-definition">
+<dl class="goal-definition journey-surface">
   <div><dt>Year</dt><dd>{{ proposal.payload.year }}</dd></div>
   <div><dt>Plan</dt><dd>{{ proposal.payload.plan_type }}</dd></div>
   <div><dt>Responsible Office</dt><dd>{{ proposal.payload.responsible_office }}</dd></div>
@@ -26,6 +26,6 @@
   </div>
 </form>
 {% endif %}
-<details><summary>Proposal history</summary><ol>{% for item in proposal.history %}<li>{{ item.action|capitalize }} · {{ item.at }} · Account {{ item.actor }}{% if item.note %}: {{ item.note }}{% endif %}</li>{% endfor %}</ol></details>
+<details class="journey-surface"><summary>Proposal History</summary><ol>{% for item in proposal.history %}<li>{{ item.action|capitalize }} · {{ item.at }} · Account {{ item.actor }}{% if item.note %}: {{ item.note }}{% endif %}</li>{% endfor %}</ol></details></div>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='scripts/annual-goals.js') }}"></script>{% endblock %}

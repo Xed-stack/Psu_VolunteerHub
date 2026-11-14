@@ -1,0 +1,23 @@
+{% macro choice_panel(name,title,options,selected=none,value_attr='id',label_attr='name',sdg=false,required=false,help='') %}
+{% set selected = selected or [] %}{% set catalogue = namespace(values=[]) %}
+<fieldset class="choice-panel" data-choice-panel {{ 'data-choice-required' if required }}>
+  <legend>{{ title }}{% if required %} <span aria-hidden="true">*</span>{% endif %}</legend>
+  {% if help %}<p class="choice-panel__help">{{ help }}</p>{% endif %}
+  <div class="choice-panel__enhancement" data-choice-tools hidden>
+    <div class="choice-panel__summary"><p data-choice-count role="status" aria-live="polite"></p><button type="button" class="text-link" data-choice-clear>Clear Selection</button></div>
+    <div data-choice-selected></div>
+    <div class="choice-panel__search"><label class="field" for="choice-search-{{ name }}">Find {{ title }}<input id="choice-search-{{ name }}" type="search" placeholder="Filter available options…" autocomplete="off" data-choice-query></label><button type="button" class="btn btn--outline" data-choice-filter>Filter Options</button><button type="button" class="text-link" data-choice-reset>Show All</button></div>
+    <p class="scope-note" data-choice-results role="status" aria-live="polite"></p>
+  </div>
+  <div class="choice-panel__options" tabindex="0" role="region" aria-label="{{ title }} Options">
+  {% for option in options %}
+    {% set value = (option|attr(value_attr)|string) if value_attr else option|string %}
+    {% set label = ('SDG ' ~ option.number ~ ': ' ~ option.name) if sdg else (option|attr(label_attr)) if label_attr else option %}
+    {% set catalogue.values = catalogue.values + [value] %}
+    <label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-{{ loop.index }}" name="{{ name }}" value="{{ value }}" {{ 'checked' if value in selected }} data-choice-label="{{ label }}"><span>{{ label }}</span></label>
+  {% endfor %}
+  {% for value in selected if value not in catalogue.values %}<label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-unavailable-{{ loop.index }}" name="{{ name }}" value="{{ value }}" checked data-choice-label="Unavailable selection: {{ value }}"><span>Unavailable selection: {{ value }}. Remove this selection before saving.</span></label>{% endfor %}
+  {% if not options and not selected %}<p class="scope-note">No options are available.</p>{% endif %}
+  </div>
+</fieldset>
+{% endmacro %}

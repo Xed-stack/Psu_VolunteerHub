@@ -1,11 +1,11 @@
 {% extends 'layouts/auth_base.html' %}
 {% from 'partials/auth_forms.html' import brand with context %}
-{% block title %}Complete profile | PSU Volunteer Hub{% endblock %}
+{% block title %}Complete Profile | PSU Volunteer Hub{% endblock %}
 {% block body %}
 <main class="auth-shell" id="main-content" tabindex="-1">
-  {{ brand('One more profile detail.', 'This information supports sex-disaggregated participation reporting.') }}
+  {{ brand('One More Profile Detail.', 'This information supports sex-disaggregated participation reporting.') }}
   <section class="auth-form">
-    <h1>Complete your profile</h1>
+    <h1>Complete Your Profile</h1>
     <form method="post">
       {% include 'partials/csrf_field.html' %}
       <fieldset class="field">
@@ -14,7 +14,7 @@
         <label class="check-row"><input type="radio" name="sex" value="female" required> <span>Female</span></label>
         <label class="check-row"><input type="radio" name="sex" value="prefer_not_to_say" required> <span>Prefer Not to Say</span></label>
       </fieldset>
-      <button class="button button--primary button--block" type="submit">Save and continue</button>
+      <button class="button button--primary button--block" type="submit">Save and Continue</button>
     </form>
   </section>
 </main>

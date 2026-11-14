@@ -7,7 +7,7 @@
   <section class="auth-form">
     <small>Version {{ revision.version }}</small><h1>{{ revision.title }}</h1>
     <div class="policy-copy">{{ revision.body }}</div>
-    <form method="post">{% include 'partials/csrf_field.html' %}<label class="check-row"><input type="checkbox" name="accept_terms" required><span>I have read and accept these Terms of Use.</span></label><button class="button button--primary button--block" type="submit">Accept and continue</button></form>
+    <form method="post">{% include 'partials/csrf_field.html' %}<label class="check-row"><input type="checkbox" name="accept_terms" required><span>I have read and accept these Terms of Use.</span></label><button class="button button--primary button--block" type="submit">Accept and Continue</button></form>
   </section>
 </main>
 {% endblock %}

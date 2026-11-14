@@ -152,7 +152,8 @@ def _live_report_context(period):
 
 
 def _director_calendar(year, month, campus_id=None, category='', dashboard=False):
-    now = datetime.now()
+    from app.services.activity_workflow import local_now
+    now = local_now()
     year, month = year or now.year, month or now.month
     if not 1 <= year <= 9999 or not 1 <= month <= 12:
         year, month = now.year, now.month
@@ -167,9 +168,8 @@ def _director_calendar(year, month, campus_id=None, category='', dashboard=False
     by_day, links = {}, {}
     for event in query.order_by(Event.date, Event.id).all():
         by_day.setdefault(event.date.day, []).append(event)
-        links[event.id] = url_for('director.analytics', event_id=event.id,
-            start_date=event.date.date().isoformat(), end_date=event.date.date().isoformat(),
-            _anchor='decision-records')
+        links[event.id] = url_for('workspace.activity', event_id=event.id,
+            return_to=request.full_path.rstrip('?'))
     previous = ((year - 1, 12) if month == 1 else (year, month - 1)) if (year, month) != (1, 1) else None
     following = ((year + 1, 1) if month == 12 else (year, month + 1)) if (year, month) != (9999, 12) else None
 
@@ -194,7 +194,8 @@ def _director_calendar(year, month, campus_id=None, category='', dashboard=False
 @login_required
 @roles_required('director', 'admin')
 def director_dash():
-    return redirect(url_for("workspace.overview", **request.args))
+    from app.services.workspace_reports import legacy_report_url
+    return redirect(legacy_report_url(dashboard=True))
 
 
 @director_bp.route('/director/campus-follow-up', methods=['POST'])
@@ -214,23 +215,29 @@ def campus_follow_up():
                        for values in raw_scope.values())):
             raise ValueError
         scope = MultiDict((key, value) for key, values in raw_scope.items() for value in values)
-        period = resolve_period(scope)
+        from app.services.workspace_reports import reporting_period, follow_up_items
+        from app.services.activity_workflow import local_now
+        period = reporting_period(scope, local_now())
         event_id = request.form.get('guidance_event_id', type=int)
         code = request.form.get('guidance_kind', 'remaining_goals')
-        if code not in ('no_targets', 'remaining_goals', 'pending_attendance', 'missed_targets', 'low_attendance', 'no_activities'):
+        if code not in ('no_targets', 'remaining_goals', 'pending_attendance', 'missed_targets', 'low_attendance', 'no_activities', 'record_attendance', 'schedule_limit'):
             raise ValueError
-        if request.form.get('guidance_event_id') and (not event_id or event_id < 1 or code not in ('pending_attendance', 'low_attendance', 'missed_targets')):
+        if request.form.get('guidance_event_id') and (not event_id or event_id < 1 or code not in ('pending_attendance', 'low_attendance', 'missed_targets', 'record_attendance', 'schedule_limit')):
             raise ValueError
         plan = annual_goal_summary(year, campus_id)
         records = goal_guidance(plan)
         if code not in ('no_targets', 'remaining_goals'):
             if scope.get('campus') and (scope.getlist('campus') != [str(campus_id)] or scope.get('campus_mode') != 'include'):
                 raise ValueError
-            rows, _ = build_events_report(campus_id=campus_id, start_date=period['start'], end_date=period['end'],
-                category=scope.get('category'), sex=scope.get('sex'), sdg_id=scope.get('sdg_id', type=int),
-                activity_name=scope.get('activity_name'), attention=scope.get('attention'),
-                event_id=event_id or scope.get('event_id'))
-            records = operational_guidance(rows, guidance_scope_label(period, scope), not scope.get('sex'), scheduling_scope(scope))
+            from app.routes.workspace import report_data
+            if event_id:
+                scope.setlist('event_id', [str(event_id)])
+            data = report_data(scope, forced_campus=campus_id)
+            records = [dict(code=item['code'], text=item['title'] + '. ' + item['action'] + '.',
+                evidence=item['evidence'], scope_label=item['scope']) for item in follow_up_items(data)]
+            if data.get('allow_scheduling') and not any(row['event'].lifecycle_status == 'approved' for row in data['rows']) and code == 'no_activities':
+                records = [dict(code=code,text='Review the campus schedule and plan eligible activities.',
+                                evidence='No activity records in this scope.',scope_label=data['period_label'])]
         record = next((item for item in records if item['code'] == code), None)
     except (ValueError, TypeError):
         abort(400, description='Choose a valid recommendation and report scope.')
@@ -238,7 +245,7 @@ def campus_follow_up():
                   if key in GUIDANCE_SCOPE_KEYS or key in ('award_year', 'calendar_year', 'calendar_month', 'attention_page')}
     navigation['goal_year'] = year
     navigation['guidance_open'] = '1'
-    destination = url_for('director.director_dash', **navigation) + '#campus-guidance'
+    destination = url_for('workspace.overview', **scope.to_dict(flat=False)) + '#follow-up'
     if not record or plan.get('sample') or request.form.get('sample') == '1':
         flash('This recommendation has cleared or is unavailable. No reminder was sent.', 'info')
         return redirect(destination)
@@ -249,7 +256,7 @@ def campus_follow_up():
     text += f'{record["evidence"]} {record["scope_label"]} {record["text"]}'
     canonical_scope = {key: scope.getlist(key) for key in GUIDANCE_SCOPE_KEYS
                        if scope.get(key) and key not in ('period', 'campus_id', 'campus', 'campus_mode')}
-    canonical_scope.update(start_date=[period['start']], end_date=[period['end']])
+    canonical_scope.update(start_date=[str(period['start'] or '')], end_date=[str(period['end'] or '')])
     identity = dict(campus_id=campus_id, rule=code, event_id=event_id,
                     scope={} if code in ('no_targets', 'remaining_goals') else canonical_scope, goal_year=year)
     message = json.dumps(dict(version=1, identity=identity, text=text), sort_keys=True)
@@ -305,7 +312,8 @@ def activity_calendar():
 @login_required
 @roles_required('director', 'admin')
 def analytics():
-    return redirect(url_for("workspace.historical" if request.args.get("view") == "historical" else "workspace.reports"))
+    from app.services.workspace_reports import legacy_report_url
+    return redirect(legacy_report_url())
 
 
 @director_bp.route('/reports/campus.csv')

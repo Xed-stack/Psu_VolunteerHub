@@ -246,7 +246,8 @@ def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
 @login_required
 @role_required('coordinator')
 def coordinator_dash():
-    return redirect(url_for("workspace.overview", **request.args))
+    from app.services.workspace_reports import legacy_report_url
+    return redirect(legacy_report_url(dashboard=True))
 
 
 @coordinator_bp.route('/coordinator/calendar')
@@ -280,7 +281,7 @@ def create_activity():
 def edit_activity(event_id):
     """Edit only activity matching signed-in user's campus; campus stays unchanged.
 
-    Revalidate category, SDGs, dates, slots, targets, and policy fields before
+    Revalidate category, SDGs, dates, slots and targets before
     saving. Capacity cannot fall below count of all existing registrations,
     including cancelled rows; this differs from join route's occupied-slot rule.
     Save new cover reference, commit, then remove replaced cover from disk.
@@ -302,50 +303,44 @@ def edit_activity(event_id):
         description = request.form.get('description', '').strip()
         date_str = request.form.get('date', '').strip()
         location = request.form.get('location', '').strip()
-        required_skills = ', '.join(request.form.getlist('required_skills'))
-        available_skills = {skill.name for skill in Skill.query.all()}
-        if not set(request.form.getlist('required_skills')) <= available_skills:
-            abort(400, description='Select available skills from the dropdown.')
+        available_skills = {skill.name: skill for skill in Skill.query.all()}
+        if not set(request.form.getlist('required_skills')) <= available_skills.keys():
+            flash('Select available skills from the list.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
         target_participants = request.form.get('target_participants', type=int)
-        agreement_text = request.form.get('participation_agreement_text', '').strip()
-        agreement_version = request.form.get('participation_agreement_version', '').strip()
-        nda_required = request.form.get('nda_required') == 'on'
-        nda_text = request.form.get('nda_text', '').strip()
-        nda_version = request.form.get('nda_version', '').strip()
         max_slots = _max_event_slots()
 
         if category not in categories:
             flash('Select a valid activity category.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   categories=categories, max_slots=max_slots)
+                                   **_activity_form_context())
         sdgs = _selected_sdgs(request.form)
+        if len(sdgs) != len(set(request.form.getlist('sdg_ids'))):
+            flash('Select available Sustainable Development Goals from the list.', 'error')
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
         if SdgGoal.query.count() and not sdgs:
             flash('Select at least one Sustainable Development Goal.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
                                    **_activity_form_context())
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event)
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
         schedule, error = _parse_event_schedule(request.form)
         if error:
             flash(error, 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   categories=categories, max_slots=max_slots)
+                                   **_activity_form_context())
         date, end_date, cancellation_deadline = schedule
         if slots < 1 or slots > max_slots:
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   max_slots=max_slots)
+                                   **_activity_form_context())
         if target_participants is not None and target_participants < 1:
             flash('Target participants must be a positive number when provided.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   categories=categories, max_slots=max_slots)
-        if (agreement_text and not agreement_version) or (nda_required and (not nda_text or not nda_version)):
-            flash('Provide a version for a custom agreement and text/version for a required NDA.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event,
-                                   categories=categories, max_slots=max_slots)
+                                   **_activity_form_context())
 
         # Registration-sensitive: do not reduce capacity below existing
         # registrations (PSU + external). This preserves all participation.
@@ -353,7 +348,7 @@ def edit_activity(event_id):
         if slots < existing:
             flash(f'Cannot reduce slots below existing registrations ({existing}).',
                   'error')
-            return render_template('coordinator/edit_activity.html', event=event)
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
 
         event.title = title
         event.description = description
@@ -362,22 +357,17 @@ def edit_activity(event_id):
         event.cancellation_deadline = cancellation_deadline
         event.location = location
         event.category = category
-        event.required_skills = required_skills
+        event.required_skills_rel = [available_skills[name] for name in dict.fromkeys(request.form.getlist('required_skills'))]
         event.sdgs = sdgs
         event.slots = slots
         event.target_participants = target_participants
-        event.participation_agreement_text = agreement_text or None
-        event.participation_agreement_version = agreement_version or None
-        event.nda_required = nda_required
-        event.nda_text = nda_text or None
-        event.nda_version = nda_version or None
         old_cover = event.cover_image_path
         try:
             cover = _save_event_cover(request.files.get('cover_image'))
         except ValueError as exc:
             flash(str(exc), 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   max_slots=max_slots)
+                                   **_activity_form_context())
         if cover:
             event.cover_image_path = cover['path']
             event.cover_image_name = cover['original_name']
@@ -521,9 +511,9 @@ def attendance():
             roster = roster.filter(~Registration.attendance_record.has())
         elif attendance_filter:
             roster = roster.filter(Registration.attendance_record.has(Attendance.status == attendance_filter))
-        pagination = paginate(roster.options(
+        pagination = paginate(roster.join(User, User.id == Registration.user_id).options(
             joinedload(Registration.user), joinedload(Registration.external_participant),
-            joinedload(Registration.attendance_record)).order_by(Registration.id), per_page=15)
+            joinedload(Registration.attendance_record)).order_by(User.name, Registration.id), per_page=15)
         registrations = pagination.items
     if request.method == 'POST':
         event_id = request.form.get('event_id', type=int)
@@ -759,7 +749,8 @@ def _date_range_label(start_date, end_date):
 @login_required
 @role_required('coordinator')
 def analytics():
-    return redirect(url_for("workspace.historical" if request.args.get("view") == "historical" else "workspace.reports"))
+    from app.services.workspace_reports import legacy_report_url
+    return redirect(legacy_report_url())
 
 
 # ── Outsider (External Volunteer) manual encoding ───────────────────────────────

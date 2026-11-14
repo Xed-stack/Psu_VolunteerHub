@@ -1,4 +1,4 @@
-{% macro info_tip(label, text) -%}
+{% macro info_tip(label, text, help_url='') -%}
   <details class="info-tip">
     <summary aria-label="About {{ label }}">
       <span class="material-symbols-outlined" aria-hidden="true">info</span>
@@ -6,6 +6,7 @@
     <div class="info-tip__content" role="note">
       <strong>{{ label }}</strong>
       <p>{{ text }}</p>
+      {% if help_url %}<a href="{{ help_url }}">Read the Process Guide</a>{% endif %}
     </div>
   </details>
 {%- endmacro %}

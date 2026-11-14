@@ -1,0 +1,22 @@
+{% macro more(keys, invalid=false) %}
+<details class="filter-more" data-more-filters {{ 'open' if invalid }}>
+  <summary>More Filters{% set active=filter_count(keys) %}{% if active %}<span class="filter-more-count">{{ active }} Active</span>{% endif %}</summary>
+  <div class="filter-grid">{{ caller() }}</div>
+</details>
+{% endmacro %}
+
+{% macro actions(reset_url='', label='Apply Filters') %}
+<div class="filter-actions"><button class="btn btn--primary" type="submit">{{ label }}</button><a class="btn btn--outline" href="{{ reset_url or ui_clear_url }}">Reset Filters</a></div>
+{% endmacro %}
+
+{% macro context_fields(exclude=[]) %}
+{% for key,values in request.args.lists() if key not in exclude + ['page','category_page','tour','export'] %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endfor %}
+{% endmacro %}
+
+{% macro period_fields(period,segment,start='',end='') %}
+<label class="field"><span>Period</span><select name="period">{% for value,label in [('annual','Annual'),('semiannual','Semi-Annual'),('quarterly','Quarterly'),('custom','Custom Dates'),('all','All Records')] %}<option value="{{ value }}" {{ 'selected' if period == value }}>{{ label }}</option>{% endfor %}</select></label>
+<label class="field" data-period-segment {{ 'data-period-inactive' if period not in ['quarterly','semiannual'] }}><span data-segment-label>{{ 'Half-Year' if period == 'semiannual' else 'Quarter' }}</span><select name="segment">{% for n,label in [(1,'First'),(2,'Second'),(3,'Third'),(4,'Fourth')] %}<option value="{{ n }}" {{ 'selected' if segment == n }}>{{ label }} {{ 'Half' if period == 'semiannual' else 'Quarter' }}</option>{% endfor %}</select></label>
+<label class="field" data-period-date {{ 'data-period-inactive' if period != 'custom' }}><span>From <span aria-hidden="true">*</span></span><input type="date" name="start_date" value="{{ start if period == 'custom' else '' }}" {{ 'required' if period == 'custom' }}></label>
+<label class="field" data-period-date {{ 'data-period-inactive' if period != 'custom' }}><span>To <span aria-hidden="true">*</span></span><input type="date" name="end_date" value="{{ end if period == 'custom' else '' }}" {{ 'required' if period == 'custom' }}></label>
+<noscript><p class="filter-help">Use Quarter 1–4 or Half-Year 1–2 as appropriate. Dates apply only to Custom Dates.</p></noscript>
+{% endmacro %}

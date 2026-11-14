@@ -2,39 +2,39 @@
 {% from 'partials/auth_forms.html' import brand, field, select_field, error_summary with context %}
 {% from 'partials/password_feedback.html' import password_feedback %}
 {% set errors = errors|default({}) %}
-{% block title %}Create account | PSU Volunteer Hub{% endblock %}
+{% block title %}Create Account | PSU Volunteer Hub{% endblock %}
 {% block body %}
   <main class="auth-shell auth-shell--signup" id="main-content" tabindex="-1">
-    {{ brand('Your service starts here.', 'Join the PSU volunteer community and find activities connected to your interests and skills.') }}
+    {{ brand('Your Service Starts Here.', 'Join the PSU volunteer community and find activities connected to your interests and skills.') }}
     <section class="auth-form" aria-labelledby="signup-title">
       <header class="auth-form__heading">
         <p class="auth-step">Step 2 of 2 · Account details</p>
-        <h1 id="signup-title">Create your volunteer account</h1>
+        <h1 id="signup-title">Create Your Volunteer Account</h1>
         <p>Fields marked * are required. Students, faculty, staff, and external volunteers can register.</p>
       </header>
       {{ error_summary(errors) }}
       <form action="{{ url_for('auth.register') }}" method="post" data-signup-draft data-warn-unsaved="{{ 'true' if request.method == 'POST' else 'false' }}">
         {% include 'partials/csrf_field.html' %}
         <fieldset class="auth-fieldset">
-          <legend>Personal details</legend>
+          <legend>Personal Details</legend>
           <div class="form-grid">
-            {{ field('First name', 'first_name', errors, autocomplete='given-name') }}
-            {{ field('Last name', 'last_name', errors, autocomplete='family-name') }}
-            <div class="field--wide">{{ field('Email address', 'email', errors, type='email', autocomplete='email', placeholder='you@example.com', hint='Any valid email address is welcome.') }}</div>
+            {{ field('First Name', 'first_name', errors, autocomplete='given-name') }}
+            {{ field('Last Name', 'last_name', errors, autocomplete='family-name') }}
+            <div class="field--wide">{{ field('Email Address', 'email', errors, type='email', autocomplete='email', placeholder='you@example.com', hint='Any valid email address is welcome.') }}</div>
             {{ select_field('Sex', 'sex', [('male', 'Male'), ('female', 'Female'), ('prefer_not_to_say', 'Prefer Not to Say')], errors, hint='Used for sex-disaggregated participation reporting. You may choose Prefer Not to Say.') }}
           </div>
         </fieldset>
         <fieldset class="auth-fieldset">
-          <legend>Campus preference and affiliation</legend>
+          <legend>Campus Preference and Affiliation</legend>
           <div class="form-grid">
-            {{ select_field('Volunteer category', 'volunteer_type', [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff'), ('external', 'External volunteer')], errors) }}
-            {{ field('PSU ID number', 'id_number', errors, required=false, hint='Required for PSU students and employees; optional for external volunteers.') }}
+            {{ select_field('Volunteer Category', 'volunteer_type', [('student', 'Student'), ('faculty', 'Faculty'), ('staff', 'Staff'), ('external', 'External volunteer')], errors) }}
+            {{ field('PSU ID Number', 'id_number', errors, required=false, hint='Required for PSU students and employees; optional for external volunteers.') }}
             {% set campus_options = [] %}
             {% for campus in campuses|sort(attribute='name') %}{% set _ = campus_options.append((campus.id, campus.name)) %}{% endfor %}
-            {{ select_field('Preferred campus', 'campus', campus_options, errors) }}
+            {{ select_field('Preferred Campus', 'campus', campus_options, errors) }}
             <label class="field" for="college_affiliation">College Affiliation
               <select class="select" id="college_affiliation" name="college_affiliation" {% if not request.form.get('campus') %}disabled{% endif %} aria-describedby="college-affiliation-hint{% if errors.get('college_affiliation') %} college_affiliation-error{% endif %}">
-                <option value="">{% if request.form.get('campus') %}Select an affiliation{% else %}Select a campus first{% endif %}</option>
+                <option value="">{% if request.form.get('campus') %}Select an Affiliation{% else %}Select a Campus First{% endif %}</option>
                 {% for affiliation in college_affiliations %}<option value="{{ affiliation }}" {% if request.form.get('college_affiliation') == affiliation %}selected{% endif %}>{{ affiliation }}</option>{% endfor %}
               </select>
               <span class="field-hint" id="college-affiliation-hint">Options depend on the selected campus.</span>
@@ -46,21 +46,21 @@
           <legend>Password</legend>
           <div class="form-grid">
             {{ field('Password', 'password', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Use at least ' ~ (password_min or 8) ~ ' characters with uppercase, lowercase, a number, and a special character.') }}
-            {{ field('Confirm password', 'password_confirmation', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Enter the same password again.') }}
+            {{ field('Confirm Password', 'password_confirmation', errors, type='password', autocomplete='new-password', minlength=password_min or 8, hint='Enter the same password again.') }}
           </div>
           {{ password_feedback('password', 'password_confirmation', password_min or 8) }}
         </fieldset>
-        <section class="auth-preferences" aria-label="Your volunteer selections">
+        <section class="auth-preferences" aria-label="Your Volunteer Selections">
           <p>Review your volunteer interests and skills before creating your account.</p>
-          <a class="auth-text-link" href="{{ url_for('auth.interests') }}">Edit interests and skills</a>
+          <a class="auth-text-link" href="{{ url_for('auth.interests') }}">Edit Interests and Skills</a>
         </section>
         {% if active_terms or active_privacy %}
           <fieldset class="auth-fieldset">
-            <legend>Terms and privacy</legend>
+            <legend>Terms and Privacy</legend>
             <p class="field-hint">Read each document before selecting its checkbox. If this form needs corrections, select the checkboxes again before submitting.</p>
             {% if active_terms %}
               <details class="policy-copy" id="terms-notice">
-                <summary>{{ active_terms.title }} (version {{ active_terms.version }})</summary>
+                <summary>{{ active_terms.title }} (Version {{ active_terms.version }})</summary>
                 <div class="policy-copy__body">{{ active_terms.body }}</div>
               </details>
               <label class="check-row" for="terms_accepted">
@@ -71,7 +71,7 @@
             {% endif %}
             {% if active_privacy %}
               <details class="policy-copy" id="privacy-notice">
-                <summary>{{ active_privacy.title }} (version {{ active_privacy.version }})</summary>
+                <summary>{{ active_privacy.title }} (Version {{ active_privacy.version }})</summary>
                 <div class="policy-copy__body">{{ active_privacy.body }}</div>
               </details>
               <label class="check-row" for="privacy_acknowledged">
@@ -82,7 +82,7 @@
             {% endif %}
           </fieldset>
         {% endif %}
-        <button class="button button--primary button--block" type="submit">Create account</button>
+        <button class="button button--primary button--block" type="submit">Create Account</button>
       </form>
       <p class="field-hint auth-role-note">Coordinator, Director, and Admin accounts are created by an administrator.</p>
       <p class="auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>

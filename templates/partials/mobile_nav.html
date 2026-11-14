@@ -1,0 +1,17 @@
+<nav class="mobile-nav" aria-label="Quick Navigation">
+  {% if current_user.role == 'volunteer' %}
+    {% set links = [('events.volunteer_dash', 'space_dashboard', 'Home', 'dashboard'), ('events.opportunities', 'volunteer_activism', 'Activities', 'activities'), ('workspace.registrations', 'event_available', 'My Events', 'registrations'), ('volunteer.profile_page', 'person', 'Profile', 'profile')] %}
+  {% else %}
+    {% set links = [('workspace.overview','space_dashboard','Overview','overview'),('workspace.activities','event','Activities','activities'),('coordinator.activity_calendar' if current_user.role == 'coordinator' else 'director.activity_calendar','calendar_month','Calendar','calendar'),('workspace.reports','monitoring','Reports','reports')] %}
+  {% endif %}
+  {% for target,icon,label,section in links %}<a
+  href="{{ url_for(target) }}"
+  {% if ui_section == section %}aria-current="page"{% endif %}
+><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span><span>{{ label }}</span></a>{% endfor %}<button
+  type="button"
+  data-sidebar-toggle
+  aria-label="More Navigation"
+  aria-controls="roleSidebar"
+  aria-expanded="false"
+><span class="material-symbols-outlined" aria-hidden="true">menu</span><span>More</span></button>
+</nav>

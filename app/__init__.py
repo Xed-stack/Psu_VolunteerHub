@@ -216,6 +216,9 @@ def create_app(config_name=None):
 
     from app.pagination import page_url
     app.jinja_env.globals['page_url'] = page_url
+    app.jinja_env.globals['int'] = int
+    from app.ui import presentation_context
+    app.context_processor(presentation_context)
 
     from app.commands import register_commands
     register_commands(app)
@@ -247,13 +250,12 @@ def create_app(config_name=None):
         ).order_by(Event.date.asc()).limit(6).all()
         completed_at = db.func.coalesce(Event.end_date, Event.date)
         completed_events = Event.query.filter(
-            completed_at <= now,
+            Event.lifecycle_status == 'approved', Event.end_date.isnot(None), Event.end_date <= now,
         ).options(joinedload(Event.campus)).order_by(completed_at.desc(), Event.id.desc()).limit(3).all()
-        historical_summary = {
-            'activities': HistoricalActivity.query.count(),
-            'participants': int(db.session.query(db.func.sum(
-                HistoricalActivity.volunteer_count)).scalar() or 0),
-        }
+        historical_count, reported, known = db.session.query(db.func.count(HistoricalActivity.id),
+            db.func.sum(HistoricalActivity.volunteer_count),db.func.count(HistoricalActivity.volunteer_count)).one()
+        historical_summary = {'activities':historical_count,'participants':int(reported) if reported is not None else None,
+                              'known_counts':known}
         return render_template(
             'workspace/home.html',
             featured_events=featured_events,

@@ -12,7 +12,7 @@
       <td class="calendar-day{{ ' calendar-day--empty' if not day }}">
         {% if day %}<strong>{{ day }}</strong>
         {% for event in calendar_events.get(day, []) %}
-          <a class="calendar-entry" href="{{ calendar_event_links[event.id] if calendar_event_links is defined else url_for('coordinator.edit_activity', event_id=event.id) }}">{{ event.title }}<small>{{ event.date.strftime('%I:%M %p') }} · {% if calendar_show_campus|default(false) %}{{ event.campus.name if event.campus else 'Unassigned Campus' }} · {% endif %}{{ event.category or 'General' }}{% if event.sdgs %} · SDG {{ event.sdgs|map(attribute='number')|join(', ') }}{% endif %}</small></a>
+          <a class="calendar-entry" href="{{ calendar_event_links[event.id] if calendar_event_links is defined else linked_url('workspace.activity', event_id=event.id) }}">{{ event.title }}<small>{{ event.date.strftime('%I:%M %p') }} · {% if calendar_show_campus|default(false) %}{{ event.campus.name if event.campus else 'Unassigned Campus' }} · {% endif %}{{ event.category or 'General' }}{% if event.sdgs %} · SDG {{ event.sdgs|map(attribute='number')|join(', ') }}{% endif %}</small></a>
         {% endfor %}{% endif %}
       </td>
     {% endfor %}</tr>{% endfor %}</tbody>

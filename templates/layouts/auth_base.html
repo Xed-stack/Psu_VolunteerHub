@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/app.css') }}">
   </head>
   <body class="auth-page" {% if session.pop('clear_signup_draft', false) %}data-clear-signup-draft{% endif %}>
-    <a class="auth-skip-link" href="#main-content">Skip to main content</a>
-    <nav class="auth-nav" aria-label="Account navigation">
+    <a class="auth-skip-link" href="#main-content">Skip to Main Content</a>
+    <nav class="auth-nav" aria-label="Account Navigation">
       <a class="auth-nav__brand" href="{{ url_for('home') }}">
         <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="" width="40" height="40">
         <span>PSU Volunteer Hub</span>

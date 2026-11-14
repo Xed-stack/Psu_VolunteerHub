@@ -1,11 +1,9 @@
+{% from 'partials/filter_ui.html' import actions,context_fields with context %}
 {% extends 'layouts/role_base.html' %}
-{% block title %}Volunteer accounts · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}{% from 'partials/pagination.html' import pages with context %}
-{% block content %}{{ heading('Volunteer accounts','Registered volunteer accounts in the selected campus scope, including inactive accounts.',url_for('workspace.overview',campus_id=request.args.get('campus_id')),'Back to overview') }}<form method="get" class="mb-6 flex flex-wrap items-end gap-3">{% if request.args.get('campus_id') %}<input
+{% block title %}Volunteer Accounts · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}{% from 'partials/pagination.html' import pages with context %}
+{% from 'partials/search_ui.html' import search_input, results, empty with context %}
+{% block content %}{{ heading('Volunteer Accounts','Registered volunteer accounts in the selected campus scope, including inactive accounts.',url_for('workspace.overview',campus_id=request.args.get('campus_id')),'Back to Overview') }}<form method="get" class="panel filter-form filter-grid mb-6">{{ context_fields(['q', 'campus_id', 'campus_id']) }}{% if request.args.get('campus_id') %}<input
   type="hidden"
   name="campus_id"
   value="{{ request.args.campus_id }}"
->{% endif %}<label class="field grow">Search names<input
-  name="q"
-  type="search"
-  value="{{ request.args.get('q', '') }}"
-></label><button class="btn btn--outline">Search</button></form><section class="panel"><div class="overflow-x-auto"><table><thead><tr><th>Name</th><th>Campus</th><th>Affiliation</th><th>Account status</th></tr></thead><tbody>{% for user in pagination.items %}<tr><td>{{ user.name }}</td><td>{{ user.campus.name if user.campus else 'Not assigned' }}</td><td>{{ user.college_affiliation or 'Not recorded' }}</td><td>{{ 'Active' if user.is_active else 'Inactive' }}</td></tr>{% else %}<tr><td colspan="4">No volunteer accounts match.</td></tr>{% endfor %}</tbody></table></div></section>{{ pages(pagination) }}{% endblock %}
+>{% endif %}{{ search_input('q','Search Volunteer Accounts','Name or email address') }}{{ actions() }}</form>{{ results(pagination.total,request.args.get('q',''),'name, A–Z') }}<section class="panel"><div class="overflow-x-auto"><table><thead><tr><th>Name</th><th>Campus</th><th>Affiliation</th><th>Account Status</th></tr></thead><tbody>{% for user in pagination.items %}<tr><td>{{ highlight(user.name,request.args.get('q','')) }}</td><td>{{ user.campus.name if user.campus else 'Not assigned' }}</td><td>{{ user.college_affiliation or 'Not recorded' }}</td><td>{{ 'Active' if user.is_active else 'Inactive' }}</td></tr>{% else %}<tr><td colspan="4">{{ empty(request.args.get('q',''),'volunteer accounts') }}</td></tr>{% endfor %}</tbody></table></div></section>{{ pages(pagination) }}{% endblock %}

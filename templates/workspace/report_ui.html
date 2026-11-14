@@ -1,0 +1,11 @@
+{% macro exports(query, annual=false) %}
+<nav class="form-actions" aria-label="Report Exports">{% for format,label in [('pdf','Export PDF'),('xlsx','Export Excel'),('csv','Export CSV')] %}<a class="btn btn--outline" href="{{ url_for('workspace.export',format=format,**dict(query,report='aop')) if annual else url_for('workspace.export',format=format,**query) }}">{{ label }}</a>{% endfor %}<button class="btn btn--outline" type="button" data-print>Print This View</button></nav>
+{% endmacro %}
+{% macro report_tabs(view) %}
+<nav class="workspace-tabs" aria-label="Report Views">{% for value,label in [('summary','Summary'),('activities','Activity Records'),('participation','Participation Records')] %}<a href="{{ query_url(view=value) }}" {% if view == value %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+{% endmacro %}
+{% macro participation_facts(row) %}
+<dl class="report-facts">
+{% for label,value in [('Registrations',row.metrics.registrations),('Internal Participants',row.metrics.internal),('External Participants',row.metrics.external),('Recorded Present',row.metrics.present),('Completed Participation',row.metrics.completed),('Attendance Rate',(row.metrics.rate|string ~ '%') if row.metrics.rate is not none else 'Pending / unavailable'),('Numeric Participant Target',row.event.target_participants if row.event.target_participants is not none else 'Not set'),('Target Outcome','Met' if row.metrics.target_met is sameas true else 'Not Reached' if row.metrics.target_met is sameas false else 'Pending / unavailable')] %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+</dl>
+{% endmacro %}

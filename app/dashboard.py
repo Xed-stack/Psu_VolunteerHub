@@ -12,7 +12,7 @@ ATTENTION_LABELS = {
 
 GUIDANCE_SCOPE_KEYS = ('period', 'start_date', 'end_date', 'campus', 'campus_mode',
                        'campus_id', 'category', 'sex', 'sdg_id', 'activity_name',
-                       'attention', 'event_id', 'department')
+                       'attention', 'event_id', 'department', 'year', 'segment', 'delivery', 'affiliation', 'college_affiliation')
 GUIDANCE_TEXT = {
     'pending_attendance': (1, 'Complete outstanding attendance records so verified results can be assessed.'),
     'missed_targets': (3, 'Review the activity target and plan additional participant outreach.'),

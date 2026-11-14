@@ -1,13 +1,13 @@
 {% extends 'layouts/auth_base.html' %}
 {% from 'partials/auth_forms.html' import brand, error_summary with context %}
-{% block title %}Choose interests | PSU Volunteer Hub{% endblock %}
+{% block title %}Choose Interests | PSU Volunteer Hub{% endblock %}
 {% block body %}
   <main class="auth-shell auth-shell--signup" id="main-content" tabindex="-1">
-    {{ brand('What matters to you?', 'Choose your causes and the skills you can contribute to the PSU volunteer community.') }}
+    {{ brand('What Matters to You?', 'Choose your causes and the skills you can contribute to the PSU volunteer community.') }}
     <section class="auth-form">
       <header class="auth-form__heading">
         <p class="auth-step">Step 1 of 2 · Volunteer interests</p>
-        <h1>Select interests and skills</h1>
+        <h1>Select Interests and Skills</h1>
         <p id="preferences-hint">{% if selections_required %}Choose at least one interest and one related skill. {% endif %}Your selections help us recommend relevant volunteer opportunities.</p>
       </header>
       {{ error_summary(errors, preferences=true) }}
@@ -37,7 +37,7 @@
               {% if item.skills %}
                 <div
                   class="related-skills"
-                  aria-label="Skills related to {{ interest.name }}"
+                  aria-label="Skills Related to {{ interest.name }}"
                 >
                   <p class="related-skills__hint">Select the skills you can contribute.</p>
                   {% for skill in item.skills %}
@@ -65,8 +65,8 @@
           <a
             class="button button--secondary"
             href="{{ url_for('auth.login') }}"
-          >Back to sign in</a>
-          <button class="button button--primary" type="submit">Continue to account details</button>
+          >Back to Sign In</a>
+          <button class="button button--primary" type="submit">Continue to Account Details</button>
         </div>
       </form>
     </section>

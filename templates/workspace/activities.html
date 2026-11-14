@@ -1,37 +1,24 @@
-{% extends 'layouts/role_base.html' %}
-{% from 'workspace/components.html' import heading with context %}
-{% block title %}Activities · PSU Volunteer Hub{% endblock %}
-{% block content %}
-  {{ heading('Activities', 'Choose an activity to view its details, attendance, documents, and report.') }}
-  <div class="mb-6 flex flex-wrap justify-between gap-4"><nav class="flex flex-wrap gap-2" aria-label="Activity schedule">{% for value, label in [('upcoming','Upcoming'),('ongoing','Ongoing'),('past','Past activities'),('cancelled','Cancelled'),('all','All')] %}<a
-  class="btn {{ 'btn--primary' if state == value else 'btn--outline' }}"
-  href="{{ url_for('workspace.activities', **dict(request.args, state=value, page=1)) }}"
-  {{ 'aria-current=page' if state == value }}
->{{ label }}</a>{% endfor %}</nav>{% if current_user.role == 'coordinator' %}<a
+{% from 'partials/filter_ui.html' import more,actions,context_fields with context %}
+{% extends 'layouts/role_base.html' %}{% from 'partials/search_ui.html' import search_input,chips,results,empty with context %}{% from 'partials/pagination.html' import pages with context %}
+{% block title %}Activities · PSU Volunteer Hub{% endblock %}{% block content %}<header class="page-heading"><div><h1>Activities</h1><p>Find a scheduled activity and open its workspace.</p></div>{% if current_user.role == 'coordinator' %}<a
   class="btn btn--primary"
-  href="{{ url_for('workspace.create_activity', step=1) }}"
->Create activity</a>{% endif %}</div>
-  <form class="mb-6 flex flex-wrap gap-3" method="get">
-    <input type="hidden" name="state" value="{{ state }}"><label class="field grow">Search activities<input name="q" value="{{ search }}" type="search"></label><button class="btn btn--outline self-end">Search</button>
-  </form>
-  <div
-    class="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-300 bg-white"
-  >{% for event in pagination.items %}<article
-  class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6"
-><div><p class="text-sm text-slate-600">{{ event.campus.name if event.campus else 'Unassigned' }} · {{ event.date.strftime("%d %b %Y, %I:%M %p") }}</p><h2 class="mt-2 text-xl"><a
-  href="{{ url_for('workspace.activity', event_id=event.id, **request.args) }}"
-  class="font-semibold text-psu hover:underline"
->{{ event.title }}</a></h2><p class="mt-2 text-sm">{{ event.conducting_department or 'Department not recorded' }}</p></div><span
-  class="rounded-md bg-slate-100 px-3 py-2 text-sm font-semibold"
->{{ event.lifecycle_status|title }}</span></article>{% else %}<p class="p-8">No activities match this view. Try another schedule or search.</p>{% endfor %}</div>
-  <nav
-    class="mt-6 flex flex-wrap items-center gap-4"
-    aria-label="Pagination"
-  >{% if pagination.has_prev %}<a
-  class="btn btn--outline"
-  href="{{ url_for('workspace.activities', **dict(request.args, page=pagination.prev_num)) }}"
->Previous</a>{% endif %}<span>Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a
-  class="btn btn--outline"
-  href="{{ url_for('workspace.activities', **dict(request.args, page=pagination.next_num)) }}"
->Next</a>{% endif %}</nav>
-{% endblock %}
+  href="{{ url_for('workspace.create_activity',step=1) }}"
+>Create Activity</a>{% endif %}</header>
+<nav class="workspace-tabs" aria-label="Activity Schedule">{% for value,label in [('upcoming','Upcoming'),('ongoing','Ongoing'),('past','Past Activities'),('cancelled','Cancelled'),('all','All')] %}<a
+  href="{{ query_url(state=value) }}"
+  {% if state == value %}aria-current="page"{% endif %}
+>{{ label }}</a>{% endfor %}</nav>{{ chips() }}
+<form method="get" class="panel filter-form mb-6">{{ context_fields(['q','state','category','campus_id']) }}<input type="hidden" name="state" value="{{ state }}"><div class="filter-grid">{{ search_input('q','Search Activities','Activity title or description') }}</div>{% call more(['category','campus_id']) %}<label class="field">Category<select name="category"><option value="">All Categories</option>{% for category in categories %}<option
+  value="{{ category }}"
+  {{ 'selected' if request.args.get("category") == category }}
+>{{ category }}</option>{% endfor %}</select></label>{% if current_user.role != 'coordinator' %}<label class="field">Campus<select name="campus_id"><option value="">All Campuses</option>{% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {{ 'selected' if request.args.get('campus_id',type=int) == campus.id }}
+>{{ campus.name }}</option>{% endfor %}</select></label>{% endif %}{% endcall %}{{ actions() }}</form>
+{{ results(pagination.total,search,'soonest first' if state in ['upcoming','ongoing'] else 'latest first') }}
+<section class="workspace-section"><ul class="activity-list">{% for event in pagination.items %}<li><span class="schedule-date"><strong>{{ event.date.strftime("%d") }}</strong>{{ event.date.strftime("%b") }}</span><div><p class="text-xs text-slate-600">{{ event.campus.name if event.campus else 'Unassigned' }} · {{ event.date.strftime("%Y · %I:%M %p") }}</p><h2><a
+  href="{{ linked_url('workspace.activity',event_id=event.id) }}"
+>{{ highlight(event.title,search) }}</a></h2><p class="text-sm text-slate-600">{{ event.conducting_department or 'Department not recorded' }} · {{ event.category or 'General' }}</p></div><div class="activity-list__status"><span class="badge">{{ event.lifecycle_status|title }}</span><a
+  class="text-link"
+  href="{{ linked_url('workspace.activity',event_id=event.id) }}"
+>Open Workspace<span class="sr-only"> for {{ event.title }}</span></a></div></li>{% else %}<li>{{ empty(search,'activities') }}</li>{% endfor %}</ul></section>{{ pages(pagination) }}{% endblock %}

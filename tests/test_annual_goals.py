@@ -250,7 +250,8 @@ def test_pagination_and_filters_do_not_change_whole_scope_judgment(app, client):
     page = client.get('/annual-goals?page=2&plan=AOP')
     assert page.status_code == 200 and b'Page 2 of 2' in page.data
     assert b'GOAL-9' in page.data
-    assert b'5 of 11 goals achieved' in client.get('/annual-goals?status=met').data
+    filtered = client.get('/annual-goals?status=met')
+    assert b'Goals Achieved</h2><strong>5 / 11</strong>' in filtered.data
     assert b'GOAL-0' not in client.get('/annual-goals?status=met&export=csv').data
     app.config['WTF_CSRF_ENABLED'] = True
     assert client.post('/annual-goals/proposals/new',data=dict(definition(),action='publish')).status_code == 400

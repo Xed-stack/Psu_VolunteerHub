@@ -31,12 +31,17 @@
     const source = new URL(location.href);
     source.searchParams.delete('draft_form');
     if (index) source.searchParams.set('draft_form', String(index));
-    const key = form.dataset.draftKey || 'form:' + source.pathname + source.search;
+    let defaultKey = 'form:' + source.pathname + source.search;
+    if (defaultKey.length > 160) {
+      source.searchParams.delete('return_to');
+      defaultKey = 'form:' + source.pathname + source.search;
+    }
+    const key = form.dataset.draftKey || defaultKey;
     const status = document.createElement('div');
     status.className = 'draft-status';
     const text = document.createElement('span');
     text.setAttribute('role','status'); text.setAttribute('aria-live','polite'); text.textContent = 'Checking saved draft…';
-    const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'underline font-semibold text-psu'; discard.textContent = 'Discard draft';
+    const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'underline font-semibold text-psu'; discard.textContent = 'Discard Draft';
     status.append(text, discard); form.prepend(status);
     const hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = '_draft_key'; hidden.value = key; form.append(hidden);
     let dirty = false, timer, ready = false, revision = 0, saving = Promise.resolve();
@@ -73,6 +78,7 @@
       }
       text.textContent = result.updated_at ? 'Draft restored' : 'Changes will be saved automatically'; ready = true;
       Object.entries(result.payload._files || {}).forEach(([name, meta]) => {
+        if (form.querySelector(`[data-saved-upload="${CSS.escape(name)}"]`)) return;
         const note = document.createElement('p'); note.className = 'text-sm text-psu';
         note.textContent = 'Saved attachment: ' + meta.name + '. It will be submitted unless replaced.';
         uploads.find(el => el.name === name)?.after(note);
@@ -111,7 +117,8 @@
       if (dirty) await save();
       dirty = false;
       submitting = true;
-      form.requestSubmit(event.submitter);
+      // Retry after the browser clears its native submission-event guard.
+      setTimeout(() => form.requestSubmit(event.submitter), 0);
     });
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
     discard.addEventListener('click', async () => {

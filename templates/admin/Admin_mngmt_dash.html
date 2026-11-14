@@ -1,5 +1,6 @@
+{% from 'partials/filter_ui.html' import more,actions,context_fields with context %}
 {% extends 'layouts/role_base.html' %}
-{% set tour_page = true %}
+{% from 'partials/search_ui.html' import chips, search_input, results, empty with context %}
 {% macro page_controls(label, page_data=pagination, page_param='page') %}
   {% if page_data.total %}
     <p class="admin-list-summary">Showing {{ page_data.first }}–{{ page_data.last }} of {{ page_data.total }}</p>
@@ -23,7 +24,7 @@
     </nav>
   {% endif %}
 {% endmacro %}
-{% block title %}Manage users · PSU Volunteer Hub{% endblock %}
+{% block title %}Manage Users · PSU Volunteer Hub{% endblock %}
 {% block header_title %}Administration{% endblock %}
 {% block header_subtitle %}System and user management{% endblock %}
 {% block header_actions %}<a
@@ -33,28 +34,29 @@
 {% block content %}
   <header class="page-heading">
     <div>
-      <h1>Manage users</h1>
+      <h1>Manage Users</h1>
       <p>Manage users, campuses, and system configuration.</p>
     </div>
-    <form method="get">
+    {% if active_tab not in ['users','deactivated'] %}<form method="get">
       <input type="hidden" name="tab" value="{{ active_tab }}">
-      <select
+      <label class="field">Campus<select
         class="select"
         name="campus_id"
-        onchange="this.form.submit()"
-        aria-label="Filter by campus"
+
+        aria-label="Filter by Campus"
       >
         <option value="">All Campuses</option>
         {% for campus in campuses %}<option
   value="{{ campus.id }}"
   {{ 'selected' if selected_campus|string == campus.id|string }}
 >{{ campus.name }}</option>{% endfor %}
-      </select>
-    </form>
+      </select></label><button class="btn btn--outline mt-2">Apply Campus</button>
+      {% for key in ['search','role','college_affiliation'] %}{% if request.args.get(key) %}<input type="hidden" name="{{ key }}" value="{{ request.args.get(key) }}">{% endif %}{% endfor %}</form>{% endif %}
   </header>
+  {{ chips() }}
   <section
     class="summary-strip"
-    aria-label="Administration summary"
+    aria-label="Administration Summary"
     data-tour-id="summary"
   >
     <div class="summary-stat"><small>Database</small><strong>{{ server_status.database }}</strong></div>
@@ -62,21 +64,21 @@
     <div class="summary-stat"><small>Volunteer Accounts</small><strong>{{ pending_approvals }}</strong></div>
     <div class="summary-stat"><small>Displayed Users</small><strong>{{ users|length }}</strong></div>
   </section>
-  <nav class="admin-tabs" aria-label="Administration sections">
+  <nav class="admin-tabs" aria-label="Administration Sections">
     <a
       class="btn btn--sm {{ 'btn--primary' if active_tab == 'users' else 'btn--ghost' }}"
       {% if active_tab == 'users' %}aria-current="page"{% endif %}
-      href="{{ url_for('admin.admin_dash', tab='users', campus_id=selected_campus) }}"
+      href="{{ url_for('admin.admin_dash', **dict(request.args,tab='users',page=1)) }}"
     >Active Users</a>
     <a
       class="btn btn--sm {{ 'btn--primary' if active_tab == 'deactivated' else 'btn--ghost' }}"
       {% if active_tab == 'deactivated' %}aria-current="page"{% endif %}
-      href="{{ url_for('admin.admin_dash', tab='deactivated', campus_id=selected_campus) }}"
+      href="{{ url_for('admin.admin_dash', **dict(request.args,tab='deactivated',page=1)) }}"
     >Deactivated Users ({{ deactivated_total }})</a>
     <a
       class="btn btn--sm {{ 'btn--primary' if active_tab == 'audit' else 'btn--ghost' }}"
       {% if active_tab == 'audit' %}aria-current="page"{% endif %}
-      href="{{ url_for('admin.admin_dash', tab='audit', campus_id=selected_campus) }}"
+      href="{{ url_for('admin.admin_dash', **dict(request.args,tab='audit',page=1)) }}"
     >Activity Log</a>
   </nav>
   {% if active_tab == 'users' %}
@@ -87,23 +89,27 @@
     >
       <header class="panel__header">
         <h2>User Management</h2>
-        <a
-          class="btn btn--primary"
-          href="{{ url_for('admin.create_user') }}"
-        >Add User</a>
+
       </header>
-      <form class="filter-row admin-user-filters" method="get">
-        <input type="hidden" name="tab" value="{{ active_tab }}">
-        <label class="field">Search users<input class="input" name="search" value="{{ search }}" placeholder="Name or email"></label>
-        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
+      <form class="filter-form mb-6" method="get"><input type="hidden" name="tab" value="{{ active_tab }}"><div class="filter-grid">{{ search_input('search','Search Users','Name or email address') }}<label class="field">Campus<select
+        class="select"
+        name="campus_id"
+
+        aria-label="Filter by Campus"
+      >
+        <option value="">All Campuses</option>
+        {% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {{ 'selected' if selected_campus|string == campus.id|string }}
+>{{ campus.name }}</option>{% endfor %}
+      </select></label></div>{% call more(['role','college_affiliation']) %}<label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
         <label class="field">College Affiliation<select class="select" name="college_affiliation"><option value="">All Affiliations</option>{% for value in college_affiliations %}<option value="{{ value }}" {% if selected_affiliation == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-        <button class="btn btn--primary" type="submit">Apply Filters</button>
-        <a class="btn btn--ghost" href="{{ url_for('admin.admin_dash', tab=active_tab, campus_id=selected_campus) }}">Clear</a>
-      </form>
+        {% endcall %}{{ actions(url_for('admin.admin_dash',tab=active_tab)) }}</form>
+      {{ results(pagination.total,search,'name, A–Z') }}
       <div
         class="table-scroll table-scroll--record"
         tabindex="0"
-        aria-label="User management table"
+        aria-label="User Management Table"
       >
         <table class="data-table data-table--record">
           <thead>
@@ -119,7 +125,7 @@
             {% for user in users %}
               <tr>
                 <td data-label="User">
-                  <strong>{{ user.name }}</strong>
+                  <strong>{{ highlight(user.name,search) }}</strong>
                   <br>
                   <small>{{ user.email }}</small>
                 </td>
@@ -131,23 +137,24 @@
                     <select
                       class="select"
                       name="role"
-                      onchange="this.form.submit()"
-                      aria-label="Change role for {{ user.name }}"
+
+                      aria-label="Change Role for {{ user.name }}"
                     >
                       {% for role in ['volunteer', 'coordinator', 'director'] %}
                         <option value="{{ role }}" {{ 'selected' if user.role == role }}>{{ role|title }}</option>
                       {% endfor %}
                     </select>
+                    <button class="btn btn--outline mt-2" type="submit">Apply Role</button>
                   </form>
                 </td>
-                <td data-label="Campus">{{ user.campus.name if user.campus else '—' }}</td>
+                <td data-label="Campus">{{ user.campus.name if user.campus else 'Not recorded' }}</td>
                 <td data-label="Status"><span
   class="badge {{ 'badge--primary' if user.is_active else 'badge--neutral' }}"
 >{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
                 <td class="table-actions" data-label="Actions">
                   <a
                     class="btn btn--sm btn--ghost"
-                    href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                    href="{{ linked_url('admin.edit_user', user_id=user.id) }}"
                   >Edit</a>
                   <form
                     method="post"
@@ -162,7 +169,7 @@
             {% else %}
               <tr>
                 <td colspan="5">
-                  <div class="empty-state">No users found.</div>
+                  {{ empty(search,'users') }}
                 </td>
               </tr>
             {% endfor %}
@@ -171,7 +178,7 @@
       </div>
       {{ page_controls("User pages") }}
     </section>
-    <nav class="mt-6 flex flex-wrap gap-3" aria-label="Related management"><a class="btn btn--outline" href="{{ url_for('workspace.management') }}">Management overview</a><a class="btn btn--outline" href="{{ url_for('workspace.categories') }}">Activity categories</a><a class="btn btn--outline" href="{{ url_for('workspace.imports') }}">Import data</a></nav>
+    <nav class="mt-6 flex flex-wrap gap-3" aria-label="Related Management"><a class="btn btn--outline" href="{{ url_for('workspace.management') }}">Management Overview</a><a class="btn btn--outline" href="{{ url_for('workspace.categories') }}">Activity Categories</a><a class="btn btn--outline" href="{{ url_for('workspace.imports') }}">Import Data</a></nav>
   {% elif active_tab == 'deactivated' %}
     <section class="panel" id="deactivated-users">
       <header class="panel__header">
@@ -180,18 +187,25 @@
           <small>Accounts become eligible for permanent deletion 30 days after deactivation.</small>
         </div>
       </header>
-      <form class="filter-row admin-user-filters" method="get">
-        <input type="hidden" name="tab" value="{{ active_tab }}">
-        <label class="field">Search users<input class="input" name="search" value="{{ search }}" placeholder="Name or email"></label>
-        <label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
+      <form class="filter-form mb-6" method="get"><input type="hidden" name="tab" value="{{ active_tab }}"><div class="filter-grid">{{ search_input('search','Search Users','Name or email address') }}<label class="field">Campus<select
+        class="select"
+        name="campus_id"
+
+        aria-label="Filter by Campus"
+      >
+        <option value="">All Campuses</option>
+        {% for campus in campuses %}<option
+  value="{{ campus.id }}"
+  {{ 'selected' if selected_campus|string == campus.id|string }}
+>{{ campus.name }}</option>{% endfor %}
+      </select></label></div>{% call more(['role','college_affiliation']) %}<label class="field">Role<select class="select" name="role"><option value="">All Roles</option>{% for value in ['volunteer','coordinator','director'] %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></label>
         <label class="field">College Affiliation<select class="select" name="college_affiliation"><option value="">All Affiliations</option>{% for value in college_affiliations %}<option value="{{ value }}" {% if selected_affiliation == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-        <button class="btn btn--primary" type="submit">Apply Filters</button>
-        <a class="btn btn--ghost" href="{{ url_for('admin.admin_dash', tab=active_tab, campus_id=selected_campus) }}">Clear</a>
-      </form>
+        {% endcall %}{{ actions(url_for('admin.admin_dash',tab=active_tab)) }}</form>
+      {{ results(pagination.total,search,'name, A–Z') }}
       <div
         class="table-scroll table-scroll--record"
         tabindex="0"
-        aria-label="Deactivated users table"
+        aria-label="Deactivated Users Table"
       >
         <table class="data-table data-table--record">
           <thead>
@@ -209,12 +223,12 @@
             {% for user in deactivated_users %}
               <tr>
                 <td data-label="User">
-                  <strong>{{ user.name }}</strong>
+                  <strong>{{ highlight(user.name,search) }}</strong>
                   <br>
                   <small>{{ user.email }}</small>
                 </td>
                 <td data-label="Role">{{ user.role|title }}</td>
-                <td data-label="Campus">{{ user.campus.name if user.campus else '—' }}</td>
+                <td data-label="Campus">{{ user.campus.name if user.campus else 'Not recorded' }}</td>
                 <td data-label="Deactivated">{{ (user.deactivated_at or user.created_at).strftime("%b %d, %Y") }}</td>
                 <td data-label="Reactivation">{{ 'Requested' if user.reactivation_requested_at else 'None' }}</td>
                 <td data-label="Deletion"><span
@@ -236,7 +250,7 @@
 ><button class="btn btn--sm btn--danger" type="submit">Delete</button></form>{% endif %}
                 </td>
               </tr>
-  {% else %}<tr><td colspan="7"><div class="empty-state">No deactivated users.</div></td></tr>{% endfor %}
+  {% else %}<tr><td colspan="7">{{ empty(search,'deactivated users') }}</td></tr>{% endfor %}
     </tbody>
     </table>
     </div>
@@ -259,7 +273,7 @@
       <div
         class="table-scroll table-scroll--report"
         tabindex="0"
-        aria-label="Administrative activity log"
+        aria-label="Administrative Activity Log"
         aria-describedby="admin-activity-log-scroll-hint"
       >
         <table

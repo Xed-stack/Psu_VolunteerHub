@@ -1,7 +1,9 @@
+{% from 'partials/filter_ui.html' import more,actions,context_fields with context %}
 {% extends 'layouts/role_base.html' if current_user.is_authenticated else 'layouts/public_base.html' %}
 {% block title %}Activities | PSU Volunteer Hub{% endblock %}
 {% block header_title %}Activities{% endblock %}
 {% block header_subtitle %}Discover ways to serve{% endblock %}
+{% from 'partials/search_ui.html' import search_input, chips, results with context %}
 {% block content %}
   {% if not current_user.is_authenticated %}
     {% include 'partials/opportunity_public_nav.html' %}
@@ -11,35 +13,23 @@
   <header class="page-heading">
     <div>
       <h1>Volunteer Activities</h1>
-      <p aria-live="polite">{% if events %}Showing {{ first_result }}–{{ last_result }} of {{ total_count }} {{ 'opportunity' if total_count == 1 else 'opportunities' }}{% elif total_count %}Showing 0 of {{ total_count }} opportunities{% else %}0 opportunities{% endif %}</p>
+      <p>Choose an activity, review its requirements, and join when the schedule works for you.</p>
     </div>
   </header>
-  <form class="panel filter-row opportunities-filters" method="get">
-    <label class="field">
-      Search<input
-  class="input"
-  name="search"
-  type="search"
-  autocomplete="off"
-  value="{{ search_query or '' }}"
->
-    </label>
-    <label class="field">Category<select class="select" name="category"><option value="">All categories</option>{% for category in categories %}<option
+  <form class="panel filter-form mb-6" method="get">{{ context_fields(['search','category','campus','campus_mode']) }}<div class="filter-grid">{{ search_input('search','Search Activities','Activity title or description') }}</div>{% call more(['category','campus'],invalid=filter_error) %}<label class="field">Category<select class="select" name="category"><option value="">All Categories</option>{% for category in categories %}<option
   value="{{ category }}"
   {{ 'selected' if request.args.get("category") == category }}
 >{{ category }}</option>{% endfor %}</select></label>
-    <details class="campus-filter"{{ ' open' if filter_error or selected_campuses }}>
-      <summary>Campuses: {% if selected_campuses %}{{ selected_campuses|length }} {{ 'excluded' if campus_mode == 'exclude' else 'selected' }}{% else %}All{% endif %}</summary>
-      <label class="field campus-filter__mode">Selection mode
+    <label class="field campus-filter__mode">Selection Mode
         <select class="select" name="campus_mode" aria-describedby="campus-filter-help">
-          <option value="include"{{ ' selected' if campus_mode == 'include' }}>Show only selected campuses</option>
-          <option value="exclude"{{ ' selected' if campus_mode == 'exclude' }}>Exclude selected campuses</option>
+          <option value="include"{{ ' selected' if campus_mode == 'include' }}>Show Only Selected Campuses</option>
+          <option value="exclude"{{ ' selected' if campus_mode == 'exclude' }}>Exclude Selected Campuses</option>
         </select>
       </label>
       <p id="campus-filter-help">Choose any number of campuses. No selection shows all campuses.</p>
       {% if filter_error %}<p class="campus-filter__error" role="alert">{{ filter_error }}</p>{% endif %}
       <fieldset class="campus-filter__choices" aria-describedby="campus-filter-help">
-        <legend>Choose campuses</legend>
+        <legend>Choose Campuses</legend>
         <div class="campus-filter__grid">
           {% for campus in campuses %}
             <label class="campus-filter__choice">
@@ -49,59 +39,48 @@
           {% else %}<p>No campuses are available to filter. You can still search all opportunities.</p>{% endfor %}
         </div>
       </fieldset>
-    </details>
-    <div class="form-actions">
-      <button class="button button--primary" type="submit">Apply filters</button><a class="button button--secondary" href="{{ url_for('events.opportunities') }}">Clear filters</a>
-    </div>
-  </form>
-  {% if has_filters %}<section class="opportunity-applied" aria-label="Applied filters"><strong>Applied filters</strong>
-    {% if search_query %}<span>Search: {{ search_query }}</span>{% endif %}
-    {% if selected_category %}<span>Category: {{ selected_category }}</span>{% endif %}
-    {% if selected_campuses %}<span>{{ 'Excluding campuses' if campus_mode == 'exclude' else 'Campuses' }}: {% for campus in campuses if campus.id in selected_campuses %}{{ campus.name }}{{ ', ' if not loop.last }}{% endfor %}</span>{% endif %}
-    {% if filter_error %}<span>Some filter choices need correction.</span>{% endif %}
-  </section>{% endif %}
+    {% endcall %}{{ actions() }}</form>
+  {{ chips() }}{{ results(total_count, search_query or '', 'preferred campus, then soonest first' if current_user.is_authenticated and current_user.role == 'volunteer' else 'soonest first') }}
   <section
-    class="event-grid opportunity-grid"
-    aria-label="Available opportunities"
+    class="journey-discovery"
+    aria-label="Available Activities"
   >
     {% for event in events %}
       {% set state = opportunity_states[event.id] %}
-      <article class="panel opportunity-card">
-        <div class="opportunity-card__media">
-          {% if event.cover_image_path %}<img
+      <article class="journey-activity-row">
+        <span class="schedule-date"><strong>{{ event.date.strftime('%d') }}</strong>{{ event.date.strftime('%b') }}</span>
+        {% if event.cover_image_path %}<div class="journey-activity-row__cover">
+          <img
   src="{{ url_for('static', filename=event.cover_image_path) }}"
   alt="Cover for {{ event.title }}"
   loading="lazy"
   width="640"
   height="360"
->{% else %}<div class="opportunity-card__fallback" aria-hidden="true"><span class="material-symbols-outlined">volunteer_activism</span></div>{% endif %}
-        </div>
-        <div class="opportunity-card__body">
-          <span class="badge">{{ event.category or 'Community' }}</span>
-          <h2><a href="{{ url_for('events.opportunity_detail', event_id=event.id, **listing_query) }}">{{ event.title }}</a></h2>
+>
+        </div>{% endif %}
+        <div class="journey-activity-row__body">
+          <p class="journey-meta">{{ event.campus.name if event.campus else 'Campus not specified' }} · {{ event.category or 'Community' }}</p>
+          <h2><a href="{{ url_for('events.opportunity_detail', event_id=event.id, **dict(listing_query,return_to=request.full_path.rstrip('?'))) }}">{{ highlight(event.title, search_query) }}</a></h2>
           <p>{{ event.description|truncate(160) }}</p>
           <ul class="meta-list">
-            <li><strong>Starts</strong> {{ event.date.strftime("%b %d, %Y at %I:%M %p") }}</li>
-            <li><strong>Campus</strong> {{ event.campus.name if event.campus else 'Campus not specified' }}</li>
+            <li><strong>Starts</strong> {{ event.date.strftime("%b %d, %Y at %I:%M %p") }} · Philippine time</li>
             <li><strong>Location</strong> {{ event.location or 'Location not provided' }}</li>
-            <li><strong>Availability</strong> {{ state.remaining }} slots remaining</li>
           </ul>
-          <p class="opportunity-status opportunity-status--{{ state.code }}">{{ state.label }}</p>
-          <div class="card-actions"><a class="button button--primary" href="{{ url_for('events.opportunity_detail', event_id=event.id, **listing_query) }}" aria-label="View details for {{ event.title }}">View details</a></div>
         </div>
+        <div class="journey-activity-row__action"><p class="opportunity-status opportunity-status--{{ state.code }}">{{ {'available':'Open for Joining','registered':'Registered','full':'Full','closed':'Registration Closed'}.get(state.code,state.label) }}</p><p>{% if event.slots > 0 %}{{ state.remaining }} slots remaining{% else %}No capacity limit{% endif %}</p><a class="btn btn--outline" href="{{ url_for('events.opportunity_detail', event_id=event.id, **dict(listing_query,return_to=request.full_path.rstrip('?'))) }}" aria-label="View Details for {{ event.title }}">View Details</a></div>
       </article>
     {% else %}
       <div class="empty-state">
-        {% if total_count %}<h2>No activities on this page</h2><p>The available results may have changed. Return to the first page to continue browsing.</p>
-        {% elif filter_error %}<h2>Check your filter choices</h2><p>Correct the campus choices above or clear the filters to try again.</p>
-        {% elif upcoming_count and has_filters %}<h2>No opportunities match these filters.</h2><p>Try another search, select different campuses, or clear the filters.</p>
-        {% else %}<h2>No upcoming activities</h2><p>Upcoming activities will appear here when they are available. Visit the Help guide if you need assistance.</p>{% endif %}
-        {% if total_count %}<a class="button button--secondary" href="{{ url_for('events.opportunities', **dict(listing_query, page=['1'])) }}">First page</a>{% elif has_filters %}<a class="button button--secondary" href="{{ url_for('events.opportunities') }}">Clear filters</a>{% else %}<a class="button button--secondary" href="{{ url_for('help_page') }}">Open Help guide</a>{% endif %}
+        {% if total_count %}<h2>No Activities on This Page</h2><p>The available results may have changed. Return to the first page to continue browsing.</p>
+        {% elif filter_error %}<h2>Check Your Filter Choices</h2><p>Correct the campus choices above or clear the filters to try again.</p>
+        {% elif upcoming_count and has_filters %}<h2>No opportunities match these filters.</h2><p>{% if search_query %}No results for “{{ search_query }}”. {% endif %}Try a shorter term, select different campuses, or clear the filters.</p>
+        {% else %}<h2>No Upcoming Activities</h2><p>Upcoming activities will appear here when they are available. Visit the Help guide if you need assistance.</p>{% endif %}
+        {% if total_count %}<a class="button button--secondary" href="{{ url_for('events.opportunities', **dict(listing_query, page=['1'])) }}">First Page</a>{% elif has_filters %}<a class="button button--secondary" href="{{ url_for('events.opportunities') }}">Clear Filters</a>{% else %}<a class="button button--secondary" href="{{ url_for('help_page') }}">Open Help Guide</a>{% endif %}
       </div>
     {% endfor %}
   </section>
   {% if total_pages > 1 %}
-    <nav class="pagination" aria-label="Opportunity pages">
+    <nav class="pagination" aria-label="Opportunity Pages">
       {% if current_page > 1 %}<a
   class="button button--secondary"
   href="{{ url_for('events.opportunities', page=current_page - 1, campus=selected_campuses, campus_mode=campus_mode, category=selected_category, search=search_query) }}"

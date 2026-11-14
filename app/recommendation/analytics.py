@@ -312,10 +312,10 @@ class AnalyticsAggregator:
         end = datetime(year + 1, 1, 1)
         completed_counts = db.session.query(
             Registration.user_id.label('user_id'), db.func.count(Registration.id).label('completed')
-        ).join(Event).filter((Registration.status == 'completed') | (
-            (Registration.status == 'confirmed') & Event.end_date.isnot(None) &
+        ).join(Event).filter(
+            Registration.status.in_(('confirmed','completed')) & Event.end_date.isnot(None) &
             (Event.end_date <= local_now()) &
-            Registration.attendance_record.has(Attendance.status == 'present')),
+            Registration.attendance_record.has(Attendance.status == 'present'),
             Event.lifecycle_status == 'approved', Event.date >= start, Event.date < end
         ).group_by(Registration.user_id).subquery()
         attended = db.func.count(Attendance.id)

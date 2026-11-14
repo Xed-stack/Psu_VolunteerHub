@@ -7,34 +7,27 @@
 
   const steps = {
     volunteer: [
-      ['profile', 'Complete your profile', 'Keep your interests and skills current so recommendations can compare relevant activities.'],
-      ['opportunities', 'Find an activity', 'Browse available activities, review their schedule and agreement, then register when you are available.'],
-      ['join-activity', 'Register for an activity', 'Open an opportunity, review the agreement and cancellation deadline, and confirm your participation.'],
-      ['registrations', 'Review your registrations', 'Use this calendar and list to monitor upcoming commitments or request cancellation before the deadline.'],
-      ['help', 'Get help when needed', 'The Help page explains registration, attendance, recommendations, and account access.'],
+      ['recommendations', 'Find Your Next Activity', 'Recommendations use your selected interests and show your preferred campus first. Open an activity to review its schedule and details.'],
+      ['calendar', 'Follow Your Commitments', 'The calendar shows upcoming registrations. It becomes your starting view when you have an active upcoming registration.'],
+      ['opportunities', 'Review Details Before Registering', 'Browse all activities, read the participation agreement, and confirm only when the schedule works for you.'],
+      ['registrations', 'Check Registration History', 'Open a registration to review its schedule, recorded participation, and exact withdrawal deadline. You can withdraw directly while eligible.'],
+      ['profile', 'Keep Your Profile Current', 'Use Update Your Profile beside Recent Participation to maintain your interests, skills, and preferred campus.'],
     ],
     coordinator: [
-      ['annual-goals', 'Track Campus Goals', 'The large number shows approved annual targets achieved. Open it for AOP and ASP evidence, or use Campus Goal Proposals to submit a target for director approval.'],
-      ['summary', 'Start with Campus Follow-Up', 'Review cancellation requests and complete attendance for ended activities. This unresolved work covers all dates; performance below uses its own reporting period.'],
-      ['create-activity', 'Create an Activity', 'Add the activity details, target, cancellation deadline, and applicable SDGs before publishing.'],
-      ['activity-workspace', 'Manage Activities', 'Use the activity filters and campus list to record attendance, publish updates, and upload milestones. The workspace is always visible below Performance Overview.'],
-      ['attendance', 'Complete Attendance Records', 'Record present, absent, or excused attendance for each participant. After the activity ends, confirm completion for present participants so the results can support decisions.'],
-      ['cancellations', 'Review Cancellations', 'Pending campus requests appear here when a decision is needed. An empty queue is labelled clearly; the navigation also opens the cancellation workspace.'],
-      ['analytics', 'Use Analytics and Reports', 'Filter campus results, review attendance outcomes, then download the matching CSV or PDF report.'],
+      ['metrics', 'Start with Your Campus Overview', 'Activity figures use the reporting period. Volunteer accounts are all-time; verified attendees count each recorded presence. Information icons explain the measures.'],
+      ['follow-up', 'Start with the Work Queue', 'Needs Attention explains each finding and opens its source. Ongoing events allow attendance entry; ended events use printed corrections.'],
+      ['create-activity', 'Start with an Approved Proposal', 'Upload the approved PDF or DOCX, review extracted details, then complete audience and partners before publishing. Saved drafts survive refresh.'],
+      ['activity-workspace', 'Follow Your Campus Schedule', 'Your agenda shows the next five ongoing or upcoming activities. Open an activity workspace or the full calendar. Record attendance during the event; it locks at the end.'],
+      ['annual-goals', 'Track Annual Achievements', 'Review targets and evidence. Pending evidence remains unknown until verified.'],
+      ['reports', 'Use Reports for Your Campus', 'Choose a report and scope, review its graphical results, and export matching values. Later attendance corrections belong on the printed report.'],
     ],
     director: [
-      ['annual-goals', 'Review Annual-Plan Achievement', 'Open university targets and campus goals. Worst Performing Campus shows the lowest annual goal-achievement rate among campuses with approved targets, including ties and zero achievement.'],
-      ['recognition', 'Review Outstanding Recognition', 'Review university-wide volunteer and campus rankings. Award Year is independent of report filters and the calendar month.'],
-      ['calendar', 'Review the Activity Calendar', 'Review the complete university schedule for a month. Open an activity for its report evidence, or open the full calendar.'],
-      ['campus-comparison', 'Compare Campuses', 'Set the report filters and review campus activity coverage. Open Analytics for the matching campus participation chart, attendance outcomes, and detailed activity report.'],
-      ['reports', 'Download Reports', 'Choose CSV or PDF to download every activity matching the dashboard report filters.'],
-      ['analytics', 'Review Detailed Analytics', 'The selected report scope follows you into Analytics and stays consistent through pagination and report downloads.'],
-    ],
-    admin: [
-      ['summary', 'Check the system summary', 'Review the current database connection and account totals before making administrative changes.'],
-      ['user-management', 'Manage users', 'Create, edit, assign roles, and deactivate accounts through this protected workspace.'],
-      ['admin-controls', 'Administrative Controls', 'Use these controls for policies, imports, exports, backups, and notifications. Open Settings in the sidebar for operational defaults and College Affiliations. PSU campus choices are fixed.'],
-      ['internal-reporting', 'Access internal reporting', 'Export user records from this protected administrative workspace.'],
+      ['metrics', 'Start with University Results', 'Review approved and conducted activities, all-time volunteer accounts, verified presences, and annual AOP achievement. Information icons explain each calculation.'],
+      ['follow-up', 'Follow up with Evidence', 'Open the work queue to review missing recording, schedule limitations, and verified target findings. Notify a campus coordinator only when you choose to send a reminder.'],
+      ['campus-comparison', 'Compare Campuses', 'Compare activity delivery for the selected period beside annual AOP, ASP, and pending evidence. Open a campus for details. Delivery volume does not measure quality.'],
+      ['annual-goals', 'Review Annual Achievements', 'Campus obligations are combined without averaging percentages. University-wide targets stay separate. Pending evidence remains unknown; open the source targets for details.'],
+      ['reports', 'Choose and Export a Report', 'Reports covers activity accomplishments, AOPs, approved proposals, and historical records. Screen filters follow through to exports.'],
+      ['management', 'Manage Accounts and Policies', 'Open dedicated screens for users, policies, settings, and imports. Imports require a validation preview and explicit confirmation.'],
     ],
   };
 
@@ -62,7 +55,7 @@
       <h2 id="tourTitle"></h2>
       <p id="tourText" aria-live="polite"></p>
       <div class="first-use-tour__actions">
-        <button class="btn btn--ghost" type="button" data-tour-skip>${['coordinator', 'director'].includes(role) ? 'Skip Guide' : 'Skip guide'}</button>
+        <button class="btn btn--ghost" type="button" data-tour-skip>Skip Guide</button>
         <span class="first-use-tour__navigation">
           <button class="btn btn--outline" type="button" data-tour-back>Back</button>
           <button class="btn btn--primary" type="button" data-tour-next>Next</button>
@@ -81,14 +74,16 @@
   const skip = dialog.querySelector('[data-tour-skip]');
   let index = 0;
   let target = null;
+  const replayControl = document.querySelector('[data-guide-replay]');
 
   const restoreFocus = () => {
-    if (!target) return;
-    if (!target.matches('a[href], button, input, select, textarea, [tabindex]')) {
-      target.setAttribute('tabindex', '-1');
-      target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
+    const focusTarget = replay && replayControl ? replayControl : target;
+    if (!focusTarget) return;
+    if (!focusTarget.matches('a[href], button, input, select, textarea, [tabindex]')) {
+      focusTarget.setAttribute('tabindex', '-1');
+      focusTarget.addEventListener('blur', () => focusTarget.removeAttribute('tabindex'), { once: true });
     }
-    target.focus({ preventScroll: true });
+    focusTarget.focus({ preventScroll: true });
   };
 
   const dismiss = async () => {
@@ -112,6 +107,12 @@
     }
     dialog.close();
     resizeObserver.disconnect();
+    window.removeEventListener('resize', place);
+    window.removeEventListener('scroll', place, true);
+    if (replay) {
+      const url = new URL(location.href); url.searchParams.delete('tour');
+      history.replaceState(null, '', url);
+    }
     restoreFocus();
   };
 
@@ -149,7 +150,7 @@
   const spotlightTarget = () => {
     const availableHeight = window.innerHeight - card.offsetHeight - 48;
     if (window.innerWidth <= 767 && target.getBoundingClientRect().height > availableHeight) {
-      return target.querySelector('.summary-stat, .panel__header, h2') || target;
+      return target.querySelector('.metric-tile, .section-top, .summary-stat, .panel__header, h2') || target;
     }
     return target;
   };
@@ -171,7 +172,11 @@
       window.scrollBy({ top: card.offsetHeight / 2, behavior: 'instant' });
     }
     place();
-    next.focus();
+    if (card.scrollHeight > card.clientHeight) {
+      card.scrollTop = 0;
+      title.tabIndex = -1;
+      title.focus({ preventScroll: true });
+    } else next.focus();
   };
 
   back.addEventListener('click', () => { index -= 1; show(); });

@@ -1,0 +1,17 @@
+{% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading,charts,chart_scripts with context %}{% from 'workspace/reimagined_components.html' import annual_snapshot,follow_up_list with context %}
+{% block title %}{{ campus.name }} Campus · PSU Volunteer Hub{% endblock %}{% block content %}{{ heading(campus.name ~ ' campus','Delivery, volunteer accounts, and annual evidence in one campus workspace.',back_url('workspace.overview'),ui_return_label or 'Back to university overview') }}<div class="report-toolbar"><p>{{ period_label }}</p><a
+  class="btn btn--primary"
+  href="{{ url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),campus_id=campus.id,return_to=request.full_path.rstrip('?'))) }}"
+>Open Campus Report</a></div><div class="summary-strip"><a
+  class="summary-stat"
+  href="{{ url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),campus_id=campus.id,delivery='approved')) }}"
+>Approved Activities<strong>{{ approved }}</strong></a><a
+  class="summary-stat"
+  href="{{ url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),campus_id=campus.id,delivery='conducted')) }}"
+>Conducted Activities<strong>{{ conducted }}</strong></a><a
+  class="summary-stat"
+  href="{{ url_for('workspace.volunteers',campus_id=campus.id) }}"
+>Volunteer Accounts · All Time<strong>{{ accounts }}</strong></a><a
+  class="summary-stat"
+  href="{{ url_for('goals.details',year=year,campus=campus.id) }}"
+>AOP Targets Achieved<strong>{{ goals.plans.AOP.met }} / {{ goals.plans.AOP.total }}</strong></a></div><div class="dashboard-layout"><section class="workspace-section"><header class="section-top"><h2>Campus Follow-Up</h2></header>{{ follow_up_list(follow_ups,5) }}</section><section class="workspace-section"><header class="section-top"><h2>Annual Evidence</h2></header>{{ annual_snapshot() }}</section></div>{{ charts(campus_chart,monthly,month_labels,period_label) }}{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}

@@ -3,39 +3,33 @@
 {% from 'partials/password_feedback.html' import password_feedback %}
 {% set active_page = "profile" %}
 {% block title %}Profile | PSU Volunteer Hub{% endblock %}
-{% block header_title %}Volunteer profile{% endblock %}
+{% block header_title %}Volunteer Profile{% endblock %}
 {% block header_subtitle %}Your details, matching preferences, and participation{% endblock %}
 {% block content %}
   {% set profile_view = 'account' if account_section else 'preferences' if errors else request.args.get('section','account') %}
   <header class="page-heading">
     <div>
-      <h1>Your profile</h1>
+      <h1>Your Profile</h1>
       <p>Manage one part of your account at a time.</p>
     </div>
   </header>
   <nav
     class="mb-6 flex flex-wrap gap-3"
-    aria-label="Profile sections"
-  >{% for value,label in [('account','Account settings'),('preferences','Interests and photo'),('impact','Participation milestones')] %}<a
+    aria-label="Profile Sections"
+  >{% for value,label in [('account','Account Settings'),('preferences','Interests and Photo'),('impact','Participation Milestones')] %}<a
   class="btn {{ 'btn--primary' if profile_view == value else 'btn--outline' }}"
   href="{{ url_for('volunteer.profile_page',section=value) }}"
   {{ 'aria-current=page' if profile_view == value }}
 >{{ label }}</a>{% endfor %}<a
   class="btn btn--outline"
   href="{{ url_for('workspace.registrations') }}"
->Registration history</a></nav><div class="profile-page stack">
+>Registration History</a></nav><div class="profile-page stack">
     {% if profile_view == 'account' %}
       <section
         class="panel profile-identity"
         aria-labelledby="profile-name"
       >
-        <img
-          class="profile-photo"
-          width="96"
-          height="96"
-          src="{{ url_for('static', filename=current_user.profile_image_path or 'assets/temp_profile.jpg') }}"
-          alt="{{ 'Profile photo' if current_user.profile_image_path else 'Placeholder profile photo' }}"
-        >
+        {% if current_user.profile_image_path %}<img class="profile-photo" width="96" height="96" src="{{ url_for('static',filename=current_user.profile_image_path) }}" alt="Profile photo">{% else %}<span class="avatar profile-photo" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}
         <div class="profile-identity__details">
           <h2 id="profile-name">{{ current_user.name }}</h2>
           <p>{{ current_user.email }}</p>
@@ -47,7 +41,7 @@
               </dd>
             </div>
             <div>
-              <dt>Volunteer type</dt>
+              <dt>Volunteer Type</dt>
               <dd>
                 {{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}
               </dd>
@@ -56,7 +50,7 @@
           <p class="help-text">Manage your name, campus, and password below.</p>
         </div>
         <div class="profile-account-settings">
-          {% for section, label in [('name', 'Change name'), ('campus', 'Change campus'), ('password', 'Change password')] %}
+          {% for section, label in [('name', 'Change Name'), ('campus', 'Change Campus'), ('password', 'Change Password')] %}
             {% set section_errors = account_errors if account_section == section else {} %}
             <details
               id="change-{{ section }}"
@@ -82,7 +76,7 @@
                   </div>
                 {% endif %}
                 {% if section == 'name' %}
-                  <label for="account-name">Full name</label>
+                  <label for="account-name">Full Name <span aria-hidden="true">*</span></label>
                   <input
                     class="input"
                     id="account-name"
@@ -96,7 +90,7 @@
                   {% if section_errors.name %}<p id="account-name-error" class="profile-error">{{ section_errors.name }}</p>{% endif %}
                 {% elif section == 'campus' %}
                   <p class="help-text">Your campus changes immediately. Previous participation stays with the activity’s host campus.</p>
-                  <label for="account-campus_id">Campus</label>
+                  <label for="account-campus_id">Campus <span aria-hidden="true">*</span></label>
                   <select
                     class="select"
                     id="account-campus_id"
@@ -105,14 +99,14 @@
                     autocomplete="off"
                     {% if section_errors.campus_id %}aria-invalid="true" aria-describedby="account-campus_id-error"{% endif %}
                   >
-                    <option value="">Select your campus</option>
+                    <option value="">Select Your Campus</option>
                     {% for campus in campuses %}<option
   value="{{ campus.id }}"
   {% if campus.id|string == account_values.campus_id %}selected{% endif %}
 >{{ campus.name }}</option>{% endfor %}
                   </select>
                   {% if section_errors.campus_id %}<p id="account-campus_id-error" class="profile-error">{{ section_errors.campus_id }}</p>{% endif %}
-                  <label for="account-college_affiliation">College affiliation</label>
+                  <label for="account-college_affiliation">College Affiliation <span aria-hidden="true">*</span></label>
                   <select
                     class="select"
                     id="account-college_affiliation"
@@ -121,7 +115,7 @@
                     autocomplete="off"
                     {% if section_errors.college_affiliation %}aria-invalid="true" aria-describedby="account-college_affiliation-error"{% endif %}
                   >
-                    <option value="">Select your college</option>
+                    <option value="">Select Your College</option>
                     {% for college in affiliation_options.get(account_values.campus_id, []) %}<option
   value="{{ college }}"
   {% if college == account_values.college_affiliation %}selected{% endif %}
@@ -137,7 +131,7 @@
                 {% else %}
                   <p class="help-text" id="password-help">Use at least {{ password_min }} characters with uppercase, lowercase, a number, and a special character. This browser stays signed in; your other sessions will be signed out.</p>
                   {% for key, field_label, autocomplete in [('current_password', 'Current password', 'current-password'), ('new_password', 'New password', 'new-password'), ('password_confirmation', 'Confirm new password', 'new-password')] %}
-                    <label for="account-{{ key }}">{{ field_label }}</label>
+                    <label for="account-{{ key }}">{{ field_label }} <span aria-hidden="true">*</span></label>
                     <div class="profile-password-input">
                       <input
                         class="input"
@@ -167,7 +161,7 @@
                   {{ password_feedback('account-new_password', 'account-password_confirmation', password_min) }}
                 {% endif %}
                 <div>
-                  <button class="btn btn--primary" type="submit">{{ 'Change password' if section == 'password' else 'Save ' ~ section }}</button>
+                  <button class="btn btn--primary" type="submit">{{ 'Change Password' if section == 'password' else 'Save ' ~ section }}</button>
                 </div>
               </form>
             </details>
@@ -180,7 +174,7 @@
         aria-labelledby="matching-title"
       >
         <div class="profile-photo-controls">
-          <label for="profile-image">Change profile photo</label>
+          <label for="profile-image">Change Profile Photo</label>
           <input
             class="input"
             id="profile-image"
@@ -199,12 +193,12 @@
               action="{{ url_for('volunteer.remove_profile_image') }}"
             >
               {% include 'partials/csrf_field.html' %}
-              <button class="btn btn--ghost" type="submit">Remove profile photo</button>
+              <button class="btn btn--ghost" type="submit">Remove Profile Photo</button>
             </form>
           {% endif %}
         </div>
         <header class="panel__header">
-          <h2 id="matching-title">Interests and skills</h2>
+          <h2 id="matching-title">Interests and Skills</h2>
         </header>
         <p class="help-text">Select at least one of each to support your cosine-similarity recommendations. Skills and interests can be selected independently.</p>
         {% if errors %}<p class="profile-error" role="alert">{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p>{% endif %}
@@ -245,24 +239,24 @@
               class="btn btn--primary"
               type="submit"
               {% if not skill_catalog or not interest_catalog %}disabled{% endif %}
-            >Save profile</button>
+            >Save Profile</button>
             <span class="help-text">Your choices are saved together with any new photo.</span>
           </div>
         </form>
       </section>
     {% else %}
-      <section aria-label="Participation summary" class="summary-strip">
+      <section aria-label="Participation Summary" class="summary-strip">
         {{ metric('Registrations', user_stats.total_activities, 'All your registration records, including pending and cancelled registrations. This is not a completed-service count.') }}
         {{ metric('Verified attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
         {{ metric('Completed participation', user_stats.completed_participation, 'Recorded presence at an approved activity whose scheduled end has passed.') }}
       </section>
       <section class="panel">
-        {{ heading('Profile milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
+        {{ heading('Profile Milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
         <div class="profile-milestone">
           <div>
             <strong>{{ user_stats.cert_level }}: {{ user_stats.level_label }}</strong>
             <p class="help-text">Based on {{ user_stats.completed_participation }} completed participation records. Separate from Director recognition.</p>
-            <label for="profile-progress">Progress within this level: {{ user_stats.level_percent }}%</label>
+            <label for="profile-progress">Progress Within This Level: {{ user_stats.level_percent }}%</label>
             <progress
               id="profile-progress"
               value="{{ user_stats.level_percent }}"

@@ -2,6 +2,7 @@
 import csv
 import io
 import json
+import uuid
 from calendar import monthrange
 from datetime import date, datetime
 from pathlib import Path
@@ -9,6 +10,7 @@ from flask import Blueprint, abort, current_app, flash, jsonify, redirect, rende
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.datastructures import MultiDict
 from app.models import db
 from app.models.user import User, Skill
@@ -22,8 +24,9 @@ from app.utils.audit import log_activity
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/workspace')
 ACTIVITY_FIELDS = {'title', 'description', 'date', 'end_date', 'location', 'category', 'slots',
                    'cancellation_days', 'required_skills', 'sdg_ids', 'target_participants',
-                   'participation_agreement_text', 'conducting_department', 'participant_type',
-                   'departments', 'volunteer_ids', 'agreement_id'}
+                   'conducting_department', 'participant_type', 'departments', 'agreement_id'}
+REMOVED_ACTIVITY_FIELDS = {'participation_agreement_text', 'participation_agreement_version',
+                           'nda_required', 'nda_text', 'nda_version', 'volunteer_ids'}
 # Only these form fields can ever be persisted by browser autosave.
 FORM_FIELDS = ACTIVITY_FIELDS | {'name', 'full_name', 'email', 'phone', 'contact_name',
     'campus', 'campus_id', 'college_affiliation', 'volunteer_type', 'sex', 'id_number',
@@ -73,8 +76,10 @@ def clear_submitted_draft(response):
 @workspace_bp.route('/draft-uploads/<path:key>', methods=['POST'])
 @login_required
 def draft_upload(key):
-    if len(key) > 160 or not key.startswith('form:/') or key.startswith('form://') or '\\' in key:
+    if len(key) > 160 or (not key.startswith('form:/') and key != 'activity:new') or key.startswith('form://') or '\\' in key:
         abort(400)
+    if key == 'activity:new' and current_user.role != 'coordinator':
+        abort(403)
     name = request.form.get('field')
     file = request.files.get('upload')
     if name not in ('document', 'file', 'profile_image', 'cover_image', 'evidence_file') or not file or not file.filename:
@@ -87,6 +92,12 @@ def draft_upload(key):
     content = file.read(10 * 1024 * 1024 + 1)
     if len(content) > 10 * 1024 * 1024:
         abort(413)
+    if name == 'cover_image':
+        from app.services.activity_workflow import validate_cover
+        try:
+            validate_cover(content,filename)
+        except ValueError as exc:
+            abort(400,description=str(exc))
     folder = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'draft-uploads'
     folder.mkdir(parents=True, exist_ok=True)
     path = uuid.uuid4().hex
@@ -142,6 +153,20 @@ def draft_for(key, create=False):
     return draft
 
 
+def activity_draft_key(key):
+    path = key.split('?', 1)[0]
+    prefix = 'form:/coordinator/events/'
+    return key == 'activity:new' or (path.startswith(prefix) and path.endswith('/edit')
+                                   and path[len(prefix):-len('/edit')].isdigit())
+
+
+def clean_activity_draft(draft):
+    if draft and activity_draft_key(draft.key) and REMOVED_ACTIVITY_FIELDS.intersection(draft.payload):
+        draft.payload = {key: value for key, value in draft.payload.items() if key not in REMOVED_ACTIVITY_FIELDS}
+        return True
+    return False
+
+
 @workspace_bp.route('/drafts/<path:key>', methods=['GET', 'PUT', 'DELETE'])
 @login_required
 def drafts(key):
@@ -152,6 +177,8 @@ def drafts(key):
     if key.startswith('activity:') and current_user.role != 'coordinator':
         abort(403)
     draft = draft_for(key, create=request.method == 'PUT')
+    if clean_activity_draft(draft):
+        db.session.commit()
     if request.method == 'DELETE':
         if draft:
             files = draft.payload.get('_files', {})
@@ -165,7 +192,9 @@ def drafts(key):
             abort(400)
         clean = {}
         for name, value in data.items():
-            if name not in FORM_FIELDS:
+            if name not in (ACTIVITY_FIELDS if key == 'activity:new' else FORM_FIELDS):
+                continue
+            if activity_draft_key(key) and name in REMOVED_ACTIVITY_FIELDS:
                 continue
             values = value if isinstance(value, list) else [value]
             if len(values) > 200 or any(not isinstance(v, str) or len(v) > 10000 for v in values):
@@ -222,13 +251,19 @@ def activities():
         abort(400)
     search = request.args.get('q', '').strip()[:200]
     if search:
-        query = query.filter(Event.title.icontains(search, autoescape=True))
+        query = query.filter(or_(Event.title.icontains(search, autoescape=True),
+                                 Event.description.icontains(search, autoescape=True)))
+    category = request.args.get('category', '').strip()
+    if category:
+        query = query.filter_by(category=category)
     campus = request.args.get('campus_id', type=int)
     if campus and current_user.role != 'coordinator':
         query = query.filter_by(campus_id=campus)
-    pagination = db.paginate(query.order_by(Event.date.desc(), Event.id).statement,
+    pagination = db.paginate(query.order_by(Event.date.asc() if state in ('upcoming', 'ongoing') else Event.date.desc(), Event.id).statement,
                              per_page=15, max_per_page=15, error_out=False)
-    return render_template('workspace/activities.html', pagination=pagination, state=state, search=search, now=now)
+    categories = [row[0] for row in scoped_events().with_entities(Event.category).filter(Event.category.isnot(None)).distinct().order_by(Event.category)]
+    return render_template('workspace/activities.html', pagination=pagination, state=state, search=search, now=now,
+                           categories=categories, campuses=Campus.query.order_by(Campus.name).all())
 
 
 @workspace_bp.route('/activities/<int:event_id>')
@@ -239,8 +274,10 @@ def activity(event_id):
     counts = dict(db.session.query(Registration.status, func.count(Registration.id)).filter_by(event_id=event.id).group_by(Registration.status).all())
     unrecorded = Registration.query.filter(Registration.event_id == event.id,
         Registration.status != 'cancelled', ~Registration.attendance_record.has()).count()
+    actual_present = db.session.query(func.count(Attendance.id)).join(Registration,Registration.id == Attendance.registration_id).filter(
+        Registration.event_id == event.id,Registration.status != 'cancelled',Attendance.status == 'present').scalar()
     return render_template('workspace/activity.html', event=event, counts=counts, unrecorded=unrecorded,
-                           now=local_now(), editable=attendance_open(event))
+                           now=local_now(), editable=attendance_open(event),actual_present=actual_present)
 
 
 @workspace_bp.route('/activities/<int:event_id>/cancel', methods=['POST'])
@@ -272,6 +309,8 @@ def create_activity(step):
     if step not in (1, 2, 3, 4) or not current_user.campus_id:
         abort(404 if step not in (1, 2, 3, 4) else 403)
     draft = draft_for('activity:new', create=True)
+    if clean_activity_draft(draft):
+        db.session.commit()
     from copy import deepcopy
     data = deepcopy(draft.payload or {})
     errors = []
@@ -298,9 +337,21 @@ def create_activity(step):
             if step == 2:
                 data['required_skills'] = request.form.getlist('required_skills')
                 data['sdg_ids'] = request.form.getlist('sdg_ids')
+                file = request.files.get('cover_image')
+                if file and file.filename:
+                    from app.services.activity_workflow import stage_cover
+                    try:
+                        metadata = stage_cover(file)
+                        saved = dict(data.get('_files',{}))
+                        previous = saved.get('cover_image')
+                        saved['cover_image'] = metadata
+                        data['_files'] = saved
+                        if previous:
+                            remove_staged_files({'cover_image':previous})
+                    except ValueError as exc:
+                        errors.append(str(exc))
             if step == 3:
-                for key in ('departments', 'volunteer_ids'):
-                    data[key] = request.form.getlist(key)
+                data['departments'] = request.form.getlist('departments')
         draft.payload = dict(data)
         if not errors and step == 4:
             event, errors = publish_draft(data)
@@ -309,8 +360,10 @@ def create_activity(step):
                 db.session.flush()
                 notify_audience(event)
                 log_activity('activity_created', event, {'proposal': True})
+                staged = data.get('_files',{})
                 db.session.delete(draft)
                 db.session.commit()
+                remove_staged_files(staged)
                 flash('Approved activity published.', 'success')
                 return redirect(url_for('workspace.activity', event_id=event.id))
         db.session.commit()
@@ -320,16 +373,15 @@ def create_activity(step):
                      for value in (values if isinstance(values, list) else [values]))
     from app.routes.coordinator import _activity_categories, _max_event_slots
     return render_template('workspace/create.html', step=step, data=data, errors=errors,
-        proposal=draft.payload.get('_proposal'), skills=Skill.query.order_by(Skill.name).all(),
+        proposal=draft.payload.get('_proposal'), saved_cover=draft.payload.get('_files',{}).get('cover_image'), skills=Skill.query.order_by(Skill.name).all(),
         sdgs=SdgGoal.query.order_by(SdgGoal.number).all(), categories=_activity_categories(),
         max_slots=_max_event_slots(), now=local_now(),
         agencies=PartnerAgency.query.filter_by(campus_id=current_user.campus_id).all(),
-        departments=audience_departments(),
-        volunteers=User.query.filter_by(role='volunteer', campus_id=current_user.campus_id, _is_active=True).order_by(User.name).all())
+        departments=audience_departments())
 
 
 def publish_draft(payload):
-    form = MultiDict((key, value) for key, values in payload.items() if not key.startswith('_')
+    form = MultiDict((key, value) for key, values in payload.items() if key in ACTIVITY_FIELDS
                      for value in (values if isinstance(values, list) else [values]))
     from app.routes.coordinator import _activity_categories, _max_event_slots, _parse_event_schedule
     errors = []
@@ -362,25 +414,34 @@ def publish_draft(payload):
             PartnerAgreement.id == form.get('agreement_id', type=int), PartnerAgency.campus_id == current_user.campus_id).first()
         if not agreement or (schedule and not agreement.valid_from <= schedule[0].date() <= agreement.valid_until):
             errors.append('Choose a campus MOA valid on the activity date.')
-    invited = form.getlist('volunteer_ids')
-    valid_invited = User.query.filter(User.id.in_(invited), User.role == 'volunteer', User.campus_id == current_user.campus_id).count() if invited else 0
-    if valid_invited != len(set(invited)):
-        errors.append('Choose volunteers from your campus.')
     if not set(form.getlist('departments')) <= set(audience_departments()):
         errors.append('Choose audience departments from the campus list.')
     if not payload.get('_proposal'):
         errors.append('Upload the approved proposal first.')
     if errors:
         return None, errors
-    text = form.get('participation_agreement_text', '').strip()
     event = Event(title=form['title'].strip(), description=form['description'].strip(), date=schedule[0],
         end_date=schedule[1], cancellation_deadline=schedule[2], location=form.get('location', ''),
         category=form['category'], slots=slots, target_participants=target,
         campus_id=current_user.campus_id, created_by_id=current_user.id, proposal_document=payload['_proposal'],
         conducting_department=form.get('conducting_department', '')[:150], participant_type=form.get('participant_type', '')[:100],
-        audience={'departments': form.getlist('departments'), 'volunteer_ids': invited},
-        agreement_id=agreement.id if agreement else None, participation_agreement_text=text or None,
-        participation_agreement_version=datetime.utcnow().strftime('%Y%m%d%H%M%S') if text else None)
+        audience={'departments': form.getlist('departments')},
+        agreement_id=agreement.id if agreement else None)
+    cover = payload.get('_files',{}).get('cover_image')
+    if cover:
+        from werkzeug.datastructures import FileStorage
+        from app.routes.coordinator import _save_event_cover
+        path = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'draft-uploads' / Path(cover['path']).name
+        if not path.is_file():
+            return None, ['The saved cover is unavailable. Return to Activity Details to upload it again.']
+        try:
+            saved = _save_event_cover(FileStorage(io.BytesIO(path.read_bytes()),filename=cover['name']))
+        except ValueError as exc:
+            return None, [str(exc)]
+        event.cover_image_path = saved['path']
+        event.cover_image_name = saved['original_name']
+        event.cover_uploaded_by_id = current_user.id
+        event.cover_uploaded_at = datetime.utcnow()
     event.required_skills_rel = skills
     event.sdgs = sdgs
     return event, []
@@ -437,7 +498,14 @@ def partners():
         db.session.add(agency)
         db.session.commit()
         return redirect(url_for('workspace.partner', agency_id=agency.id))
-    return render_template('workspace/partners.html', agencies=PartnerAgency.query.filter_by(campus_id=current_user.campus_id).order_by(PartnerAgency.name).all())
+    query = PartnerAgency.query.filter_by(campus_id=current_user.campus_id)
+    search = request.args.get('q', '').strip()[:200]
+    if search:
+        query = query.filter(or_(PartnerAgency.name.icontains(search, autoescape=True),
+                                 PartnerAgency.contact_name.icontains(search, autoescape=True)))
+    pagination = db.paginate(query.order_by(PartnerAgency.name, PartnerAgency.id).statement,
+                             per_page=25, max_per_page=25, error_out=False)
+    return render_template('workspace/partners.html', agencies=pagination.items, pagination=pagination)
 
 
 @workspace_bp.route('/partners/<int:agency_id>', methods=['GET', 'POST'])
@@ -539,72 +607,47 @@ def external(event_id):
             flash('Named external roster saved.', 'success')
             return redirect(url_for('workspace.external', event_id=event.id))
     groups = ExternalGroup.query.filter_by(event_id=event.id).all()
-    registrations = Registration.query.filter(Registration.event_id == event.id,
-        Registration.external_participant_id.isnot(None), Registration.status != 'cancelled').order_by(Registration.id).all()
-    return render_template('workspace/external.html', event=event, groups=groups, registrations=registrations, errors=errors, editable=attendance_open(event))
+    query = Registration.query.join(ExternalParticipant).filter(Registration.event_id == event.id,
+        Registration.external_participant_id.isnot(None), Registration.status != 'cancelled')
+    search = request.args.get('q', '').strip()[:200]
+    if search:
+        query = query.filter(or_(ExternalParticipant.name.icontains(search, autoescape=True),
+                                 ExternalParticipant.email.icontains(search, autoescape=True)))
+    attendance_status = request.args.get('attendance_status', '')
+    if attendance_status == 'unmarked':
+        query = query.filter(~Registration.attendance_record.has())
+    elif attendance_status in ('present', 'absent', 'excused'):
+        query = query.filter(Registration.attendance_record.has(Attendance.status == attendance_status))
+    elif attendance_status:
+        abort(400)
+    pagination = db.paginate(query.order_by(ExternalParticipant.name, Registration.id).statement,
+                             per_page=25, max_per_page=25, error_out=False)
+    return render_template('workspace/external.html', event=event, groups=groups, registrations=pagination.items,
+                           pagination=pagination, errors=errors, editable=attendance_open(event))
 
 
-def report_data():
-    year = request.args.get('year', local_now().year, type=int)
-    if not 1900 <= year <= 9998:
-        abort(400)
-    period = request.args.get('period', 'annual')
-    segment = request.args.get('segment', 1, type=int)
-    if period not in ('annual', 'semiannual', 'quarterly') or not 1 <= segment <= (4 if period == 'quarterly' else 2 if period == 'semiannual' else 1):
-        abort(400)
-    months = 3 if period == 'quarterly' else 6 if period == 'semiannual' else 12
-    first_month = 1 + (segment - 1) * months
-    last_month = first_month + months - 1
-    start, end = datetime(year, first_month, 1), datetime(year, last_month, monthrange(year, last_month)[1], 23, 59, 59)
-    query = scoped_events().filter(Event.date >= start, Event.date <= end)
-    campus_id = current_user.campus_id if current_user.role == 'coordinator' else request.args.get('campus_id', type=int)
-    if campus_id:
-        query = query.filter_by(campus_id=campus_id)
-    event_id = request.args.get('event_id', type=int)
-    if event_id:
-        query = query.filter_by(id=event_id)
-    department = request.args.get('department', '').strip()
-    if department:
-        query = query.filter_by(conducting_department=department)
-    delivery = request.args.get('delivery', '')
-    if delivery == 'approved':
-        query = query.filter_by(lifecycle_status='approved')
-    elif delivery == 'conducted':
-        query = query.filter(Event.lifecycle_status == 'approved', Event.end_date.isnot(None), Event.end_date <= local_now())
-    elif delivery:
-        abort(400)
-    events = query.order_by(Event.date, Event.id).all()
-    ids = [e.id for e in events]
-    attendance = dict(db.session.query(Attendance.event_id, func.count(Attendance.id)).join(
-        Registration, Registration.id == Attendance.registration_id).filter(
-        Attendance.event_id.in_(ids), Attendance.status == 'present', Registration.status.in_(('confirmed', 'completed'))
-        ).group_by(Attendance.event_id).all()) if ids else {}
-    rows = [{'event': event, 'attendees': attendance.get(event.id, 0),
-             'conducted': event.lifecycle_status == 'approved' and event.end_date is not None and event.end_date <= local_now()} for event in events]
-    from app.annual_goals import summary, comparisons
-    goals = summary(year, campus_id=campus_id)
-    campus_goals = comparisons(year) if not campus_id else []
-    campuses = Campus.query.order_by(Campus.name).all()
-    chart_campuses = [{'id': campus.id, 'name': campus.name,
-        'count': sum(1 for r in rows if r['event'].campus_id == campus.id and r['conducted'])} for campus in campuses if not campus_id or campus.id == campus_id]
-    monthly = [sum(1 for r in rows if r['event'].date.month == month and r['conducted']) for month in range(first_month, last_month + 1)]
-    accounts = User.query.filter_by(role='volunteer')
-    if campus_id:
-        accounts = accounts.filter_by(campus_id=campus_id)
-    return dict(rows=rows, year=year, period=period, segment=segment, campus_id=campus_id, now=local_now(),
-        period_label=f'{start:%d %b %Y} – {end:%d %b %Y}', department=department, event_id=event_id,
-        goals=goals, campus_goals=campus_goals, campuses=campuses, campus_chart=chart_campuses,
-        monthly=monthly, month_labels=[date(year, m, 1).strftime('%b') for m in range(first_month, last_month + 1)],
-        approved=sum(r['event'].lifecycle_status == 'approved' for r in rows), conducted=sum(r['conducted'] for r in rows),
-        attendees=sum(r['attendees'] for r in rows if r['conducted']), accounts=accounts.count(),
-        activity_choices=scoped_events().filter_by(lifecycle_status='approved').order_by(Event.title).all())
+def report_data(args=None, forced_campus=None):
+    from app.services.workspace_reports import workspace_report
+    return workspace_report(scoped_events(), args if args is not None else request.args,
+                            current_user, local_now(), forced_campus)
 
 
 @workspace_bp.route('/overview')
 @login_required
 @roles_required('director', 'admin', 'coordinator')
 def overview():
-    return render_template('workspace/overview.html', **report_data())
+    from app.services.workspace_reports import follow_up_items
+    from app.services.staff_overview import overview_context
+    data = report_data()
+    findings = follow_up_items(data)
+    agenda = []
+    if current_user.role == 'coordinator':
+        now = data['now']
+        agenda = scoped_events().filter(Event.lifecycle_status == 'approved',
+            or_(Event.date > now, db.and_(Event.date <= now, Event.end_date > now))
+        ).order_by(Event.date, Event.id).limit(5).all()
+    return render_template('workspace/overview.html', **data, **overview_context(data, findings),
+                           follow_ups=findings, agenda=agenda)
 
 
 @workspace_bp.route('/reports')
@@ -614,25 +657,123 @@ def reports():
     return render_template('workspace/reports.html')
 
 
+@workspace_bp.route('/follow-up')
+@login_required
+@roles_required('director', 'admin', 'coordinator')
+def follow_up():
+    from app.services.workspace_reports import follow_up_items
+    data = report_data()
+    items = follow_up_items(data)
+    # The queue is bounded in the UI even when the report scope spans many years.
+    page = request.args.get('page',1,type=int)
+    if page is None or page < 1:
+        abort(400)
+    return render_template('workspace/follow_up.html', **data, items=items[(page-1)*25:page*25],
+                           total=len(items), page=page, pages=max(1,(len(items)+24)//25))
+
+
+@workspace_bp.route('/campuses/<int:campus_id>')
+@login_required
+@roles_required('director', 'admin')
+def campus(campus_id):
+    campus = db.session.get(Campus,campus_id)
+    if not campus:
+        abort(404)
+    from app.services.workspace_reports import follow_up_items
+    data = report_data(forced_campus=campus.id)
+    return render_template('workspace/campus.html', **data, campus=campus, follow_ups=follow_up_items(data))
+
+
+@workspace_bp.route('/recognition')
+@login_required
+@roles_required('director', 'admin')
+def recognition():
+    year = request.args.get('award_year',local_now().year,type=int)
+    if year is None or not 1900 <= year <= 9998:
+        abort(400,description='Choose a valid recognition year.')
+    from app.recommendation.analytics import AnalyticsAggregator
+    return render_template('workspace/recognition.html',award_year=year,
+                           leaderboards=AnalyticsAggregator.award_leaderboards(year))
+
+
+@workspace_bp.route('/reports/people')
+@login_required
+@roles_required('director', 'admin', 'coordinator')
+def people_insights():
+    from app.models.user import Interest, user_skills, user_interests
+    campus_id = current_user.campus_id if current_user.role == 'coordinator' else request.args.get('campus_id',type=int)
+    users = User.query
+    if current_user.role == 'coordinator' and not campus_id:
+        abort(403)
+    if campus_id:
+        users = users.filter_by(campus_id=campus_id)
+    ids = users.with_entities(User.id).statement
+    roles = users.with_entities(User.role,func.count(User.id)).group_by(User.role).order_by(User.role).all()
+    def popular(model, junction, column):
+        return db.session.query(model.name,func.count(junction.c.user_id)).join(
+            junction, model.id == column).filter(junction.c.user_id.in_(ids)).group_by(model.id,model.name).order_by(
+            func.count(junction.c.user_id).desc(),model.name).limit(10).all()
+    return render_template('workspace/people_insights.html',total=users.count(),roles=roles,
+        skills=popular(Skill,user_skills,user_skills.c.skill_id),
+        interests=popular(Interest,user_interests,user_interests.c.interest_id),
+        campus_id=campus_id,campuses=Campus.query.order_by(Campus.name).all())
+
+
 @workspace_bp.route('/reports/results')
 @login_required
 @roles_required('director', 'admin', 'coordinator')
 def report_results():
     data = report_data()
+    view = request.args.get('view', 'summary')
+    if view not in ('summary', 'activities', 'participation'):
+        view = 'summary'
     page = request.args.get('page', 1, type=int)
     total = len(data['rows'])
     pages = max(1, (total + 24) // 25)
     if not 1 <= page <= pages:
         abort(404)
     data['rows'] = data['rows'][(page - 1) * 25:page * 25]
-    return render_template('workspace/results.html', **data, page=page, pages=pages, total=total)
+    return render_template('workspace/results.html', **data, page=page, pages=pages, total=total, report_view=view)
+
+
+@workspace_bp.route('/reports/activities/<int:event_id>')
+@login_required
+@roles_required('director', 'admin', 'coordinator')
+def activity_report(event_id):
+    """Read one authorized activity using the same effective scope as its exports."""
+    event = owned_event(event_id)
+    args = request.args.copy()
+    args.setlist('event_id', [str(event.id)])
+    args.setdefault('period', 'all')
+    args.setdefault('year', str(event.date.year))
+    data = report_data(args)
+    row = next((row for row in data['rows'] if row['event'].id == event.id), None)
+    if row is None:
+        abort(404, description='This activity is outside the selected report scope.')
+    roster = None
+    if event.date <= local_now():
+        query = Registration.query.filter_by(event_id=event.id).options(
+            joinedload(Registration.user), joinedload(Registration.external_participant),
+            joinedload(Registration.attendance_record)).order_by(Registration.id)
+        roster = db.paginate(query.statement, page=max(1, request.args.get('roster_page', 1, type=int)),
+                             per_page=25, error_out=False)
+    return render_template('workspace/activity_report.html', **data, row=row, event=event,
+                           roster=roster, export_query=args.to_dict(flat=False))
 
 
 @workspace_bp.route('/reports/aop')
 @login_required
 @roles_required('director', 'admin', 'coordinator')
 def aop():
-    return render_template('workspace/aop.html', **report_data())
+    data = report_data()
+    from app.annual_goals import summarize
+    data['campus_rollup'] = summarize([row for campus in data['campus_goals'] for row in campus['rows']], data['year'])
+    groups = {}
+    for row in data['goals']['rows']:
+        if 'AOP' in row['plan_types'] and row['verified']:
+            groups.setdefault(row['unit'], []).append(dict(name=row['name'], target=float(row['target']), actual=float(row['actual'])))
+    data['target_groups'] = groups
+    return render_template('workspace/aop.html', **data)
 
 
 @workspace_bp.route('/reports/export/<format>')
@@ -651,6 +792,15 @@ def export(format):
     values = [[r['event'].title, r['event'].campus.name if r['event'].campus else 'Unassigned',
                r['event'].conducting_department or 'Not recorded', str(r['event'].date), r['event'].lifecycle_status,
                'Yes' if r['conducted'] else 'No', r['attendees']] for r in data['rows']]
+    supplemental_headers = ['Registrations','Internal','External','Recorded present','Completed participation','Attendance rate (%)','Numeric participant target','Target outcome','Attendance recording']
+    supplemental_values = [[r['metrics']['registrations'],r['metrics']['internal'],r['metrics']['external'],
+        r['metrics']['present'],r['metrics']['completed'],r['metrics']['rate'] if r['metrics']['rate'] is not None else 'Pending / unavailable',
+        r['event'].target_participants if r['event'].target_participants is not None else 'Not set',
+        'Met' if r['metrics']['target_met'] is True else 'Not reached' if r['metrics']['target_met'] is False else 'Pending / unavailable',
+        'Complete' if r['metrics']['complete'] else 'End time not recorded' if not r['event'].end_date else 'Incomplete' if r['conducted'] else 'Upcoming / ongoing'] for r in data['rows']]
+    headers += supplemental_headers
+    for row,extra in zip(values,supplemental_values):
+        row.extend(extra)
     roster_headers = ['Volunteer', 'Participant type', 'Registration', 'Attendance']
     roster = []
     if data['event_id'] and data['rows'] and data['rows'][0]['event'].date <= local_now():
@@ -701,6 +851,15 @@ def export(format):
             chart.add_data(Reference(chart_sheet, min_col=2, min_row=1, max_row=chart_sheet.max_row), titles_from_data=True)
             chart.set_categories(Reference(chart_sheet, min_col=1, min_row=2, max_row=chart_sheet.max_row))
             chart_sheet.add_chart(chart, 'D2')
+        from openpyxl.chart import LineChart
+        trend = book.create_sheet('Delivery trend'); trend.append(['Period','Conducted activities'])
+        for label,count in zip(data['month_labels'],data['monthly']):
+            trend.append([label,count])
+        if data['monthly']:
+            line=LineChart(); line.title='Activity delivery over time'
+            line.add_data(Reference(trend,min_col=2,min_row=1,max_row=trend.max_row),titles_from_data=True)
+            line.set_categories(Reference(trend,min_col=1,min_row=2,max_row=trend.max_row)); trend.add_chart(line,'D2')
+        scope_sheet=book.create_sheet('Scope'); scope_sheet.append([data['period_label']]); scope_sheet.append([csv_safe(data['scope_label'])]); scope_sheet.append(['Participant filters affect participant counts; pending recording is not absence.'])
         book.save(output)
     else:
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
@@ -711,7 +870,7 @@ def export(format):
         from matplotlib.figure import Figure
         styles = getSampleStyleSheet()
         content = [Paragraph('PSU Volunteer Hub · Activity accomplishments', styles['Title']),
-                   Paragraph(escape(data['period_label']), styles['Normal']), Spacer(1, 12)]
+                   Paragraph(escape(data['period_label']), styles['Normal']),Paragraph(escape(data['scope_label']),styles['Normal']), Spacer(1, 12)]
         fig = Figure(figsize=(9, 3), layout='constrained')
         ax = fig.subplots()
         ax.barh([r['name'] for r in data['campus_chart']], [r['count'] for r in data['campus_chart']], color='#00408b')
@@ -720,9 +879,21 @@ def export(format):
         fig.savefig(image, format='png', dpi=120)
         image.seek(0)
         content.append(Image(image, width=600, height=200))
-        table = Table([[Paragraph(escape(str(v)), styles['Normal']) for v in row] for row in [headers, *values]], repeatRows=1, colWidths=[150, 70, 100, 100, 65, 55, 80])
+        table = Table([[Paragraph(escape(str(v)), styles['Normal']) for v in row] for row in [[*headers[:7]], *[row[:7] for row in values]]], repeatRows=1, colWidths=[150, 70, 100, 100, 65, 55, 80])
         table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eff8')), ('VALIGN', (0, 0), (-1, -1), 'TOP'), ('BOTTOMPADDING', (0, 0), (-1, -1), 8)]))
         content.append(table)
+        content.extend([Spacer(1,16),Paragraph('Registrations, attendance, and numeric targets',styles['Heading2']),
+            Paragraph('Rates and target outcomes remain pending until attendance recording is complete. Completed participation derives from recorded presence after the event ends.',styles['Normal'])])
+        supplemental=Table([[Paragraph(escape(str(v)),styles['Normal']) for v in row] for row in
+            [['Activity',*supplemental_headers],*[[r['event'].title,*extra] for r,extra in zip(data['rows'],supplemental_values)]]],
+            repeatRows=1,colWidths=[145,55,45,45,55,60,65,65,65,80])
+        supplemental.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),8)]))
+        content.append(supplemental)
+        trend_fig=Figure(figsize=(9,2.6),layout='constrained'); trend_ax=trend_fig.subplots()
+        trend_ax.plot(data['month_labels'],data['monthly'],color='#00408b',marker='o'); trend_ax.set_ylabel('Conducted activities')
+        trend_ax.tick_params(axis='x',rotation=45,labelsize=7)
+        trend_image=io.BytesIO(); trend_fig.savefig(trend_image,format='png',dpi=110); trend_image.seek(0)
+        content.extend([Spacer(1,12),Paragraph('Delivery trend',styles['Heading2']),Image(trend_image,width=650,height=188)])
         if data['event_id'] and data['rows']:
             event = data['rows'][0]['event']
             content.extend([Spacer(1, 14), Paragraph('Activity details', styles['Heading2']),
@@ -748,6 +919,11 @@ def export_aop(data, format):
     headers = ['Indicator', 'Unit', 'Target', 'Verified actual', 'Status', 'Responsible office']
     rows = [[row['name'], row['unit'], float(row['target']),
              float(row['actual']) if row['verified'] else None, row['status'], row['responsible_office']] for row in goals]
+    campus_headers = ['Campus', 'Obligations achieved', 'Total obligations', 'AOP achieved / total', 'ASP achieved / total', 'Pending evidence']
+    campus_values = [[campus['campus'], campus['met'], campus['total'],
+                      f"{campus['plans']['AOP']['met']} / {campus['plans']['AOP']['total']}",
+                      f"{campus['plans']['ASP']['met']} / {campus['plans']['ASP']['total']}", campus['pending']]
+                     for campus in data['campus_goals']]
     groups = {}
     for row in goals:
         if row['verified']:
@@ -758,6 +934,10 @@ def export_aop(data, format):
         writer = csv.writer(stream)
         writer.writerow(headers)
         writer.writerows([[csv_safe(value) for value in row] for row in rows])
+        if campus_values:
+            writer.writerow([])
+            writer.writerow(campus_headers)
+            writer.writerows([[csv_safe(value) for value in row] for row in campus_values])
         output.write(stream.getvalue().encode('utf-8-sig'))
     elif format == 'xlsx':
         from openpyxl import Workbook
@@ -769,6 +949,11 @@ def export_aop(data, format):
         for row in rows:
             sheet.append([csv_safe(value) for value in row])
         sheet.freeze_panes = 'A2'
+        if campus_values:
+            campus_sheet = book.create_sheet('Campus obligations')
+            campus_sheet.append(campus_headers)
+            for values in campus_values:
+                campus_sheet.append([csv_safe(value) for value in values])
         for column in sheet.columns:
             sheet.column_dimensions[column[0].column_letter].width = 30
         for index, (unit, group) in enumerate(groups.items()):
@@ -795,6 +980,10 @@ def export_aop(data, format):
         table = Table([[Paragraph(escape(str(value if value is not None else 'Evidence pending')), styles['Normal'])
                        for value in row] for row in [headers, *rows]], repeatRows=1, colWidths=[190, 80, 70, 80, 110, 100])
         content.append(table)
+        if campus_values:
+            content.extend([Spacer(1,14),Paragraph('Campus obligations, separate from university targets',styles['Heading2']),
+                Table([[Paragraph(escape(str(value)),styles['Normal']) for value in values]
+                       for values in [campus_headers,*campus_values]],repeatRows=1,colWidths=[180,90,90,100,100,90])])
         for unit, group in groups.items():
             # Split long comparisons so labels remain legible on paper.
             for offset in range(0, len(group), 6):
@@ -903,9 +1092,38 @@ def run_import(kind, path, dry_run):
 @login_required
 @role_required('volunteer')
 def registrations():
-    query = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.registered_at.desc(), Registration.id.desc())
+    query = Registration.query.filter_by(user_id=current_user.id).join(Event)
+    search = request.args.get('q', '').strip()[:200]
+    if search:
+        query = query.filter(Event.title.icontains(search, autoescape=True))
+    campus = request.args.get('campus',type=int)
+    if campus:
+        query = query.filter(Event.campus_id == campus)
+    category = request.args.get('category','')
+    if category:
+        query = query.filter(Event.category == category)
+    if request.args.get('start_date') or request.args.get('end_date'):
+        from app.reports import parse_date_range, ReportError
+        try:
+            start,end = parse_date_range(request.args.get('start_date'),request.args.get('end_date'))
+            if start:
+                query = query.filter(Event.date >= start)
+            if end:
+                from datetime import timedelta
+                query = query.filter(Event.date < end + timedelta(days=1))
+        except (ReportError, OverflowError) as exc:
+            abort(400,description=str(exc))
+    status = request.args.get('status', '')
+    if status:
+        if status not in ('pending', 'confirmed', 'completed', 'cancelled'):
+            abort(400)
+        query = query.filter(Registration.status == status)
+    query = query.order_by(Registration.registered_at.desc(), Registration.id.desc())
     pagination = db.paginate(query.statement, per_page=15, max_per_page=15, error_out=False)
-    return render_template('workspace/registrations.html', pagination=pagination)
+    categories = [r[0] for r in db.session.query(Event.category).join(Registration).filter(
+        Registration.user_id == current_user.id,Event.category.isnot(None)).distinct().order_by(Event.category)]
+    return render_template('workspace/registrations.html', pagination=pagination,
+                           categories=categories,campuses=Campus.query.order_by(Campus.name).all())
 
 
 @workspace_bp.route('/registrations/<int:registration_id>')
@@ -914,7 +1132,9 @@ def registrations():
 def registration(registration_id):
     row = Registration.query.filter_by(id=registration_id, user_id=current_user.id).first_or_404()
     from app.routes.events import _cancellation_state
-    return render_template('workspace/registration.html', registration=row, can_withdraw=_cancellation_state(row)['can_request'])
+    state = _cancellation_state(row)
+    return render_template('workspace/registration.html', registration=row, can_withdraw=state['can_request'],
+                           withdrawal=state,now=local_now())
 
 
 @workspace_bp.route('/management')
@@ -942,9 +1162,9 @@ def volunteers():
         abort(403)
     if campus_id:
         query = query.filter_by(campus_id=campus_id)
-    search = request.args.get('q', '').strip()
+    search = request.args.get('q', '').strip()[:200]
     if search:
-        query = query.filter(User.name.icontains(search, autoescape=True))
+        query = query.filter(or_(User.name.icontains(search, autoescape=True), User.email.icontains(search, autoescape=True)))
     pagination = db.paginate(query.order_by(User.name, User.id).statement, per_page=25, max_per_page=25, error_out=False)
     return render_template('workspace/volunteers.html', pagination=pagination)
 
@@ -953,20 +1173,19 @@ def volunteers():
 @login_required
 @roles_required('coordinator', 'director', 'admin')
 def historical():
-    from app.models.event import HistoricalActivity
-    query = HistoricalActivity.query
-    if current_user.role == 'coordinator':
-        if not current_user.campus_id:
-            abort(403)
-        query = query.filter_by(campus_id=current_user.campus_id)
-    elif request.args.get('campus_id', type=int):
-        query = query.filter_by(campus_id=request.args.get('campus_id', type=int))
-    year = request.args.get('year', type=int)
-    if year:
-        query = query.filter_by(year_conducted=year)
-    pagination = db.paginate(query.order_by(HistoricalActivity.year_conducted.desc(),
-        HistoricalActivity.title, HistoricalActivity.id).statement, per_page=25, max_per_page=25, error_out=False)
-    return render_template('workspace/historical.html', pagination=pagination)
+    from app.services.historical_reports import historical_scope
+    query, chart, types = historical_scope(request.args,current_user)
+    pagination = db.paginate(query.statement,per_page=25,max_per_page=25,error_out=False)
+    return render_template('workspace/historical.html',pagination=pagination,historical_chart=chart,
+                           activity_types=types,campuses=Campus.query.order_by(Campus.name).all())
+
+
+@workspace_bp.route('/reports/historical/export/<format>')
+@login_required
+@roles_required('coordinator','director','admin')
+def historical_export(format):
+    from app.services.historical_reports import export_historical
+    return export_historical(format,request.args,current_user)
 
 
 @workspace_bp.route('/activities/<int:event_id>/registrations')
@@ -974,7 +1193,18 @@ def historical():
 @roles_required('coordinator', 'director', 'admin')
 def activity_registrations(event_id):
     event = owned_event(event_id)
-    query = Registration.query.filter_by(event_id=event.id).order_by(Registration.registered_at.desc(), Registration.id)
+    query = Registration.query.filter_by(event_id=event.id)
+    search = request.args.get('q', '').strip()[:200]
+    if search:
+        query = query.filter(or_(Registration.user.has(or_(User.name.icontains(search, autoescape=True),
+            User.email.icontains(search, autoescape=True))), Registration.external_participant.has(
+            or_(ExternalParticipant.name.icontains(search, autoescape=True), ExternalParticipant.email.icontains(search, autoescape=True)))))
+    status = request.args.get('status', '')
+    if status in ('pending', 'confirmed', 'completed', 'cancelled'):
+        query = query.filter(Registration.status == status)
+    elif status:
+        abort(400)
+    query = query.order_by(Registration.registered_at.desc(), Registration.id)
     pagination = db.paginate(query.statement, per_page=25, max_per_page=25, error_out=False)
     invited = User.query.filter(User.id.in_((event.audience or {}).get('volunteer_ids', []))).order_by(User.name).all()
     return render_template('workspace/activity_registrations.html', event=event, pagination=pagination, invited=invited)

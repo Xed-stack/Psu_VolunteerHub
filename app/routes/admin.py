@@ -83,15 +83,14 @@ def admin_dash():
     if active_tab not in ('users', 'deactivated', 'audit'):
         active_tab = 'users'
     campus_id = request.args.get('campus_id', type=int)
-    search = request.args.get('search', '').strip()
+    search = request.args.get('search', '').strip()[:200]
     role = request.args.get('role', '').strip()
     affiliation = request.args.get('college_affiliation', '').strip()
     query = User.query.options(joinedload(User.campus))
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
     if search:
-        term = f'%{search}%'
-        query = query.filter(db.or_(User.name.ilike(term), User.email.ilike(term)))
+        query = query.filter(db.or_(User.name.icontains(search, autoescape=True), User.email.icontains(search, autoescape=True)))
     if role in {'volunteer', 'coordinator', 'director'}:
         query = query.filter(User.role == role)
     if affiliation:
@@ -100,9 +99,9 @@ def admin_dash():
     users, deactivated_users, audit_logs = [], [], []
     deactivated_total = User.query.filter(User._is_active.is_(False)).count()
     if active_tab == 'users':
-        page_query = query.filter(User._is_active.is_(True)).order_by(User.created_at.desc(), User.id.desc())
+        page_query = query.filter(User._is_active.is_(True)).order_by(User.name, User.id)
     elif active_tab == 'deactivated':
-        page_query = query.filter(User._is_active.is_(False)).order_by(User.deactivated_at.asc(), User.id.asc())
+        page_query = query.filter(User._is_active.is_(False)).order_by(User.name, User.id)
     else:
         page_query = AuditLog.query.options(joinedload(AuditLog.actor)).order_by(
             AuditLog.created_at.desc(), AuditLog.id.desc())

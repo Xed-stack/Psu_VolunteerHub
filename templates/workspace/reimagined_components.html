@@ -1,0 +1,40 @@
+{% from 'partials/info_tip.html' import info_tip with context %}
+{% macro follow_up_list(items, limit=none) %}
+  {% set visible = items[:limit] if limit is not none else items %}<ul class="work-queue">{% for item in visible %}{{ queue_row(item) }}{% else %}<li><div><strong>No follow-up findings in this scope</strong><p>Recorded activity and attendance information does not currently trigger a review finding. Missing institutional evidence is assessed separately in Annual plans.</p></div></li>{% endfor %}</ul>
+{% endmacro %}
+{% macro queue_row(item) %}
+  <li><div><small>{{ item.campus.name if item.campus else 'Unassigned campus' }}</small><strong>{{ item.title }}</strong>{% if item.event %}<p><a
+  class="text-psu font-medium underline"
+  href="{{ linked_url('workspace.activity',event_id=item.event.id) }}"
+>{{ item.event.title }}</a></p>{% endif %}<small>{{ item.scope }}</small><p>{{ item.evidence }}</p></div><div class="queue-actions"><a
+  class="btn btn--outline"
+  href="{{ item.url if current_user.role == 'coordinator' or item.code != 'record_attendance' else url_for('workspace.activity',event_id=item.event.id) }}"
+>{{ item.action if current_user.role == 'coordinator' or item.code != 'record_attendance' else 'Review Ongoing Activity' }}</a>{% if current_user.role == 'director' and item.campus and item.has_coordinator %}
+    <form
+      method="post"
+      action="{{ url_for('director.campus_follow_up') }}"
+      data-no-draft
+      data-confirm="Send a follow-up notification to this campus coordinator?"
+    ><input
+  type="hidden"
+  name="follow_up_campus_id"
+  value="{{ item.campus.id }}"
+><input type="hidden" name="goal_year" value="{{ year }}"><input type="hidden" name="guidance_kind" value="{{ item.code }}">{% if item.event %}<input
+  type="hidden"
+  name="guidance_event_id"
+  value="{{ item.event.id }}"
+>{% endif %}<input
+  type="hidden"
+  name="report_scope"
+  value="{{ item.scope_query|tojson|forceescape }}"
+><button class="btn btn--outline text-xs">Notify Coordinator</button></form>{% endif %}</div></li>
+{% endmacro %}
+{% macro annual_snapshot() %}<div class="annual-snapshot">{% for kind in ['AOP','ASP'] %}<a
+  href="{{ url_for('goals.details',year=year,campus=campus_id,plan=kind) }}"
+><span>{{ kind }} Targets Achieved</span><strong>{{ (goals.plans[kind].met|string ~ ' / ' ~ goals.plans[kind].total|string) if goals.plans[kind].total else 'Not Set' }}</strong><span>View Indicators</span></a>{% endfor %}</div><p class="mt-4 text-sm text-slate-600">{{ year }} annual context. {{ goals.pending }} awaiting evidence. Unknown evidence remains pending.</p><a
+  class="text-link mt-2"
+  href="{{ url_for('goals.details',year=year,campus=campus_id) }}"
+>{{ 'Compare Campus Achievements' if current_user.role == 'director' else 'Review Targets and Evidence' }}</a>{% endmacro %}
+{% macro schedule(events) %}<ul class="schedule-list">{% for event in events %}<li><span class="schedule-date"><strong>{{ event.date.strftime("%d") }}</strong>{{ event.date.strftime("%b") }}</span><div><a
+  href="{{ linked_url('workspace.activity',event_id=event.id) }}"
+>{{ event.title }}</a><p>{{ event.date.strftime("%I:%M %p") }} · {{ event.campus.name if event.campus else 'University' }}</p></div></li>{% else %}<li><p>No upcoming approved activities in this scope.</p></li>{% endfor %}</ul>{% endmacro %}
