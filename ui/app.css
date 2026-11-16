@@ -424,6 +424,11 @@
   .report-directory-group { @apply grid gap-5 border-b border-slate-300 py-5 lg:grid-cols-[minmax(12rem,1fr)_minmax(0,2fr)]; }
   .report-directory-group > header p { @apply mt-2 max-w-prose text-base text-slate-600; }
   .report-directory-links { @apply grid gap-4; }
+  .report-demo-notice { @apply mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 border-b-2 border-gold bg-blue-50 px-4 py-3 text-base text-psu-deep; }
+  .report-demo-notice a { @apply inline-flex min-h-11 items-center font-semibold underline; }
+  .report-demo-directory { @apply mx-auto max-w-6xl px-4 py-6; }
+  .report-demo-directory .report-directory-link strong { @apply block text-lg text-psu-deep; }
+  .report-demo-directory .report-directory-link span { @apply mt-1 block font-normal text-slate-600 no-underline; }
   .report-directory-links > a { @apply block rounded-lg border-l-3 border-psu bg-white p-5 hover:bg-blue-50; }
   .report-directory-links h3 { @apply text-xl text-psu-deep; }
   .report-directory-links p { @apply mt-2 max-w-prose text-base text-slate-600; }

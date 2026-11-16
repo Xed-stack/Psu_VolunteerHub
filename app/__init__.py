@@ -226,7 +226,7 @@ def create_app(config_name=None):
     register_commands(app)
 
     # Production schema and account provisioning are explicit deployment steps.
-    if config_name != 'production':
+    if config_name != 'production' and not app.config.get('REPORT_DEMO_MODE'):
         with app.app_context():
             db.create_all()
             _seed_campuses(app)

@@ -21,6 +21,7 @@
   </head>
   <body class="auth-page{% block auth_page_class %}{% endblock %}" {% if session.pop('clear_signup_draft', false) %}data-clear-signup-draft{% endif %}>
     <a class="auth-skip-link" href="#main-content">Skip to Main Content</a>
+    {% include 'partials/report_demo_notice.html' %}
     {% block auth_navigation %}{% include 'partials/auth_nav.html' %}{% endblock %}
     {% block auth_messages %}{% include 'partials/flash_messages.html' %}{% endblock %}
     {% block body %}{% endblock %}

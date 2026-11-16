@@ -14,6 +14,37 @@ during work (existing session choice); Webapp Testing; current Web Design Guidel
 audit. Existing Tailwind tokens/components retained. Older skill choices below are
 dated evidence and do not override the user's current primary/design requirements.
 
+## Current handoff: Full-Year Report Demo, 17 November 2026
+
+Implemented the separate synthetic January–December 2025 report demonstration.
+Open `http://127.0.0.1:5001/demo`; the original preview remains on 5000. The demo
+does not copy, read, migrate, or seed operational databases. Source remains local
+on `codex/ui-workflow-overhaul`; no commit/push/deployment in this pass.
+
+Run `.venv/Scripts/python.exe scripts/report_demo.py --serve` (or `--dry-run`).
+Only `.sqlite` targets under `.qa-report-year-temp` are accepted; marked existing
+fixtures rerun without resetting records. Local credentials and manifest sit next
+to `annual-reports-2025.sqlite`; all generated data/files are ignored by Git.
+Demo accounts: `director@psu.edu`, `coordinator@psu.edu`, `student@psu.edu`, all using
+`password` per user request. Details are also in `annual-reports-2025-credentials.json`.
+These addresses identify fictional local accounts; operational accounts are unchanged.
+Renamed the three existing demo accounts in place, preserving IDs and report data;
+updated fresh seeds and browser checks. All 24 demo tests passed after the change.
+
+216 activities; 450 volunteer accounts; 180 named external people; 8,342 registrations;
+5,984 recorded present; 27 separate historical records. All twelve months and nine
+campuses populated. Campus annual rollup: 8/36 achieved, 16 pending. University
+targets stay separate: AOP 2/3 achieved; supported activity cohort explicitly linked.
+Calculated charts, detail records, recognition and profile insights reuse services.
+Canonical and legacy report downloads are labelled synthetic within the demo only.
+
+Verification: **29 focused/existing report tests, 65 Chromium groups**, Tailwind,
+126-template parse, Python compilation and whitespace checks passed. Existing
+Matplotlib deprecation warnings only. No full-suite/MySQL, physical-device,
+manual screen-reader, actual toolbar-zoom or page-by-page export visual audit claim.
+Screenshots: `.qa-report-year-temp/screenshots/`. Full coverage, commands,
+limitations, skills and scoped rollback: `docs/qa/REPORT_YEAR_DEMO.md`.
+
 ## Current handoff: Director Documents, 16 November 2026
 
 Completed analyze → design → implement → test for read-only Director documents.

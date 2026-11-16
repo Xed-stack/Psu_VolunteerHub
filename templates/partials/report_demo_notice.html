@@ -1,0 +1,7 @@
+{% if config.get('REPORT_DEMO_MODE') %}
+<aside class="report-demo-notice" aria-label="Demonstration Data Notice">
+  <strong>Synthetic Demonstration Data — {{ config.REPORT_DEMO_YEAR }}</strong>
+  <span>Fictional records. Not an official PSU report.</span>
+  <a href="{{ url_for('report_demo_directory') }}">Demo Directory</a>
+</aside>
+{% endif %}

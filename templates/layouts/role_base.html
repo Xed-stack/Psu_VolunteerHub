@@ -66,6 +66,7 @@
       </header>
       {% include 'partials/flash_messages.html' %}
       <main class="role-content" id="main-content" tabindex="-1">
+        {% include 'partials/report_demo_notice.html' %}
         {% include 'partials/workspace_context.html' %}
         {% block content %}{% endblock %}
       </main>

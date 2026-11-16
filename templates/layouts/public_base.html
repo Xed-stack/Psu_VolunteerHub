@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/app.css') }}">
   </head>
   <body class="public-page">
+    {% include 'partials/report_demo_notice.html' %}
     {% block body %}
       {% block content %}{% endblock %}
     {% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'layouts/role_base.html' if current_user.is_authenticated else 'layouts/public_base.html' %}
+{% block title %}2025 Report Demonstration · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{% if not current_user.is_authenticated %}<a class="skip-link" href="#main-content">Skip to Main Content</a><main id="main-content" tabindex="-1">{% endif %}
+<div class="journey-page report-demo-directory">
+  <header class="journey-heading"><div><h1>{{ demo_year }} Report Demonstration</h1><p>A complete January–December year of fictional activities, attendance, and annual evidence across nine campuses.</p></div></header>
+  {% if not current_user.is_authenticated %}
+    <section class="panel"><h2>Sign In to Explore</h2><p>Use the dedicated demo accounts supplied with this local preview. The Director sees university results; the Coordinator sees their campus.</p><a class="btn btn-primary" href="{{ url_for('auth.login', next=url_for('report_demo_directory')) }}">Sign In</a></section>
+  {% elif current_user.role in ['director', 'coordinator'] %}
+    <section class="report-directory-group"><header><h2>Delivery and Participation</h2><p>Follow the same records from summaries to named activity reports.</p></header><div class="report-directory-links">
+      {% for title,description,endpoint,extra in [('Overview','Five measures, campus results, and follow-up actions.','workspace.overview',{}),('Activity Summary','Campus comparisons and all twelve monthly results.','workspace.report_results',{'view':'summary'}),('Activity Records','Searchable approved and cancelled activity records.','workspace.report_results',{'view':'activities'}),('Participation Records','Internal and external registrations, attendance, and numeric targets.','workspace.report_results',{'view':'participation'})] %}
+      <a class="report-directory-link" href="{{ url_for(endpoint, year=demo_year, period='annual', **extra) }}"><strong>{{ title }}</strong><span>{{ description }}</span></a>
+      {% endfor %}
+    </div></section>
+    <section class="report-directory-group"><header><h2>Annual Evidence and Source Records</h2><p>Campus obligations and university targets remain separate. Unknown evidence stays pending.</p></header><div class="report-directory-links">
+      {% for title,description,endpoint in [('Annual Plan Summary','AOP/ASP obligations, campus achievements, and pending evidence.','workspace.aop'),('Indicators and Evidence','Definitions, linked activities, targets, and verified evidence.','goals.details'),('Historical Records','A separate illustrative aggregate register; excluded from live totals.','workspace.historical'),('People Insights','Account roles, selected interests, and skills.','workspace.people_insights')] %}
+      <a class="report-directory-link" href="{{ url_for(endpoint, year=demo_year) }}"><strong>{{ title }}</strong><span>{{ description }}</span></a>
+      {% endfor %}
+      {% if current_user.role == 'director' %}<a class="report-directory-link" href="{{ url_for('workspace.recognition', award_year=demo_year) }}"><strong>Annual Recognition</strong><span>Rankings derived from recorded presence within {{ demo_year }}.</span></a>{% endif %}
+    </div></section>
+    <p>Only {{ demo_year }} is seeded. Previous-year comparisons are unavailable. Sample downloads are labelled as synthetic; existing sample-export restrictions remain in effect.</p>
+  {% else %}
+    <section class="panel"><h2>Your Demonstration Workspace</h2><p>Review your profile and participation in the fictional {{ demo_year }} records. Staff reports require a Director or Coordinator account.</p><a class="btn btn-primary" href="{{ url_for('workspace.registrations') }}">My Registrations</a></section>
+  {% endif %}
+</div>
+{% if not current_user.is_authenticated %}</main>{% endif %}
+{% endblock %}
