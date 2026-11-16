@@ -35,6 +35,7 @@ def catalog(app):
         interest = Interest(name='Education & Literacy')
         skill = Skill(name='Teaching/Tutoring')
         db.session.add_all([interest, skill])
+        skill.interests.append(interest)
         db.session.commit()
         return str(interest.id), str(skill.id)
 
@@ -55,12 +56,12 @@ def test_primary_pages_use_shared_accessible_shell(client, path):
     assert response.status_code == 200
     assert len([1 for tag, _ in tags.tags if tag == 'h1']) == 1
     logo = next(attrs for tag, attrs in tags.tags
-                if tag == 'img' and attrs.get('width') == '128')
-    assert logo['width'] == logo['height'] == '128'
+                if tag == 'img' and attrs.get('width') == '40')
+    assert logo['width'] == logo['height'] == '40'
     assert '/static/assets/PSU-logo.png' in logo['src']
     assert 'id="main-content"' in body
     assert 'href="#main-content"' in body
-    assert 'aria-label="Account navigation"' in body
+    assert 'aria-label="Account Navigation"' in body
     assert '/static/scripts/auth-forms.js' in body
     assert 'name="remember"' not in body
     assert 'Contains a letter' not in body
@@ -73,7 +74,7 @@ def test_failed_login_preserves_escaped_identifier_but_not_password(client):
     }).get_data(as_text=True)
     tags = Tags(body)
     assert tags.named('identifier')['value'] == 'qa"<account>@example.test'
-    assert tags.named('identifier')['aria-describedby'] == 'login-error'
+    assert 'login-error' in tags.named('identifier')['aria-describedby'].split()
     assert tags.named('password').get('value', '') == ''
     assert 'NeverEchoThis123!' not in body
     assert 'Invalid email/ID or password.' in body
@@ -127,7 +128,7 @@ def test_signup_errors_are_linked_and_retain_non_password_values(client, app):
     assert 'href="#password"' in body
     assert 'href="#password_confirmation"' in body
     assert 'href="#sex"' in body
-    assert 'Use at least 12 characters.' in body
+    assert 'Password must be at least 12 characters.' in body
     assert 'Short123!' not in body and 'Different123!' not in body
     assert 'data-warn-unsaved' in body
     with client.session_transaction() as saved_session:
@@ -165,6 +166,7 @@ def test_signup_preserves_existing_password_policy_and_records_consents(client, 
     interest, skill = catalog
     client.post('/auth/interests', data={'interests': interest, 'skills': skill})
     data = signup_data()
+    data.update(password='StrongPassword1!', password_confirmation='StrongPassword1!')
     data.update(terms_accepted='on', privacy_acknowledged='on', account_type='admin')
     response = client.post('/auth/register', data=data)
     assert response.status_code == 302
@@ -172,7 +174,7 @@ def test_signup_preserves_existing_password_policy_and_records_consents(client, 
     with app.app_context():
         user = User.query.filter_by(email=data['email']).one()
         assert user.role == 'volunteer'
-        assert user.check_password('12345678')
+        assert user.check_password('StrongPassword1!')
         assert {str(item.id) for item in user.interests} == {interest}
         assert {str(item.id) for item in user.skills} == {skill}
         assert VolunteerProfile.query.filter_by(user_id=user.id).count() == 1

@@ -1,5 +1,426 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current UI/UX Skills and Working Order — 16 November 2026
+
+UI/UX Pro Max is the primary skill for UX structure, interaction and design decisions.
+Frontend Design must also be applied for visual redesign, layout, component styling,
+animation or frontend aesthetics; use both for combined UX/visual tasks. Do not invoke
+Frontend Design for backend-only tasks. Read relevant .md instructions before frontend
+work. Follow **analyze → design → implement → test**, completing each phase in order.
+
+Retain PSU identity, routes, backend business rules and design consistency. Supporting
+skills actually used in the profile pass: Ponytail full; antislop core/UI/human/mobile
+during work (existing session choice); Webapp Testing; current Web Design Guidelines
+audit. Existing Tailwind tokens/components retained. Older skill choices below are
+dated evidence and do not override the user's current primary/design requirements.
+
+## Current handoff: Director Documents, 16 November 2026
+
+Completed analyze → design → implement → test for read-only Director documents.
+Director activity workspaces now have Documents and a single prominent Approved
+Proposal section above the long description. Proposal filename/download and View
+All Documents reuse existing protected routes. Supporting evidence is paginated.
+No Director announcement queries, draft Resume queries, upload/publish/discard
+controls or mutation permissions. Requests for announcement view show Documents.
+Coordinator scope, workflows and private downloads remain intact.
+
+34 focused cases passed (8 new Director cases + 26 existing document/update cases),
+including real Coordinator publication then exact Director proposal downloads in
+two campuses, unfinished-draft isolation, denied forged writes and no history queries.
+18 final Chromium groups passed across 320–1440px, landscape, 200% text/keyboard,
+pagination, Help/Back, two-campus downloads and print. Build, 124 templates and
+current UI audit gates passed. No full-suite/physical/manual-screen-reader claim.
+Evidence/design/preservation/rollback: `docs/qa/DIRECTOR_DOCUMENTS.md`.
+
+Preview refreshed at `http://127.0.0.1:5000/`; existing activity 7 Documents checked
+for all three roles (Director/Coordinator 200, Volunteer 403). Data/uploads retained;
+test publication isolated. Work local/uncommitted on `codex/ui-workflow-overhaul`;
+no migrations, new dependencies, commits, pushes or deployment. Established UI/UX
+Pro Max + Frontend Design and supporting skills applied during work. Next: review
+Director Activities → activity → Documents and the proposal download.
+
+## Current handoff: Activity Documents and Announcements, 16 November 2026
+
+Completed analyze → design → implement → test. Documents and Updates now has separate
+paginated Documents/Announcements views and connected Upload Evidence/Compose screens.
+New GET/POST routes reuse existing guarded coordinator writes. Private downloads,
+recipient query, schedule/lifecycle behavior and legacy POSTs are preserved. Inline
+preview is escaped; recipient rules and Schedule Notice limitations are visible.
+
+Separate canonical drafts and authorized legacy Resume are supported. Submission
+consumes only its half of a combined legacy draft, atomically with the main commit.
+Invalid staged replacements retain prior valid attachments. Failed final uploads
+roll back and clean only the new UUID file. Other drafts/consent/password exclusions
+remain intact. Shared legacy Discard explicitly warns that both parts are removed.
+Page-specific focus handling keeps enlarged-text controls visible under the shell.
+
+26 new cases plus 7 existing focused regressions passed (33 total across runs);
+34 final Chromium groups passed, including 320–1440px, landscape, 200% text/keyboard,
+no-JavaScript saves, failed draft saves, restoration, duplicates and private downloads.
+Build, 124 templates, syntax/contrast/whitespace and current UI audit gates passed.
+No full-suite, physical-device or manual screen-reader claim. Evidence, preservation,
+design and rollback: `docs/qa/DOCUMENTS_ANNOUNCEMENTS.md`.
+
+Private preview refreshed at `http://127.0.0.1:5000/`; activity 7's four document
+screens and new Help article verified. Operational data/uploads retained; fixtures
+isolated. Local/uncommitted on `codex/ui-workflow-overhaul`; no migrations, new
+libraries, commits, pushes or deployment. UI/UX Pro Max primary + Frontend Design
+composition and established supporting skills during work. Next: review Documents,
+announcement history, an upload draft and a restored compose preview.
+
+## Current handoff: Attendance and Participant Rosters, 16 November 2026
+
+Completed analyze → design → implement → test for Coordinator rosters and staff
+registration records. Reused activity identity/navigation, replaced stacked panels
+with responsive labelled rosters, explicit recording deadlines and one page save.
+Unrecorded/Attending/Not Attended/Excused remain distinct. Locked schedules show
+text and report/correction guidance. Director registration access is preserved.
+
+Added Coordinator/campus-owned GET/POST `/workspace/activities/<id>/external/new`
+using the same external write handler/parser; legacy POSTs remain. Dedicated input
+retains ordinary values and linked validation errors; expiry rejects all writes
+and retains typed names for recovery. Existing CSV rules/mark-attending option,
+transaction checks and attendance boundaries preserved. Search/page/return context
+is retained. The existing unsaved script now serves active rosters and entry;
+attendance/entry are explicit-save forms, excluded from generic draft autosave.
+
+21 new acceptance cases and 49 existing workspace cases passed across focused runs;
+37 final Chromium groups passed, including 320–1440px, landscape, 200% text/long
+names, focus, no-JavaScript saves, validation and all schedule locks. Build, 122
+templates, syntax/contrast/whitespace and current UI audit gates passed. Existing
+plotting deprecation warnings remain. No full-suite/physical/manual-screen-reader
+claim. Analysis, design, coverage, evidence and rollback: `docs/qa/ATTENDANCE_ROSTERS.md`.
+
+Preview refreshed at `http://127.0.0.1:5000/`; four roster screens verified against
+existing Coordinator activity 7. Private data/uploads retained, fixtures isolated.
+Local/uncommitted on `codex/ui-workflow-overhaul`; no migrations, new libraries,
+operational data changes, commit/push/deploy. UI/UX Pro Max primary + Frontend Design
+composition, with established supporting skills during work. Next: review an ongoing
+activity's two rosters, dedicated entry and ended read-only presentation.
+
+## Current handoff: Notifications and Saved Drafts, 16 November 2026
+
+Completed analyze → design → implement → test for both supporting workspaces.
+Notifications now uses a divided list, explicit Read/Unread labels, All/Unread URL
+views, retained/clamped page context after read actions and matching header counts.
+Existing ownership, CSRF, guidance decoder and native POST actions remain intact.
+Action forms opt out of autosave. Drafts has clear labels, aligned Resume/Discard,
+native confirmation, pending guard and accessible failure/retry. Existing draft
+keys, resume/upload behavior and user/campus isolation retained. Both screens have
+Philippine-time timestamps, connected Help and useful empty/no-JavaScript states.
+
+34 focused regressions and 54 final Chromium groups passed across all three roles,
+320–1440px, landscape, 200% text, focus, no-JavaScript, discard retry and print.
+Build, 120 templates, script/Python checks, contrast, guidelines and antislop gates
+passed. Four older prescriptive-guidance failures are recorded separately (removed
+Admin enum/legacy route and reminder fixture expectations); no full-suite claim.
+
+Analysis, wireframes, preservation checklist, evidence, limits and scoped rollback:
+`docs/qa/NOTIFICATIONS_DRAFTS.md`. Before/after screenshots and browser JSON under
+`.qa-overhaul-temp/notifications-drafts/`. UI/UX Pro Max primary + Frontend Design
+visuals; Ponytail full and existing accessibility/audit skills applied during work.
+
+Private preview restarted at `http://127.0.0.1:5000/`; verified both screens with
+all three preview roles. Private data/uploads retained, test fixtures isolated.
+Local/uncommitted on `codex/ui-workflow-overhaul`; no migrations, new dependencies,
+operational data changes, commits, pushes or deployment. Next: review Notifications
+and Saved Drafts in each role. Preserve all earlier work and unrelated files.
+
+## Current handoff: Refined Navy Sidebar, 16 November 2026
+
+Applied approved shared navy sidebar to all roles: white selected row/navy text, gold
+accent, consistent 22px icons, quieter inactive/group text, balanced brand and grid
+account footer with readable names/campuses and separate native Log Out action.
+Consolidated earlier sizing overrides; 240px width/desktop offsets and drawer script
+preserved. Single scroll region, safe-area spacing and enlarged-phone width clamp.
+About helper/presentation mapping updated; its existing public destination retained.
+
+10 navigation/CSRF tests and 33 Chromium groups passed, including all roles/sizes,
+short-height keyboard reachability, focus trap/Escape, outside tap, 200% text/long
+labels, selected hover, offsets, public links and logout. Build, 119 templates, diff,
+contrast and current guidelines/antislop audit passed. No physical/screen-reader or
+full-suite claim. Evidence/design/rollback: `docs/qa/REFINED_SIDEBAR.md`.
+
+Private preview refreshed at `http://127.0.0.1:5000/`. Local/uncommitted on
+`codex/ui-workflow-overhaul`; no route/business-logic/schema/data/dependency changes,
+commit/push/deploy. Preserve all earlier work and unrelated files. Next: review each
+role's desktop/sidebar and phone drawer. Current skill/workflow requirements above apply.
+
+## Current handoff: Volunteer Profile Workspace, 16 November 2026
+
+Completed the approved four-phase profile redesign: compact common identity, desktop
+left section navigation, wrapping phone navigation, independent native account rows,
+photo preview, selected counts, linked preference errors, and consistent milestone
+workspace. Existing section URLs, forms, campus/security rules, archived choices,
+uploads, recommendations, measures and registration destinations preserved.
+
+User explicitly authorized one minimal backend exception after browser testing found
+an existing post-save campus draft-cleanup error. Cleanup now matches the user's
+submitted draft against its trusted previous campus, preserving other drafts/access
+checks. Isolation regression passes. No API, model, migration or calculation change.
+
+Evidence: 51 focused profile/account/archive cases passed; follow-up 42 account/
+workspace cases passed (overlapping runs). 16 profile Chromium groups passed. Build,
+119 templates, syntax/diff/contrast and current UI audit passed. Old profile tests now
+exercise the correct connected sections/registration details; supported role coverage
+preserved. No full historical-suite/physical-device/manual screen-reader claim.
+
+Analysis, design, feature checklist, artifacts, exception, limits and scoped rollback:
+`docs/qa/PROFILE_WORKSPACE.md`. Preview refreshed at `http://127.0.0.1:5000/profile`;
+Volunteer login remains `student@psu.edu` / `password`. All work local/uncommitted on
+`codex/ui-workflow-overhaul`; no push, deploy or operational database changes. Preserve
+all earlier passes/private data and unrelated DOCX. Next: review the three profile views.
+
+## Current handoff: Director Catalogue Management, 16 November 2026
+
+Added Management → Skills and Activity Categories with tabs, literal search, pagination,
+skill-to-interest forms, usage counts and Archive/Restore. General protected. Legacy
+category links redirect; old delete endpoint archives without reassigning events.
+Database mapping/active choices feed signup, profile and activity selectors. Existing
+archives can be retained in edits; forged new archive assignments rejected; drafts
+explain unavailable choices. Help/nav updated. No rename or Interest CRUD introduced.
+
+Explicit migration adds two flags, interest-skill mapping and one-time backfill marker.
+Backed up and upgraded only the private preview after dry-run, repeated upgrade and
+backup-restore rehearsal. Existing data/relationships matched. Production migration
+and publish remain separate. `docs/qa/SKILLS_CATEGORIES.md` gives commands/rollback.
+
+Verification: 34 auth/signup/catalogue cases, 11 catalogue/workflow cases, 7 activity
+cases and 10 legacy/profile follow-up cases passed across overlapping runs; 11 catalogue
+and 15 signup browser groups passed. Build, 119 templates, syntax/diff checks passed.
+Six old profile-repair layout/Admin-enum tests remain documented; no full-suite claim.
+SQLite migration verified; MySQL runtime and physical/screen-reader checks not performed.
+
+Preview refreshed at `http://127.0.0.1:5000/workspace/catalogue`. Director login remains
+`director@psu.edu` / `password`. Private uploads/mail protections retained. Local and
+uncommitted on `codex/ui-workflow-overhaul`, no commit/push/deploy. Preserve all earlier
+working changes and unrelated DOCX. Backup/evidence under `.qa-overhaul-temp/catalogue/`.
+
+## Current handoff: Compact Signup Footer, 16 November 2026
+
+Added PSU identity plus About Us and Help and Guides beneath both signup steps. Thin
+divider, natural wrapping, 44px links and no fixed positioning. Sign In unchanged.
+Build, 117 templates and 15 Chromium groups passed, including footer links/layouts.
+Phone screenshot inspected; current guideline/antislop audit passed. Evidence/rollback:
+`docs/qa/SIGNUP_ONBOARDING.md`. Private preview refreshed; all changes local/uncommitted.
+
+## Current handoff: Signup Actions and Categories, 16 November 2026
+
+Removed the interests/skills review panel as requested. Back to Interests and Skills
+now sits left and Create Account right in the final desktop action row; phones stack.
+Public signup offers Student/Faculty/Staff only, with server rejection of External
+submissions and required PSU ID/affiliation. Existing accounts/external attendance
+workflows unchanged. Drafts and step navigation preserved, including old category drafts.
+
+10 focused tests, browser signup checks, build, 117 templates, syntax/diff checks and
+current UI audit passed. Evidence and scoped rollback in `docs/qa/SIGNUP_ONBOARDING.md`.
+Preview refreshed at `http://127.0.0.1:5000/auth/register`; private data/mail protections
+retained. Local/uncommitted, no push/deployment. Earlier descriptions of external public
+signup and the named summary are superseded. Physical/screen-reader limits unchanged.
+
+## Current handoff: Two-Step Signup Workspace, 16 November 2026
+
+Redesigned interests/skills and account creation using a centered 960px workspace,
+visible step progress, compact choice rows and grouped two-column desktop fields.
+Phone layouts stack deliberately. Selected interests reveal mapped skills; Step 2
+shows selected names, dynamic category requirements, campus-dependent affiliations,
+integrated password toggles and readable policy controls. Obsolete Admin copy removed.
+
+Ordinary fields/preferences restore in the browser tab; POST values take precedence.
+No passwords, consent or tokens stored. Existing signup draft key/success cleanup
+retained; storage failures now visible. No-JS choices, campus options and complete
+registration verified. Existing routes/server auth policy/role assignment unchanged.
+
+Evidence: combined 42 focused regressions passed (2 unrelated casing assertions
+excluded), follow-up 10 signup cases passed with overlap; 14 Chromium groups passed.
+Build, 117 templates, script syntax, contrast and diff checks passed. Fixed enlarged-
+text overflow found during QA. See `docs/qa/SIGNUP_ONBOARDING.md` for full analysis,
+preservation, screenshots, current guideline audit, limitations and scoped rollback.
+
+Preview refreshed at `http://127.0.0.1:5000/auth/interests`; private data/uploads and
+suppressed mail retained. All work local/uncommitted on `codex/ui-workflow-overhaul`.
+No commit/push/deployment. Next: review both signup steps on desktop/phone. Preserve
+all earlier local passes and unrelated DOCX. No physical/manual screen-reader claim.
+
+## Current handoff: Full-Height PSU Sign In, 15 November 2026
+
+Replaced the compact photo/form card with the approved edge-to-edge 50/50 desktop
+layout. Navigation and flash messages now sit in the white workspace; below 1024px
+the image is hidden. Integrated password toggle, identifier hint and error recovery
+link. Existing auth, CSRF, safe-next, password exclusion, consent and reactivation
+behavior retained. Default auth-base blocks preserve other auth screens.
+
+Verification: build, 116 templates, diff check, measured contrast, 31 focused tests
+and 17 Chromium groups passed. Four unrelated legacy assertions remain excluded.
+Desktop/mobile before-after screenshots inspected. Full evidence, feature preservation,
+audit, limitations and scoped rollback: `docs/qa/LOGIN_FULL_HEIGHT.md`.
+
+Preview refreshed at `http://127.0.0.1:5000/auth/login`, with private data/uploads and
+suppressed mail. Work local/uncommitted on `codex/ui-workflow-overhaul`; no push or
+deployment. No physical-device/manual screen-reader/actual toolbar zoom claim.
+Next: user review of the full-height desktop and compact phone Sign In.
+
+## Current handoff: Compact Photo-Split Sign In, 15 November 2026
+
+Implemented unified 45/55 desktop photo/form frame with existing PSU photography,
+focused Sign In copy and compact phone/tablet form. Login-only body/style hooks leave
+other auth layouts intact. Preserved fields, autocomplete, CSRF, safe-next, throttling,
+password visibility, error focus, role redirects and no-JS reactivation. Updated
+reactivation wording to Director, including the success message; no auth policy changes.
+
+Verification: 31 focused authentication/recovery cases passed, four unrelated legacy
+password-policy/copy assertions deselected and documented; six auth JS tests passed;
+14 Chromium groups passed. Build, 115 templates and diff checks passed. Desktop/phone,
+landscape, 200% text, all-role email/ID login, blank passwords after errors, Escape/focus,
+no-JS and duplicate reactivation checked. Current guidelines audit: no in-scope findings.
+No physical-device/manual screen-reader or complete historical-suite claim.
+
+Design, evidence, limitations and scoped rollback: `docs/qa/LOGIN_PHOTO_SPLIT.md`.
+Screenshots: `.qa-overhaul-temp/login-photo-split/{before,after}/`. Preview refreshed at
+`http://127.0.0.1:5000/auth/login`; private data/uploads retained, mail suppressed.
+All work remains local/uncommitted on `codex/ui-workflow-overhaul`; no push/deployment.
+Preserve all prior passes and unrelated DOCX. Next: user review of desktop/phone Sign In.
+
+## Current handoff: Unified Navy Landing Footer, 15 November 2026
+
+Follow-up: compacted after user feedback. Desktop height 373px → 225px (~40% shorter),
+with wrapped inline links, smaller spacing/logo and the redundant description removed.
+All links and 44px targets remain. Existing 12-group landing browser pass/build/diff
+checks passed; evidence under `.qa-overhaul-temp/landing-footer-compact/after/`.
+
+Replaced the landing's separate Help strip and white footer with one navy section:
+PSU identity, Explore links and integrated Help, then dynamic-year/Back to Top row.
+One Help-directory link plus direct public-safe guidance articles. Back to Top is
+native and focuses navigation without JavaScript. Other public/auth/role footers and
+the restored landing/carousel remain unchanged.
+
+Design/evidence/audit/rollback: `docs/qa/LANDING_FOOTER.md`. 21 footer/landing tests,
+12 Chromium groups, 115 templates/build/diff and contrast checks passed. Before/after
+footer captures under `.qa-overhaul-temp/landing-footer/`. No physical/manual
+screen-reader testing or full historical-suite claim.
+
+Preview refreshed at `http://127.0.0.1:5000/`; private data/uploads retained, mail
+suppressed. Next: review desktop/phone footer and links. Changes stay local and
+uncommitted/unpushed. Preserve every earlier UI pass when rolling back this footer.
+
+## Current handoff: Restored Carousel Landing, 15 November 2026
+
+Restored the user-selected pre-overhaul photo-carousel composition using the remade
+landing page's wording and current data/links. Five existing photos, full-width hero,
+feature rhythm, horizontal activity cards, historical band, completed stories and
+dark Help band now use scoped compiled Tailwind. Root-route queries are unchanged.
+No old direct-join controls, obsolete copy, audited/year claims or legacy stylesheets.
+
+Six-second photo rotation has pause/resume, manual controls, keyboard/reduced-motion/
+hidden-page handling, deferred secondary photographs and a usable no-JS fallback.
+Current conditional Dashboard/Sign In and Become a Volunteer behavior remain. The
+refined signed-in header and role-based Help center are preserved.
+
+Analysis/copy mapping/audit/screenshots/verification/rollback:
+`docs/qa/LANDING_RESTORATION.md`. Evidence: 15 focused cases, 11 Chromium groups,
+115 templates, build/script/diff/contrast passed. Before/after artifacts under
+`.qa-overhaul-temp/landing-restoration/`. Full historical suite and physical/manual
+screen-reader checks were not performed; older homepage assertions are documented.
+
+Preview RUNNING at `http://127.0.0.1:5000/`, retaining existing private data/uploads and
+suppressed mail. Public and three-role live smoke passed. Next: visual review of the
+restored desktop/phone landing and carousel. Work stays local/uncommitted/unpushed;
+preserve all earlier UI passes and unrelated files. No new dependency/schema action.
+
+## Current handoff: Refined White Header, 15 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`, preserving all earlier uncommitted
+work. Signed-in header now has larger navy page identity, a short gold rule, clearer
+context, coordinated soft-blue controls and a desktop Notifications label. Phone
+controls remain accessible icon buttons. Existing header actions/extension blocks,
+unread count, sticky offsets, drawers/dialogs and print behavior are preserved.
+
+Evidence/design/audit/rollback: `docs/qa/REFINED_WHITE_HEADER.md`. Before/after captures
+under `.qa-overhaul-temp/refined-header/`: 30 browser groups, 16 focused regressions,
+115 templates, build/script/diff and contrast checks passed. Includes long labels,
+unread badge, extra actions and 200% fixtures. No physical-device/screen-reader session.
+
+Private preview refreshed at `http://127.0.0.1:5000`. Existing credentials below remain
+valid (password `password`); data/uploads retained and mail suppressed. Next: local
+visual review on desktop and phone. No new features, dependencies, migrations, commits,
+pushes or production actions. Keep rollback scoped to this header presentation pass.
+
+## Current handoff: Sticky Header and Help Center, 15 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`, preserving prior uncommitted
+Accounts/Imports and Partners/MOAs changes. Signed-in headers now remain sticky below
+drawers/dialogs, with ResizeObserver-based offsets for anchors and validation focus.
+Public/auth headers are unchanged. Print hides the application header.
+
+Help now retains the signed-in application shell and selected navigation. A reviewed
+25-topic source catalog provides role-first directories, literal search, focused
+articles, role-filtered actions/related topics, preserved q/Back, guide replay and
+task-specific info-tip links. Public topics remain accessible. The obsolete unused
+Help template with outdated attendance/cancellation instructions was removed.
+
+Evidence, source/design findings, content coverage, before/after screenshots, audit,
+limitations and scoped rollback: `docs/qa/HELP_STICKY_HEADER.md`. Final Help tests:
+16 passed. Session/UI regressions: 25 passed plus one old removed-Admin-enum fixture
+failure before application logic. Chromium: 27 groups; 115 templates/build/script/
+diff/contrast checks passed. No physical-device/manual screen-reader testing.
+
+Private preview RUNNING at `http://127.0.0.1:5000`; existing data/uploads retained and
+mail suppressed. Three-role login/Help/article smoke passed. Credentials below remain
+valid, all password `password`. Next: review Help for each role and sticky behavior
+on long pages. No new dependencies, migrations, production changes, commits or pushes.
+
+## Current handoff: Partners and MOAs, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul`, preserving the uncommitted
+Accounts/Imports work below. Partners now has dedicated agency create/edit, agency
+record, Add MOA and agreement-detail screens. Existing legacy POST and protected
+download URLs remain. Coordinator-only, own-campus permissions are unchanged.
+
+Activity creation now saves before opening Partners. In explicit creation context,
+Use This MOA validates the saved start date and merges only agreement_id into the
+existing draft, preserving uploads and other input. Current validity is separate from
+activity applicability. Old URL-key drafts resume through new forms, including uploads.
+
+Analysis, wireframes, feature preservation, screenshots, tests, current-guidelines and
+antislop gate, limitations and scoped rollback: `docs/qa/PARTNERS_MOA_JOURNEY.md`.
+Evidence: 23 focused partner cases, 51 workspace/search/submit regressions, two existing
+account-form cases; 34 partner and 60 account/import Chromium groups; 116 templates,
+build/script/diff/contrast checks. Existing plotting warnings and historical stale
+tests remain documented. No production/migration/library/commit/push actions.
+
+Private preview RUNNING at `http://127.0.0.1:5000`, retaining existing private data,
+uploads and suppressed mail. Coordinator `coordinator@psu.edu` / `password` opens
+Partners. All three role logins passed. Next: review agency records and the complete
+Create Activity → Partners → Use This MOA return path. Preserve unrelated files and
+the prior Accounts/Imports changes when rolling back this pass.
+
+## Current handoff: Accounts and Imports, 14 November 2026
+
+Implemented locally on `codex/ui-workflow-overhaul` after published baseline
+`b76a620ede55835371c021d325cd7812e615a6fa`. This pass is uncommitted/unpushed;
+the earlier publication instruction below describes that earlier snapshot.
+
+Management is grouped into Accounts, Data and Configuration. Account lists lead to
+dedicated User Record, Edit Account and Reset Password screens. Ordinary drafts,
+submitted validation values, filtered return paths and account protections remain;
+passwords never become drafts. Existing eligible deletion now handles reset tokens.
+
+All three imports use Upload → resumable/paginated Review → explicit full-file Confirm,
+with replacement/discard, private integrity/owner checks, existing importer semantics,
+and truthful source-row versus entity-count explanations. User stages remain hashed.
+
+Analysis, wireframes, preservation, QA, current-guidelines/antislop audit, screenshots,
+limitations and rollback: `docs/qa/ACCOUNTS_IMPORTS_DESIGN.md`. Evidence: 27 account/import
+and historical tests, 50 workspace/annual-import regressions, two filter/casing checks,
+60 Chromium groups, 112 compiled templates, build/script/contrast checks. Old account
+tests still use the removed Admin enum role and fail before routes; documented separately.
+
+Private preview RUNNING at `http://127.0.0.1:5000`, using existing preview data/uploads
+and suppressed mail. Director `director@psu.edu`, Coordinator `coordinator@psu.edu`,
+Volunteer `student@psu.edu`, all password `password`. Three-role login smoke passed.
+Next: local review of Management → User Accounts and Import Data. No new schema,
+libraries, production changes, migrations, commits or pushes. Preserve the unrelated DOCX.
+
 ## Branch publication instruction: 14 November 2026
 
 The user authorized committing and pushing the accumulated implementation to

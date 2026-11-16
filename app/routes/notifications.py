@@ -14,6 +14,24 @@ from sqlalchemy.orm import joinedload
 from app.reports import parse_date_range, ReportError
 
 notifications_bp = Blueprint('notifications', __name__)
+PER_PAGE = 25
+
+
+def notification_view():
+    return 'unread' if request.args.get('view') == 'unread' else 'all'
+
+
+def notification_query(view):
+    query = Notification.query.filter_by(user_id=current_user.id)
+    return query.filter_by(is_read=False) if view == 'unread' else query
+
+
+def return_to_notifications():
+    from app.pagination import page_number
+    view = notification_view()
+    total = notification_query(view).count()
+    page = min(page_number(), max(1, (total + PER_PAGE - 1) // PER_PAGE))
+    return redirect(url_for('notifications.list_notifications', view=view, page=page))
 
 
 def guidance_content(note):
@@ -58,15 +76,15 @@ def guidance_content(note):
 def list_notifications():
     from app.pagination import paginate
     from app.performance import request_value
-    pagination = paginate(Notification.query
+    view = notification_view()
+    pagination = paginate(notification_query(view)
              .options(joinedload(Notification.event))
-             .filter_by(user_id=current_user.id)
-             .order_by(Notification.created_at.desc(), Notification.id.desc()))
+             .order_by(Notification.created_at.desc(), Notification.id.desc()), per_page=PER_PAGE)
     notes = pagination.items
     unread = request_value(('unread', current_user.id), lambda: Notification.query.filter_by(
         user_id=current_user.id, is_read=False).count())
     return render_template('notifications/list.html',
-                           notifications=notes, unread=unread, pagination=pagination,
+                           notifications=notes, unread=unread, pagination=pagination, view=view,
                            guidance_content={note.id: guidance_content(note) for note in notes})
 
 
@@ -82,7 +100,8 @@ def mark_read(notification_id):
         return redirect(url_for('notifications.list_notifications'))
     note.is_read = True
     db.session.commit()
-    return redirect(url_for('notifications.list_notifications'))
+    flash('Notification marked as read.', 'success')
+    return return_to_notifications()
 
 
 @notifications_bp.route('/notifications/read-all', methods=['POST'])
@@ -93,4 +112,4 @@ def mark_all_read():
      .update({'is_read': True}))
     db.session.commit()
     flash('All notifications marked as read.', 'success')
-    return redirect(url_for('notifications.list_notifications'))
+    return return_to_notifications()

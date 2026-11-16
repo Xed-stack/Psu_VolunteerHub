@@ -1,4 +1,18 @@
 (() => {
+  const recordTime = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila', day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+  document.querySelectorAll('time[data-record-time],time[data-schedule-time]').forEach(el => {
+    const value = new Date(el.dateTime);
+    if (Number.isNaN(value.getTime())) return;
+    if (el.hasAttribute('data-schedule-time')) {
+      el.textContent = recordTime.format(value);
+      return;
+    }
+    const zone = document.createElement('span'); zone.textContent = 'Philippine Time';
+    el.replaceChildren(document.createTextNode(recordTime.format(value) + ' '), zone);
+  });
   document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click', () => window.print()));
   document.querySelector('[data-form-errors]')?.focus();
   document.querySelectorAll('input:not([autocomplete]), textarea:not([autocomplete])').forEach(el => {

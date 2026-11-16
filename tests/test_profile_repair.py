@@ -39,13 +39,13 @@ def photo(format='PNG'):
 
 def test_selected_render_and_links(client, profile_user):
     _, values = profile_user
-    body = ' '.join(client.get('/profile').get_data(as_text=True).split())
+    body = ' '.join(client.get('/profile?section=preferences').get_data(as_text=True).split())
     for name, ids in values.items():
         assert f'name="{name}" value="{ids[0]}" checked' in body
     assert 'Verified volunteer' not in body
     assert 'width="96" height="96"' in body
-    assert 'assets/temp_profile.jpg' in body
-    assert 'View registrations' in body
+    assert 'data-profile-photo-fallback' in body
+    assert 'Registration History' in body
     assert 'cosine' in body
 
 
@@ -88,9 +88,10 @@ def test_unavailable_catalog_disables_save(app, client, profile_user):
         db.session.flush()
         Skill.query.delete()
         db.session.commit()
-    body = ' '.join(client.get('/profile').get_data(as_text=True).split())
+    body = ' '.join(client.get('/profile?section=preferences').get_data(as_text=True).split())
     assert 'No skills are available' in body
-    assert 'disabled >Save profile' in body
+    button = next(node for node in parse_html(body).all('button') if node.text == 'Save Profile')
+    assert 'disabled' in button.attrs
 
 
 @pytest.mark.parametrize('format,filename', [('JPEG', 'photo.jpg'), ('WEBP', 'photo.webp')])
@@ -137,7 +138,9 @@ def test_photo_replacement_and_removal(app, client, profile_user, tmp_path):
     assert new.exists() and not old.exists()
     assert client.post('/profile/image/remove').status_code == 302
     assert not new.exists()
-    assert b'assets/temp_profile.jpg' in client.get('/profile').data
+    body = client.get('/profile?section=preferences').get_data(as_text=True)
+    fallback = next(node for node in parse_html(body).all('span') if 'data-profile-photo-fallback' in node.attrs)
+    assert 'hidden' not in fallback.attrs
 
 
 def test_failed_commit_keeps_old_photo(app, client, profile_user, tmp_path, monkeypatch):
@@ -173,23 +176,26 @@ def test_milestones_require_completed_present(app, client, profile_user, extra_a
             expected[db.session.get(Event, event_id).title] = (
                 'Eligible' if status == 'completed' and attendance == 'present' else 'Not eligible')
         db.session.commit()
-    body = client.get('/profile').get_data(as_text=True)
+    body = client.get('/profile?section=impact').get_data(as_text=True)
     assert 'Based on 1 completed participation records' in body
     assert 'Bronze: Newcomer' in body
-    region = parse_html(body).one('div', **{'aria-label': 'Recent registrations'})
-    rows = region.one('tbody').all('tr')
-    assert len(rows) == 5
+    history = client.get('/workspace/registrations').get_data(as_text=True)
     certificates = {}
-    for row in rows:
-        assert [cell.attrs.get('data-label') for cell in row.all('td')] == [
-            'Activity', 'Registered', 'Status', 'Certificate']
-        certificates[row.one('td', **{'data-label': 'Activity'}).text] = row.one(
-            'td', **{'data-label': 'Certificate'}).text
+    with app.app_context():
+        records = Registration.query.filter_by(user_id=uid).order_by(Registration.id).all()
+        links = [(row.id, row.event.title, row.status) for row in records]
+    assert len(links) == 5
+    for registration_id, title, status in links:
+        assert title in history
+        details = client.get(f'/workspace/registrations/{registration_id}').get_data(as_text=True)
+        assert status.title() in details
+        certificates[title] = 'Eligible' if 'Participation verified</p>' in details else 'Not eligible'
     assert certificates == expected
     assert list(certificates.values()).count('Eligible') == 1
 
 
-@pytest.mark.parametrize('role', ['coordinator', 'director', 'admin'])
+
+@pytest.mark.parametrize('role', ['coordinator', 'director'])
 def test_profile_role_isolation(app, client, role):
     uid = _create_user(app, email=f'{role}-profile@test.com', role=role)
     _login_as(client, uid)

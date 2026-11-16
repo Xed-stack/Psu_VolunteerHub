@@ -1,13 +1,35 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Saved Drafts · PSU Volunteer Hub{% endblock %}
-{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading('Saved Drafts', 'Resume unfinished work. Drafts are private to your account and campus.') }}<div class="panel divide-y divide-slate-200">{% for draft in drafts %}<article
-  class="flex flex-wrap items-center justify-between gap-4 py-4"
-><div><h2>{{ draft.label }}</h2><p class="text-sm text-slate-600">Last saved {{ draft.updated_at.strftime("%d %b %Y, %H:%M") }} UTC</p></div><div class="flex gap-3"><a
-  class="btn btn--primary"
-  href="{{ url_for('workspace.create_activity', step=1) if draft.key == 'activity:new' else draft.key.removeprefix('form:') }}"
->Resume</a><button
-  type="button"
-  class="btn btn--outline"
-  data-discard-draft="{{ draft.key }}"
->Discard</button></div></article>{% else %}<p>No saved drafts. Your unfinished forms appear here after autosave.</p>{% endfor %}</div>{% endblock %}
+{% from 'partials/record_time.html' import record_time with context %}
+{% block title %}Saved Drafts | PSU Volunteer Hub{% endblock %}
+{% block content %}
+<div class="inbox-workspace">
+  <header class="inbox-heading">
+    <div><h1>Saved Drafts</h1><p>{{ drafts|length }} {{ 'draft' if drafts|length == 1 else 'drafts' }}. Resume unfinished work saved to your account and campus.</p></div>
+    <a class="inbox-help" href="{{ url_for('help_page', slug='saved-drafts') }}">Draft Help</a>
+  </header>
+  <noscript><p class="inbox-notice">Resume opens your saved form. JavaScript is required to discard a draft.</p></noscript>
+  {% if drafts %}
+  <section class="inbox-list" aria-label="Saved Drafts">
+    {% for draft in drafts %}
+    <article class="inbox-row" data-draft-row aria-labelledby="draft-{{ draft.id }}">
+      <div class="inbox-row__body">
+        <h2 id="draft-{{ draft.id }}">{{ draft.label }}</h2>
+        <p class="inbox-time">Last saved {{ record_time(draft.updated_at) }}</p>
+        <p class="inbox-discard-status" id="discard-status-{{ draft.id }}" role="status" aria-live="polite" aria-atomic="true" data-discard-status></p>
+      </div>
+      <div class="inbox-row__actions">
+        <a class="btn btn--primary" href="{{ draft.resume_url }}">Resume<span class="sr-only"> {{ draft.label }}</span></a>
+        <button type="button" class="btn btn--ghost" data-discard-draft="{{ draft.key }}" aria-describedby="discard-status-{{ draft.id }}">Discard<span class="sr-only"> {{ draft.label }}</span></button>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% else %}
+  <section class="inbox-empty" aria-labelledby="drafts-empty">
+    <h2 id="drafts-empty">No Saved Drafts</h2>
+    <p>Your unfinished forms appear here after autosave. A successfully submitted form is removed from this list.</p>
+    <a class="btn btn--outline" href="{{ url_for('events.volunteer_dash' if current_user.role == 'volunteer' else 'workspace.overview') }}">{{ 'Back to Dashboard' if current_user.role == 'volunteer' else 'Back to Overview' }}</a>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

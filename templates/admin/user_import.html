@@ -5,10 +5,12 @@
 {% block content %}
 <header class="page-heading"><div><h1>Import Users</h1><p>Every row is validated before any account is created.</p></div></header>
 <section class="panel form-panel">
+  <ol class="mb-6 flex flex-wrap gap-4 text-sm" aria-label="Import Progress"><li aria-current="step"><strong>1. Upload</strong></li><li>2. Review</li><li>3. Confirm</li></ol>
+  {% if has_preview %}<p class="mb-5">A validated preview is available. <a class="underline font-semibold" href="{{ url_for('admin.import_users_csv',stage='review') }}">Resume Preview</a>. Choosing another valid file replaces it.</p>{% endif %}
   <h2>CSV User Import</h2>
   <p>Use the template. Passwords must be at least {{ password_min }} characters; exports never include password hashes.</p>
-  <p><a class="btn btn--ghost" href="{{ url_for('admin.user_import_template') }}">Download CSV template</a></p>
-  <form method="post" enctype="multipart/form-data">
+  <p><a class="btn btn--ghost" href="{{ url_for('admin.user_import_template') }}">Download CSV Template</a></p>
+  <form method="post" enctype="multipart/form-data" data-no-draft>
     {% include 'partials/csrf_field.html' %}
     <label class="field"><span class="field-label">CSV File</span><input class="input" type="file" name="file" accept=".csv,text/csv" required></label>
     <div class="form-actions"><a class="btn btn--ghost" href="{{ url_for('workspace.imports') }}">Back to Imports</a><button class="btn btn--primary" type="submit">Validate and Preview</button></div>

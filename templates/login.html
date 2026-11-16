@@ -1,31 +1,44 @@
 {% extends 'layouts/auth_base.html' %}
-{% from 'partials/auth_forms.html' import brand with context %}
-{% block title %}Sign in | PSU Volunteer Hub{% endblock %}
+{% block title %}Sign In · PSU Volunteer Hub{% endblock %}
+{% block auth_page_class %} login-page{% endblock %}
+{% block auth_theme_color %}#ffffff{% endblock %}
+{% block auth_navigation %}{% endblock %}
+{% block auth_messages %}{% endblock %}
 {% block body %}
-  <main class="auth-shell" id="main-content" tabindex="-1">
-    {{ brand('Serve with Purpose.', 'Connect your service with the communities that need it.') }}
-    <section class="auth-form" aria-labelledby="login-title">
+  <main class="auth-shell login-shell" id="main-content" tabindex="-1">
+    <figure class="login-photo">
+      <img src="{{ url_for('static',filename='assets/FB_IMG_1788789005999.jpg') }}" alt="PSU volunteers gathered during a coastal cleanup" width="2048" height="1536" fetchpriority="high" decoding="async">
+      <figcaption>Service starts with people working together.</figcaption>
+    </figure>
+    <div class="login-workspace">
+      {% include 'partials/auth_nav.html' %}
+      {% include 'partials/flash_messages.html' %}
+      <section class="auth-form login-form" aria-labelledby="login-title">
+      <div class="login-form__content">
       <header class="auth-form__heading">
         <h1 id="login-title">Sign In</h1>
-        <p>Access your university volunteer portal.</p>
+        <p>Access your PSU Volunteer Hub account.</p>
       </header>
       {% if form_error %}
-        <div class="auth-errors" tabindex="-1" data-error-summary>
+        <div class="auth-errors" role="alert" tabindex="-1" data-error-summary>
           <p id="login-error">{{ form_error }}</p>
+          <a href="{{ url_for('auth.forgot_password') }}">Recover Your Password</a>
         </div>
       {% endif %}
-      <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post">
+      <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post" data-no-draft>
         {% include 'partials/csrf_field.html' %}
         <div class="field">
           <label for="identifier">Email or ID Number <span aria-hidden="true">*</span></label>
           <input class="input" id="identifier" name="identifier" required
             autocomplete="username" spellcheck="false" autocapitalize="none"
             value="{{ request.form.get('identifier', '') }}"
-            {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
+            aria-describedby="identifier-help{% if form_error %} login-error{% endif %}"
+            {% if form_error %}aria-invalid="true"{% endif %}>
+          <p class="login-field-help" id="identifier-help">Use your email address or PSU ID number.</p>
         </div>
         <div class="field">
           <label for="password">Password <span aria-hidden="true">*</span></label>
-          <div class="password-input">
+          <div class="password-input login-password">
             <input class="input" id="password" type="password" name="password" required autocomplete="current-password"
               {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
             <button class="button button--secondary" type="button" data-toggle-password="password" aria-controls="password" aria-label="Show Password" aria-pressed="false" hidden>Show</button>
@@ -34,24 +47,26 @@
         <a class="auth-text-link auth-forgot" href="{{ url_for('auth.forgot_password') }}">Forgot Your Password?</a>
         <button class="button button--primary button--block" type="submit">Sign In</button>
       </form>
-      <p class="auth-switch">New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an account</a></p>
-    </section>
+      <p class="auth-switch">New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an Account</a></p>
+      </div>
+      </section>
+    </div>
   </main>
   {% if show_reactivation_modal %}
     <dialog class="auth-modal" aria-labelledby="reactivation-title" aria-describedby="reactivation-description" data-auto-open>
       <div class="auth-modal__card">
         <h2 id="reactivation-title">Account Deactivated</h2>
-        <p id="reactivation-description">Your account is currently deactivated. You can ask an administrator to review and reactivate it.</p>
+        <p id="reactivation-description">Your account is currently deactivated. You can ask the Director to review and reactivate it.</p>
         <form method="post" action="{{ url_for('auth.request_reactivation') }}">
           {% include 'partials/csrf_field.html' %}
-          <button class="button button--primary button--block" type="submit" autofocus>Request Reactivation</button>
+          <button class="button button--primary button--block" type="submit">Request Reactivation</button>
         </form>
         <a class="auth-text-link" href="{{ url_for('auth.login') }}">Return to Sign In</a>
       </div>
     </dialog>
     <noscript>
       <section class="auth-notice" aria-label="Account Deactivated">
-        <p>Your account is deactivated. You can request an administrator's review.</p>
+        <p>Your account is deactivated. You can request the Director’s review.</p>
         <form method="post" action="{{ url_for('auth.request_reactivation') }}">
           {% include 'partials/csrf_field.html' %}
           <button class="button button--primary" type="submit">Request Reactivation</button>

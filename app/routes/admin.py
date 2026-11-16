@@ -14,6 +14,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, abort, Response, current_app, session)
 from flask_login import login_required, current_user, logout_user
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
 from app.models import db
 from app.models.user import User, SystemSetting, VolunteerProfile, PasswordResetToken
 from app.models.event import ActivityCategory, Campus, Event
@@ -66,6 +67,9 @@ def _sync_volunteer_profile(user, old_role=None):
 
 
 def _admin_redirect(tab='users'):
+    from app.ui import back_url
+    if request.args.get('return_to'):
+        return redirect(back_url('admin.admin_dash', tab=tab))
     return redirect(url_for('admin.admin_dash', tab=tab))
 
 
@@ -216,6 +220,8 @@ def delete_expired_user(user_id):
         abort(403)
     profile_image = user.profile_image_path
     log_activity('user_deleted', user, {'name': user.name})
+    for token in user.password_reset_tokens:
+        db.session.delete(token)
     db.session.delete(user)
     db.session.commit()
     if profile_image:
@@ -230,59 +236,16 @@ def delete_expired_user(user_id):
 @login_required
 @roles_required('director', 'admin')
 def create_category():
-    name = ' '.join(request.form.get('name', '').split())
-    if not name:
-        flash('Category name is required.', 'error')
-    elif len(name) > 50:
-        flash('Category names must be 50 characters or fewer.', 'error')
-    elif ActivityCategory.query.filter(
-            db.func.lower(ActivityCategory.name) == name.lower()).first():
-        flash('That category already exists.', 'error')
-    else:
-        category = ActivityCategory(name=name)
-        db.session.add(category)
-        db.session.flush()
-        log_activity('category_created', category, {'name': name})
-        db.session.commit()
-        flash(f'{name} category created.', 'success')
-    return redirect(url_for('admin.admin_dash', tab='users', category_page=request.form.get('category_page', 1, type=int)))
+    from app.routes.catalogue import category_create
+    return category_create()
 
 
 @admin_bp.route('/admin/categories/<int:category_id>/delete', methods=['POST'])
 @login_required
 @roles_required('director', 'admin')
 def delete_category(category_id):
-    category = db.session.get(ActivityCategory, category_id)
-    if category is None:
-        abort(404)
-    if category.name == 'General':
-        flash('The General category cannot be removed.', 'error')
-        return _admin_redirect()
-    events = Event.query.filter_by(category=category.name).all()
-    for event in events:
-        event.category = 'General'
-        title = f'Category changed: {event.title}'
-        message = (f'The {category.name} category was removed. Your activity '
-                   'was changed to General; please choose a new category.')
-        if event.created_by_id:
-            db.session.add(Notification(
-                user_id=event.created_by_id, title=title, message=message,
-                notification_type='category_changed', related_event_id=event.id))
-        else:
-            coordinators = User.query.filter_by(
-                role='coordinator', campus_id=event.campus_id,
-                _is_active=True).all()
-            for coordinator in coordinators:
-                db.session.add(Notification(
-                    user_id=coordinator.id, title=title, message=message,
-                    notification_type='category_changed', related_event_id=event.id))
-    db.session.delete(category)
-    log_activity('category_deleted', category,
-                 {'name': category.name, 'events_reassigned': len(events)})
-    db.session.commit()
-    flash(f'{category.name} removed; {len(events)} activities moved to General.',
-          'success')
-    return _admin_redirect()
+    from app.routes.catalogue import change_state
+    return change_state('categories', category_id, 'archive')
 
 
 @admin_bp.route('/admin/users/role/<int:user_id>', methods=['POST'])
@@ -332,28 +295,26 @@ def create_user():
         volunteer_type = request.form.get('volunteer_type', '').strip() or None
         college_affiliation = request.form.get(
             'college_affiliation', '').strip() or None
-        errors = []
+        errors = {}
         if role == 'coordinator' and (not campus_id or not db.session.get(Campus, campus_id)):
-            errors.append('A coordinator must have a valid campus.')
+            errors['campus_id'] = 'A coordinator must have a valid campus.'
         if not name:
-            errors.append('Name is required.')
+            errors['name'] = 'Name is required.'
         if not email:
-            errors.append('Email is required.')
+            errors['email'] = 'Email is required.'
         password_min = _setting_int('default_password_length', 8, 8)
         password_message = password_error(password, password_min)
         if password_message:
-            errors.append(password_message)
+            errors['password'] = password_message
         if User.query.filter_by(email=email).first():
-            errors.append('Email already exists.')
+            errors['email'] = 'Email already exists.'
         if id_number and User.query.filter_by(id_number=id_number).first():
-            errors.append('PSU ID already exists.')
+            errors['id_number'] = 'PSU ID already exists.'
         if errors:
-            for e in errors:
-                flash(e, 'error')
             return render_template('admin/admin_user_form.html', user=None,
                                    campuses=campuses,
                                    college_affiliations=affiliations,
-                                   password_min=password_min)
+                                   password_min=password_min, errors=errors)
         user = User(name=name, email=email, role=role, campus_id=campus_id,
                     id_number=id_number, volunteer_type=volunteer_type,
                     college_affiliation=college_affiliation)
@@ -368,12 +329,27 @@ def create_user():
         log_activity('user_created', user, {'role': role})
         db.session.commit()
         flash(f'User {name} created successfully.', 'success')
-        return redirect(url_for('admin.admin_dash'))
+        from app.ui import linked_url
+        return redirect(linked_url('admin.user_detail', user_id=user.id))
     return render_template('admin/admin_user_form.html', user=None,
                            campuses=campuses,
                            college_affiliations=affiliations,
                            password_min=_setting_int(
                                'default_password_length', 8, 8))
+
+
+@admin_bp.route('/admin/users/<int:user_id>')
+@login_required
+@roles_required('director', 'admin')
+def user_detail(user_id):
+    user = db.get_or_404(User, user_id)
+    eligible_at = (user.deactivated_at or user.created_at) + timedelta(days=30)
+    return render_template('admin/user_detail.html', user=user,
+                           eligible_at=eligible_at,
+                           deletion_eligible=not user.is_active and eligible_at <= datetime.utcnow(),
+                           protected=user.id == current_user.id or (
+                               user.is_active and user.role in ('director', 'admin')
+                               and _active_admin_count() <= 1))
 
 
 @admin_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -386,33 +362,39 @@ def edit_user(user_id):
     campuses = campus_query().order_by(Campus.name).all()
     affiliations = _college_affiliations()
     if request.method == 'POST':
-        user.name = request.form.get('name', user.name).strip()
-        user.email = request.form.get('email', user.email).strip()
+        name = request.form.get('name', user.name).strip()
+        email = request.form.get('email', user.email).strip()
         submitted_id = request.form.get('id_number', '').strip() or None
         duplicate_id = User.query.filter(
             User.id_number == submitted_id, User.id != user.id).first()
+        errors = {}
+        if not name:
+            errors['name'] = 'Name is required.'
+        if not email:
+            errors['email'] = 'Email is required.'
+        elif User.query.filter(User.email == email, User.id != user.id).first():
+            errors['email'] = 'Email already exists.'
         if submitted_id and duplicate_id:
-            flash('PSU ID already exists.', 'error')
-            return redirect(url_for('admin.edit_user', user_id=user.id))
-        user.id_number = submitted_id
-        user.volunteer_type = request.form.get(
-            'volunteer_type', '').strip() or None
-        user.college_affiliation = request.form.get(
-            'college_affiliation', '').strip() or None
+            errors['id_number'] = 'PSU ID already exists.'
         new_role = request.form.get('role', user.role)
         if new_role not in ('volunteer', 'coordinator', 'director'):
             abort(400)
-        campus_id = request.form.get('campus_id', user.campus_id, type=int)
+        campus_id = request.form.get('campus_id', type=int) if 'campus_id' in request.form else user.campus_id
         if new_role == 'coordinator' and (not campus_id or not db.session.get(Campus, campus_id)):
-            abort(400)
+            errors['campus_id'] = 'A coordinator must have a valid campus.'
         if (user.role in ('director', 'admin') and new_role not in ('director', 'admin')
                 and user.is_active and _active_admin_count() <= 1):
-            flash('The final active Director cannot be demoted.', 'error')
-            return redirect(url_for('admin.edit_user', user_id=user.id))
+            errors['role'] = 'The final active Director cannot be demoted.'
+        if errors:
+            return render_template('admin/admin_user_form.html', user=user,
+                                   campuses=campuses, college_affiliations=affiliations,
+                                   errors=errors, password_min=_setting_int('default_password_length', 8, 8))
+        user.name, user.email, user.id_number = name, email, submitted_id
+        user.volunteer_type = request.form.get('volunteer_type', '').strip() or None
+        user.college_affiliation = request.form.get('college_affiliation', '').strip() or None
         old_role = user.role
         user.role = new_role
-        user.campus_id = request.form.get(
-            'campus_id', user.campus_id, type=int)
+        user.campus_id = campus_id
         _sync_volunteer_profile(user, old_role)
         log_activity('user_updated', user,
                      {'role_from': old_role, 'role_to': new_role})
@@ -420,7 +402,8 @@ def edit_user(user_id):
         flash(f'User {user.name} updated.', 'success')
         if user.id == current_user.id and old_role != new_role:
             return redirect(url_for('dashboard'))
-        return redirect(url_for('admin.admin_dash'))
+        from app.ui import back_url
+        return redirect(back_url('admin.user_detail', user_id=user.id))
     return render_template('admin/admin_user_form.html', user=user,
                            campuses=campuses,
                            college_affiliations=affiliations,
@@ -428,23 +411,24 @@ def edit_user(user_id):
                                'default_password_length', 8, 8))
 
 
-@admin_bp.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_bp.route('/admin/users/<int:user_id>/reset-password', methods=['GET', 'POST'])
 @login_required
 @roles_required('director', 'admin')
 def reset_password(user_id):
     user = db.session.get(User, user_id)
     if user is None:
         abort(404)
+    password_min = _setting_int('default_password_length', 8, 8)
+    if request.method == 'GET':
+        return render_template('admin/reset_password.html', user=user, password_min=password_min)
     new_password = request.form.get('new_password', '')
     confirm_password = request.form.get('confirm_password')
     password_min = _setting_int('default_password_length', 8, 8)
     password_message = password_error(new_password, password_min)
     if password_message:
-        flash(password_message, 'error')
-        return redirect(url_for('admin.admin_dash'))
+        return render_template('admin/reset_password.html', user=user, password_min=password_min, error=password_message)
     if confirm_password is not None and new_password != confirm_password:
-        flash('The password confirmation does not match.', 'error')
-        return redirect(url_for('admin.edit_user', user_id=user.id))
+        return render_template('admin/reset_password.html', user=user, password_min=password_min, error='The password confirmation does not match.')
     user.set_password(new_password)
     user.auth_version += 1
     PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
@@ -457,7 +441,8 @@ def reset_password(user_id):
         flash('Your password was reset. Sign in again with your new password.', 'success')
         return redirect(url_for('auth.login'))
     flash(f'Password reset for {user.name}.', 'success')
-    return redirect(url_for('admin.admin_dash'))
+    from app.ui import back_url
+    return redirect(back_url('admin.user_detail', user_id=user.id))
 
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
@@ -654,37 +639,53 @@ def manage_policy(document):
 @login_required
 @roles_required('director', 'admin')
 def import_users_csv():
+    from app.import_previews import staged_file, discard, save, page_rows
+    slot = 'user_import_preview'
     password_min = _setting_int('default_password_length', 8, 8)
+    if request.method == 'POST' and request.form.get('action') == 'discard':
+        staged_file(slot, verify_token=True)
+        discard(slot)
+        flash('Import preview discarded. No accounts were created.', 'success')
+        return redirect(url_for('admin.import_users_csv'))
     if request.method == 'POST' and request.form.get('action') == 'confirm':
-        import secrets
-        from pathlib import Path
-        staged = session.get('user_import_preview')
-        if not staged or not secrets.compare_digest(staged['token'], request.form.get('token', '')):
-            abort(400)
-        path = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'import-previews' / Path(staged['file']).name
-        if not path.is_file():
-            abort(400)
+        staged, path = staged_file(slot, verify_token=True)
         rows = json.loads(path.read_text(encoding='utf-8'))
-        if any(User.query.filter_by(email=row['email']).first() or
+        if staged.get('password_min', password_min) != password_min:
+            flash('The password policy changed after preview. Upload and validate the file again.', 'error')
+            return redirect(url_for('admin.import_users_csv'))
+        if any(User.query.filter(db.func.lower(User.email) == row['email'].lower()).first() or
                (row['id_number'] and User.query.filter_by(id_number=row['id_number']).first()) for row in rows):
             flash('Accounts changed after preview. Upload and validate the file again.', 'error')
             return redirect(url_for('admin.import_users_csv'))
-        for row in rows:
-            user = User(name=row['name'], email=row['email'], role=row['role'], campus_id=row['campus_id'],
-                        id_number=row['id_number'] or None, volunteer_type=row['volunteer_type'] or None,
-                        college_affiliation=row['college_affiliation'] or None, password_hash=row['password_hash'])
-            db.session.add(user)
-            db.session.flush()
-            if user.role == 'volunteer':
-                db.session.add(VolunteerProfile(user_id=user.id))
-            log_activity('user_imported', user, {'role': user.role})
-        db.session.commit()
+        if any(row['role'] not in ('volunteer', 'coordinator', 'director') or
+               (row['campus_id'] and not db.session.get(Campus, row['campus_id'])) or
+               (row['role'] == 'coordinator' and not row['campus_id']) for row in rows):
+            abort(400)
+        try:
+            for row in rows:
+                user = User(name=row['name'], email=row['email'], role=row['role'], campus_id=row['campus_id'],
+                            id_number=row['id_number'] or None, volunteer_type=row['volunteer_type'] or None,
+                            college_affiliation=row['college_affiliation'] or None, password_hash=row['password_hash'])
+                db.session.add(user)
+                db.session.flush()
+                if user.role == 'volunteer':
+                    db.session.add(VolunteerProfile(user_id=user.id))
+                log_activity('user_imported', user, {'role': user.role})
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('Accounts changed during confirmation. No accounts were imported. Upload and validate the file again.', 'error')
+            return redirect(url_for('admin.import_users_csv'))
         path.unlink()
         session.pop('user_import_preview', None)
         flash(f'{len(rows)} user account(s) imported.', 'success')
         return redirect(url_for('admin.admin_dash'))
     if request.method == 'GET':
-        return render_template('admin/user_import.html', password_min=password_min)
+        if request.args.get('stage') == 'review':
+            staged, path = staged_file(slot)
+            rows = json.loads(path.read_text(encoding='utf-8'))
+            return render_template('workspace/user_import_preview.html', token=staged['token'], **page_rows(rows))
+        return render_template('admin/user_import.html', password_min=password_min, has_preview=bool(session.get(slot)))
 
     upload = request.files.get('file')
     if not upload or not upload.filename:
@@ -745,18 +746,12 @@ def import_users_csv():
         flash('The CSV contains no user rows.', 'warning')
         return redirect(url_for('admin.import_users_csv'))
 
-    import secrets
-    from pathlib import Path
     from werkzeug.security import generate_password_hash
     for row in rows:
         row['password_hash'] = generate_password_hash(row.pop('password'))
-    folder = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'import-previews'
-    folder.mkdir(parents=True, exist_ok=True)
-    filename = secrets.token_hex(24) + '.json'
-    (folder / filename).write_text(json.dumps(rows), encoding='utf-8')
-    token = secrets.token_urlsafe(32)
-    session['user_import_preview'] = {'token': token, 'file': filename}
-    return render_template('workspace/user_import_preview.html', rows=rows, token=token)
+    staged = save(slot, json.dumps(rows).encode('utf-8'), '.json')
+    session[slot] = dict(staged, password_min=password_min)
+    return redirect(url_for('admin.import_users_csv', stage='review'))
 
 
 @admin_bp.route('/admin/backup')

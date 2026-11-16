@@ -1,4 +1,4 @@
-{% from 'partials/info_tip.html' import info_tip %}
+{% from 'partials/info_tip.html' import info_tip with context %}
 
 {% macro heading(title, explanation, context='', level=2) -%}
   <header class="panel__header"><div class="panel__heading">

@@ -27,7 +27,7 @@ import time
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 _recovery_delivery_slots = threading.BoundedSemaphore(4)
 
-VOLUNTEER_TYPES = {'student', 'faculty', 'staff', 'external'}
+VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}
 SEXES = {'male', 'female', 'prefer_not_to_say'}
 AUTH_LIMITS = {'login': (5, timedelta(minutes=15)),
                'register': (5, timedelta(hours=1)),
@@ -200,63 +200,33 @@ def request_reactivation():
             notification_type='reactivation_request'))
     db.session.commit()
     session.pop('reactivation_user_id', None)
-    flash('Your reactivation request has been sent to an administrator.', 'success')
+    flash('Your reactivation request has been sent to the Director.', 'success')
     return redirect(url_for('auth.login'))
 
 
 @auth_bp.route('/interests', methods=['GET', 'POST'])
 def interests():
     """Onboarding step 1: pick interests; connected skills reveal inline."""
-    from config import Config
-    interest_skill_map = getattr(Config, 'INTEREST_SKILL_MAP', {})
+    from app.catalogue import signup_catalogue, signup_selections
     errors = {}
-    selections_required = bool(Interest.query.first() and Skill.query.first())
-
+    interests_data = signup_catalogue()
+    selections_required = bool(interests_data)
     if request.method == 'POST':
-        selected_interests = Interest.query.filter(
-            Interest.id.in_(request.form.getlist('interests')),
-            Interest.name.in_(interest_skill_map),
-        ).all()
-        selected_interest_ids = [str(interest.id) for interest in selected_interests]
-        allowed_skill_names = {
-            skill_name
-            for interest in selected_interests
-            for skill_name in interest_skill_map.get(interest.name, [])
-        }
-        allowed_skill_ids = {
-            str(skill.id)
-            for skill in Skill.query.filter(Skill.name.in_(allowed_skill_names)).all()
-        }
-        session['selected_interests'] = selected_interest_ids
-        session['selected_skills'] = [
-            skill_id for skill_id in request.form.getlist('skills')
-            if skill_id in allowed_skill_ids
-        ]
-        # Match final registration's existing catalogue-dependent requirements.
+        chosen, skills = signup_selections(request.form.getlist('interests'), request.form.getlist('skills'))
+        session['selected_interests'] = [str(row.id) for row in chosen]
+        session['selected_skills'] = [str(row.id) for row in skills]
         if selections_required:
-            if not selected_interest_ids:
+            if not chosen:
                 errors['interests'] = 'Select at least one interest.'
-            if not session['selected_skills']:
+            if not skills:
                 errors['skills'] = 'Select at least one skill.'
         if not errors:
             return redirect(url_for('auth.register'))
 
-    configured_names = list(interest_skill_map)
-    all_interests = Interest.query.filter(
-        Interest.name.in_(configured_names)
-    ).order_by(Interest.name).all()
-    interests_data = []
-    for interest in all_interests:
-        skill_names = interest_skill_map.get(interest.name, [])
-        connected = (
-            Skill.query.filter(Skill.name.in_(skill_names)).all()
-            if skill_names else []
-        )
-        interests_data.append({'interest': interest, 'skills': connected})
-
     return render_template(
         'interests.html', interests_data=interests_data, errors=errors,
         selections_required=selections_required,
+        archived_skills={str(row.id):row.name for row in Skill.query.filter_by(is_active=False).all()},
         selected_interests=session.get('selected_interests', []),
         selected_skills=session.get('selected_skills', []))
 
@@ -340,13 +310,13 @@ def register():
                 and password != password_confirmation):
             errors['password_confirmation'] = 'Password confirmation does not match.'
 
-        if not id_number and volunteer_type != 'external':
+        if not id_number:
             errors['id_number'] = 'PSU ID Number is required for volunteers.'
         if volunteer_type not in VOLUNTEER_TYPES:
-            errors['volunteer_type'] = 'Select Student, Faculty, Staff, or External.'
+            errors['volunteer_type'] = 'Select Student, Faculty, or Staff.'
         if sex not in SEXES:
             errors['sex'] = 'Select a sex response.'
-        if not college_affiliation and volunteer_type != 'external':
+        if not college_affiliation:
             errors['college_affiliation'] = 'College affiliation is required.'
         if active_terms and request.form.get('terms_accepted') != 'on':
             errors['terms_accepted'] = 'You must accept the current Terms of Use.'
@@ -364,18 +334,20 @@ def register():
         campus_obj = official_campus(campus_id) if campus_id else None
         if campus_obj is None:
             errors['campus'] = 'Select a valid PSU campus.'
-        elif volunteer_type != 'external' and college_affiliation not in campus_affiliations(campus_obj):
+        elif college_affiliation not in campus_affiliations(campus_obj):
             errors['college_affiliation'] = 'Select a College Affiliation for the selected campus.'
 
         selected_interest_ids = request.form.getlist('interests') or session.get(
             'selected_interests', [])
         selected_skill_ids = request.form.getlist('skills') or session.get(
             'selected_skills', [])
-        if interests and skills:
-            if not selected_interest_ids:
-                errors['interests'] = 'Select at least one interest.'
-            if not selected_skill_ids:
-                errors['skills'] = 'Select at least one skill.'
+        from app.catalogue import signup_catalogue, signup_selections
+        chosen_interests, chosen_skills = signup_selections(selected_interest_ids, selected_skill_ids)
+        if signup_catalogue() or selected_interest_ids or selected_skill_ids:
+            if not chosen_interests or len(chosen_interests) != len(set(map(str, selected_interest_ids))):
+                errors['interests'] = 'Select at least one interest.' if not selected_interest_ids else 'Select available interests again before creating your account.'
+            if not chosen_skills or len(chosen_skills) != len(set(map(str, selected_skill_ids))):
+                errors['skills'] = 'Select at least one skill.' if not selected_skill_ids else 'Select available skills for your interests again before creating your account.'
 
         if errors:
             _record_attempt('register', email)

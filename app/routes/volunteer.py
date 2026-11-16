@@ -13,11 +13,12 @@ import uuid
 from pathlib import Path
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
-                   flash, current_app, session)
+                   flash, current_app, session, g)
 from flask_login import login_required, current_user
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 from app.models import db
+from app.catalogue import skill_choices
 from app.models.user import (VolunteerProfile, Skill, Interest, User,
                              AuthSecurityEvent, PasswordResetToken)
 from app.models.event import Registration, Event, Attendance
@@ -148,6 +149,8 @@ def profile_page():
         ):
             try:
                 selections[name] = _selected_records(model, values)
+                if name == 'skills' and any(not row.is_active and row not in current_user.skills for row in selections[name]):
+                    raise ValueError('Choose available skills. Archived skills can only be retained if already assigned to you.')
             except ValueError as exc:
                 errors[name] = str(exc)
         image = request.files.get('profile_image')
@@ -264,7 +267,7 @@ def _render_profile(errors=None, selected_skills=None, selected_interests=None,
         password_min=password_min_length(),
         selected_skills=selected_skills,
         selected_interests=selected_interests,
-        skill_catalog=Skill.query.order_by(Skill.name).all(),
+        skill_catalog=skill_choices(current_user.skills),
         interest_catalog=Interest.query.order_by(Interest.name).all(),
     ), status
 
@@ -314,6 +317,7 @@ def change_campus():
         errors['college_affiliation'] = 'Select a college for the chosen campus.'
     if errors:
         return _account_failure('campus', errors, dict(campus_id=value, college_affiliation=college))
+    g.profile_previous_campus_id = current_user.campus_id
     return _save_account('campus', dict(campus_id=campus.id, college_affiliation=college),
                          dict(campus_from=current_user.campus_id, campus_to=campus.id))
 

@@ -1,0 +1,20 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}User Record · PSU Volunteer Hub{% endblock %}
+{% block content %}
+<a class="activity-back mb-4" href="{{ back_url('admin.admin_dash') }}">Back to Users</a>
+<header class="page-heading"><div><p class="text-sm font-semibold text-psu">User Record</p><h1>{{ user.name }}</h1><p class="break-words">{{ user.email }}</p></div><a class="btn btn--primary" href="{{ linked_url('admin.edit_user',user_id=user.id) }}">Edit Account</a></header>
+<div class="grid gap-6 lg:grid-cols-3">
+<section class="panel lg:col-span-2" aria-labelledby="identity"><h2 id="identity">Account Details</h2>
+<dl class="mt-5 grid gap-5 sm:grid-cols-2">
+{% for label,value in [('Status','Active' if user.is_active else 'Deactivated'),('Role','Director' if user.role == 'admin' else user.role|title),('Campus',user.campus.name if user.campus else none),('PSU ID',user.id_number),('Volunteer Category',user.volunteer_type|title if user.volunteer_type else none),('College Affiliation',user.college_affiliation)] %}
+<div class="min-w-0"><dt class="text-sm text-slate-600">{{ label }}</dt><dd class="mt-1 break-words font-semibold">{{ value or 'Not recorded' }}</dd></div>{% endfor %}
+</dl></section>
+<section class="panel" aria-labelledby="access"><h2 id="access">Account Access</h2><p class="my-4 text-slate-600">Resetting a password signs out this account’s existing sessions.</p><a class="btn btn--outline" href="{{ linked_url('admin.reset_password',user_id=user.id) }}">Reset Password</a>
+{% if user.is_active %}
+{% if protected %}<p class="mt-5 text-sm text-slate-600">Your own account and the final active Director cannot be deactivated.</p>{% else %}
+<form method="post" action="{{ url_for('admin.deactivate_user',user_id=user.id,return_to=back_url('admin.admin_dash')) }}" class="mt-5" data-no-draft data-confirm="Deactivate this account? They will be unable to sign in.">{% include 'partials/csrf_field.html' %}<button class="btn btn--danger">Deactivate Account</button></form>{% endif %}
+{% else %}<p class="my-5 text-sm">Deactivated {{ (user.deactivated_at or user.created_at).strftime('%B %d, %Y') }} (UTC).{% if user.reactivation_requested_at %} Reactivation requested.{% endif %}</p>
+<form method="post" action="{{ url_for('admin.reactivate_user',user_id=user.id,return_to=back_url('admin.admin_dash',tab='deactivated')) }}" data-no-draft>{% include 'partials/csrf_field.html' %}<button class="btn btn--outline">Reactivate Account</button></form>
+<div class="mt-6 border-t border-slate-200 pt-5"><h3>Permanent Deletion</h3>{% if deletion_eligible and user.id != current_user.id %}<p class="my-3 text-sm">This account is eligible for permanent deletion. This action cannot be undone.</p><form method="post" action="{{ url_for('admin.delete_expired_user',user_id=user.id,return_to=back_url('admin.admin_dash',tab='deactivated')) }}" data-no-draft data-confirm="Permanently delete this account? This cannot be undone.">{% include 'partials/csrf_field.html' %}<button class="btn btn--danger">Delete Account</button></form>{% else %}<p class="mt-3 text-sm text-slate-600">Eligible after {{ eligible_at.strftime('%B %d, %Y') }} (UTC), 30 days after deactivation.</p>{% endif %}</div>
+{% endif %}</section></div>
+{% endblock %}

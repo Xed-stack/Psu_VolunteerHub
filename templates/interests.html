@@ -1,23 +1,22 @@
-{% extends 'layouts/auth_base.html' %}
-{% from 'partials/auth_forms.html' import brand, error_summary with context %}
+{% extends 'layouts/onboarding_base.html' %}
+{% from 'partials/auth_forms.html' import error_summary with context %}
+{% set onboarding_step = 1 %}
 {% block title %}Choose Interests | PSU Volunteer Hub{% endblock %}
-{% block body %}
-  <main class="auth-shell auth-shell--signup" id="main-content" tabindex="-1">
-    {{ brand('What Matters to You?', 'Choose your causes and the skills you can contribute to the PSU volunteer community.') }}
+{% block onboarding_content %}
     <section class="auth-form">
       <header class="auth-form__heading">
-        <p class="auth-step">Step 1 of 2 · Volunteer interests</p>
         <h1>Select Interests and Skills</h1>
-        <p id="preferences-hint">{% if selections_required %}Choose at least one interest and one related skill. {% endif %}Your selections help us recommend relevant volunteer opportunities.</p>
+        <p id="preferences-hint">{% if selections_required %}Choose at least one interest and one related skill. {% endif %}Your selections help us recommend relevant activities.</p>
       </header>
       {{ error_summary(errors, preferences=true) }}
-      <form action="{{ url_for('auth.interests') }}" method="post">
+      <form action="{{ url_for('auth.interests') }}" method="post" data-onboarding-preferences data-warn-unsaved="false">
         {% include 'partials/csrf_field.html' %}
+        <p class="onboarding-selection-count" role="status" data-selection-count hidden></p>
         <div class="choice-grid" id="preferences" tabindex="-1" aria-describedby="preferences-hint">
           {% for item in interests_data %}
             {% set interest = item.interest %}
             <fieldset class="choice-group">
-              <legend>
+              <legend class="sr-only">{{ interest.name }}</legend>
                 <label class="choice choice--interest">
                   <input
                     id="interest-{{ interest.id }}"
@@ -32,7 +31,6 @@
                     <span class="choice__state" aria-hidden="true">Selected</span>
                   </span>
                 </label>
-              </legend>
 
               {% if item.skills %}
                 <div
@@ -70,5 +68,5 @@
         </div>
       </form>
     </section>
-  </main>
+    <script type="application/json" id="onboarding-archived-skills">{{ archived_skills|default({})|tojson }}</script>
 {% endblock %}

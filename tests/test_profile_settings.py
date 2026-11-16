@@ -215,3 +215,23 @@ def test_csrf_is_required(app, client, member):
     app.config['WTF_CSRF_ENABLED'] = True
     for endpoint in ('name', 'campus', 'password'):
         assert client.post('/profile/'+endpoint).status_code == 400
+
+
+def test_campus_save_clears_only_the_submitted_previous_campus_draft(app,client,member):
+    from app.models.workspace import FormDraft
+    other=_create_user(app,email='other-draft@example.test',campus_id=1)
+    with app.app_context():
+        campus=next(row for row in campus_rows() if row.id!=1)
+        values=dict(campus_id=campus.id,college_affiliation=campus_affiliations(campus)[0],_draft_key='form:/profile?draft_form=campus')
+        db.session.add_all([
+            FormDraft(user_id=member,campus_id=1,key=values['_draft_key'],payload={'campus_id':[str(campus.id)]}),
+            FormDraft(user_id=other,campus_id=1,key=values['_draft_key'],payload={'name':['Other user']}),
+            FormDraft(user_id=member,campus_id=1,key='form:/unrelated',payload={'name':['Keep me']}),
+        ])
+        db.session.commit()
+    assert client.post('/profile/campus',data=values).status_code==303
+    with app.app_context():
+        assert not FormDraft.query.filter_by(user_id=member,key=values['_draft_key']).first()
+        assert FormDraft.query.filter_by(user_id=other,key=values['_draft_key']).one().campus_id==1
+        assert FormDraft.query.filter_by(user_id=member,key='form:/unrelated').one().payload=={'name':['Keep me']}
+    assert client.get('/workspace/drafts/form:/unrelated').status_code==403

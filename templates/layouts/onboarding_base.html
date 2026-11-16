@@ -1,0 +1,32 @@
+{% extends 'layouts/auth_base.html' %}
+{% block auth_page_class %} onboarding-page{% endblock %}
+{% block auth_theme_color %}#ffffff{% endblock %}
+{% block body %}
+<main class="onboarding-shell" id="main-content" tabindex="-1" data-onboarding data-server-values="{{ 'true' if request.method == 'POST' else 'false' }}">
+  <nav class="onboarding-progress" aria-label="Account Creation Progress">
+    <ol>
+      <li {% if onboarding_step == 1 %}aria-current="step"{% endif %}>
+        {% if onboarding_step == 2 %}<a href="{{ url_for('auth.interests') }}">{% else %}<span>{% endif %}
+          <span class="onboarding-progress__number" aria-hidden="true">1</span> Interests and Skills
+        {% if onboarding_step == 2 %}</a>{% else %}</span>{% endif %}
+      </li>
+      <li {% if onboarding_step == 2 %}aria-current="step"{% endif %}>
+        <span><span class="onboarding-progress__number" aria-hidden="true">2</span> Account Details</span>
+      </li>
+    </ol>
+  </nav>
+  <p class="onboarding-draft" role="status" data-onboarding-status hidden></p>
+  <noscript><p class="onboarding-draft">Without JavaScript, submit each step to retain its selections. Unsubmitted input is not saved after refresh.</p></noscript>
+  {% block onboarding_content %}{% endblock %}
+</main>
+<footer class="onboarding-footer" aria-label="Signup Footer">
+  <div class="onboarding-footer__inner">
+    <p><strong>PSU Volunteer Hub</strong><span>Pangasinan State University</span></p>
+    <nav aria-label="Signup Footer Links">
+      <a href="{{ url_for('workspace.about') }}">About Us</a>
+      <a href="{{ url_for('help_page') }}">Help and Guides</a>
+    </nav>
+  </div>
+</footer>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='scripts/onboarding.js') }}"></script>{% endblock %}

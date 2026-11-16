@@ -1,50 +1,49 @@
 {% extends 'layouts/role_base.html' %}
 {% from 'partials/pagination.html' import pages with context %}
+{% from 'partials/record_time.html' import record_time with context %}
 {% block title %}Notifications | PSU Volunteer Hub{% endblock %}
 {% block header_title %}Notifications{% endblock %}
-{% block header_subtitle %}Your recent activity updates{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div>
-      <h1>Notifications</h1>
-      <p>Updates about your volunteer activity.</p>
+<div class="inbox-workspace">
+  <header class="inbox-heading">
+    <div><h1>Notifications</h1><p>{{ unread }} unread {{ 'notification' if unread == 1 else 'notifications' }}. Review your activity and account updates.</p></div>
+    <div class="inbox-heading__actions">
+      {% if unread %}<form method="post" action="{{ url_for('notifications.mark_all_read', view=view, page=pagination.page) }}" data-no-draft>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--outline" type="submit">Mark All as Read</button>
+      </form>{% endif %}
+      <a class="inbox-help" href="{{ url_for('help_page', slug='notifications') }}">Notification Help</a>
     </div>
-    {% if unread %}
-      <form
-        method="post"
-        action="{{ url_for('notifications.mark_all_read') }}"
-        class="inline-form"
-      >
-        <button class="btn btn--sm btn--ghost" type="submit">Mark All as Read</button>
-      </form>
-    {% endif %}
-  </div>
-  <section class="panel">
-    <div class="stack">
-      {% for note in notifications %}
-        <article
-          class="panel notification-item {{ 'is-unread' if not note.is_read else '' }}"
-        >
-          <div class="notification-item__body">
-            <h3>{{ note.title }}</h3>
-            <p>{{ guidance_content[note.id].text }}</p>
-            {% if guidance_content[note.id].url %}<a class="btn btn--outline" href="{{ guidance_content[note.id].url }}">Review Campus Records<span class="sr-only"> for {{ note.title }}</span></a>{% endif %}
-            <small>{{ note.created_at.strftime("%b %d, %Y %I:%M %p") if note.created_at else '' }}</small>
-          </div>
-          {% if not note.is_read %}
-            <form
-              method="post"
-              action="{{ url_for('notifications.mark_read', notification_id=note.id) }}"
-              class="inline-form"
-            >
-              <button class="btn btn--sm btn--ghost" type="submit">Mark Read</button>
-            </form>
-          {% endif %}
-        </article>
-      {% else %}
-        <div class="empty-state">You have no notifications yet.</div>
-      {% endfor %}
-    </div>
-    {{ pages(pagination, 'Notification pages') }}
+  </header>
+  <nav class="inbox-tabs" aria-label="Notification Views">
+    <a href="{{ url_for('notifications.list_notifications', view='all') }}" {% if view == 'all' %}aria-current="page"{% endif %}>All</a>
+    <a href="{{ url_for('notifications.list_notifications', view='unread') }}" {% if view == 'unread' %}aria-current="page"{% endif %}>Unread <span class="inbox-count">{{ unread }}</span></a>
+  </nav>
+  {% if notifications %}
+  <p class="inbox-result-count">{{ pagination.total }} {{ 'unread ' if view == 'unread' else '' }}{{ 'notification' if pagination.total == 1 else 'notifications' }}{% if pagination.pages > 1 %} · Page {{ pagination.page }} of {{ pagination.pages }}{% endif %}</p>
+  <section class="inbox-list" aria-label="{{ 'Unread Notifications' if view == 'unread' else 'All Notifications' }}">
+    {% for note in notifications %}
+    <article class="inbox-row notification-item {{ 'is-unread' if not note.is_read else '' }}" aria-labelledby="notification-{{ note.id }}">
+      <div class="inbox-row__body">
+        <div class="inbox-row__identity"><span class="inbox-state {{ 'inbox-state--unread' if not note.is_read else '' }}">{{ 'Unread' if not note.is_read else 'Read' }}</span><h2 id="notification-{{ note.id }}">{{ note.title }}</h2></div>
+        <p class="inbox-message">{{ guidance_content[note.id].text }}</p>
+        {% if guidance_content[note.id].url %}<a class="inbox-link" href="{{ guidance_content[note.id].url }}">Review Campus Records<span class="sr-only"> for {{ note.title }}</span></a>{% endif %}
+        <div class="inbox-time">{{ record_time(note.created_at) }}</div>
+      </div>
+      {% if not note.is_read %}<form class="inbox-row__actions" method="post" action="{{ url_for('notifications.mark_read', notification_id=note.id, view=view, page=pagination.page) }}" data-no-draft>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--outline" type="submit">Mark Read<span class="sr-only">: {{ note.title }}</span></button>
+      </form>{% endif %}
+    </article>
+    {% endfor %}
   </section>
+  {{ pages(pagination, 'Notification Pages') }}
+  {% else %}
+  <section class="inbox-empty" aria-labelledby="notifications-empty">
+    <h2 id="notifications-empty">{{ 'You’re All Caught Up' if view == 'unread' else 'No Notifications Yet' }}</h2>
+    <p>{{ 'You have no unread notifications. Previous updates are available in All.' if view == 'unread' else 'Activity and account updates will appear here when they are available.' }}</p>
+    <a class="btn btn--outline" href="{{ url_for('notifications.list_notifications', view='all') if view == 'unread' else url_for('events.volunteer_dash' if current_user.role == 'volunteer' else 'workspace.overview') }}">{{ 'View All Notifications' if view == 'unread' else 'Back to Dashboard' if current_user.role == 'volunteer' else 'Back to Overview' }}</a>
+  </section>
+  {% endif %}
+</div>
 {% endblock %}

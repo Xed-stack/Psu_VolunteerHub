@@ -12,14 +12,22 @@
     return response.status === 204 ? {} : response.json();
   };
   document.querySelectorAll('[data-discard-draft]').forEach(button => button.addEventListener('click', async () => {
-    if (!confirm('Discard this saved draft?')) return;
+    if (button.disabled || !confirm('Discard this saved draft and its saved uploads? This cannot be undone.')) return;
+    const status = button.closest('[data-draft-row]')?.querySelector('[data-discard-status]');
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    if (status) status.textContent = 'Discarding draft…';
     try { await request(button.dataset.discardDraft, 'DELETE'); location.reload(); }
-    catch { button.textContent = 'Could not discard. Try again.'; }
+    catch {
+      if (status) status.textContent = 'The draft could not be discarded. Your saved work is still available. Try again.';
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    }
   }));
   const safeNames = new Set(['first_name','last_name','interests','skills','title','description','date','end_date','location','category','slots','cancellation_days',
     'required_skills','sdg_ids','target_participants','participation_agreement_text','conducting_department','participant_type',
     'departments','volunteer_ids','agreement_id','name','full_name','email','phone','contact_name','campus','campus_id',
-    'college_affiliation','volunteer_type','sex','id_number','interest_ids','skill_ids','reference','valid_from','valid_until',
+    'college_affiliation','volunteer_type','sex','id_number','interest_ids','skill_ids','reference','valid_from','valid_until','role',
     'notes','program','indicator','definition','unit','target_value','deadline','evidence_basis','source_document',
     'coverage_note','actual_value','year','plan_type','first_name','last_name','skills','interests','responsible_office','comparison_rule','coverage_start','coverage_end','note','code','unit','program','college_affiliation_add','college_affiliation_remove','default_password_length','max_slots_per_event','nda_text','nda_version','nda_required','participation_agreement_version','message','announcement_type']);
   document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((form, index) => {
@@ -43,9 +51,10 @@
     text.setAttribute('role','status'); text.setAttribute('aria-live','polite'); text.textContent = 'Checking saved draft…';
     const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'underline font-semibold text-psu'; discard.textContent = 'Discard Draft';
     status.append(text, discard); form.prepend(status);
-    const hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = '_draft_key'; hidden.value = key; form.append(hidden);
+    const hidden = form.querySelector('input[name="_draft_key"]') || document.createElement('input'); hidden.type = 'hidden'; hidden.name = '_draft_key'; hidden.value = key; form.append(hidden);
     let dirty = false, timer, ready = false, revision = 0, saving = Promise.resolve();
     const uploadTasks = new Set();
+    let uploadFailed = false;
     let submitting = false, preparing = false;
     const collect = () => {
       const data = {};
@@ -100,8 +109,15 @@
         const response = await fetch('/workspace/draft-uploads/' + encodeURIComponent(key), { method:'POST',
           headers:{'X-CSRFToken':csrf() || ''}, body:data, redirect:'error' });
         if (!response.ok) throw new Error('Upload failed');
+        if (form.dataset.activityDocument === 'upload') {
+          const result = await response.json();
+          let note = form.querySelector('[data-saved-upload="file"]');
+          if (!note) { note = document.createElement('p'); note.dataset.savedUpload = 'file'; note.className = 'document-saved-file'; control.after(note); }
+          note.textContent = 'Saved attachment: ' + result.name + '. It will be uploaded unless replaced.';
+        }
+        uploadFailed = false;
         await save();
-      } catch { text.textContent = 'Attachment could not be saved. Keep this page open and try again.'; }
+      } catch { uploadFailed = true; text.textContent = 'Attachment could not be saved. Keep this page open and try again.'; }
       })();
       uploadTasks.add(task);
       task.finally(() => uploadTasks.delete(task));
@@ -121,24 +137,32 @@
       setTimeout(() => form.requestSubmit(event.submitter), 0);
     });
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+    form.querySelectorAll('[data-draft-exit]').forEach(link => link.addEventListener('click', async event => {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      clearTimeout(timer);
+      await Promise.all([...uploadTasks]);
+      await saving;
+      if (uploadFailed) { text.textContent = 'The attachment is not saved. Upload it again before leaving.'; return; }
+      if (dirty) await save();
+      if (!dirty) location.assign(link.href);
+      else text.textContent = 'The draft could not be saved. Keep this page open and try again.';
+    }));
     discard.addEventListener('click', async () => {
-      if (!confirm('Discard the saved input for this form?')) return;
+      if (!confirm(form.dataset.legacyDocumentDraft === 'true' ? 'Discard this entire saved draft, including its saved upload and announcement? Both parts will be removed.' : 'Discard the saved input for this form?')) return;
       clearTimeout(timer);
       await saving;
-      try { await request(key, 'DELETE'); dirty = false; form.reset(); text.textContent = 'Draft discarded'; }
+      try {
+        await request(key, 'DELETE'); dirty = false; form.reset();
+        if (form.dataset.activityDocument) {
+          controls.forEach(el => { if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+          form.querySelector('[data-saved-upload="file"]')?.remove();
+          if (uploads[0]) uploads[0].required = true;
+          form.dispatchEvent(new CustomEvent('draft:restored'));
+        }
+        text.textContent = 'Draft discarded';
+      }
       catch { text.textContent = 'Could not discard the draft. Try again.'; }
     });
   });
-  const signup = document.querySelector('form[data-signup-draft]');
-  if (signup) {
-    const key = 'psu:signup';
-    const fields = [...signup.elements].filter(el => safeNames.has(el.name) && !['password','hidden','file','checkbox'].includes(el.type));
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(key) || '{}');
-      fields.forEach(el => { if (saved[el.name] !== undefined && !el.value) el.value = saved[el.name]; });
-      signup.querySelector('[name=campus]')?.dispatchEvent(new Event('change', { bubbles:true }));
-      fields.forEach(el => { if (saved[el.name] !== undefined && !el.value) el.value = saved[el.name]; });
-      signup.addEventListener('input', () => sessionStorage.setItem(key, JSON.stringify(Object.fromEntries(fields.map(el => [el.name, el.value])))));
-    } catch { /* Browser storage can be unavailable in private sessions. */ }
-  }
 })();

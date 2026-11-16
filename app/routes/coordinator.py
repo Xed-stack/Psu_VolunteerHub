@@ -13,6 +13,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import insert, update, case, or_
+from sqlalchemy.exc import SQLAlchemyError
 from app.pagination import paginate, report_page
 from app.models import db
 from app.models.event import (ActivityCategory, Event, EventAnnouncement,
@@ -47,20 +48,9 @@ def _max_event_slots():
 
 
 def _activity_categories():
-    """Return valid categories even while a fresh database is being seeded.
+    from app.catalogue import category_choices
+    return category_choices()
 
-    The configured category list is the application-level source of truth. The
-    database table lets administrators extend it, but an empty lookup table
-    must not prevent coordinators from creating or editing activities.
-    """
-    configured = current_app.config.get('EVENT_CATEGORIES', [])
-    stored = [
-        category.name
-        for category in ActivityCategory.query.order_by(
-            ActivityCategory.name,
-        ).all()
-    ]
-    return list(dict.fromkeys([*configured, *stored, 'General']))
 
 
 def _selected_sdgs(form):
@@ -73,10 +63,12 @@ def _selected_sdgs(form):
     return SdgGoal.query.filter(SdgGoal.id.in_(ids)).order_by(SdgGoal.number).all() if ids else []
 
 
-def _activity_form_context(**context):
+def _activity_form_context(event=None, **context):
     """Supply category/SDG choices and slot ceiling without replacing caller overrides."""
-    context.setdefault('categories', _activity_categories())
-    context.setdefault('skill_choices', Skill.query.order_by(Skill.name).all())
+    from app.catalogue import category_choices, skill_choices
+    context.setdefault('categories', category_choices(event.category if event else None))
+    context.setdefault('archived_category', event.category if event and event.category not in category_choices() else None)
+    context.setdefault('skill_choices', skill_choices(event.required_skills_rel if event else ()))
     context.setdefault('sdgs', SdgGoal.query.order_by(SdgGoal.number).all())
     context.setdefault('max_slots', _max_event_slots())
     return context
@@ -296,17 +288,18 @@ def edit_activity(event_id):
     if event.lifecycle_status != 'approved' or event.date <= local_now():
         abort(409, description='Started or cancelled activities cannot be edited.')
 
-    categories = _activity_categories()
+    from app.catalogue import category_choices, skill_choices
+    categories = category_choices(event.category)
 
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
         date_str = request.form.get('date', '').strip()
         location = request.form.get('location', '').strip()
-        available_skills = {skill.name: skill for skill in Skill.query.all()}
+        available_skills = {skill.name: skill for skill in skill_choices(event.required_skills_rel)}
         if not set(request.form.getlist('required_skills')) <= available_skills.keys():
             flash('Select available skills from the list.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
         target_participants = request.form.get('target_participants', type=int)
@@ -315,32 +308,32 @@ def edit_activity(event_id):
         if category not in categories:
             flash('Select a valid activity category.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
         sdgs = _selected_sdgs(request.form)
         if len(sdgs) != len(set(request.form.getlist('sdg_ids'))):
             flash('Select available Sustainable Development Goals from the list.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
         if SdgGoal.query.count() and not sdgs:
             flash('Select at least one Sustainable Development Goal.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
         if not title or not description or not date_str:
             flash('Title, description, and date are required.', 'error')
-            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
         schedule, error = _parse_event_schedule(request.form)
         if error:
             flash(error, 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
         date, end_date, cancellation_deadline = schedule
         if slots < 1 or slots > max_slots:
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
         if target_participants is not None and target_participants < 1:
             flash('Target participants must be a positive number when provided.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
 
         # Registration-sensitive: do not reduce capacity below existing
         # registrations (PSU + external). This preserves all participation.
@@ -348,7 +341,7 @@ def edit_activity(event_id):
         if slots < existing:
             flash(f'Cannot reduce slots below existing registrations ({existing}).',
                   'error')
-            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context())
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
 
         event.title = title
         event.description = description
@@ -367,7 +360,7 @@ def edit_activity(event_id):
         except ValueError as exc:
             flash(str(exc), 'error')
             return render_template('coordinator/edit_activity.html', event=event,
-                                   **_activity_form_context())
+                                   **_activity_form_context(event=event))
         if cover:
             event.cover_image_path = cover['path']
             event.cover_image_name = cover['original_name']
@@ -383,7 +376,7 @@ def edit_activity(event_id):
         return redirect(url_for('workspace.activity',event_id=event.id))
 
     return render_template('coordinator/edit_activity.html', event=event,
-                           **_activity_form_context())
+                           **_activity_form_context(event=event))
 
 
 @coordinator_bp.route('/coordinator/events/<int:event_id>/delete', methods=['POST'])
@@ -409,27 +402,29 @@ def publish_announcement(event_id):
         abort(404)
     if event.campus_id != current_user.campus_id:
         abort(403)
+    from app.services.activity_documents import form_context,form_failure,consume_draft,document_url
+    form_context(event,'announcement')
     announcement_type = request.form.get('announcement_type', '').strip()
     message = request.form.get('message', '').strip()
     allowed = {'last_call', 'event_update', 'cancelled_postponed'}
-    if announcement_type not in allowed or not message:
-        flash('Select an announcement type and enter a message.', 'error')
-        return redirect(url_for('workspace.activity_documents',event_id=event.id))
-    if len(message) > 1000:
-        flash('Announcement must be 1,000 characters or fewer.', 'error')
-        return redirect(url_for('workspace.activity_documents',event_id=event.id))
+    errors={}
+    if announcement_type not in allowed:errors['announcement_type']='Select an available announcement type.'
+    if not message:errors['message']='Enter a message.'
+    elif len(message)>1000:errors['message']='Use 1,000 characters or fewer.'
+    if errors:return form_failure(event,'announcement',errors)
 
-    db.session.add(EventAnnouncement(
+    announcement=EventAnnouncement(
         event_id=event.id,
         author_id=current_user.id,
         announcement_type=announcement_type,
         message=message,
-    ))
+    )
     registrations = Registration.query.filter(
         Registration.event_id == event.id,
         Registration.user_id.isnot(None),
         Registration.status.in_(('pending', 'confirmed')),
     ).all()
+    db.session.add(announcement)
     for registration in registrations:
         db.session.add(Notification(
             user_id=registration.user_id,
@@ -438,10 +433,16 @@ def publish_announcement(event_id):
             notification_type=announcement_type,
             related_event_id=event.id,
         ))
-    db.session.commit()
+    try:
+        consume_draft(event,'announcement')
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.error('Activity announcement transaction failed for event %s.',event.id)
+        return form_failure(event,'announcement',{'message':'The announcement could not be published. No notifications were saved. Your entered message is shown below. Try again.'},500)
     flash(f'Announcement published to {len(registrations)} volunteer(s).',
           'success')
-    return redirect(url_for('workspace.activity_documents',event_id=event.id))
+    return redirect(document_url(event.id,view='announcements',page=1,anchor='announcement-'+str(announcement.id)))
 
 
 @coordinator_bp.route('/attendance', methods=['GET', 'POST'])
@@ -450,17 +451,10 @@ def publish_announcement(event_id):
 def attendance():
     """Search/page campus roster and save only submitted attendance choices.
 
-    GET excludes cancelled signups, supports PSU/external name/email/ID search
-    and status filter, and shows 15 rows per page. Display counts describe
-    current page, not entire activity. Activity picker shows up to 25 matches.
-
-    POST locks campus event and submitted eligible registrations; reject
-    duplicate IDs, foreign IDs, invalid statuses, or batches above 50. Check-in
-    opens 30 minutes before start. Blank status leaves row unchanged.
-    Present becomes completed only after end; otherwise signup is confirmed.
-    Saving early present does not auto-complete later: final attendance must
-    be saved after end for completion/certificate eligibility.
-    Bulk update existing rows, insert missing attendance, then commit together.
+    Internal non-cancelled registrations are alphabetical, 15 per page.
+    Writes require the owned activity to be ongoing and are rechecked before
+    commit. Blank choices leave evidence unchanged. Participation completion
+    is derived from recorded presence after the event; no post-event editing.
     """
     now = local_now()
     volunteer_search = request.args.get('volunteer_search', '').strip()
@@ -544,7 +538,8 @@ def attendance():
         now = local_now()
         if not attendance_open(selected_event, now):
             flash('Attendance is editable only while the activity is ongoing. Ended or unscheduled activities are read-only.', 'error')
-            return redirect(url_for('coordinator.attendance', event_id=selected_event.id))
+            from app.ui import roster_link
+            return redirect(roster_link('coordinator.attendance', selected_event.id))
         activity_ended = now >= (selected_event.end_date or selected_event.date)
         registration_updates, attendance_updates, attendance_inserts = [], [], []
         for i, reg_id in enumerate(reg_ids):
@@ -573,10 +568,8 @@ def attendance():
             abort(409, description='The activity ended before attendance was saved.')
         db.session.commit()
         flash('Attendance saved. Recorded presence confirms participation when the activity ends.', 'success')
-        return redirect(url_for('coordinator.attendance', event_id=event_id,
-                                volunteer_search=volunteer_search, attendance_status=attendance_filter,
-                                activity_search=search,
-                                page=request.args.get('page', 1, type=int)))
+        from app.ui import roster_link
+        return redirect(roster_link('coordinator.attendance', event_id, activity_search=search))
     attendance_opens_at = selected_event.date if selected_event else None
     attendance_counts = {'registered': len(registrations), 'present': 0,
                          'absent': 0, 'excused': 0, 'unmarked': 0}
@@ -610,24 +603,21 @@ def upload_milestone(event_id):
         abort(404)
     if event.campus_id != current_user.campus_id:
         abort(403)
+    from app.services.activity_documents import form_context,form_failure,consume_draft,document_url
+    form_context(event,'upload')
     if 'file' not in request.files:
-        flash('No file selected.', 'error')
-        return redirect(url_for('workspace.activity_documents',event_id=event.id))
+        return form_failure(event,'upload',{'file':'Select a supporting evidence file.'})
     file = request.files['file']
     if file.filename == '':
-        flash('No file selected.', 'error')
-        return redirect(url_for('workspace.activity_documents',event_id=event.id))
+        return form_failure(event,'upload',{'file':'Select a supporting evidence file.'})
     category = request.form.get('category', 'photo')
     try:
         ext = _validate_milestone(file)
     except ValueError as exc:
-        flash(str(exc), 'error')
-        return redirect(url_for('workspace.activity_documents',event_id=event.id))
+        return form_failure(event,'upload',{'file':str(exc)})
     upload_dir = os.path.join(current_app.config['PRIVATE_UPLOAD_FOLDER'], 'milestones')
-    os.makedirs(upload_dir, exist_ok=True)
     filename = f"{uuid.uuid4().hex}.{ext}"
     filepath = os.path.join(upload_dir, filename)
-    file.save(filepath)
     milestone = Milestone(
         event_id=event.id,
         filename=secure_filename(file.filename),
@@ -635,10 +625,24 @@ def upload_milestone(event_id):
         category=category,
         uploaded_by_id=current_user.id,
     )
-    db.session.add(milestone)
-    db.session.commit()
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+        file.save(filepath)
+        db.session.add(milestone)
+        consumed=consume_draft(event,'upload')
+        db.session.commit()
+    except (OSError,SQLAlchemyError):
+        db.session.rollback()
+        try:
+            if os.path.isfile(filepath):os.remove(filepath)
+        except OSError:
+            current_app.logger.warning('An unsuccessful activity upload could not be removed.')
+        current_app.logger.error('Activity evidence transaction failed for event %s.',event.id)
+        return form_failure(event,'upload',{'file':'The evidence could not be uploaded. Retry with the saved attachment shown below, or select the file again.'},500)
+    from app.routes.workspace import remove_staged_files
+    remove_staged_files(consumed)
     flash('Milestone uploaded successfully!', 'success')
-    return redirect(url_for('workspace.activity_documents',event_id=event.id))
+    return redirect(document_url(event.id,view='documents',page=1,anchor='document-'+str(milestone.id)))
 
 
 @coordinator_bp.route('/milestones/<int:milestone_id>/download')

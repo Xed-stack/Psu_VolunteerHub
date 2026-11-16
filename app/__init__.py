@@ -191,6 +191,8 @@ def create_app(config_name=None):
     app.register_blueprint(events_bp)
     from app.routes.workspace import workspace_bp
     app.register_blueprint(workspace_bp)
+    from app.routes.catalogue import catalogue_bp
+    app.register_blueprint(catalogue_bp)
     from app.routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp)
 
@@ -261,6 +263,7 @@ def create_app(config_name=None):
             featured_events=featured_events,
             completed_events=completed_events,
             historical_summary=historical_summary,
+            footer_year=now.year,
         )
 
     @app.route('/historical-activities')
@@ -283,20 +286,11 @@ def create_app(config_name=None):
         )
 
     @app.route('/help')
-    def help_page():
+    @app.route('/help/<slug>')
+    def help_page(slug=None):
         from flask import render_template
-        dashboard_url = None
-        if current_user.is_authenticated:
-            dashboard_routes = {
-                'volunteer': 'events.volunteer_dash',
-                'coordinator': 'coordinator.coordinator_dash',
-                'director': 'director.director_dash',
-                'admin': 'admin.admin_dash',
-            }
-            endpoint = dashboard_routes.get(current_user.role)
-            if endpoint:
-                dashboard_url = url_for(endpoint, tour=1)
-        return render_template('workspace/help.html', dashboard_url=dashboard_url)
+        from app.help_center import help_context
+        return render_template('workspace/help.html', **help_context(slug))
 
     @app.route('/favicon.ico')
     def favicon():
@@ -362,6 +356,9 @@ def _seed_interests_skills(app, commit=True):
     for name in getattr(Config, 'SKILL_CATEGORIES', []):
         if name and not Skill.query.filter_by(name=name).first():
             db.session.add(Skill(name=name))
+    db.session.flush()
+    from app.catalogue import seed_skill_links
+    seed_skill_links(Config.INTEREST_SKILL_MAP)
     if commit:
         db.session.commit()
 

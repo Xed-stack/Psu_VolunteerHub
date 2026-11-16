@@ -1,0 +1,4 @@
+{% macro record_time(value) -%}
+  {% set local = utc_record_time(value) %}
+  {% if local %}<time datetime="{{ local.isoformat() }}" data-record-time>{{ local.strftime('%d %b %Y, %I:%M %p') }} <span>Philippine Time</span></time>{% else %}<span>Time unavailable</span>{% endif %}
+{%- endmacro %}

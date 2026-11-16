@@ -1,102 +1,18 @@
 {% extends 'layouts/role_base.html' %}
 {% block title %}{{ 'Edit' if user else 'Create' }} User · PSU Volunteer Hub{% endblock %}
-{% block header_title %}Administration{% endblock %}
-{% block header_subtitle %}User management{% endblock %}
+{% macro value(key,default='') %}{{ request.form.get(key,default) if request.method == 'POST' else (user[key] or '' if user else default) }}{% endmacro %}
 {% block content %}
-  <a class="activity-back mb-4" href="{{ back_url('admin.admin_dash') }}">Back to Users</a><header class="page-heading">
-    <div>
-      <h1>{{ 'Edit User' if user else 'Create User' }}</h1>
-      <p>{{ 'Update account details and access.' if user else 'Add a new account to the volunteer hub.' }}</p>
-    </div>
-  </header>
-  <form class="panel" method="post">
-    <div class="form-grid">
-      <label class="field">
-        Full Name *<input
-  class="input"
-  name="name"
-  value="{{ user.name if user else request.form.get('name', '') }}"
-  required
->
-      </label>
-      <label class="field">
-        Email *<input
-  class="input"
-  name="email"
-  type="email"
-  value="{{ user.email if user else request.form.get('email', '') }}"
-  required
->
-      </label>
-      {% if not user %}<label class="field">Password *<input
-  class="input"
-  name="password"
-  type="password"
-  minlength="{{ password_min }}"
-  required
-><small>At least {{ password_min }} characters with uppercase, lowercase, a number, and a special character.</small></label>{% endif %}
-      <label class="field">
-        PSU ID<input
-  class="input"
-  name="id_number"
-  value="{{ user.id_number or '' if user else request.form.get('id_number', '') }}"
->
-      </label>
-      <label class="field">
-        Role
-        <select class="select" name="role">{% for role in ['volunteer', 'coordinator', 'director'] %}<option
-  value="{{ role }}"
-  {{ 'selected' if user and user.role == role }}
->{{ role|title }}</option>{% endfor %}</select>
-      </label>
-      <label class="field">
-        Campus
-        <select class="select" name="campus_id"><option value="">No Campus</option>{% for campus in campuses %}<option
-  value="{{ campus.id }}"
-  {{ 'selected' if user and user.campus_id == campus.id }}
->{{ campus.name }}</option>{% endfor %}</select>
-      </label>
-      <label class="field">
-        Volunteer Category
-        <select class="select" name="volunteer_type"><option value="">Not Applicable</option>{% for value in ['student', 'faculty', 'staff'] %}<option
-  value="{{ value }}"
-  {{ 'selected' if user and user.volunteer_type == value }}
->{{ value|title }}</option>{% endfor %}</select>
-      </label>
-      <label class="field">
-        College Affiliation {% if college_affiliations %}<select class="select" name="college_affiliation"><option value="">No Affiliation</option>{% for affiliation in college_affiliations %}<option value="{{ affiliation }}" {% if (user and user.college_affiliation == affiliation) or (not user and request.form.get('college_affiliation') == affiliation) %}selected{% endif %}>{{ affiliation }}</option>{% endfor %}</select>{% else %}<input class="input" name="college_affiliation" value="{{ user.college_affiliation or '' if user else request.form.get('college_affiliation', '') }}">{% endif %}
-      </label>
-    </div>
-    <div class="form-actions">
-      <a
-        class="btn btn--ghost"
-        href="{{ back_url('admin.admin_dash') }}"
-      >Cancel</a><button class="btn btn--primary" type="submit">{{ 'Save Changes' if user else 'Create User' }}</button>
-    </div>
-  </form>
-  {% if user %}
-    <section class="panel admin-password-reset" aria-labelledby="reset-password-title">
-      <header class="panel__header">
-        <div>
-          <h2 id="reset-password-title">Reset User Password</h2>
-          <small>This immediately changes {{ user.name }}’s password and signs out their other sessions.</small>
-        </div>
-      </header>
-      <form method="post" action="{{ url_for('admin.reset_password', user_id=user.id) }}" data-warn-unsaved="false">
-        {% include 'partials/csrf_field.html' %}
-        <div class="form-grid">
-          <label class="field">
-            New Password *<input class="input" name="new_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
-            <small>At least {{ password_min }} characters with uppercase, lowercase, a number, and a special character.</small>
-          </label>
-          <label class="field">
-            Confirm New Password *<input class="input" name="confirm_password" type="password" minlength="{{ password_min }}" autocomplete="new-password" required>
-          </label>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn--danger" type="submit" data-confirm="Reset {{ user.name }}’s password? Their other sessions will be signed out.">Reset Password</button>
-        </div>
-      </form>
-    </section>
-  {% endif %}
+<a class="activity-back mb-4" href="{{ back_url('admin.user_detail',user_id=user.id) if user else back_url('admin.admin_dash') }}">Back to {{ 'User Record' if user else 'Users' }}</a>
+<header class="page-heading"><div><h1>{{ 'Edit Account' if user else 'Create User' }}</h1><p>{{ user.name if user else 'Add an account and assign its access.' }} Required fields are marked *.</p></div></header>
+{% if errors %}<section class="panel mb-5" role="alert" tabindex="-1" data-form-errors><h2>Check These Fields</h2><ul>{% for field,message in errors.items() %}<li><a class="underline" href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul></section>{% endif %}
+<form class="panel max-w-4xl" method="post">{% include 'partials/csrf_field.html' %}
+<h2>Identity</h2><div class="form-grid mt-5">
+{% for key,label,type in [('name','Full Name','text'),('email','Email','email'),('id_number','PSU ID','text')] %}<label class="field">{{ label }}{{ ' *' if key in ['name','email'] }}<input id="{{ key }}" name="{{ key }}" type="{{ type }}" value="{{ value(key) }}" {% if key in ['name','email'] %}required{% endif %} {% if errors and key in errors %}aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>{% if errors and key in errors %}<small id="{{ key }}-error" class="text-red-700">{{ errors[key] }}</small>{% endif %}</label>{% endfor %}
+{% if not user %}<label class="field">Password *<input id="password" name="password" type="password" autocomplete="new-password" minlength="{{ password_min }}" required {% if errors and errors.password %}aria-invalid="true" aria-describedby="password-error"{% endif %}><small>At least {{ password_min }} characters with uppercase, lowercase, a number, and a special character. Passwords are never saved in drafts.</small>{% if errors and errors.password %}<small id="password-error" class="text-red-700">{{ errors.password }}</small>{% endif %}</label>{% endif %}</div>
+<h2 class="mt-8 border-t border-slate-200 pt-6">Access and Affiliation</h2><div class="form-grid mt-5">
+<label class="field">Role *<select id="role" name="role" {% if errors and errors.role %}aria-invalid="true" aria-describedby="role-error"{% endif %}>{% for role in ['volunteer','coordinator','director'] %}<option value="{{ role }}" {% if value('role','volunteer')|trim == role or role == 'director' and user and user.role == 'admin' %}selected{% endif %}>{{ role|title }}</option>{% endfor %}</select>{% if errors and errors.role %}<small id="role-error" class="text-red-700">{{ errors.role }}</small>{% endif %}</label>
+<label class="field">Campus<select id="campus_id" name="campus_id" {% if errors and errors.campus_id %}aria-invalid="true" aria-describedby="campus-error"{% endif %}><option value="">No Campus</option>{% for campus in campuses %}<option value="{{ campus.id }}" {% if value('campus_id')|trim == campus.id|string %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}</select><small>A campus is required for Coordinators.</small>{% if errors and errors.campus_id %}<small id="campus-error" class="text-red-700">{{ errors.campus_id }}</small>{% endif %}</label>
+<label class="field">Volunteer Category<select name="volunteer_type"><option value="">Not Applicable</option>{% for item in ['student','faculty','staff'] %}<option value="{{ item }}" {% if value('volunteer_type')|trim == item %}selected{% endif %}>{{ item|title }}</option>{% endfor %}</select></label>
+<label class="field">College Affiliation{% if college_affiliations %}<select name="college_affiliation"><option value="">No Affiliation</option>{% set selected=value('college_affiliation')|trim %}{% if selected and selected not in college_affiliations %}<option selected value="{{ selected }}">{{ selected }}</option>{% endif %}{% for item in college_affiliations %}<option value="{{ item }}" {% if selected == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>{% else %}<input name="college_affiliation" value="{{ value('college_affiliation') }}">{% endif %}</label>
+</div><div class="form-actions"><a class="btn btn--ghost" href="{{ back_url('admin.user_detail',user_id=user.id) if user else back_url('admin.admin_dash') }}">Cancel</a><button class="btn btn--primary">{{ 'Save Changes' if user else 'Create User' }}</button></div></form>
 {% endblock %}

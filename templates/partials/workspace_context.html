@@ -1,7 +1,7 @@
 {% set root = 'events.volunteer_dash' if current_user.role == 'volunteer' else 'workspace.overview' %}
 {% set sections = {'activities':('events.opportunities' if current_user.role == 'volunteer' else 'workspace.activities','Activities'),'reports':('workspace.reports','Reports'),'goals':('goals.workspace','Annual Plans'),'management':('workspace.management','Management'),'partners':('workspace.partners','Partners'),'registrations':('workspace.registrations','My Registrations'),'imports':('workspace.management','Management'),'settings':('workspace.management','Management')} %}
 {% if request.endpoint != root %}<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{{ url_for(root) }}">{{ 'Dashboard' if current_user.role == 'volunteer' else 'Overview' }}</a><span aria-hidden="true">/</span>{% if ui_section in sections and request.endpoint != sections[ui_section][0] %}<a href="{{ url_for(sections[ui_section][0]) }}">{{ sections[ui_section][1] }}</a><span aria-hidden="true">/</span>{% endif %}<span aria-current="page">{{ ui_page_title }}</span></nav>{% endif %}
-{% if request.endpoint in ['workspace.activity','workspace.activity_registrations','workspace.external','workspace.activity_documents','coordinator.attendance','coordinator.edit_activity'] %}
+{% if request.endpoint in ['workspace.activity','workspace.activity_registrations','workspace.external','workspace.external_new','workspace.activity_documents','workspace.document_upload','workspace.announcement_new','coordinator.upload_milestone','coordinator.publish_announcement','coordinator.attendance','coordinator.edit_activity'] %}
   {% set activity_context = event if event is defined else selected_event|default(none) %}
   {% if activity_context %}{% if request.endpoint != 'workspace.activity' %}<div class="activity-context"><a
   href="{{ back_url('workspace.activity',event_id=activity_context.id) }}"
@@ -9,10 +9,12 @@
     {% set tabs = [('workspace.activity', 'Overview'), ('workspace.activity_registrations', 'Registrations')] %}
     {% if current_user.role == 'coordinator' %}
       {% set tabs = tabs+[('coordinator.attendance','Attendance'),('workspace.activity_documents','Documents and Updates')] %}
+    {% elif current_user.role == 'director' %}
+      {% set tabs = tabs+[('workspace.activity_documents','Documents')] %}
     {% endif %}
     {% for target,label in tabs %}<a
-  href="{{ linked_url(target,event_id=activity_context.id) }}"
-  {% if request.endpoint == target or target == 'coordinator.attendance' and request.endpoint == 'workspace.external' %}aria-current="page"{% endif %}
+  href="{{ document_url(activity_context.id,view='announcements' if request.endpoint in ['workspace.announcement_new','coordinator.publish_announcement'] else request.args.get('view','documents'),page=1) if target == 'workspace.activity_documents' and document_url is defined else roster_link(target,activity_context.id) if target in ['workspace.activity_registrations','coordinator.attendance'] and request.endpoint in ['workspace.activity_registrations','coordinator.attendance','workspace.external','workspace.external_new'] else linked_url(target,event_id=activity_context.id) }}"
+  {% if request.endpoint == target or target == 'coordinator.attendance' and request.endpoint in ['workspace.external','workspace.external_new'] or target == 'workspace.activity_documents' and request.endpoint in ['workspace.document_upload','workspace.announcement_new','coordinator.upload_milestone','coordinator.publish_announcement'] %}aria-current="page"{% endif %}
 >{{ label }}</a>{% endfor %}<a
-  href="{{ linked_url('workspace.activity_report',event_id=activity_context.id,period='all',year=activity_context.date.year) }}"
+  href="{{ url_for('workspace.activity_report',event_id=activity_context.id,period='all',year=activity_context.date.year,return_to=roster_link(request.endpoint,activity_context.id)) if request.endpoint in ['workspace.activity_registrations','coordinator.attendance','workspace.external'] else linked_url('workspace.activity_report',event_id=activity_context.id,period='all',year=activity_context.date.year) }}"
 >Report</a></nav>{% endif %}{% endif %}

@@ -1,0 +1,18 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% block title %}{{ 'Edit Skill Interests' if skill else 'Add Skill' }} · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{{ heading('Edit Skill Interests' if skill else 'Add Skill','Connect skills to the existing interests used during signup.',return_url,'Back to Skills') }}
+{% if errors %}<div class="auth-errors mb-6" role="alert" tabindex="-1" data-form-errors><h2>Review These Details</h2><ul>{% for field,message in errors.items() %}<li><a href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+{% if duplicate and not skill %}<p class="mb-5"><a class="text-link" href="{{ url_for('catalogue.index',tab='skills',status='active' if duplicate.is_active else 'archived',q=duplicate.name) }}">{{ 'View Existing Skill' if duplicate.is_active else 'Find and Restore This Skill' }}</a></p>{% endif %}
+{% if skill and not skill.is_active %}<p class="mb-5 scope-note">This skill is archived. Its interest connections become available during signup when the skill is restored.</p>{% endif %}
+<form method="post" class="max-w-3xl space-y-6" data-no-draft data-warn-unsaved="{{ 'true' if request.method=='POST' else 'false' }}">
+{% include 'partials/csrf_field.html' %}{% for key,value in state.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+<label class="field" for="name">Skill Name *<input id="name" name="name" value="{{ name }}" maxlength="100" required autocomplete="off" {% if skill %}readonly{% endif %} {% if errors.name %}aria-invalid="true" aria-describedby="name-error"{% endif %}></label>
+{% if errors.name %}<p class="field-error" id="name-error">{{ errors.name }}</p>{% endif %}
+<fieldset class="choice-panel" id="interest_ids" tabindex="-1" {% if errors.interest_ids %}aria-invalid="true" aria-describedby="interest_ids-error"{% endif %}><legend>Related Interests *</legend><p class="mb-3">Choose at least one interest. New volunteers see this skill under those interests.</p>
+{% if errors.interest_ids %}<p class="field-error" id="interest_ids-error">{{ errors.interest_ids }}</p>{% endif %}
+{% for interest in interests %}<label class="check-row"><input type="checkbox" name="interest_ids" value="{{ interest.id }}" {{ 'checked' if interest.id|string in selected }}><span>{{ interest.name }}</span></label>{% else %}<p>No interests are configured. Configure the institutional interest catalogue before adding skills.</p>{% endfor %}</fieldset>
+<div class="form-actions"><a class="btn btn--outline" href="{{ return_url }}">Cancel</a><button class="btn btn--primary">{{ 'Save Interests' if skill else 'Add Skill' }}</button></div>
+</form>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% macro info_tip(label, text, help_url='') -%}
+  {% set help_url = contextual_help(label,help_url) %}
   <details class="info-tip">
     <summary aria-label="About {{ label }}">
       <span class="material-symbols-outlined" aria-hidden="true">info</span>

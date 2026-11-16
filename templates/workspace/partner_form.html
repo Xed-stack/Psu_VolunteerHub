@@ -1,0 +1,13 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/partner_components.html' import field with context %}
+{% block title %}{{ 'Edit Agency Details' if agency else 'Add Agency' }} · PSU Volunteer Hub{% endblock %}
+{% block content %}<a class="activity-back mb-4" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) if agency else back_url('workspace.partners',activity_context=request.args.get('activity_context')) }}">Back to {{ 'Agency' if agency else 'Agencies' }}</a>
+<header class="page-heading"><div><h1>{{ 'Edit Agency Details' if agency else 'Add Agency' }}</h1><p>{{ agency.name if agency else current_user.campus.name }}. Required fields are marked *.</p></div></header>
+{% if errors %}<section class="panel mb-5" role="alert" tabindex="-1" data-form-errors><h2>Check These Fields</h2><ul>{% for name,message in errors.items() %}<li><a class="underline" href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul></section>{% endif %}
+<form method="post" class="panel max-w-3xl" data-draft-key="{{ form_key }}">{% include 'partials/csrf_field.html' %}<div class="form-grid">
+<input type="hidden" name="_draft_key" value="{{ form_key }}">
+{{ field('name','Agency Name',agency.name if agency else '',required=true,limit=200,errors=errors) }}
+{{ field('contact_name','Contact Person',agency.contact_name if agency else '',required=true,limit=150,errors=errors) }}
+{{ field('email','Email',agency.email if agency else '',type='email',limit=120,errors=errors) }}
+{{ field('phone','Phone',agency.phone if agency else '',type='tel',limit=50,errors=errors) }}
+</div><div class="form-actions"><a class="btn btn--ghost" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) if agency else back_url('workspace.partners',activity_context=request.args.get('activity_context')) }}">Cancel</a><button class="btn btn--primary">{{ 'Save Changes' if agency else 'Save Agency' }}</button></div></form>{% endblock %}

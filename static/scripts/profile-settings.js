@@ -22,10 +22,40 @@
       field.type = show ? 'text' : 'password';
       button.textContent = show ? 'Hide' : 'Show';
       button.setAttribute('aria-pressed', String(show));
-      button.setAttribute('aria-label', `${show ? 'Hide' : 'Show'} ${document.querySelector(`label[for="${field.id}"]`).textContent.toLowerCase()}`);
+      const label = document.querySelector(`label[for="${field.id}"]`).textContent.replace(/\s*\*\s*$/, '').trim();
+      button.setAttribute('aria-label', `${show ? 'Hide' : 'Show'} ${label}`);
     });
   });
   document.querySelector('[data-profile-errors]')?.focus();
+  const preferences = document.getElementById('profile-form');
+  const updateCounts = () => {
+    document.querySelectorAll('[data-profile-count]').forEach(count => {
+      const name = count.dataset.profileCount;
+      const fields = [...preferences.querySelectorAll(`input[name="${name}"]`)];
+      const text = `${fields.filter(field => field.checked).length} of ${fields.length} selected.`;
+      count.hidden = false;
+      if (count.textContent !== text) count.textContent = text;
+    });
+  };
+  if (preferences) {
+    updateCounts();
+    preferences.addEventListener('change', updateCounts);
+    preferences.addEventListener('draft:restored', updateCounts);
+  }
+  const photo = document.getElementById('profile-image');
+  const preview = document.querySelector('[data-profile-photo-preview]');
+  const fallback = document.querySelector('[data-profile-photo-fallback]');
+  let previewUrl = null;
+  photo?.addEventListener('change', () => {
+    const file = photo.files[0];
+    if (!file || !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 3*1024*1024 || !preview) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
+    preview.hidden = false;
+    if (fallback) fallback.hidden = true;
+  });
+  window.addEventListener('pagehide', () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
   const snapshots = new Map();
   const values = form => JSON.stringify([...new FormData(form)].filter(([key]) => !['csrf_token', '_draft_key'].includes(key))
     .map(([key, value]) => [key, value instanceof File ? [value.name, value.size, value.lastModified] : value]));

@@ -50,7 +50,7 @@
         >
           <span class="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
-        <div class="role-topbar__title"><strong>{% block header_title %}{{ ui_page_title }}{% endblock %}</strong><span>{% block header_subtitle %}{{ 'University office' if current_user.role in ['director','admin'] else current_user.campus.name if current_user.campus else 'Campus not assigned' }}{% endblock %}</span></div>
+        <div class="role-topbar__title"><strong>{% block header_title %}{{ ui_page_title }}{% endblock %}</strong><span>{% block header_subtitle %}{{ 'University Office' if current_user.role in ['director','admin'] else current_user.campus.name if current_user.campus else 'Campus Not Assigned' }}{% endblock %}</span></div>
         <div class="role-topbar__actions">
           <a
             class="icon-button notification-bell"
@@ -58,6 +58,7 @@
             aria-label="Notifications"
           >
             <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+            <span class="role-topbar__notification-label">Notifications</span>
             {% if unread_notifications %}<span class="notification-badge" aria-hidden="true">{{ unread_notifications }}</span>{% endif %}
           </a>
           {% block header_actions %}{% endblock %}
@@ -129,6 +130,7 @@
     {% block scripts %}{% endblock %}
     {% include 'partials/session_idle.html' %}
   <script src="{{ url_for('static', filename='scripts/workspace.js') }}"></script>
+<script src="{{ url_for('static', filename='scripts/sticky-header.js') }}"></script>
 <script src="{{ url_for('static', filename='scripts/drafts.js') }}"></script>
 </body>
 </html>

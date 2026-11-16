@@ -10,7 +10,7 @@ from flask import Blueprint, abort, current_app, flash, jsonify, redirect, rende
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, lazyload
 from werkzeug.datastructures import MultiDict
 from app.models import db
 from app.models.user import User, Skill
@@ -28,7 +28,7 @@ ACTIVITY_FIELDS = {'title', 'description', 'date', 'end_date', 'location', 'cate
 REMOVED_ACTIVITY_FIELDS = {'participation_agreement_text', 'participation_agreement_version',
                            'nda_required', 'nda_text', 'nda_version', 'volunteer_ids'}
 # Only these form fields can ever be persisted by browser autosave.
-FORM_FIELDS = ACTIVITY_FIELDS | {'name', 'full_name', 'email', 'phone', 'contact_name',
+FORM_FIELDS = ACTIVITY_FIELDS | {'name', 'full_name', 'email', 'phone', 'contact_name', 'role',
     'campus', 'campus_id', 'college_affiliation', 'volunteer_type', 'sex', 'id_number',
     'interest_ids', 'skill_ids', 'reference', 'valid_from', 'valid_until', 'notes',
     'program', 'indicator', 'definition', 'unit', 'target_value', 'deadline', 'evidence_basis',
@@ -59,12 +59,21 @@ def restore_draft_uploads():
 
 @workspace_bp.after_app_request
 def clear_submitted_draft(response):
+    from flask import g
+    if getattr(g,'activity_document_draft_handled',False):
+        return response
     if request.method == 'POST' and current_user.is_authenticated and response.status_code in (302, 303):
         key = request.form.get('_draft_key', '')
-        from flask import session
+        from flask import session, g
         failed = any(category in ('error', 'warning', 'danger') for category, _ in session.get('_flashes', []))
         if key.startswith('form:') and not failed:
-            draft = draft_for(key)
+            if request.endpoint == 'volunteer.change_campus' and hasattr(g,'profile_previous_campus_id'):
+                # The successful save changed campus before this cleanup runs.
+                draft = FormDraft.query.filter_by(user_id=current_user.id,key=key).populate_existing().with_for_update().first()
+                if draft and draft.campus_id != g.profile_previous_campus_id:
+                    abort(403)
+            else:
+                draft = draft_for(key)
             if draft:
                 files = draft.payload.get('_files', {})
                 db.session.delete(draft)
@@ -84,6 +93,15 @@ def draft_upload(key):
     file = request.files.get('upload')
     if name not in ('document', 'file', 'profile_image', 'cover_image', 'evidence_file') or not file or not file.filename:
         abort(400)
+    from app.services.activity_documents import draft_identity
+    identity=draft_identity(key)
+    if name=='file' and identity:
+        if current_user.role!='coordinator':abort(403)
+        owned_event(identity[0])
+        if identity[1]=='announcement':abort(400)
+        from app.routes.coordinator import _validate_milestone
+        try:_validate_milestone(file)
+        except ValueError as exc:abort(400,description=str(exc))
     from werkzeug.utils import secure_filename
     import uuid
     filename = secure_filename(file.filename)
@@ -216,17 +234,26 @@ def draft_list():
     rows = FormDraft.query.filter_by(user_id=current_user.id, campus_id=current_user.campus_id).order_by(FormDraft.updated_at.desc()).all()
     from urllib.parse import urlsplit
     from werkzeug.exceptions import HTTPException
-    labels = {'volunteer.profile_page':'Profile preferences', 'volunteer.change_name':'Name changes',
-        'admin.settings':'System settings', 'workspace.partners':'New partner agency',
-        'workspace.partner':'New MOA', 'workspace.activity_documents':'Activity documents and announcement', 'coordinator.edit_activity':'Activity changes',
-        'admin.create_user':'New account', 'admin.edit_user':'Account changes',
-        'goals.edit':'Annual goal proposal', 'goals.evidence':'Annual goal evidence'}
+    labels = {'volunteer.profile_page':'Profile Preferences', 'volunteer.change_name':'Name Changes',
+        'admin.settings':'System Settings', 'workspace.partners':'New Partner Agency',
+        'workspace.partner':'New MOA', 'workspace.activity_documents':'Activity Documents and Announcement', 'coordinator.edit_activity':'Activity Changes',
+        'admin.create_user':'New Account', 'admin.edit_user':'Account Changes',
+        'goals.edit':'Annual Goal Proposal', 'goals.evidence':'Annual Goal Evidence',
+        'workspace.document_upload':'Activity Evidence Upload','workspace.announcement_new':'Activity Announcement'}
     for draft in rows:
-        draft.label = 'New activity' if draft.key == 'activity:new' else 'Unfinished form'
+        draft.resume_url = url_for('workspace.create_activity', step=1) if draft.key == 'activity:new' else draft.key.removeprefix('form:')
+        draft.label = 'New Activity' if draft.key == 'activity:new' else 'Unfinished Form'
         if draft.key.startswith('form:'):
             try:
-                endpoint, _ = current_app.url_map.bind('').match(urlsplit(draft.key[5:]).path, method='GET')
-                draft.label = labels.get(endpoint, 'Unfinished form')
+                endpoint, values = current_app.url_map.bind('').match(urlsplit(draft.key[5:]).path, method='GET')
+                draft.label = labels.get(endpoint, 'Unfinished Form')
+                if endpoint in ('workspace.partners','workspace.partner'):
+                    draft.resume_url = url_for('workspace.partner_new' if endpoint == 'workspace.partners' else
+                        'workspace.agreement_new', resume=draft.key, **values)
+                elif endpoint in ('workspace.partner_new','workspace.agreement_new'):
+                    draft.label = 'Agency Details' if endpoint == 'workspace.partner_new' else 'New MOA'
+                elif endpoint=='workspace.activity_documents':
+                    draft.resume_url=url_for('workspace.activity_documents',resume=draft.key,**values)
             except HTTPException:
                 pass
     return render_template('workspace/drafts.html', drafts=rows)
@@ -372,8 +399,14 @@ def create_activity(step):
     data = MultiDict((key, value) for key, values in data.items() if not key.startswith('_')
                      for value in (values if isinstance(values, list) else [values]))
     from app.routes.coordinator import _activity_categories, _max_event_slots
+    if data.get('category') and data.get('category') not in _activity_categories():
+        errors.append('The saved category is archived or unavailable. Return to Activity Details and choose an available category.')
+    saved_skills=set(data.getlist('required_skills'))
+    available_skills={str(row.id) for row in Skill.query.filter_by(is_active=True).all()}
+    if saved_skills-available_skills:
+        errors.append('A saved required skill is archived or unavailable. Return to Activity Details and remove or replace the unavailable selection.')
     return render_template('workspace/create.html', step=step, data=data, errors=errors,
-        proposal=draft.payload.get('_proposal'), saved_cover=draft.payload.get('_files',{}).get('cover_image'), skills=Skill.query.order_by(Skill.name).all(),
+        proposal=draft.payload.get('_proposal'), saved_cover=draft.payload.get('_files',{}).get('cover_image'), skills=Skill.query.filter_by(is_active=True).order_by(Skill.name).all(),
         sdgs=SdgGoal.query.order_by(SdgGoal.number).all(), categories=_activity_categories(),
         max_slots=_max_event_slots(), now=local_now(),
         agencies=PartnerAgency.query.filter_by(campus_id=current_user.campus_id).all(),
@@ -402,7 +435,7 @@ def publish_draft(payload):
     target = form.get('target_participants', type=int)
     if form.get('target_participants') and (target is None or target < 1):
         errors.append('The numeric participant target must be positive.')
-    skills = Skill.query.filter(Skill.id.in_(form.getlist('required_skills'))).all()
+    skills = Skill.query.filter(Skill.is_active.is_(True),Skill.id.in_(form.getlist('required_skills'))).all()
     sdgs = SdgGoal.query.filter(SdgGoal.id.in_(form.getlist('sdg_ids'))).all()
     if len(skills) != len(set(form.getlist('required_skills'))) or len(sdgs) != len(set(form.getlist('sdg_ids'))):
         errors.append('Choose available skills and goals.')
@@ -489,22 +522,17 @@ def partners():
     if not current_user.campus_id:
         abort(403)
     if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        contact = request.form.get('contact_name', '').strip()
-        if not name or not contact or len(name) > 200 or len(contact) > 150:
-            abort(400, description='Agency name and contact person are required.')
-        agency = PartnerAgency(name=name, contact_name=contact, campus_id=current_user.campus_id,
-            email=request.form.get('email', '').strip()[:120], phone=request.form.get('phone', '').strip()[:50])
-        db.session.add(agency)
-        db.session.commit()
-        return redirect(url_for('workspace.partner', agency_id=agency.id))
-    query = PartnerAgency.query.filter_by(campus_id=current_user.campus_id)
+        return partner_new()
+    query = db.session.query(PartnerAgency.id, PartnerAgency.name, PartnerAgency.contact_name,
+        PartnerAgency.email, func.count(PartnerAgreement.id).label('agreement_count')).outerjoin(
+        PartnerAgreement).filter(PartnerAgency.campus_id == current_user.campus_id).group_by(
+        PartnerAgency.id, PartnerAgency.name, PartnerAgency.contact_name, PartnerAgency.email)
     search = request.args.get('q', '').strip()[:200]
     if search:
         query = query.filter(or_(PartnerAgency.name.icontains(search, autoescape=True),
                                  PartnerAgency.contact_name.icontains(search, autoescape=True)))
-    pagination = db.paginate(query.order_by(PartnerAgency.name, PartnerAgency.id).statement,
-                             per_page=25, max_per_page=25, error_out=False)
+    pagination = query.order_by(PartnerAgency.name, PartnerAgency.id).paginate(
+        per_page=25, max_per_page=25, error_out=False)
     return render_template('workspace/partners.html', agencies=pagination.items, pagination=pagination)
 
 
@@ -512,22 +540,162 @@ def partners():
 @login_required
 @role_required('coordinator')
 def partner(agency_id):
-    agency = PartnerAgency.query.filter_by(id=agency_id, campus_id=current_user.campus_id).first_or_404()
-    errors = []
     if request.method == 'POST':
-        try:
-            start = date.fromisoformat(request.form.get('valid_from', ''))
-            end = date.fromisoformat(request.form.get('valid_until', ''))
-            reference = request.form.get('reference', '').strip()
-            if end < start or not reference or len(reference) > 150:
-                raise ValueError('Provide a reference and valid agreement dates.')
-            document, _ = save_document(request.files.get('document'))
-            db.session.add(PartnerAgreement(agency_id=agency.id, reference=reference, valid_from=start, valid_until=end, document=document))
+        return agreement_new(agency_id)
+    agency = partner_agency(agency_id)
+    pagination = db.paginate(PartnerAgreement.query.filter_by(agency_id=agency.id).order_by(
+        PartnerAgreement.valid_until.desc(), PartnerAgreement.id.desc()).statement,
+        per_page=25, max_per_page=25, error_out=False)
+    return render_template('workspace/partner.html', agency=agency, pagination=pagination,
+                           today=local_now().date())
+
+
+def partner_agency(agency_id):
+    if not current_user.campus_id:
+        abort(403)
+    return PartnerAgency.query.options(lazyload(PartnerAgency.agreements)).filter_by(
+        id=agency_id, campus_id=current_user.campus_id).first_or_404()
+
+
+def partner_url(endpoint, **values):
+    from app.ui import linked_url
+    if request.args.get('activity_context') == 'create':
+        values['activity_context'] = 'create'
+    return linked_url(endpoint, **values)
+
+
+@workspace_bp.app_context_processor
+def partner_template_helpers():
+    return dict(partner_url=partner_url)
+
+
+def partner_form_key(endpoint, agency_id=None):
+    from urllib.parse import urlsplit
+    key = request.args.get('resume') or request.form.get('_draft_key')
+    if not key:
+        return 'form:' + url_for(endpoint, **({'agency_id': agency_id} if agency_id else {}))
+    if not key.startswith('form:/') or len(key) > 160:
+        abort(400)
+    from werkzeug.exceptions import HTTPException
+    try:
+        source, values = current_app.url_map.bind('').match(urlsplit(key[5:]).path, method='GET')
+    except HTTPException:
+        abort(400)
+    allowed = {endpoint, 'workspace.partners' if endpoint == 'workspace.partner_new' else
+               'workspace.partner' if endpoint == 'workspace.agreement_new' else endpoint}
+    if source not in allowed or values.get('agency_id') != agency_id:
+        abort(400)
+    draft = draft_for(key)
+    if request.args.get('resume') and not draft:
+        abort(404)
+    return key
+
+
+@workspace_bp.route('/partners/new', methods=['GET', 'POST'])
+@workspace_bp.route('/partners/<int:agency_id>/edit', methods=['GET', 'POST'])
+@login_required
+@role_required('coordinator')
+def partner_new(agency_id=None):
+    if not current_user.campus_id:
+        abort(403)
+    agency = partner_agency(agency_id) if agency_id else None
+    key = partner_form_key('workspace.partner_new', agency_id)
+    errors = {}
+    if request.method == 'POST':
+        values = {name: request.form.get(name, '').strip() for name in ('name','contact_name','email','phone')}
+        for name, limit in [('name',200),('contact_name',150),('email',120),('phone',50)]:
+            if name in ('name','contact_name') and not values[name]:
+                errors[name] = 'Complete this required field.'
+            elif len(values[name]) > limit:
+                errors[name] = f'Use {limit} characters or fewer.'
+        if not errors:
+            if agency is None:
+                agency = PartnerAgency(campus_id=current_user.campus_id)
+                db.session.add(agency)
+            for name, value in values.items():
+                setattr(agency, name, value)
             db.session.commit()
-            return redirect(url_for('workspace.partner', agency_id=agency.id))
-        except ValueError as exc:
-            errors.append(str(exc))
-    return render_template('workspace/partner.html', agency=agency, errors=errors)
+            flash('Agency details saved.', 'success')
+            if agency_id:
+                from app.ui import back_url
+                return redirect(back_url('workspace.partner', agency_id=agency.id))
+            return redirect(partner_url('workspace.partner', agency_id=agency.id))
+    return render_template('workspace/partner_form.html', agency=agency, form_key=key, errors=errors)
+
+
+@workspace_bp.route('/partners/<int:agency_id>/agreements/new', methods=['GET', 'POST'])
+@login_required
+@role_required('coordinator')
+def agreement_new(agency_id):
+    agency = partner_agency(agency_id)
+    key = partner_form_key('workspace.agreement_new', agency_id)
+    errors = {}
+    if request.method == 'POST':
+        dates = {}
+        for field in ('valid_from','valid_until'):
+            try:
+                dates[field] = date.fromisoformat(request.form.get(field, ''))
+            except ValueError:
+                errors[field] = 'Choose a valid date.'
+        reference = request.form.get('reference', '').strip()
+        if not reference or len(reference) > 150:
+            errors['reference'] = 'Provide an agreement reference of 150 characters or fewer.'
+        if len(dates) == 2 and dates['valid_until'] < dates['valid_from']:
+            errors['valid_until'] = 'Valid Until must be on or after Valid From.'
+        if not errors:
+            try:
+                document, _ = save_document(request.files.get('document'))
+            except ValueError as exc:
+                errors['document'] = str(exc)
+        if not errors:
+            start, end = dates['valid_from'], dates['valid_until']
+            agreement = PartnerAgreement(agency_id=agency.id, reference=reference, valid_from=start, valid_until=end, document=document)
+            db.session.add(agreement)
+            db.session.commit()
+            flash('Agreement saved.', 'success')
+            return redirect(partner_url('workspace.agreement_detail', agency_id=agency.id, agreement_id=agreement.id))
+    return render_template('workspace/agreement_form.html', agency=agency, errors=errors, form_key=key)
+
+
+@workspace_bp.route('/partners/<int:agency_id>/agreements/<int:agreement_id>')
+@login_required
+@role_required('coordinator')
+def agreement_detail(agency_id, agreement_id):
+    agency = partner_agency(agency_id)
+    agreement = PartnerAgreement.query.filter_by(id=agreement_id, agency_id=agency.id).first_or_404()
+    draft = draft_for('activity:new') if request.args.get('activity_context') == 'create' else None
+    start = partner_activity_date(draft)
+    return render_template('workspace/agreement.html', agency=agency, agreement=agreement,
+        today=local_now().date(), draft=draft, activity_date=start,
+        applicable=bool(start and agreement.valid_from <= start <= agreement.valid_until))
+
+
+def partner_activity_date(draft):
+    if not draft or not draft.payload.get('_proposal'):
+        return None
+    try:
+        return datetime.fromisoformat(draft.payload['date'][0]).date()
+    except (KeyError, IndexError, ValueError, TypeError):
+        return None
+
+
+@workspace_bp.route('/partners/<int:agency_id>/agreements/<int:agreement_id>/use', methods=['POST'])
+@login_required
+@role_required('coordinator')
+def agreement_use(agency_id, agreement_id):
+    agency = partner_agency(agency_id)
+    agreement = PartnerAgreement.query.filter_by(id=agreement_id, agency_id=agency.id).first_or_404()
+    if request.args.get('activity_context') != 'create':
+        abort(400)
+    draft = draft_for('activity:new')
+    start = partner_activity_date(draft)
+    if not start or not agreement.valid_from <= start <= agreement.valid_until:
+        flash('Choose an agreement covering the saved activity start date. Complete Activity Details first if needed.', 'error')
+        return redirect(partner_url('workspace.agreement_detail', agency_id=agency.id, agreement_id=agreement.id))
+    draft.payload = dict(draft.payload, agreement_id=[str(agreement.id)])
+    db.session.commit()
+    flash('MOA selected for your activity draft.', 'success')
+    return redirect(url_for('workspace.create_activity', step=3))
 
 
 @workspace_bp.route('/partners/<int:agency_id>/moa/<int:agreement_id>')
@@ -539,14 +707,24 @@ def moa(agency_id, agreement_id):
     return private_document(agreement.document)
 
 
+@workspace_bp.route('/activities/<int:event_id>/external/new', methods=['GET', 'POST'], endpoint='external_new')
 @workspace_bp.route('/activities/<int:event_id>/external', methods=['GET', 'POST'])
 @login_required
 @role_required('coordinator')
 def external(event_id):
     event = owned_event(event_id, lock=request.method == 'POST')
-    errors = []
+    from app.ui import roster_link
+    errors = {}
+    adding = request.endpoint == 'workspace.external_new' or (request.method == 'POST' and request.form.get('action') != 'attendance')
+    values = {key:request.form.get(key,'') for key in ('group_name','roster','mark_present')}
+    def entry_response(code=200, editable=None):
+        return render_template('workspace/external_form.html',event=event,errors=errors,values=values,
+                               editable=attendance_open(event) if editable is None else editable,now=local_now()),code
     if request.method == 'POST':
         if not attendance_open(event):
+            if adding:
+                errors['roster'] = 'The activity is not open for attendance. These participants were not saved.'
+                return entry_response(409,editable=False)
             abort(409, description='External attendance can only be recorded while the activity is ongoing.')
         if request.form.get('action') == 'attendance':
             ids = request.form.getlist('registration_id', type=int)
@@ -573,7 +751,7 @@ def external(event_id):
                 abort(409)
             db.session.commit()
             flash('External attendance saved.', 'success')
-            return redirect(url_for('workspace.external', event_id=event.id))
+            return redirect(roster_link('workspace.external', event.id))
         group_name = request.form.get('group_name', '').strip()[:150]
         raw = request.form.get('roster', '')
         upload = request.files.get('roster_file')
@@ -581,10 +759,11 @@ def external(event_id):
             try:
                 raw = upload.read(100001).decode('utf-8-sig')
             except UnicodeError:
-                abort(400, description='Use a UTF-8 CSV file.')
+                errors['roster_file'] = 'Use a UTF-8 CSV file. Select the file again before retrying.'
+                raw = ''
         rows = list(csv.reader(io.StringIO(raw))) if len(raw) <= 100000 else []
         if not rows or len(rows) > 100 or any(not r or not r[0].strip() or len(r[0]) > 100 for r in rows):
-            errors.append('Enter 1–100 named people, one per line: name,email (email optional).')
+            errors['roster'] = 'Enter 1–100 named people, one per line: name,email (email optional).'
         else:
             group = ExternalGroup(event_id=event.id, name=group_name or 'Individual volunteers')
             db.session.add(group)
@@ -602,10 +781,13 @@ def external(event_id):
                     db.session.add(Attendance(registration_id=registration.id, event_id=event.id, status='present'))
             if not attendance_open(event):
                 db.session.rollback()
-                abort(409, description='The activity ended before the roster was saved.')
+                errors['roster'] = 'The activity ended before the roster was saved. No participants were added.'
+                return entry_response(409,editable=False)
             db.session.commit()
             flash('Named external roster saved.', 'success')
-            return redirect(url_for('workspace.external', event_id=event.id))
+            return redirect(roster_link('workspace.external', event.id))
+    if adding:
+        return entry_response(400 if 'roster_file' in errors else 200)
     groups = ExternalGroup.query.filter_by(event_id=event.id).all()
     query = Registration.query.join(ExternalParticipant).filter(Registration.event_id == event.id,
         Registration.external_participant_id.isnot(None), Registration.status != 'cancelled')
@@ -620,10 +802,10 @@ def external(event_id):
         query = query.filter(Registration.attendance_record.has(Attendance.status == attendance_status))
     elif attendance_status:
         abort(400)
-    pagination = db.paginate(query.order_by(ExternalParticipant.name, Registration.id).statement,
-                             per_page=25, max_per_page=25, error_out=False)
+    from app.pagination import paginate
+    pagination = paginate(query.order_by(ExternalParticipant.name, Registration.id), per_page=25)
     return render_template('workspace/external.html', event=event, groups=groups, registrations=pagination.items,
-                           pagination=pagination, errors=errors, editable=attendance_open(event))
+                           pagination=pagination, errors=errors, editable=attendance_open(event), now=local_now())
 
 
 def report_data(args=None, forced_campus=None):
@@ -1019,9 +1201,36 @@ def about():
 
 @workspace_bp.route('/activities/<int:event_id>/documents')
 @login_required
-@role_required('coordinator')
+@roles_required('coordinator','director')
 def activity_documents(event_id):
-    return render_template('workspace/documents.html', event=owned_event(event_id))
+    from app.models.event import Milestone,EventAnnouncement
+    from app.pagination import paginate
+    from app.services.activity_documents import document_url,legacy_resumes,ANNOUNCEMENT_LABELS
+    event=owned_event(event_id)
+    read_only=current_user.role=='director'
+    view='announcements' if not read_only and request.args.get('view')=='announcements' else 'documents'
+    model=EventAnnouncement if view=='announcements' else Milestone
+    timestamp=model.created_at if view=='announcements' else model.uploaded_at
+    relation=model.author if view=='announcements' else model.uploaded_by
+    pagination=paginate(model.query.filter_by(event_id=event.id).options(joinedload(relation)).order_by(timestamp.desc(),model.id.desc()))
+    return render_template('workspace/documents.html',event=event,view=view,pagination=pagination,
+        document_url=document_url,resumes=[] if read_only else legacy_resumes(event),
+        announcement_labels=ANNOUNCEMENT_LABELS,read_only=read_only)
+
+
+@workspace_bp.route('/activities/<int:event_id>/documents/upload',methods=['GET','POST'])
+@workspace_bp.route('/activities/<int:event_id>/announcements/new',methods=['GET','POST'],endpoint='announcement_new')
+@login_required
+@role_required('coordinator')
+def document_upload(event_id):
+    from app.services.activity_documents import form_context
+    event=owned_event(event_id)
+    kind='announcement' if request.endpoint=='workspace.announcement_new' else 'upload'
+    context=form_context(event,kind)
+    if request.method=='POST':
+        from app.routes.coordinator import upload_milestone,publish_announcement
+        return publish_announcement(event_id) if kind=='announcement' else upload_milestone(event_id)
+    return render_template('workspace/document_form.html',**context,errors={})
 
 
 @workspace_bp.route('/imports/<kind>', methods=['GET', 'POST'])
@@ -1031,27 +1240,27 @@ def import_dataset(kind):
     if kind not in ('historical', 'annual'):
         abort(404)
     import secrets
-    import hashlib
     import click
     from flask import session
+    from app.import_previews import staged_file, discard, save, page_rows
     errors = []
     preview = token = None
     folder = Path(current_app.config['PRIVATE_UPLOAD_FOLDER']) / 'import-previews'
     folder.mkdir(parents=True, exist_ok=True)
+    slot = 'import_preview_' + kind
     if request.method == 'POST':
-        slot = 'import_preview_' + kind
         try:
+            if request.form.get('action') == 'discard':
+                staged_file(slot, verify_token=True)
+                discard(slot)
+                flash('Import preview discarded. No records were changed.', 'success')
+                return redirect(url_for('workspace.import_dataset', kind=kind))
             if request.form.get('action') == 'confirm':
-                staged = session.get(slot)
-                if not staged or not secrets.compare_digest(staged['token'], request.form.get('token', '')):
-                    abort(400)
-                path = folder / Path(staged['file']).name
-                if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != staged['hash']:
-                    abort(400)
-                run_import(kind, path, False)
+                staged, path = staged_file(slot, verify_token=True)
+                result = run_import(kind, path, False)
                 path.unlink()
                 session.pop(slot, None)
-                flash('Import completed using the validated file.', 'success')
+                flash('Import completed. ' + result.strip(), 'success')
                 return redirect(url_for('workspace.imports'))
             upload = request.files.get('dataset')
             if not upload or not upload.filename.lower().endswith('.csv'):
@@ -1061,13 +1270,34 @@ def import_dataset(kind):
                 raise ValueError('Import files must be 2 MB or smaller.')
             path = folder / (secrets.token_hex(24) + '.csv')
             path.write_bytes(content)
-            preview = run_import(kind, path, True)
-            token = secrets.token_urlsafe(32)
-            session[slot] = {'token': token, 'file': path.name, 'hash': hashlib.sha256(content).hexdigest()}
-        except (ValueError, UnicodeError, click.ClickException) as exc:
+            try:
+                run_import(kind, path, True)
+            finally:
+                path.unlink(missing_ok=True)
+            save(slot, content, '.csv')
+            return redirect(url_for('workspace.import_dataset', kind=kind, stage='review'))
+        except (ValueError, UnicodeError, csv.Error, click.ClickException) as exc:
             db.session.rollback()
             errors.append(str(exc))
-    return render_template('workspace/import_dataset.html', kind=kind, preview=preview, token=token, errors=errors)
+    paging = {}
+    if request.args.get('stage') == 'review' and session.get(slot):
+        staged, path = staged_file(slot)
+        try:
+            preview = run_import(kind, path, True)
+            token = staged['token']
+            with path.open(encoding='utf-8-sig', newline='') as source:
+                reader = csv.DictReader(source)
+                allowed = (['plan_key','year','plan_type','plan_title','indicator_code','indicator_name','unit','campus_code','target_value']
+                           if kind == 'annual' else ['source_key','unit_name','title','activity_type','volunteer_count','year_conducted'])
+                columns = [key for key in allowed if key in (reader.fieldnames or [])]
+                paging = page_rows([{key: row.get(key, '') for key in columns} for row in reader])
+                paging['columns'] = columns
+        except (ValueError, UnicodeError, csv.Error, click.ClickException) as exc:
+            db.session.rollback()
+            errors.append(str(exc))
+            preview = token = None
+    return render_template('workspace/import_dataset.html', kind=kind, preview=preview, token=token,
+                           errors=errors, has_preview=bool(session.get(slot)), **paging)
 
 
 def run_import(kind, path, dry_run):
@@ -1076,7 +1306,8 @@ def run_import(kind, path, dry_run):
         from app.reports import ReportError
         try:
             created, unchanged = import_file(path, dry_run=dry_run)
-            return f'{created} records to create; {unchanged} unchanged. Approved definitions remain immutable.'
+            action = 'to create' if dry_run else 'created'
+            return f'{created} records {action}; {unchanged} unchanged targets. Approved definitions remain immutable.'
         except ReportError as exc:
             raise ValueError(str(exc)) from exc
     import click
@@ -1141,15 +1372,20 @@ def registration(registration_id):
 @login_required
 @roles_required('director', 'admin')
 def management():
-    return render_template('workspace/management.html')
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        status = 'Connected'
+    except Exception:
+        db.session.rollback()
+        status = 'Unavailable'
+    return render_template('workspace/management.html', database_status=status)
 
 
 @workspace_bp.route('/categories')
 @login_required
 @roles_required('director', 'admin')
 def categories():
-    from app.models.event import ActivityCategory
-    return render_template('workspace/categories.html', categories=ActivityCategory.query.order_by(ActivityCategory.name).all())
+    return redirect(url_for('catalogue.index',tab='categories',q=request.args.get('q',''),page=request.args.get('page',1,type=int)))
 
 
 @workspace_bp.route('/volunteers')

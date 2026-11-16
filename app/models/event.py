@@ -345,6 +345,7 @@ class ActivityCategory(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
 
     def __repr__(self) -> str:
         return f"ActivityCategory(id={self.id}, name='{self.name}')"

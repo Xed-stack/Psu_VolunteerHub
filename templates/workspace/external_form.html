@@ -1,0 +1,19 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/roster_components.html' import heading,timing with context %}
+{% block title %}Add External Participants | PSU Volunteer Hub{% endblock %}
+{% block content %}<div class="roster-page">
+<a class="roster-link" href="{{ roster_link('workspace.external',event.id) }}">Back to External Attendance</a>
+{{ heading('Add External Participants',event) }}{{ timing(event,now) }}
+{% if errors %}<div class="roster-errors" role="alert" tabindex="-1" data-form-errors><h2>Review These Details</h2><ul>{% for field,message in errors.items() %}<li><a href="#{{ field }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+{% if editable %}
+<form class="roster-entry" method="post" enctype="multipart/form-data" action="{{ roster_link('workspace.external_new',event.id) }}" data-roster-entry data-entry-unsaved="{{ 'true' if request.method == 'POST' else 'false' }}" data-no-draft>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<p>Enter up to 100 named people. Every participant needs a name; email and group name are optional. Choose multiline entry or a CSV file.</p>
+<label class="field" for="group_name">Group Name (Optional)<input id="group_name" name="group_name" maxlength="150" value="{{ values.group_name }}" placeholder="For example, Community Learning Group…"></label>
+<label class="field" for="roster">Named Participants<textarea id="roster" name="roster" rows="6" aria-describedby="roster-help{{ ' roster-error' if errors.roster }}" {{ 'aria-invalid=true' if errors.roster }} placeholder="Juan Dela Cruz,juan@example.org&#10;Maria Santos">{{ values.roster }}</textarea></label><p id="roster-help" class="roster-field-help">One person per line: name,email. Email is optional. Do not include a header row.</p>{% if errors.roster %}<p id="roster-error" class="roster-field-error">{{ errors.roster }}</p>{% endif %}
+<label class="field" for="roster_file">Or Upload a Named Roster<input id="roster_file" type="file" name="roster_file" accept=".csv" aria-describedby="file-help{{ ' file-error' if errors.roster_file }}" {{ 'aria-invalid=true' if errors.roster_file }}></label><p id="file-help" class="roster-field-help">Use UTF-8 CSV with the same name,email format and no header. A selected file takes precedence over typed names. Files must be selected again after a validation error.</p>{% if errors.roster_file %}<p id="file-error" class="roster-field-error">{{ errors.roster_file }}</p>{% endif %}
+<label class="check-row"><input type="checkbox" name="mark_present" value="yes" {{ 'checked' if values.mark_present == 'yes' }}>Mark All People in This Submission as Attending</label>
+<p class="roster-field-help">Leave this unchecked to create the roster with attendance Unrecorded. Entry must be saved before the activity ends.</p>
+<footer class="roster-save"><p role="status" aria-live="polite" data-attendance-change-status>Input is not saved automatically.</p><button class="btn btn--primary" type="submit">Save Named Roster</button></footer>
+</form>{% elif request.method == 'POST' %}<section class="roster-entry"><h2>Unsubmitted Participants</h2><p>No changes were saved. You can copy the entered names for your records; uploaded files were not retained.</p><p>Group: {{ values.group_name or 'Not specified' }}</p><label class="field" for="roster">Entered Names<textarea id="roster" readonly>{{ values.roster }}</textarea></label></section>{% endif %}</div>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='scripts/attendance-workspace.js') }}"></script>{% endblock %}

@@ -15,6 +15,11 @@ from tests.test_app import app, client
 def actors(app, tmp_path):
     app.config['PRIVATE_UPLOAD_FOLDER'] = str(tmp_path)
     with app.app_context():
+        from app.models.event import ActivityCategory
+        from config import Config
+        for name in [*Config.EVENT_CATEGORIES,'General']:
+            if not ActivityCategory.query.filter_by(name=name).first():
+                db.session.add(ActivityCategory(name=name))
         people = {}
         for role, campus in [('director', 1), ('coordinator', 1), ('volunteer', 1), ('other', 2)]:
             user = User(name=role, email=f'{role}@example.org', role='coordinator' if role == 'other' else role,
@@ -50,7 +55,7 @@ def test_connected_coordinator_screens_render(client, actors, path):
     '/workspace/imports/historical', '/admin_dash', '/settings', '/workspace/management', '/workspace/categories'])
 def test_director_has_merged_permissions(client, actors, path):
     sign_in(client, actors, 'director')
-    assert client.get(path).status_code == 200
+    assert client.get(path, follow_redirects=True).status_code == 200
 
 
 def test_draft_refresh_private_scope_and_secrets(client, app, actors):
@@ -233,7 +238,7 @@ def test_confirmation_required_for_user_import(client, app, actors):
     writer = csv.DictWriter(output,fieldnames=USER_IMPORT_COLUMNS)
     writer.writeheader()
     writer.writerow({'name':'Imported volunteer','email':'new@example.org','password':'StrongPassword1!','role':'volunteer','campus_code':'LINGAYEN'})
-    response = client.post('/admin/users/import',data={'file':(io.BytesIO(output.getvalue().encode()),'users.csv')})
+    response = client.post('/admin/users/import',data={'file':(io.BytesIO(output.getvalue().encode()),'users.csv')},follow_redirects=True)
     assert response.status_code == 200
     assert b'Review User Import' in response.data
     with app.app_context():

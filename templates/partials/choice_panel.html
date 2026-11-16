@@ -13,6 +13,7 @@
   {% for option in options %}
     {% set value = (option|attr(value_attr)|string) if value_attr else option|string %}
     {% set label = ('SDG ' ~ option.number ~ ': ' ~ option.name) if sdg else (option|attr(label_attr)) if label_attr else option %}
+    {% if option.is_active is defined and not option.is_active %}{% set label = label ~ ' (Archived)' %}{% endif %}
     {% set catalogue.values = catalogue.values + [value] %}
     <label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-{{ loop.index }}" name="{{ name }}" value="{{ value }}" {{ 'checked' if value in selected }} data-choice-label="{{ label }}"><span>{{ label }}</span></label>
   {% endfor %}

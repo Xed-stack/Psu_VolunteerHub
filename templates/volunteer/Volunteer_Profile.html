@@ -1,5 +1,5 @@
 {% extends 'layouts/role_base.html' %}
-{% from 'partials/dashboard_ui.html' import heading, metric %}
+{% from 'partials/dashboard_ui.html' import heading, metric with context %}
 {% from 'partials/password_feedback.html' import password_feedback %}
 {% set active_page = "profile" %}
 {% block title %}Profile | PSU Volunteer Hub{% endblock %}
@@ -7,48 +7,24 @@
 {% block header_subtitle %}Your details, matching preferences, and participation{% endblock %}
 {% block content %}
   {% set profile_view = 'account' if account_section else 'preferences' if errors else request.args.get('section','account') %}
-  <header class="page-heading">
-    <div>
-      <h1>Your Profile</h1>
-      <p>Manage one part of your account at a time.</p>
-    </div>
-  </header>
-  <nav
-    class="mb-6 flex flex-wrap gap-3"
-    aria-label="Profile Sections"
-  >{% for value,label in [('account','Account Settings'),('preferences','Interests and Photo'),('impact','Participation Milestones')] %}<a
-  class="btn {{ 'btn--primary' if profile_view == value else 'btn--outline' }}"
-  href="{{ url_for('volunteer.profile_page',section=value) }}"
-  {{ 'aria-current=page' if profile_view == value }}
->{{ label }}</a>{% endfor %}<a
-  class="btn btn--outline"
-  href="{{ url_for('workspace.registrations') }}"
->Registration History</a></nav><div class="profile-page stack">
+  <div class="profile-workspace">
+  <header class="profile-heading"><h1>Your Profile</h1><p>Manage your account, volunteer preferences, and participation.</p></header>
+  <section class="profile-identity" aria-labelledby="profile-name">
+    {% if current_user.profile_image_path %}<img class="profile-photo" width="96" height="96" src="{{ url_for('static',filename=current_user.profile_image_path) }}" alt="Profile photo">{% else %}<span class="avatar profile-photo" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}
+    <div class="profile-identity__details"><h2 id="profile-name">{{ current_user.name }}</h2><p>{{ current_user.email }}</p></div>
+    <dl class="profile-facts"><div><dt>Campus</dt><dd>{{ current_user.campus.name if current_user.campus else 'Not recorded' }}</dd></div><div><dt>Volunteer Type</dt><dd>{{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}</dd></div></dl>
+  </section>
+  <div class="profile-layout">
+    <aside class="profile-section-menu">
+      <nav class="profile-section-nav" aria-label="Profile Sections">
+      {% for value,label in [('account','Account Settings'),('preferences','Interests and Photo'),('impact','Participation Milestones')] %}<a href="{{ url_for('volunteer.profile_page',section=value) }}" {% if profile_view==value %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+      </nav>
+      <a class="profile-history-link" href="{{ url_for('workspace.registrations') }}">Registration History</a>
+    </aside>
+    <div class="profile-page profile-content">
     {% if profile_view == 'account' %}
-      <section
-        class="panel profile-identity"
-        aria-labelledby="profile-name"
-      >
-        {% if current_user.profile_image_path %}<img class="profile-photo" width="96" height="96" src="{{ url_for('static',filename=current_user.profile_image_path) }}" alt="Profile photo">{% else %}<span class="avatar profile-photo" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}
-        <div class="profile-identity__details">
-          <h2 id="profile-name">{{ current_user.name }}</h2>
-          <p>{{ current_user.email }}</p>
-          <dl class="profile-facts">
-            <div>
-              <dt>Campus</dt>
-              <dd>
-                {{ current_user.campus.name if current_user.campus else 'Not recorded' }}
-              </dd>
-            </div>
-            <div>
-              <dt>Volunteer Type</dt>
-              <dd>
-                {{ current_user.volunteer_type|title if current_user.volunteer_type else 'Not recorded' }}
-              </dd>
-            </div>
-          </dl>
-          <p class="help-text">Manage your name, campus, and password below.</p>
-        </div>
+      <section aria-labelledby="account-title">
+        <header class="profile-section-heading"><h2 id="account-title">Account Settings</h2><p>Change one part of your account at a time. Your email and volunteer type are managed separately.</p></header>
         <div class="profile-account-settings">
           {% for section, label in [('name', 'Change Name'), ('campus', 'Change Campus'), ('password', 'Change Password')] %}
             {% set section_errors = account_errors if account_section == section else {} %}
@@ -57,7 +33,7 @@
               class="profile-account-section"
               {% if section_errors %}open{% endif %}
             >
-              <summary>{{ label }}</summary>
+              <summary><span class="profile-setting-summary"><span>{{ label }}</span><span class="profile-setting-value">{% if section=='name' %}{{ current_user.name }}{% elif section=='campus' %}{{ current_user.campus.name if current_user.campus else 'Not recorded' }}{% else %}Update your account password{% endif %}</span></span></summary>
               <form
                 method="post"
                 action="{{ url_for('volunteer.change_' ~ section) }}"
@@ -66,10 +42,11 @@
                 {% include 'partials/csrf_field.html' %}
                 {% if section_errors %}
                   <div
-                    class="profile-error"
+                    class="profile-error profile-error-summary"
                     role="alert"
                     tabindex="-1"
                     data-profile-errors
+                    data-form-errors
                   >
                     <p>{{ section_errors.get('save', 'Changes were not saved. Check the fields below.') }}</p>
                     <ul>{% for key, message in section_errors.items() if key != 'save' %}<li><a href="#account-{{ key }}">{{ message }}</a></li>{% endfor %}</ul>
@@ -130,7 +107,7 @@
                   </noscript>
                 {% else %}
                   <p class="help-text" id="password-help">Use at least {{ password_min }} characters with uppercase, lowercase, a number, and a special character. This browser stays signed in; your other sessions will be signed out.</p>
-                  {% for key, field_label, autocomplete in [('current_password', 'Current password', 'current-password'), ('new_password', 'New password', 'new-password'), ('password_confirmation', 'Confirm new password', 'new-password')] %}
+                  {% for key, field_label, autocomplete in [('current_password', 'Current Password', 'current-password'), ('new_password', 'New Password', 'new-password'), ('password_confirmation', 'Confirm New Password', 'new-password')] %}
                     <label for="account-{{ key }}">{{ field_label }} <span aria-hidden="true">*</span></label>
                     <div class="profile-password-input">
                       <input
@@ -149,7 +126,7 @@
                         type="button"
                         data-profile-password="account-{{ key }}"
                         aria-controls="account-{{ key }}"
-                        aria-label="Show {{ field_label|lower }}"
+                        aria-label="Show {{ field_label }}"
                         aria-pressed="false"
                         hidden
                       >
@@ -161,7 +138,7 @@
                   {{ password_feedback('account-new_password', 'account-password_confirmation', password_min) }}
                 {% endif %}
                 <div>
-                  <button class="btn btn--primary" type="submit">{{ 'Change Password' if section == 'password' else 'Save ' ~ section }}</button>
+                  <button class="btn btn--primary" type="submit">{{ 'Change Password' if section == 'password' else 'Save Name' if section == 'name' else 'Save Campus' }}</button>
                 </div>
               </form>
             </details>
@@ -170,9 +147,15 @@
       </section>
     {% elif profile_view == 'preferences' %}
       <section
-        class="panel profile-editor"
+        class="profile-editor"
         aria-labelledby="matching-title"
       >
+        <header class="profile-section-heading"><h2 id="matching-title">Interests and Photo</h2><p>Update how you appear and the choices that support your activity recommendations.</p></header>
+        <div class="profile-photo-editor">
+          <div class="profile-photo-preview">
+            <img data-profile-photo-preview class="profile-photo" width="96" height="96" src="{{ url_for('static',filename=current_user.profile_image_path or 'assets/PSU-logo.png') }}" alt="Profile photo preview" {% if not current_user.profile_image_path %}hidden{% endif %}>
+            <span data-profile-photo-fallback class="avatar profile-photo" aria-hidden="true" {% if current_user.profile_image_path %}hidden{% endif %}>{{ current_user.name[:1]|upper }}</span>
+          </div>
         <div class="profile-photo-controls">
           <label for="profile-image">Change Profile Photo</label>
           <input
@@ -191,17 +174,16 @@
             <form
               method="post"
               action="{{ url_for('volunteer.remove_profile_image') }}"
+              data-confirm="Remove your profile photo? Your interests and skills will stay unchanged."
             >
               {% include 'partials/csrf_field.html' %}
               <button class="btn btn--ghost" type="submit">Remove Profile Photo</button>
             </form>
           {% endif %}
         </div>
-        <header class="panel__header">
-          <h2 id="matching-title">Interests and Skills</h2>
-        </header>
-        <p class="help-text">Select at least one of each to support your cosine-similarity recommendations. Skills and interests can be selected independently.</p>
-        {% if errors %}<p class="profile-error" role="alert">{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p>{% endif %}
+        </div>
+        <p class="help-text">Select at least one interest and one skill to support your cosine-similarity recommendations. Interests and skills can be selected independently.</p>
+        {% if errors %}<div class="profile-error profile-error-summary" role="alert" tabindex="-1" data-profile-errors data-form-errors><h3>Review These Details</h3><p>{{ errors.save or 'Profile was not saved. Review the highlighted choices. If you chose a photo, choose it again.' }}</p><ul>{% for key,message in errors.items() if key!='save' %}<li><a href="#{{ 'profile-image' if key=='profile_image' else 'profile-' ~ key }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
         <form
           id="profile-form"
           data-profile-form
@@ -212,10 +194,10 @@
           {% include 'partials/csrf_field.html' %}
           {% for name, label, catalog, selected in [('interests', 'Interests', interest_catalog, selected_interests), ('skills', 'Skills', skill_catalog, selected_skills)] %}
             <fieldset
-              class="profile-choices"
+              class="profile-choices" id="profile-{{ name }}" tabindex="-1"
               {% if errors.get(name) %}aria-describedby="{{ name }}-error" aria-invalid="true"{% endif %}
             >
-              <legend>{{ label }}</legend>
+              <legend>{{ label }}</legend><p class="profile-selection-count" role="status" data-profile-count="{{ name }}" hidden></p>
               {% if errors.get(name) %}<p id="{{ name }}-error" class="profile-error">{{ errors[name] }}</p>{% endif %}
               <div class="profile-choice-grid">
                 {% for choice in catalog %}
@@ -226,7 +208,7 @@
                       value="{{ choice.id }}"
                       {% if choice.id|string in selected %}checked{% endif %}
                     >
-                    <span>{{ choice.name }}</span>
+                    <span>{{ choice.name }}{% if name=='skills' and not choice.is_active %} (Archived){% endif %}</span>
                   </label>
                 {% else %}
                   <p>No {{ name }} are available. Contact your coordinator before saving.</p>
@@ -245,12 +227,12 @@
         </form>
       </section>
     {% else %}
-      <section aria-label="Participation Summary" class="summary-strip">
+      <header class="profile-section-heading"><h2>Participation Milestones</h2><p>Review your recorded participation and informational milestones.</p></header><section aria-label="Participation Summary" class="summary-strip">
         {{ metric('Registrations', user_stats.total_activities, 'All your registration records, including pending and cancelled registrations. This is not a completed-service count.') }}
-        {{ metric('Verified attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
-        {{ metric('Completed participation', user_stats.completed_participation, 'Recorded presence at an approved activity whose scheduled end has passed.') }}
+        {{ metric('Verified Attendance', user_stats.verified_attendance, 'Attendance records marked present by a coordinator.') }}
+        {{ metric('Completed Participation', user_stats.completed_participation, 'Recorded presence at an approved activity whose scheduled end has passed.') }}
       </section>
-      <section class="panel">
+      <section class="profile-milestones">
         {{ heading('Profile Milestones', 'Informational profile milestones, not Director recognition or awards. Levels use completed participation: Bronze at 0, Silver at 3, Gold at 10, Platinum at 20. Count badges require 1, 5, and 15 completed participations. Category Explorer requires verified attendance in 3 categories.') }}
         <div class="profile-milestone">
           <div>
@@ -267,14 +249,15 @@
             {% for badge in badges %}
               <li>
                 <strong>{{ badge.name }}</strong>
-                <span>{{ 'Earned' if badge.earned else 'Not yet earned' }}</span>
+                <span>{{ 'Earned' if badge.earned else 'Not Yet Earned' }}</span>
               </li>
             {% endfor %}
           </ul>
         </div>
       </section>
     {% endif %}
-  </div>
+    {% if profile_view=='impact' %}<a class="text-link" href="{{ url_for('workspace.registrations') }}">View Registration History</a>{% endif %}
+  </div></div></div>
 {% endblock %}
 {% block scripts %}
   <script type="application/json" id="profile-colleges">{{ affiliation_options|tojson }}</script>

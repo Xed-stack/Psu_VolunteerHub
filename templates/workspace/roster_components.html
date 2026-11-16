@@ -1,0 +1,24 @@
+{% from 'partials/info_tip.html' import info_tip with context %}
+{% macro schedule(value) -%}<time datetime="{{ value.isoformat() }}{{ '' if value.tzinfo else '+08:00' }}" data-schedule-time>{{ value.strftime('%d %b %Y, %I:%M %p') }}</time>{%- endmacro %}
+{% macro heading(title,event) %}
+<header class="roster-heading"><div><h1>{{ title }}</h1><p>{{ schedule(event.date) }}{% if event.end_date %} – {{ schedule(event.end_date) }}{% endif %} <span>Philippine Time</span></p></div><a class="roster-link" href="{{ url_for('help_page',slug='attendance' if current_user.role == 'coordinator' else 'reports') }}">{{ 'Attendance Help' if current_user.role == 'coordinator' else 'Report Help' }}</a></header>
+{% endmacro %}
+{% macro timing(event,now) %}
+<aside class="roster-timing" aria-label="Attendance Availability">
+  <div class="heading-with-help"><h2>{{ 'Schedule Limitation' if not event.end_date else 'Activity Cancelled' if event.lifecycle_status == 'cancelled' else 'Attendance Opens at Activity Start' if event.date > now else 'Attendance Locked' if now >= event.end_date else 'Attendance Open' }}</h2>{{ info_tip('Attendance Locking','Unmarked attendance remains unknown. Recorded presence provides participation evidence; it does not count every registered volunteer as attending.',url_for('help_page',slug='attendance')) }}</div>
+  <p>{% if not event.end_date %}The end time is not recorded. Attendance is read-only; use the printed report for corrections.{% elif event.lifecycle_status == 'cancelled' %}This activity is cancelled. Existing records remain available, and attendance cannot be changed.{% elif event.date > now %}Attendance opens at {{ event.date.strftime('%d %b %Y, %I:%M %p') }} Philippine time. Upcoming registrations are separate from attendance evidence.{% elif now >= event.end_date %}The activity ended at {{ event.end_date.strftime('%d %b %Y, %I:%M %p') }} Philippine time. Attendance is read-only; document later corrections on the printed report.{% else %}Record attendance before {{ event.end_date.strftime('%d %b %Y, %I:%M %p') }} Philippine time. Unrecorded attendance stays unknown.{% endif %}</p>
+  {% if not event.end_date or event.lifecycle_status == 'cancelled' or now >= event.end_date %}<a class="roster-link" href="{{ url_for('workspace.activity_report',event_id=event.id,period='all',year=event.date.year,return_to=roster_link('workspace.external' if request.endpoint in ['workspace.external','workspace.external_new'] else 'coordinator.attendance',event.id)) }}">Open Combined Report</a>{% elif event.date > now %}<a class="roster-link" href="{{ roster_link('workspace.activity_registrations',event.id) }}">View Registrations</a>{% endif %}
+</aside>
+{% endmacro %}
+{% macro tabs(event,external=false) %}
+<nav class="roster-tabs" aria-label="Volunteer Rosters"><a href="{{ roster_link('coordinator.attendance',event.id) }}" {% if not external %}aria-current="page"{% endif %}>Internal Volunteers</a><a href="{{ roster_link('workspace.external',event.id) }}" {% if external %}aria-current="page"{% endif %}>External Volunteers</a></nav>
+{% endmacro %}
+{% macro status(reg,editable,id) %}
+{% set labels={'present':'Attending','absent':'Not Attended','excused':'Excused'} %}
+{% set recorded=reg.attendance_record.status if reg.attendance_record else '' %}
+{% if editable %}
+<input type="hidden" name="registration_id" value="{{ reg.id }}"><label class="sr-only" for="{{ id }}">Attendance for {{ reg.participant.name if reg.participant else 'Volunteer' }}</label>
+<select name="status" id="{{ id }}" data-attendance-status>{% if not recorded %}<option value="">Unrecorded</option>{% endif %}{% for value,label in labels.items() %}<option value="{{ value }}" {{ 'selected' if recorded == value }}>{{ label }}</option>{% endfor %}</select><span class="roster-print-status">{{ labels.get(recorded,'Unrecorded' if not recorded else 'Unavailable') }}</span>
+{% else %}<span>{{ labels.get(recorded,'Unrecorded' if not recorded else 'Unavailable') }}</span>{% endif %}
+{% endmacro %}
+{% macro save(label) %}<footer class="roster-save"><div><p>Save applies only to the people displayed on this page.</p><p role="status" aria-live="polite" data-attendance-change-status>No unsaved changes.</p></div><button class="btn btn--primary" type="submit">{{ label }}</button></footer>{% endmacro %}

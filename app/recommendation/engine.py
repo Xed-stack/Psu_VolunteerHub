@@ -173,7 +173,7 @@ def bootstrap_from_event(user, event, top_skills=3, commit=True):
     if user.skills or user.interests:
         return
 
-    for name in [s.name for s in event.required_skills_rel][:top_skills]:
+    for name in [s.name for s in event.required_skills_rel if s.is_active][:top_skills]:
         skill = Skill.query.filter_by(name=name).first() or Skill(name=name)
         db.session.add(skill)
         user.skills.append(skill)

@@ -3,7 +3,7 @@
   class="navlink {{ 'navlink--active' if active }}"
   href="{{ url_for(target) }}"
   {% if active %}aria-current="page"{% endif %}
-><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span><span>{{ label }}</span></a>
+><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span><span class="navlink__label">{{ label }}</span></a>
 {% endmacro %}
 <aside
   class="role-sidebar"
@@ -19,7 +19,7 @@
     alt=""
     width="44"
     height="44"
-  ><span><strong>PSU Volunteer Hub</strong><small>{{ current_user.role_display_name }}</small></span></a>
+  ><span class="role-brand__copy"><strong>PSU Volunteer Hub</strong><small>{{ current_user.role_display_name }}</small></span></a>
   <nav class="role-nav" aria-label="Main Navigation">
     <p class="nav-group-label">Your Workspace</p>
     {% if current_user.role == 'volunteer' %}
@@ -41,13 +41,13 @@
   {% endif %}
   <p class="nav-group-label mt-5">Support</p>
   {{ nav_item('workspace.draft_list', 'draft', 'Saved Drafts', ['drafts']) }}
-  <a class="navlink" href="{{ url_for('help_page') }}"><span class="material-symbols-outlined" aria-hidden="true">help</span>Help and Guides</a>
-  <a class="navlink" href="{{ url_for('workspace.about') }}"><span class="material-symbols-outlined" aria-hidden="true">info</span>About the Hub</a>
+  {{ nav_item('help_page', 'help', 'Help and Guides', ['help']) }}
+  {{ nav_item('workspace.about', 'info', 'About the Hub', ['about']) }}
 </nav>
 <div class="role-user">{% if current_user.profile_image_path %}<img
   src="{{ url_for('static',filename=current_user.profile_image_path) }}"
   alt=""
   width="40"
   height="40"
->{% else %}<span class="avatar" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}<span><strong>{{ current_user.name }}</strong><small>{{ current_user.campus.name if current_user.campus else 'University office' }}</small></span><form method="post" action="{{ url_for('auth.logout') }}">{% include 'partials/csrf_field.html' %}<button class="role-user__logout" type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log Out</button></form></div>
+>{% else %}<span class="avatar" aria-hidden="true">{{ current_user.name[:1]|upper }}</span>{% endif %}<span class="role-user__details"><strong>{{ current_user.name }}</strong><small>{{ current_user.campus.name if current_user.campus else 'University Office' }}</small></span><form method="post" action="{{ url_for('auth.logout') }}">{% include 'partials/csrf_field.html' %}<button class="role-user__logout" type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Log Out</button></form></div>
 </aside>

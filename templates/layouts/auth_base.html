@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1"
     >
     <title>{% block title %}Account · PSU Volunteer Hub{% endblock %}</title>
-    <meta name="theme-color" content="#f9f9ff">
+    <meta name="theme-color" content="{% block auth_theme_color %}#f9f9ff{% endblock %}">
     <link
       rel="icon"
       href="{{ url_for('static', filename='assets/PSU-logo.png') }}"
@@ -19,19 +19,10 @@
     >
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/app.css') }}">
   </head>
-  <body class="auth-page" {% if session.pop('clear_signup_draft', false) %}data-clear-signup-draft{% endif %}>
+  <body class="auth-page{% block auth_page_class %}{% endblock %}" {% if session.pop('clear_signup_draft', false) %}data-clear-signup-draft{% endif %}>
     <a class="auth-skip-link" href="#main-content">Skip to Main Content</a>
-    <nav class="auth-nav" aria-label="Account Navigation">
-      <a class="auth-nav__brand" href="{{ url_for('home') }}">
-        <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="" width="40" height="40">
-        <span>PSU Volunteer Hub</span>
-      </a>
-      <div class="auth-nav__links">
-        <a class="button button--secondary auth-nav__link" href="{{ url_for('home') }}">Home</a>
-        <a class="button button--secondary auth-nav__link" href="{{ url_for('help_page') }}">Help</a>
-      </div>
-    </nav>
-    {% include 'partials/flash_messages.html' %}
+    {% block auth_navigation %}{% include 'partials/auth_nav.html' %}{% endblock %}
+    {% block auth_messages %}{% include 'partials/flash_messages.html' %}{% endblock %}
     {% block body %}{% endblock %}
     {% include 'partials/csrf_forms_script.html' %}
     <script src="{{ url_for('static', filename='scripts/form-submit-state.js') }}"></script>

@@ -1,0 +1,4 @@
+{% macro validity(agreement,today) %}<span class="badge {{ 'badge--primary' if agreement.valid_from <= today <= agreement.valid_until else 'badge--neutral' }}">{{ 'Upcoming' if today < agreement.valid_from else 'Expired' if today > agreement.valid_until else 'Valid Now' }}</span>{% endmacro %}
+{% macro field(name,label,value='',type='text',required=false,limit=none,errors={}) %}
+<label class="field">{{ label }}{{ ' *' if required }}<input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ request.form.get(name,value or '') if request.method == 'POST' else value or '' }}" {% if required %}required{% endif %} {% if limit %}maxlength="{{ limit }}"{% endif %} {% if name in errors %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>{% if name in errors %}<small class="text-red-700" id="{{ name }}-error">{{ errors[name] }}</small>{% endif %}</label>
+{% endmacro %}

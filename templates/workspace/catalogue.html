@@ -1,0 +1,33 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% block title %}Skills and Activity Categories · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{{ heading('Skills and Activity Categories','Manage university-wide choices. Archiving hides an item from new selections and preserves existing records.',url_for('workspace.management'),'Back to Management') }}
+<nav class="workspace-tabs" aria-label="Catalogue Sections">
+{% for tab,label in [('skills','Skills'),('categories','Activity Categories')] %}<a href="{{ url_for('catalogue.index',tab=tab) }}" {% if state.tab==tab %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+<form method="get" class="my-6 flex flex-wrap items-end gap-3">
+  <input type="hidden" name="tab" value="{{ state.tab }}">
+  <label class="field grow">Search {{ 'Skills' if state.tab=='skills' else 'Categories' }}<input type="search" name="q" value="{{ state.q }}" placeholder="Enter part of a name…" autocomplete="off"></label>
+  <div class="field"><label for="catalogue-status">Status</label><select id="catalogue-status" name="status"><option value="active" {{ 'selected' if state.status=='active' }}>Active</option><option value="archived" {{ 'selected' if state.status=='archived' }}>Archived</option></select></div>
+  <button class="btn btn--primary">Search</button><a class="text-link" href="{{ url_for('catalogue.index',tab=state.tab) }}">Reset Filters</a>
+</form>
+{% if state.tab=='skills' %}<a class="btn btn--primary mb-5" href="{{ url_for('catalogue.skill_form',**state) }}">Add Skill</a>
+{% else %}<form action="{{ url_for('catalogue.category_create') }}" method="post" class="mb-6 flex flex-wrap items-end gap-3" data-no-draft>
+{% include 'partials/csrf_field.html' %}{% for key,value in state.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+<label class="field grow">New Category *<input name="name" maxlength="50" required autocomplete="off"></label><button class="btn btn--primary">Add Category</button></form>{% endif %}
+<p class="mb-3 text-sm text-slate-600">{{ rows.total }} matching {{ 'skills' if state.tab=='skills' else 'categories' }}{% if state.q %} for “{{ state.q }}”{% endif %}. Sorted alphabetically.</p>
+<ul class="divide-y divide-slate-200">
+{% for row in rows.items %}<li class="flex flex-wrap items-start justify-between gap-4 py-5">
+<div class="min-w-0 max-w-2xl"><h2 class="text-lg">{{ highlight(row.name,state.q) }}</h2>
+{% if state.tab=='skills' %}<p class="mt-1 text-sm text-slate-600">Interests: {{ row.interests|map(attribute='name')|join(', ') or 'Not connected to signup interests' }}.</p><p class="mt-1 text-sm text-slate-600">{{ user_counts.get(row.id,0) }} volunteer assignments · {{ activity_counts.get(row.id,0) }} activities</p>
+{% else %}<p class="mt-1 text-sm text-slate-600">{{ activity_counts.get(row.name,0) }} activities</p>{% endif %}
+</div><div class="flex flex-wrap items-center gap-3">
+{% if state.tab=='skills' %}<a class="btn btn--outline" href="{{ url_for('catalogue.skill_form',skill_id=row.id,**state) }}">Edit Interests<span class="sr-only"> for {{ row.name }}</span></a>{% endif %}
+{% if state.tab=='categories' and row.name|lower=='general' %}<span class="text-sm text-slate-600">Always Available</span>
+{% else %}<form method="post" action="{{ url_for('catalogue.change_state',kind=state.tab,record_id=row.id,action='archive' if row.is_active else 'restore') }}" data-no-draft {% if row.is_active %}data-confirm="Archive {{ row.name }}? {{ activity_counts.get(row.id if state.tab=='skills' else row.name,0) }} activity assignments{% if state.tab=='skills' %} and {{ user_counts.get(row.id,0) }} volunteer assignments{% endif %} will remain unchanged."{% endif %}>
+{% include 'partials/csrf_field.html' %}{% for key,value in state.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}<button class="btn btn--outline">{{ 'Archive' if row.is_active else 'Restore' }}<span class="sr-only"> {{ row.name }}</span></button></form>{% endif %}
+</div></li>{% else %}<li class="py-8"><p>No matching {{ state.status }} {{ state.tab }}{% if state.q %} for “{{ state.q }}”{% endif %}.</p><a class="text-link" href="{{ url_for('catalogue.index',tab=state.tab) }}">Clear Search and Show Active Items</a></li>{% endfor %}
+</ul>
+{% if rows.pages>1 %}<nav class="mt-6 flex flex-wrap items-center gap-4" aria-label="Catalogue Pagination">{% if rows.has_prev %}<a class="btn btn--outline" href="{{ url_for('catalogue.index',tab=state.tab,status=state.status,q=state.q,page=rows.prev_num) }}">Previous</a>{% endif %}<span>Page {{ rows.page }} of {{ rows.pages }}</span>{% if rows.has_next %}<a class="btn btn--outline" href="{{ url_for('catalogue.index',tab=state.tab,status=state.status,q=state.q,page=rows.next_num) }}">Next</a>{% endif %}</nav>{% endif %}
+{% endblock %}

@@ -1,6 +1,8 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Review User Import · PSU Volunteer Hub{% endblock %}{% from 'workspace/components.html' import heading with context %}
-{% block content %}{{ heading('Review User Import','Validation passed. No accounts have been created. Passwords are not displayed or retained as plain text.',url_for('workspace.imports'),'Back to Imports') }}<section class="panel"><h2>{{ rows|length }} Accounts Ready to Import</h2><div class="overflow-x-auto"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.name }}</td><td>{{ row.email }}</td><td>{{ row.role|title }}</td></tr>{% endfor %}</tbody></table></div><form method="post" class="mt-6" data-no-draft><input type="hidden" name="action" value="confirm"><input type="hidden" name="token" value="{{ token }}"><button class="btn btn--primary">Confirm Import</button><a
-  class="btn btn--outline"
-  href="{{ url_for('admin.import_users_csv') }}"
->Choose Another File</a></form></section>{% endblock %}
+{% from 'workspace/components.html' import heading with context %}
+{% from 'partials/import_review.html' import controls with context %}
+{% block title %}Review User Import · PSU Volunteer Hub{% endblock %}
+{% block content %}{{ heading('Review User Import','No accounts have been created. Passwords are stored privately as hashes and never displayed.',url_for('workspace.imports'),'Back to Imports') }}
+<section class="panel"><ol class="mb-6 flex flex-wrap gap-4 text-sm" aria-label="Import Progress"><li>1. Upload</li><li aria-current="step"><strong>2. Review</strong></li><li>3. Confirm</li></ol><h2>{{ total }} Accounts Ready to Import</h2>
+<div class="table-scroll mt-5" tabindex="0" aria-label="User Import Preview"><table><thead><tr><th>CSV Row</th><th>Name</th><th>Email</th><th>Role</th><th>Campus Code</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ first + loop.index }}</td><td>{{ row.name }}</td><td>{{ row.email }}</td><td>{{ row.role|title }}</td><td>{{ row.campus_code or 'Not recorded' }}</td></tr>{% endfor %}</tbody></table></div>
+{{ controls(token,total,page,pages,first,last) }}</section>{% endblock %}

@@ -30,12 +30,26 @@ user_interests = db.Table(
 )
 
 
+interest_skills = db.Table(
+    'interest_skills',
+    db.Column('interest_id', db.Integer, db.ForeignKey('interests.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('skill_id', db.Integer, db.ForeignKey('skills.id', ondelete='CASCADE'), primary_key=True),
+)
+
+
+class CatalogueRevision(db.Model):
+    __tablename__ = 'catalogue_revisions'
+    version = db.Column(db.String(50), primary_key=True)
+
+
 class Skill(db.Model):
     """Lookup table for standardized volunteer skills."""
     __tablename__ = 'skills'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
+    interests = db.relationship('Interest', secondary=interest_skills, backref='skills')
 
     def __repr__(self) -> str:
         return f"<Skill {self.name}>"

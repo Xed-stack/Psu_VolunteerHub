@@ -1,82 +1,74 @@
 {% extends 'layouts/public_base.html' %}
 {% block title %}PSU Volunteer Hub · Serve Your Community{% endblock %}
 {% block content %}
-  <a class="skip-link" href="#main-content">Skip to Main Content</a>
-  <nav class="public-nav" aria-label="Public Navigation">
-    <a class="public-brand" href="{{ url_for('home') }}">
-    <img
-      src="{{ url_for('static',filename='assets/PSU-logo.png') }}"
-      alt=""
-      width="44"
-      height="44"
-    >PSU Volunteer Hub</a>
-    <div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Activities</a><a href="{{ url_for('workspace.about') }}">About Us</a><a href="{{ url_for('help_page') }}">Help</a><a
-  class="btn btn--primary"
-  href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('auth.login') }}"
->{{ 'Dashboard' if current_user.is_authenticated else 'Sign In' }}</a></div>
+<a class="skip-link" href="#main-content">Skip to Main Content</a>
+<div class="landing-page">
+  <nav class="public-nav" id="landing-start" tabindex="-1" aria-label="Public Navigation">
+    <a class="public-brand" href="{{ url_for('home') }}"><img src="{{ url_for('static',filename='assets/PSU-logo.png') }}" alt="" width="44" height="44">PSU Volunteer Hub</a>
+    <div class="public-nav__links"><a href="{{ url_for('events.opportunities') }}">Activities</a><a href="{{ url_for('workspace.about') }}">About Us</a><a href="{{ url_for('help_page') }}">Help</a><a class="btn btn--primary" href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('auth.login') }}">{{ 'Dashboard' if current_user.is_authenticated else 'Sign In' }}</a></div>
   </nav>
-  <main id="main-content">
-    <section
-      class="grid items-center gap-8 py-6 lg:grid-cols-[1fr_1.15fr] lg:gap-14 lg:py-12"
-    ><div><p class="mb-5 font-semibold text-psu">Pangasinan State University</p><h1
-  class="max-w-xl text-4xl leading-tight text-psu sm:text-5xl xl:text-6xl"
->Your campus.<br>Your community.<br>Your contribution.</h1><p class="mt-6 max-w-lg text-lg leading-8 text-slate-600">Find an activity that connects your interests with the people and places you can help.</p><div class="mt-8 flex flex-wrap gap-3"><a
-  class="btn btn--primary"
-  href="{{ url_for('events.opportunities') }}"
->Explore Activities</a>{% if not current_user.is_authenticated %}<a
-  class="btn btn--outline"
-  href="{{ url_for('auth.interests') }}"
->Become a Volunteer</a>{% endif %}</div><p class="mt-6 text-sm text-slate-600">Open to PSU students, faculty, staff, and external volunteers.</p></div><figure
-  class="overflow-hidden rounded-2xl border border-slate-300 bg-white"
-><img
-  src="{{ url_for('static',filename='assets/FB_IMG_1788789005999.jpg') }}"
-  alt="PSU volunteers gathered during a coastal cleanup"
-  width="960"
-  height="720"
-  fetchpriority="high"
-  class="aspect-[4/3] w-full object-cover"
-><figcaption class="border-t-4 border-gold p-5 text-sm text-slate-700">Service starts with people working together.</figcaption></figure></section>
-    <section class="border-y border-slate-300 py-8">
-      <div class="grid gap-6 md:grid-cols-3">
-        <div>
-          <h2>Choose Your Cause</h2>
-          <p class="mt-3 text-slate-600">Select interests and skills to discover activities that match.</p>
+  <main id="main-content" class="landing-main" tabindex="-1">
+    <section class="landing-hero" aria-labelledby="hero-title">
+      <div class="hero-carousel" data-hero-carousel>
+        {% for filename,description,height in [('FB_IMG_1788789005999.jpg','PSU volunteers gathered during a coastal cleanup',1536),('FB_IMG_1788776801482.jpg','PSU volunteers and community partners gathered for an outreach activity',1536),('FB_IMG_1788788985440.jpg','PSU volunteers carrying collected waste along the shoreline',1536),('FB_IMG_1788789024530.jpg','A team of PSU volunteers holding cleanup bags on the beach',1150),('FB_IMG_1788789014784.jpg','PSU volunteers working together to collect shoreline litter',1150)] %}
+        <img class="landing-hero__image {{ 'is-active' if loop.first }}" {{ 'src' if loop.first else 'data-src' }}="{{ url_for('static',filename='assets/' ~ filename) }}" alt="{{ description }}" width="2048" height="{{ height }}" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy" decoding="async" aria-hidden="true"{% endif %} data-hero-slide>
+        {% endfor %}
+      </div>
+      <div class="landing-hero__scrim" aria-hidden="true"></div>
+      <div class="landing-hero__content">
+        <p class="landing-university">Pangasinan State University</p>
+        <h1 id="hero-title">Your campus.<br>Your community.<br>Your contribution.</h1>
+        <p class="landing-hero__description">Find an activity that connects your interests with the people and places you can help.</p>
+        <div class="mt-7 flex flex-wrap gap-3"><a class="btn btn--gold" href="{{ url_for('events.opportunities') }}">Explore Activities</a>{% if not current_user.is_authenticated %}<a class="btn landing-on-dark" href="{{ url_for('auth.interests') }}">Become a Volunteer</a>{% endif %}</div>
+        <p class="mt-5 text-base leading-7 text-white">Open to PSU students, faculty, staff, and external volunteers.</p>
+      </div>
+      <div class="landing-hero__footer">
+        <div class="landing-hero-controls" data-hero-controls role="group" aria-label="Volunteer Activity Photos" hidden>
+          <button type="button" data-hero-prev aria-label="Previous Photo"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button>
+          <button type="button" data-hero-next aria-label="Next Photo"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+          <button type="button" data-hero-pause aria-label="Pause Photo Rotation"><span class="material-symbols-outlined" aria-hidden="true">pause</span></button>
+          <div class="landing-hero-dots" role="group" aria-label="Choose a Photo">{% for n in range(5) %}<button type="button" data-hero-dot="{{ n }}" aria-label="Show Photo {{ n+1 }} of 5" aria-pressed="{{ 'true' if n==0 else 'false' }}" class="{{ 'is-active' if n==0 }}"></button>{% endfor %}</div>
         </div>
-        <div>
-          <h2>Find Your Activity</h2>
-          <p class="mt-3 text-slate-600">Review the schedule, campus, requirements, and agreement before joining.</p>
-        </div>
-        <div>
-          <h2>Follow Your Commitment</h2>
-          <p class="mt-3 text-slate-600">Keep upcoming activities in your calendar and track verified participation.</p>
-        </div>
+        <p class="landing-photo-caption">Service starts with people working together.</p>
       </div>
     </section>
-    <section class="py-10"><header
-  class="mb-6 flex flex-wrap items-center justify-between gap-4"
-><div><h2 class="text-2xl">Upcoming Campus Activities</h2><p class="mt-2 text-slate-600">Open an activity for the complete details.</p></div><a
-  class="btn btn--outline"
-  href="{{ url_for('events.opportunities') }}"
->View All Activities</a></header><div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{% for event in featured_events %}<article class="panel"><p class="text-sm font-medium text-psu">{{ event.campus.name if event.campus else 'University' }}</p><h3 class="my-3"><a
-  href="{{ url_for('events.opportunity_detail',event_id=event.id) }}"
->{{ event.title }}</a></h3><p class="text-sm text-slate-600">{{ event.date.strftime("%d %b %Y, %I:%M %p") }} · Philippine time</p><a
-  class="btn btn--outline mt-5"
-  href="{{ url_for('events.opportunity_detail',event_id=event.id) }}"
->View Activity</a></article>{% else %}<p class="panel md:col-span-2">No upcoming activities are available yet. Check back for new campus activities.</p>{% endfor %}</div></section>
-    <section class="py-8"><header class="section-top"><div><h2>Service in Action</h2><p class="text-sm text-slate-600">Past approved activities with a recorded end time.</p></div></header><div class="grid gap-5 md:grid-cols-3">{% for event in completed_events %}<article class="workspace-section border-t-3 border-gold"><p class="text-xs text-slate-600">{{ event.campus.name if event.campus else 'University' }} · {{ event.date.strftime('%d %b %Y') }}</p><h3 class="my-3">{{ event.title }}</h3><p class="text-sm text-slate-600">{{ event.description|truncate(130) }}</p><a class="text-link mt-3" href="{{ url_for('events.opportunity_detail',event_id=event.id) }}">View Activity Details</a></article>{% else %}<p class="empty-state md:col-span-3">Completed activity highlights will appear when recorded schedules confirm delivery.</p>{% endfor %}</div></section>
-    <section class="public-record-band"><div><h2>PSU’s Documented Service</h2><p>Historical source records are reported separately from live participation and annual-plan evidence.</p><a class="btn btn--outline mt-4" href="{{ url_for('historical_activities') }}">Review Source Records</a></div><dl><div><dt>Historical Activity Records</dt><dd>{{ '{:,}'.format(historical_summary.activities) }}</dd></div><div><dt>Known Reported Participations</dt><dd>{{ '{:,}'.format(historical_summary.participants) if historical_summary.participants is not none else 'Not recorded' }}</dd></div></dl><p class="text-xs">Aggregate participations are not unique volunteers. {{ historical_summary.activities - historical_summary.known_counts }} records have no recorded participation count.</p></section>
-
+    <section class="landing-section landing-features" aria-label="How to Participate">
+      {% for icon,title,description in [('person_search','Choose Your Cause','Select interests and skills to discover activities that match.'),('volunteer_activism','Find Your Activity','Review the schedule, campus, requirements, and agreement before joining.'),('fact_check','Follow Your Commitment','Keep upcoming activities in your calendar and track verified participation.')] %}
+      <article><span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span><div><h2>{{ title }}</h2><p>{{ description }}</p></div></article>{% endfor %}
+    </section>
+    <section class="landing-section landing-events" aria-labelledby="upcoming-title">
+      <header class="section-top"><div><h2 id="upcoming-title">Upcoming Campus Activities</h2><p class="mt-2 text-slate-600">Open an activity for the complete details.</p></div><div class="flex flex-wrap gap-3"><a class="btn btn--outline" href="{{ url_for('events.opportunities') }}">View All Activities</a>{% if featured_events %}<div class="landing-carousel-controls" data-carousel-controls hidden><button class="btn btn--outline" type="button" data-carousel-prev aria-label="Previous Activity"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span></button><button class="btn btn--outline" type="button" data-carousel-next aria-label="Next Activity"><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button></div>{% endif %}</div></header>
+      {% if featured_events %}<div class="featured-carousel" data-carousel tabindex="0" role="region" aria-label="Upcoming Campus Activities">{% for event in featured_events %}<article class="featured-card">
+        <div class="landing-card-media">{% if event.cover_image_path %}<img src="{{ url_for('static',filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" width="640" height="400" loading="lazy">{% else %}<div class="landing-event-art" aria-hidden="true"><span class="material-symbols-outlined">diversity_3</span></div>{% endif %}{% if event.category %}<span class="landing-card-category">{{ event.category }}</span>{% endif %}</div>
+        <div class="landing-card-body"><p class="text-sm font-semibold text-psu">{{ event.campus.name if event.campus else 'University' }}</p><h3><a href="{{ url_for('events.opportunity_detail',event_id=event.id) }}">{{ event.title }}</a></h3><p class="text-sm text-slate-600">{{ event.date.strftime('%d %b %Y, %I:%M %p') }} · Philippine time</p><a class="btn btn--outline mt-5" href="{{ url_for('events.opportunity_detail',event_id=event.id) }}">View Activity</a></div>
+      </article>{% endfor %}</div>{% else %}<p class="empty-state">No upcoming activities are available yet. Check back for new campus activities.</p>{% endif %}
+    </section>
+    <section class="landing-impact" aria-labelledby="impact-title"><div class="landing-section"><div><h2 id="impact-title">PSU’s Documented Service</h2><p class="mt-4">Historical source records are reported separately from live participation and annual-plan evidence.</p><a class="btn landing-on-dark mt-5" href="{{ url_for('historical_activities') }}">Review Source Records</a></div><dl><div><dt>Historical Activity Records</dt><dd>{{ '{:,}'.format(historical_summary.activities) }}</dd></div><div><dt>Known Reported Participations</dt><dd>{{ '{:,}'.format(historical_summary.participants) if historical_summary.participants is not none else 'Not recorded' }}</dd></div></dl><p class="landing-impact-note">Aggregate participations are not unique volunteers. {{ historical_summary.activities - historical_summary.known_counts }} records have no recorded participation count.</p></div></section>
+    <section class="landing-section" aria-labelledby="stories-title"><header class="section-top"><div><h2 id="stories-title">Service in Action</h2><p class="mt-2 text-slate-600">Past approved activities with a recorded end time.</p></div></header><div class="landing-stories">{% for event in completed_events %}<article class="landing-story">
+      <div class="landing-card-media">{% if event.cover_image_path %}<img src="{{ url_for('static',filename=event.cover_image_path) }}" alt="Cover for {{ event.title }}" width="640" height="400" loading="lazy">{% else %}<div class="landing-event-art" aria-hidden="true"><span class="material-symbols-outlined">handshake</span></div>{% endif %}</div>
+      <div class="landing-card-body"><p class="text-sm text-slate-600">{{ event.campus.name if event.campus else 'University' }} · {{ event.date.strftime('%d %b %Y') }}</p><h3>{{ event.title }}</h3><p class="text-base text-slate-600">{{ event.description|truncate(130) }}</p><a class="text-link mt-4" href="{{ url_for('events.opportunity_detail',event_id=event.id) }}">View Activity Details</a></div>
+    </article>{% else %}<p class="empty-state md:col-span-3">Completed activity highlights will appear when recorded schedules confirm delivery.</p>{% endfor %}</div></section>
   </main>
-  <footer class="public-footer">
-    <span><strong>PSU Volunteer Hub</strong>
-      <br>
-    Pangasinan State University</span>
-    <div class="flex flex-wrap gap-5"><a
-  class="min-h-11 content-center text-psu"
-  href="{{ url_for('workspace.about') }}"
->About Us</a><a
-  class="min-h-11 content-center text-psu"
-  href="{{ url_for('help_page') }}"
->Help and Process Guide</a></div>
+  <footer class="landing-footer" aria-label="PSU Volunteer Hub Footer">
+    <div class="landing-footer__inner">
+      <div class="landing-footer__grid">
+        <a class="landing-footer__brand" href="{{ url_for('home') }}">
+          <img src="{{ url_for('static',filename='assets/PSU-logo.png') }}" alt="" width="44" height="44" loading="lazy">
+          <span><strong>PSU Volunteer Hub</strong><span>Pangasinan State University</span></span>
+        </a>
+        <nav aria-labelledby="footer-explore">
+          <h2 id="footer-explore">Explore</h2>
+          <ul><li><a href="{{ url_for('events.opportunities') }}">Activities</a></li><li><a href="{{ url_for('workspace.about') }}">About Us</a></li><li><a href="{{ url_for('historical_activities') }}">Review Source Records</a></li></ul>
+        </nav>
+        <section aria-labelledby="footer-help">
+          <h2 id="footer-help">Help and Process Guide</h2>
+          <a class="btn btn--gold landing-footer__help" href="{{ url_for('help_page') }}">Open Help</a>
+          <nav aria-label="Help Topics"><ul><li><a href="{{ url_for('help_page',slug='account-access') }}">Account Access Help</a></li><li><a href="{{ url_for('help_page',slug='agreements') }}">Privacy and Participation Help</a></li></ul></nav>
+        </section>
+      </div>
+      <div class="landing-footer__bottom"><p>© {{ footer_year }} PSU Volunteer Hub</p><a href="#landing-start">Back to Top</a></div>
+    </div>
   </footer>
+</div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='scripts/public-home.js') }}"></script>{% endblock %}
