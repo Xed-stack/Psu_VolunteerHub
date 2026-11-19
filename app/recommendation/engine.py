@@ -102,7 +102,12 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None,
     date/capacity scope. Scores describe interest similarity, not attendance
     probability. commit=False leaves log persistence to the caller.
     """
-    if volunteer_profile is None or not volunteer_profile.interest_list:
+    # if volunteer_profile is None or not volunteer_profile.interest_list:
+    #     return []
+    if volunteer_profile is None:
+        return []
+
+    if not volunteer_profile.interest_list and not volunteer_profile.skill_list:
         return []
 
     user = db.session.get(User, volunteer_profile.user_id)
@@ -113,7 +118,8 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None,
     user_interests = normalize_terms(volunteer_profile.interest_list)
     user_terms = user_skills | user_interests
 
-    history = db.session.query(Registration.event_id, Registration.status).filter(Registration.user_id == user.id).all()
+    history = db.session.query(Registration.event_id, Registration.status).filter(
+        Registration.user_id == user.id).all()
     registered_ids = {event_id for event_id, status in history
                       if status not in ('cancelled', 'rejected')}
 
@@ -123,21 +129,25 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None,
         candidates = Event.query.filter(
             db.not_(Event.id.in_(registered_ids))
         ).filter(Event.date >= local_now()).options(selectinload(Event.required_skills_rel),
-            load_only(Event.id, Event.date, Event.category, Event.campus_id, Event.lifecycle_status)).order_by(Event.date.asc(), Event.id).all()
+                                                    load_only(Event.id, Event.date, Event.category, Event.campus_id, Event.lifecycle_status)).order_by(Event.date.asc(), Event.id).all()
 
-    candidates = [event for event in candidates if event.lifecycle_status == 'approved']
+    candidates = [
+        event for event in candidates if event.lifecycle_status == 'approved']
     scored = []
     similarities = {}
     for event in candidates:
-        event_skills = normalize_terms(s.name for s in event.required_skills_rel)
+        event_skills = normalize_terms(
+            s.name for s in event.required_skills_rel)
         event_terms = set(event_skills)
         if event.category:
             event_terms |= normalize_terms([event.category])
 
         terms_key = frozenset(event_terms)
         # Same term set means same base score; reuse within this request.
+
         if terms_key not in similarities:
-            similarities[terms_key] = _cosine_similarity(user_interests, event_terms)
+            similarities[terms_key] = _cosine_similarity(
+                user_terms, event_terms)
         interest_score = similarities[terms_key]
         if interest_score <= 0:
             continue
@@ -151,7 +161,8 @@ def get_recommendations(volunteer_profile, events=None, top_n=5, campus_id=None,
             'percentage': min(round(interest_score * 100), 100),
         })
 
-    scored.sort(key=lambda x: (x['event'].campus_id != campus_id, -x['score'], x['event'].date, x['event'].id))
+    scored.sort(key=lambda x: (
+        x['event'].campus_id != campus_id, -x['score'], x['event'].date, x['event'].id))
     top = scored[:top_n]
     if top:
         Event.query.filter(Event.id.in_([item['event'].id for item in top])).options(
@@ -198,6 +209,6 @@ def _log_recommendations(user, recommendations, commit=True):
     """
     if recommendations:
         db.session.execute(insert(RecommendationLog), [dict(user_id=user.id,
-            event_id=rec['event'].id, similarity_score=rec['score']) for rec in recommendations])
+                                                            event_id=rec['event'].id, similarity_score=rec['score']) for rec in recommendations])
     if commit:
         db.session.commit()

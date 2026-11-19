@@ -14,13 +14,89 @@
 <div class="heading-with-help"><h2>Review Activity Details</h2>{{ info_tip('Draft Saving','Wait for Draft saved before leaving. Saved selections and attachment references are restored on refresh. Passwords and unsubmitted consent are never retained.',url_for('help_page')) }}</div><p class="my-4 text-slate-600">Check extracted information against the approved document. All times use Philippine time.</p>
 <div class="form-grid"><div class="field--wide">{{ input('title','Activity Title',data.get('title',''),'text',true) }}</div><label class="field field--wide">Description *<textarea name="description" required rows="5">{{ data.get('description','') }}</textarea></label>
 <div class="field--wide activity-cover-field"><label class="field">Activity Cover Image <span class="scope-note">Optional</span><input type="file" name="cover_image" accept=".jpg,.jpeg,.png,.webp"><small>JPEG, PNG, or WebP up to 5 MB. Saved uploads remain attached after refresh.</small></label>{% if saved_cover %}<p class="scope-note mt-2" data-saved-upload="cover_image">Saved cover: <strong>{{ saved_cover.name }}</strong>. Upload a new file only to replace it.</p>{% endif %}</div>
-{{ input('date','Start Date and Time',data.get('date',''),'datetime-local',true,minimum=now.strftime('%Y-%m-%dT%H:%M')) }}{{ input('end_date','End Date and Time',data.get('end_date',''),'datetime-local',true,minimum=now.strftime('%Y-%m-%dT%H:%M')) }}{{ input('location','Location',data.get('location','')) }}<label class="field">Category *<select name="category" required>{% if data.get("category") and data.get("category") not in categories %}<option value="" selected>Select an Available Category</option>{% endif %}{% for category in categories %}<option {{ 'selected' if data.get('category') == category }}>{{ category }}</option>{% endfor %}</select></label>
+
+<div class="field schedule-field">
+  <label for="schedule-start-display">Start Date and Time *</label>
+  <button type="button" id="schedule-start-display" class="schedule-display" data-picker="date" aria-haspopup="dialog">Select start date and time</button>
+  <input type="hidden" name="date" id="field-date" value="{{ data.get('date','')|e }}">
+  <small id="start-date-error" class="schedule-error" role="alert" hidden></small>
+</div>
+<div class="field schedule-field">
+  <label for="schedule-end-display">End Date and Time *</label>
+  <button type="button" id="schedule-end-display" class="schedule-display" data-picker="end_date" aria-haspopup="dialog">Select end date and time</button>
+  <input type="hidden" name="end_date" id="field-end_date" value="{{ data.get('end_date','')|e }}">
+  <small id="end-date-error" class="schedule-error" role="alert" hidden></small>
+</div>
+<dialog id="schedule-picker" class="schedule-dialog" aria-labelledby="schedule-picker-heading">
+  <div class="schedule-dialog-content">
+    <h3 id="schedule-picker-heading">Select date and time</h3>
+    <label class="field" for="schedule-picker-date">Date
+      <input type="date" id="schedule-picker-date" required>
+    </label>
+    <div class="schedule-time-field" role="group" aria-labelledby="schedule-time-label">
+      <span id="schedule-time-label">Time (12-hour format, PHT)</span>
+      <div class="schedule-time-controls">
+        <div class="schedule-time-unit">
+          <div class="schedule-time-combo">
+            <div class="schedule-time-input-wrap">
+              <input id="schedule-picker-hour" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="Hour" aria-controls="schedule-hour-options" aria-expanded="false" placeholder="HH">
+              <div id="schedule-hour-options" class="schedule-time-options" role="listbox" aria-label="Choose hour" hidden></div>
+            </div>
+            <button type="button" class="schedule-time-arrow" data-time-toggle="hour" aria-label="Show hours" aria-controls="schedule-hour-options"><span aria-hidden="true">⌄</span></button>
+          </div>
+          <span class="schedule-time-caption">Hour</span>
+        </div>
+        <span class="schedule-time-colon" aria-hidden="true">:</span>
+        <div class="schedule-time-unit">
+          <div class="schedule-time-combo">
+            <div class="schedule-time-input-wrap">
+              <input id="schedule-picker-minute" type="text" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="Minute" aria-controls="schedule-minute-options" aria-expanded="false" placeholder="MM">
+              <div id="schedule-minute-options" class="schedule-time-options" role="listbox" aria-label="Choose minute" hidden></div>
+            </div>
+            <button type="button" class="schedule-time-arrow" data-time-toggle="minute" aria-label="Show minutes" aria-controls="schedule-minute-options"><span aria-hidden="true">⌄</span></button>
+          </div>
+          <span class="schedule-time-caption">Minute</span>
+        </div>
+        <div class="schedule-time-unit schedule-time-period">
+          <select id="schedule-picker-period" aria-label="AM or PM"><option value="AM">AM</option><option value="PM">PM</option></select>
+          <span class="schedule-time-caption">AM/PM</span>
+        </div>
+      </div>
+    </div>
+    <p id="schedule-picker-error" class="schedule-error" role="alert" hidden></p>
+    <div class="schedule-actions">
+      <button type="button" class="btn btn--outline" id="schedule-picker-cancel">Cancel</button>
+      <button type="button" class="btn btn--primary" id="schedule-picker-confirm">Confirm</button>
+    </div>
+  </div>
+</dialog>
+{{ input('location','Location',data.get('location','')) }}<label class="field">Category *<select name="category" required>{% if data.get("category") and data.get("category") not in categories %}<option value="" selected>Select an Available Category</option>{% endif %}{% for category in categories %}<option {{ 'selected' if data.get('category') == category }}>{{ category }}</option>{% endfor %}</select></label>
+
 <label class="field">Volunteer Slots *<input name="slots" type="number" min="1" max="{{ max_slots }}" value="{{ data.get('slots','20') }}" required></label>{{ input('cancellation_days','Withdrawal Closes: Days Before Start',data.get('cancellation_days','2'),'number',true,minimum=0) }}
 <div class="field--wide">{{ choice_panel('required_skills','Required Skills',skills,data.getlist('required_skills'),help='Choose the skills volunteers will use. No specific skill is required if you leave this empty.') }}</div>
 <div class="field--wide">{{ choice_panel('sdg_ids','Sustainable Development Goals',sdgs,data.getlist('sdg_ids'),sdg=true,required=true,help='Select at least one goal this activity contributes to.') }}</div></div>
 {% elif step == 3 %}
 <div class="heading-with-help"><h2>Audience and Partners</h2>{{ info_tip('Audience Targeting','Department selections guide campus notifications. Other eligible volunteers may still register. Capacity and numeric targets serve different purposes.',url_for('help_page')) }}</div><p class="my-4 text-slate-600">Targeting helps notify volunteers; it does not restrict eligible registrations.</p>
-<div class="form-grid">{{ input('participant_type','Type of Participants',data.get('participant_type','')) }}{{ input('conducting_department','Conducting Department',data.get('conducting_department','')) }}
+<div class="form-grid">
+    <!-- {{ input('participant_type','Type of Participants',data.get('participant_type','')) }}{{ input('conducting_department','Conducting Department',data.get('conducting_department','')) }}  -->
+        <label class="field">
+        Type of Participants
+        <select name="participant_type">
+            <option value="">Select Participant Type</option>
+            <option value="Volunteer"
+            {{ 'selected' if data.get('participant_type') == 'Volunteer' }}>
+            Volunteer (Students, Faculty, Staff)
+            </option>
+            <option value="Mixed"
+            {{ 'selected' if data.get('participant_type') == 'Mixed' }}>
+            Mixed (Volunteer, External)
+            </option>
+            <option value="External"
+            {{ 'selected' if data.get('participant_type') == 'External' }}>
+            External
+            </option>
+        </select>
+        </label>
 <div class="field--wide">{{ choice_panel('departments','Audience Departments',departments,data.getlist('departments'),value_attr=none,label_attr=none,help='Departments within ' ~ current_user.campus.name ~ '. Choose departments to notify; leaving this empty sends no department-targeted invitations.') }}</div>
 {{ input('target_participants','Numeric Participant Target',data.get('target_participants',''),'number',minimum=1) }}<div class="field"><label>Existing Partner / MOA<select name="agreement_id"><option value="">No MOA Selected</option>{% for agency in agencies %}{% for agreement in agency.agreements %}<option value="{{ agreement.id }}" {{ 'selected' if data.get('agreement_id') == agreement.id|string }}>{{ agency.name }} · {{ agreement.reference }}</option>{% endfor %}{% endfor %}</select></label><a class="text-link" data-draft-exit href="{{ url_for('workspace.partners',activity_context='create') }}">Choose an MOA or Add a Partner</a><small>Your activity draft is saved before opening Partners.</small></div></div>
 {% else %}
@@ -28,4 +104,10 @@
 {% endif %}
 <div class="mt-8 flex flex-wrap justify-between gap-3 border-t border-slate-200 pt-5">{% if step > 1 %}<a class="btn btn--outline" href="{{ url_for('workspace.create_activity',step=step-1) }}">Previous Step</a>{% else %}<a class="btn btn--outline" href="{{ url_for('workspace.draft_list') }}">Saved Drafts</a>{% endif %}<button class="btn btn--primary">{{ 'Publish Approved Activity' if step == 4 else 'Keep Saved Proposal and Continue' if step == 1 and proposal else 'Save and Continue' }}</button></div>
 </form>{% endblock %}
-{% block scripts %}<script src="{{ url_for('static',filename='scripts/choice-panels.js') }}"></script>{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static',filename='scripts/choice-panels.js') }}"></script>
+{% if step == 2 %}
+
+<script src="{{ url_for('static', filename='scripts/activity-date-picker.js') }}"></script>
+{% endif %}
+{% endblock %}
