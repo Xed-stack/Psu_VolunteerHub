@@ -108,7 +108,7 @@ def create_proposal(step, draft):
                     payload['proposal_record']=[json.dumps(record,ensure_ascii=False)]
                     flash('Proposal attached. Review captured values and complete missing information.' if document['readable'] else
                           'Proposal attached. Text could not be captured; complete the fields manually.','info')
-                elif not payload.get('_proposal'):
+                elif not payload.get('_proposal') and not request.form.get('save_draft'):
                     raise ValueError('Choose the approved PDF or DOCX proposal.')
             else:
                 remove=None
@@ -166,6 +166,11 @@ def create_proposal(step, draft):
                     return redirect(url_for('workspace.create_activity',step=step,_anchor='pr-'+table))
                 target=request.form.get('save_step',type=int)
                 if target and target not in (1,2,3,4):abort(400)
+                if request.form.get('save_draft') or request.form.get('open_partners'):
+                    target=step
+                elif step in (2,3) and (target is None or target>step):
+                    from app.services.activity_fields import stage_errors
+                    field_errors.update(stage_errors(payload,step,record))
                 if step==4 and not target:
                     payload['_show_validation']=True
                     field_errors=validate_record(record)
@@ -199,7 +204,7 @@ def create_proposal(step, draft):
                                 db.session.flush()
                                 snapshot={label:payload.get(key,[]) for key,label in [('title','Activity Title'),('description','Public Activity Description'),
                                     ('date','Start (Philippine Time)'),('end_date','End (Philippine Time)'),('location','Location'),('category','Category'),
-                                    ('slots','Volunteer Registration Slots'),('target_participants','Numeric Participant Target'),
+                                    ('slots','Volunteer Registration Slots'),('target_participants','Total Participant Target'),('expected_partner_participants','Expected Partner Participants'),
                                     ('conducting_department','Conducting Department'),('participant_type','Type of Participants'),
                                     ('cancellation_days','Withdrawal Closes: Days Before Start'),('departments','Audience Departments')]}
                                 snapshot['Required Skills']=[skill.name for skill in event.required_skills_rel]
@@ -220,7 +225,7 @@ def create_proposal(step, draft):
             db.session.commit()
             if not errors and not field_errors:
                 return redirect(partner_url('workspace.partners') if request.form.get('open_partners') else
-                    url_for('workspace.create_activity',step=request.form.get('save_step',type=int) or min(step+1,4)))
+                    url_for('workspace.create_activity',step=step if request.form.get('save_draft') else request.form.get('save_step',type=int) or min(step+1,4)))
         except ValueError as exc:
             errors.append(str(exc))
             draft.payload=payload
@@ -248,7 +253,16 @@ def create_proposal(step, draft):
         errors.append('A saved skill is archived or unavailable. Remove or replace the unavailable selection in Activity Details.')
     try:lines,total=budget_totals(record)
     except ValueError:lines,total=[],None
-    return render_template('workspace/proposal_create.html',step=step,data=data,record=record,errors=errors,
+    from app.services.proposal_record import REQUIRED
+    all_field_errors=validate_record(record)
+    section_states={anchor:('Incomplete' if any(key in all_field_errors for key in keys) else 'Needs Review' if any(draft.payload.get('_capture',{}).get(key,{}).get('state')=='Needs Review' for key in keys) else 'Complete') for anchor,_,keys in GROUPS+PARTICIPATION}
+    required_keys=set(REQUIRED)|set(CHOICES)|{'team','implementation','risks','budget_na','partnership_status'}
+    required_keys.update({'budget_reason'} if record.get('budget_na')=='yes' else {'budget'})
+    if record.get('partnership_status')=='none':required_keys.add('partnership_reason')
+    else:required_keys.update(('agency_id','psu_roles','partner_roles','partnership_duration'))
+    if 'Other Stakeholders' in record.get('beneficiary_groups',[]):required_keys.add('beneficiary_other')
+    if 'Other Stakeholders' in record.get('volunteer_groups',[]):required_keys.add('volunteer_other')
+    return render_template('workspace/proposal_create.html',step=step,data=data,record=record,errors=errors,required_keys=required_keys,section_states=section_states,
         field_errors=field_errors,payload=draft.payload,proposal=draft.payload.get('_proposal'),
         skills=Skill.query.filter_by(is_active=True).order_by(Skill.name).all(),sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
         categories=_activity_categories(),max_slots=_max_event_slots(),departments=audience_departments(),

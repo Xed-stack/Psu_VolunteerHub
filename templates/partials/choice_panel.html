@@ -1,6 +1,6 @@
-{% macro choice_panel(name,title,options,selected=none,value_attr='id',label_attr='name',sdg=false,required=false,help='') %}
+{% macro choice_panel(name,title,options,selected=none,value_attr='id',label_attr='name',sdg=false,required=false,help='',error='') %}
 {% set selected = selected or [] %}{% set catalogue = namespace(values=[]) %}
-<fieldset class="choice-panel" data-choice-panel {{ 'data-choice-required' if required }}>
+<fieldset class="choice-panel" data-choice-panel {{ 'data-choice-required' if required }} {% if error %}aria-invalid="true" aria-describedby="error-{{ name }}"{% endif %}>
   <legend>{{ title }}{% if required %} <span aria-hidden="true">*</span>{% endif %}</legend>
   {% if help %}<p class="choice-panel__help">{{ help }}</p>{% endif %}
   <div class="choice-panel__enhancement" data-choice-tools hidden>
@@ -20,5 +20,6 @@
   {% for value in selected if value not in catalogue.values %}<label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-unavailable-{{ loop.index }}" name="{{ name }}" value="{{ value }}" checked data-choice-label="Unavailable selection: {{ value }}"><span>Unavailable selection: {{ value }}. Remove this selection before saving.</span></label>{% endfor %}
   {% if not options and not selected %}<p class="scope-note">No options are available.</p>{% endif %}
   </div>
+  {% if error %}<p class="proposal-error" id="error-{{ name }}">{{ error }}</p>{% endif %}
 </fieldset>
 {% endmacro %}

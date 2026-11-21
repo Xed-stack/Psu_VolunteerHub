@@ -57,6 +57,10 @@
   .proposal-section > h2 { @apply mb-4; }
   .proposal-section > p { @apply my-3; }
   .proposal-field { @apply my-5 min-w-0; scroll-margin-top:calc(var(--role-header-height,4rem) + 1rem); }
+  .proposal-disclosure > summary { @apply grid min-h-11 grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-3 text-lg; }
+  @media (max-width:30rem) { .proposal-disclosure > summary [data-section-state] { grid-column:2; } }
+  .proposal-disclosure > summary::before { content:'▸'; }
+  .proposal-disclosure[open] > summary::before { content:'▾'; }
   .proposal-field h3 { @apply mb-2; }
   .proposal-row { @apply my-4 min-w-0 rounded-md border border-slate-400 p-3 sm:p-4; }
   .proposal-row legend { @apply px-1 text-sm font-semibold; }
@@ -1044,7 +1048,7 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .schedule-display[aria-invalid="true"] { border-color:#b91c1c; }
 .schedule-error { display:block; color:#b91c1c; font-size:.85rem; margin-top:.35rem; }
 .schedule-error[hidden] { display:none; }
-.schedule-dialog { width:min(92vw,420px); max-height:90vh; padding:0; margin:auto; border:1px solid #cbd5e1; border-radius:12px; background:#fff; color:#0f172a; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.schedule-dialog { width:min(92vw,420px); max-height:90vh; padding:0; margin:auto; border:1px solid #cbd5e1; border-radius:12px; background:#fff; color:#0f172a; box-shadow:0 20px 60px rgba(0,0,0,.25); overscroll-behavior:contain; }
 .schedule-dialog::backdrop { background:rgba(8,25,48,.5); }
 .schedule-dialog-content { display:grid; gap:1rem; padding:1.4rem; }
 .schedule-dialog-content h3 { font-weight:700; font-size:1.15rem; }
@@ -1065,6 +1069,6 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .schedule-time-caption { text-align:center; font-size:.8rem; color:#475569; }
 .schedule-time-options { position:absolute; z-index:10; top:calc(100% + .2rem); left:0; width:100%; max-height:10rem; overflow-y:auto; overscroll-behavior:contain; border:1px solid #94a3b8; border-radius:.45rem; background:#fff; box-shadow:0 6px 16px rgba(15,23,42,.18); }
 .schedule-time-options[hidden] { display:none; }
-.schedule-time-options button { display:block; width:100%; padding:.5rem .4rem; border:0; background:#fff; color:#0f172a; text-align:center; cursor:pointer; font-variant-numeric:tabular-nums; }
+.schedule-time-options button { display:block; width:100%; min-height:44px; padding:.5rem .4rem; border:0; background:#fff; color:#0f172a; text-align:center; cursor:pointer; font-variant-numeric:tabular-nums; }
 .schedule-time-options button:hover, .schedule-time-options button[aria-selected="true"] { background:#dbeafe; }
 @media(max-width:380px) { .schedule-time-controls { gap:.3rem; } .schedule-time-arrow { flex-basis:1.5rem; } .schedule-time-period { flex-basis:4.6rem; } }

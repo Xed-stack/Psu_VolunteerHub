@@ -48,6 +48,10 @@ def create_app(config_name=None):
     elif config_name == 'production':
         app.config.update(DEV_ERROR_DEBUGGER=False, PROPAGATE_EXCEPTIONS=False)
     timeout = app.config['SESSION_IDLE_TIMEOUT_SECONDS']
+    from app.services.attendance_state import activation_time, label as attendance_label
+    with app.app_context():
+        activation_time()
+    app.jinja_env.globals['attendance_label']=attendance_label
     warning = app.config['SESSION_IDLE_WARNING_SECONDS']
     if not (isinstance(timeout, int) and isinstance(warning, int)
             and 0 < warning < timeout):

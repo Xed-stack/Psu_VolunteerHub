@@ -1,15 +1,15 @@
 {% from 'partials/info_tip.html' import info_tip with context %}
-{% macro follow_up_list(items, limit=none) %}
-  {% set visible = items[:limit] if limit is not none else items %}<ul class="work-queue">{% for item in visible %}{{ queue_row(item) }}{% else %}<li><div><strong>No follow-up findings in this scope</strong><p>Recorded activity and attendance information does not currently trigger a review finding. Missing institutional evidence is assessed separately in Annual plans.</p></div></li>{% endfor %}</ul>
+{% macro follow_up_list(items, limit=none, hide_correction_action=false) %}
+  {% set visible = items[:limit] if limit is not none else items %}<ul class="work-queue">{% for item in visible %}{{ queue_row(item,hide_correction_action) }}{% else %}<li><div><strong>No follow-up findings in this scope</strong><p>Recorded activity and attendance information does not currently trigger a review finding. Missing institutional evidence is assessed separately in Annual plans.</p></div></li>{% endfor %}</ul>
 {% endmacro %}
-{% macro queue_row(item) %}
+{% macro queue_row(item,hide_correction_action=false) %}
   <li><div><small>{{ item.campus.name if item.campus else 'Unassigned campus' }}</small><strong>{{ item.title }}</strong>{% if item.event %}<p><a
   class="text-psu font-medium underline"
   href="{{ linked_url('workspace.activity',event_id=item.event.id) }}"
->{{ item.event.title }}</a></p>{% endif %}<small>{{ item.scope }}</small><p>{{ item.evidence }}</p></div><div class="queue-actions"><a
+>{{ item.event.title }}</a></p>{% endif %}<small>{{ item.scope }}</small><p>{{ item.evidence }}</p></div><div class="queue-actions">{% if hide_correction_action and item.code=='pending_attendance' %}<p class="scope-note">Attendance is locked. Historical unrecorded values remain unchanged.</p>{% else %}<a
   class="btn btn--outline"
   href="{{ item.url if current_user.role == 'coordinator' or item.code != 'record_attendance' else url_for('workspace.activity',event_id=item.event.id) }}"
->{{ item.action if current_user.role == 'coordinator' or item.code != 'record_attendance' else 'Review Ongoing Activity' }}</a>{% if current_user.role == 'director' and item.campus and item.has_coordinator %}
+>{{ item.action if current_user.role == 'coordinator' or item.code != 'record_attendance' else 'Review Ongoing Activity' }}</a>{% endif %}{% if current_user.role == 'director' and item.campus and item.has_coordinator %}
     <form
       method="post"
       action="{{ url_for('director.campus_follow_up') }}"

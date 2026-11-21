@@ -153,6 +153,8 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
     eligible = Registration.status != 'cancelled'
     valid = eligible & sex_scope
     attendance_eligible = eligible | Registration.status.is_(None)
+    from app.services.attendance_state import default_condition
+    defaulted=default_condition(now)
     derived_completed = ((Registration.status == 'confirmed') & (Attendance.status == 'present') &
                          Event.end_date.isnot(None) & (Event.end_date <= now))
     completed = (Registration.status == 'completed') | derived_completed
@@ -169,11 +171,12 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             count_when(valid & Registration.external_participant_id.isnot(None)).label('external'),
             count_when(completed & sex_scope).label('completed'),
             count_when(Registration.status == 'cancelled').label('cancelled'),
-            count_when(attendance_eligible & Attendance.id.is_(None)).label('missing'),
+            count_when(attendance_eligible & Attendance.id.is_(None) & ~defaulted).label('missing'),
             count_when(attendance_eligible & (Attendance.status == 'present') &
                        ~completed).label('unconfirmed'),
             count_when(valid & (Attendance.status == 'present')).label('outcome'),
             count_when(valid & completed).label('verified_completed'),
+            count_when(defaulted & sex_scope).label('defaulted'),
         ).join(Event, Registration.event_id == Event.id).outerjoin(User, Registration.user_id == User.id).outerjoin(
             Attendance, Attendance.registration_id == Registration.id).filter(
             Registration.event_id.in_(event_ids)).group_by(Registration.event_id).subquery()
@@ -219,7 +222,7 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
     total_cancelled = 0
     total_target = 0
 
-    for e, reg, psu, external, completed, cancelled, missing, unconfirmed, outcome_attended, verified_completed, attended in events:
+    for e, reg, psu, external, completed, cancelled, missing, unconfirmed, outcome_attended, verified_completed, defaulted_count, attended in events:
         target = e.target_participants
         ended = now >= (e.end_date or e.date)
         complete = ended and not missing and not unconfirmed
@@ -237,6 +240,7 @@ def build_events_report(campus_id=None, start_date=None, end_date=None,
             'ended': ended,
             'attendance_complete': complete,
             'missing_attendance': missing,
+            'defaulted_attendance': defaulted_count,
             'unconfirmed_present': unconfirmed,
             'outcome_attended': outcome_attended,
             'title': e.title,
@@ -349,20 +353,23 @@ def render_csv(rows, summary, meta):
     writer.writerow([])
     writer.writerow(['Activity', 'Date', 'Campus', 'Category', 'SDGs',
                      'Registrations', 'PSU', 'External', 'Actual Participants',
-                     'Cancelled', 'Completed', 'Target Participants', 'Target Completion'])
+                     'Cancelled', 'Completed', 'Target Participants', 'Target Completion', 'Not Attended (System Default)'])
+    total_defaulted = 0
     for r in rows:
+        total_defaulted += r.get('defaulted_attendance', 0)
         writer.writerow([
             csv_safe(r['title']), r['date'].strftime('%Y-%m-%d'), csv_safe(r['campus']),
             csv_safe(r['category']), csv_safe(r['sdgs']), r['registrations'], r['psu_registrations'],
             r['external_registrations'], r['attended'], r['cancelled'],
             r['completed'], r['target_participants'] or '',
             f"{r['completion_percentage']}%" if r['completion_percentage'] is not None else '',
+            r.get('defaulted_attendance', 0),
         ])
     writer.writerow([])
     writer.writerow(['TOTAL', '', '', '', '', summary['total_registrations'],
                      summary['total_psu'], summary['total_external'],
                      summary['total_attended'], summary['total_cancelled'],
-                     summary['total_completed'], summary['total_target_participants'], ''])
+                     summary['total_completed'], summary['total_target_participants'], '', total_defaulted])
     return output.getvalue()
 
 
@@ -411,7 +418,10 @@ def render_pdf(rows, summary, meta):
 
     data = [['Activity', 'Date', 'Campus', 'Category', 'SDGs', 'Reg.', 'PSU', 'Ext.',
              'Actual', 'Cancelled', 'Completed', 'Target', 'Progress']]
+    default_notes = []
     for r in rows:
+        if r.get('defaulted_attendance'):
+            default_notes.append(f"{r['title']}: {r['defaulted_attendance']} Not Attended (System Default).")
         data.append([
             r['title'], r['date'].strftime('%Y-%m-%d'), r['campus'],
             r['category'], r['sdgs'], str(r['registrations']), str(r['psu_registrations']),
@@ -433,6 +443,8 @@ def render_pdf(rows, summary, meta):
          [colors.white, colors.HexColor('#F3F6FC')]),
     ]))
     story.append(table)
+    for note in default_notes:
+        story.append(Paragraph(escape(note), small))
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph(
         f"<b>Summary</b> &mdash; Events: {summary['event_count']} &middot; "

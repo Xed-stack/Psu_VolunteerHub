@@ -13,6 +13,7 @@
   {% from 'partials/search_ui.html' import chips with context %}{{ chips() }}
 {% endmacro %}
 {% macro input(name, label, value='', type='text', required=false, help='', minimum=none) %}
+  {% set error=field_errors.get(name) if field_errors is defined else none %}
   <label class="field"><span>{{ label }}{% if required %} <span aria-hidden="true">*</span>{% endif %}</span><input
   class="input"
   id="field-{{ name }}"
@@ -21,7 +22,8 @@
   value="{{ value }}"
   {% if minimum is not none %}min="{{ minimum }}"{% endif %}
   {% if required %}required{% endif %}
->{% if help %}<small>{{ help }}</small>{% endif %}</label>
+  {% if error %}aria-invalid="true" aria-describedby="error-{{ name }}"{% endif %}
+>{% if help %}<small>{{ help }}</small>{% endif %}{% if error %}<small class="proposal-error" id="error-{{ name }}">{{ error }}</small>{% endif %}</label>
 {% endmacro %}
 {% macro errors(items) %}{% if items %}<div
   class="mb-6 rounded-lg border-2 border-red-700 bg-red-50 p-4 text-red-900"

@@ -71,6 +71,8 @@ def _activity_form_context(event=None, **context):
     context.setdefault('skill_choices', skill_choices(event.required_skills_rel if event else ()))
     context.setdefault('sdgs', SdgGoal.query.order_by(SdgGoal.number).all())
     context.setdefault('max_slots', _max_event_slots())
+    from app.routes.workspace import audience_departments
+    context.setdefault('departments',audience_departments())
     return context
 
 
@@ -303,6 +305,18 @@ def edit_activity(event_id):
         category = request.form.get('category', 'General').strip()
         slots = request.form.get('slots', 0, type=int)
         target_participants = request.form.get('target_participants', type=int)
+        from app.services.activity_fields import partner_count,primary_agency,department_error
+        from app.routes.workspace import audience_departments
+        conducting_department=request.form.get('conducting_department',event.conducting_department or '').strip()
+        department_problem=department_error(conducting_department,audience_departments(),event.conducting_department)
+        activity_agency_id=primary_agency(event)
+        try:
+            expected_partner=partner_count(request.form.get('expected_partner_participants',str((event.audience or {}).get('expected_partner_participants',''))),target_participants,activity_agency_id)
+        except ValueError as exc:
+            department_problem=str(exc)
+        if department_problem:
+            flash(department_problem,'error')
+            return render_template('coordinator/edit_activity.html',event=event,**_activity_form_context(event=event))
         max_slots = _max_event_slots()
 
         if category not in categories:
@@ -330,8 +344,8 @@ def edit_activity(event_id):
             flash(f'Volunteer slots must be between 1 and {max_slots}.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
                                    **_activity_form_context(event=event))
-        if target_participants is not None and target_participants < 1:
-            flash('Target participants must be a positive number when provided.', 'error')
+        if request.form.get('target_participants') and (target_participants is None or target_participants < 1):
+            flash('Total Participant Target must be a positive whole number when provided.', 'error')
             return render_template('coordinator/edit_activity.html', event=event,
                                    **_activity_form_context(event=event))
 
@@ -354,6 +368,14 @@ def edit_activity(event_id):
         event.sdgs = sdgs
         event.slots = slots
         event.target_participants = target_participants
+        event.conducting_department=conducting_department
+        audience=dict(event.audience or {})
+        if expected_partner is None:
+            audience.pop('expected_partner_participants',None)
+            audience.pop('expected_partner_agency_id',None)
+        else:
+            audience.update(expected_partner_participants=expected_partner,expected_partner_agency_id=activity_agency_id)
+        event.audience=audience
         old_cover = event.cover_image_path
         try:
             cover = _save_event_cover(request.files.get('cover_image'))
@@ -501,10 +523,8 @@ def attendance():
                     ExternalParticipant.email.icontains(volunteer_search, autoescape=True),
                     ExternalParticipant.id_number.icontains(volunteer_search, autoescape=True))),
             ))
-        if attendance_filter == 'unmarked':
-            roster = roster.filter(~Registration.attendance_record.has())
-        elif attendance_filter:
-            roster = roster.filter(Registration.attendance_record.has(Attendance.status == attendance_filter))
+        from app.services.attendance_state import roster_filter
+        roster=roster_filter(roster,attendance_filter,selected_event,now)
         pagination = paginate(roster.join(User, User.id == Registration.user_id).options(
             joinedload(Registration.user), joinedload(Registration.external_participant),
             joinedload(Registration.attendance_record)).order_by(User.name, Registration.id), per_page=15)
@@ -573,8 +593,9 @@ def attendance():
     attendance_opens_at = selected_event.date if selected_event else None
     attendance_counts = {'registered': len(registrations), 'present': 0,
                          'absent': 0, 'excused': 0, 'unmarked': 0}
+    from app.services.attendance_state import state
     for registration in registrations:
-        status = registration.attendance_record.status if registration.attendance_record else 'unmarked'
+        status = state(registration,now)['status'] or 'unmarked'
         attendance_counts[status] += 1
     return render_template('workspace/attendance.html', events=events, now=now,
                            pagination=pagination, activity_search=search,

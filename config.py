@@ -11,6 +11,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PERFORMANCE_METRICS_ENABLED = os.environ.get('PERFORMANCE_METRICS_ENABLED', 'false').lower() == 'true'
     PERFORMANCE_SLOW_QUERY_MS = int(os.environ.get('PERFORMANCE_SLOW_QUERY_MS', '100'))
+    ATTENDANCE_DEFAULTS_EFFECTIVE_FROM = os.environ.get('ATTENDANCE_DEFAULTS_EFFECTIVE_FROM')
 
     UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB

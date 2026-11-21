@@ -1,8 +1,9 @@
 {% macro proposal_field(key,record,field_errors,capture,row_counts={}) %}
 {% set error=field_errors.get(key) %}
+{% set marker %}<span data-required-marker="{{ key }}">{{ ' *' if key in required_keys|default([]) else ' (Optional)' }}</span>{% endset %}
 <div id="pr-{{ key }}" class="proposal-field" {% if error %}data-field-error{% endif %}>
 {% if key in proposal_tables %}
-{% set table=proposal_tables[key] %}{% if key!='implementation' %}<h3>{{ table[0] }}</h3>{% endif %}
+{% set table=proposal_tables[key] %}{% if key!='implementation' %}<h3>{{ table[0] }}{{ marker }}</h3>{% endif %}
 <input type="hidden" name="pr.present.{{ key }}" value="1">
 <p class="scope-note">Up to 50 rows. Complete each used row; remove rows you do not need.{% if key=='team' %} Record one Leader and the remaining people as Member.{% endif %}</p>
 <div data-proposal-rows="{{ key }}">
@@ -10,19 +11,19 @@
 {% for index in range(count) %}
 {% set row=rows[index] if index<rows|length else {} %}
 <fieldset class="proposal-row"><legend>{{ table[0] }} · <span data-row-number>{{ index+1 }}</span></legend><div class="form-grid">
-{% for column,label in table[1] %}<label class="field">{{ label }}
+{% for column,label in table[1] %}<label class="field">{{ label }}{{ marker }}
 {% if key=='team' and column=='role' %}<select name="pr.{{ key }}.{{ column }}" data-record-row="{{ column }}"><option value="">Select Role</option>{% for role in ['Leader','Member'] %}<option {{ 'selected' if row.get(column,'')|lower==role|lower }}>{{ role }}</option>{% endfor %}</select>
 {% else %}<input name="pr.{{ key }}.{{ column }}" data-record-row="{{ column }}" value="{{ row.get(column,'') }}" maxlength="10000" autocomplete="off" {% if column in ['quantity','unit_cost'] %}type="number" min="{{ '0.001' if column=='quantity' else '0' }}" step="{{ '0.001' if column=='quantity' else '0.01' }}" inputmode="decimal"{% endif %}>{% endif %}</label>{% endfor %}
-</div><button class="btn btn--ghost" type="submit" name="row_action" value="remove:{{ key }}:{{ index }}" data-remove-proposal-row>Remove Row <span class="sr-only">{{ index+1 }} From {{ table[0] }}</span></button></fieldset>
-{% endfor %}</div><button type="submit" class="btn btn--outline" name="row_action" value="add:{{ key }}:0" data-add-proposal-row="{{ key }}">Add {{ 'Team Member' if key=='team' else 'Budget Item' if key=='budget' else 'Risk' if key=='risks' else 'Implementation Row' }}</button>
+</div><button class="btn btn--ghost" type="submit" name="row_action" value="remove:{{ key }}:{{ index }}" data-remove-proposal-row formnovalidate>Remove Row <span class="sr-only">{{ index+1 }} From {{ table[0] }}</span></button></fieldset>
+{% endfor %}</div><button type="submit" class="btn btn--outline" name="row_action" value="add:{{ key }}:0" data-add-proposal-row="{{ key }}" formnovalidate>Add {{ 'Team Member' if key=='team' else 'Budget Item' if key=='budget' else 'Risk' if key=='risks' else 'Implementation Row' }}</button>
 {% elif key in proposal_choices %}
-<fieldset><legend>{{ {'beneficiary_groups':'Beneficiary Groups','volunteer_groups':'Expected Volunteers','engagement_areas':'Areas of Engagement','activity_types':'Type of Activity','outcomes':'Expected Outcomes'}[key] }}</legend>
+<fieldset><legend>{{ {'beneficiary_groups':'Beneficiary Groups','volunteer_groups':'Expected Volunteers','engagement_areas':'Areas of Engagement','activity_types':'Type of Activity','outcomes':'Expected Outcomes'}[key] }}{{ marker }}</legend>
 <input type="hidden" name="pr.present.{{ key }}" value="1"><div class="proposal-options">{% for option in proposal_choices[key] %}<label><input type="checkbox" name="pr.{{ key }}" value="{{ option }}" {{ 'checked' if option in record.get(key,[]) }}>{{ option }}</label>{% endfor %}</div></fieldset>
 {% elif key=='budget_na' %}
-<label class="field" for="record-{{ key }}">Budget Applicability<select id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}"><option value="">Choose Budget Applicability</option><option value="no" {{ 'selected' if record.get(key)=='no' }}>Budget Applies</option><option value="yes" {{ 'selected' if record.get(key)=='yes' }}>Not Applicable</option></select></label>
+<label class="field" for="record-{{ key }}">Budget Applicability *<select id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}"><option value="">Choose Budget Applicability</option><option value="no" {{ 'selected' if record.get(key)=='no' }}>Budget Applies</option><option value="yes" {{ 'selected' if record.get(key)=='yes' }}>Not Applicable</option></select></label>
 {% elif key in ['beneficiary_count','volunteer_count','implementing_unit','beneficiary_other','volunteer_other','prepared_by','noted_by','recommending_by','approved_by'] %}
-<label class="field" for="record-{{ key }}">{{ proposal_scalars[key] }}<input id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}" value="{{ record.get(key,'') }}" maxlength="10000" autocomplete="off" {% if key.endswith('_count') %}type="number" min="0" max="999999999" step="1" inputmode="numeric"{% endif %} {% if error %}aria-invalid="true" aria-describedby="error-{{ key }}"{% endif %}></label>
-{% else %}<label class="field" for="record-{{ key }}">{{ proposal_scalars[key] }}<textarea id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}" rows="4" maxlength="10000" {% if error %}aria-invalid="true" aria-describedby="error-{{ key }}"{% endif %}>{{ record.get(key,'') }}</textarea></label>{% endif %}
+<label class="field" for="record-{{ key }}">{{ proposal_scalars[key] }}{{ marker }}<input id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}" value="{{ record.get(key,'') }}" maxlength="10000" autocomplete="off" aria-required="{{ 'true' if key in required_keys|default([]) else 'false' }}" {% if key.endswith('_count') %}type="number" min="0" max="999999999" step="1" inputmode="numeric"{% endif %} {% if error %}aria-invalid="true" aria-describedby="error-{{ key }}"{% endif %}></label>
+{% else %}<label class="field" for="record-{{ key }}">{{ proposal_scalars[key] }}{{ marker }}<textarea id="record-{{ key }}" name="pr.{{ key }}" data-record-field="{{ key }}" rows="4" maxlength="10000" aria-required="{{ 'true' if key in required_keys|default([]) else 'false' }}" {% if error %}aria-invalid="true" aria-describedby="error-{{ key }}"{% endif %}>{{ record.get(key,'') }}</textarea></label>{% endif %}
 {% if error %}<p class="proposal-error" id="error-{{ key }}">{{ error }}</p>{% endif %}
 {% if key=='budget_reason' %}<p class="scope-note">Required when Budget Applicability is Not Applicable.</p>{% elif key in ['beneficiary_other','volunteer_other'] %}<p class="scope-note">Required only when Other Stakeholders is selected.</p>{% elif key=='outcomes_notes' %}<p class="scope-note">Optional detail supporting the selected outcomes.</p>{% endif %}
 {% if key in capture %}<p class="proposal-capture"><strong>{{ capture[key].state }}</strong> · {{ capture[key].source }}</p>{% endif %}

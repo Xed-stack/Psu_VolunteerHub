@@ -47,7 +47,7 @@
 
 {% macro attention_preview(grouped) %}
 <section class="staff-section staff-attention" data-tour-id="follow-up" aria-labelledby="attention-title"><header class="staff-section-heading"><h2 id="attention-title">Needs Attention</h2><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),page=1)) }}">Full Queue{% if finding_total %} ({{ finding_total }}){% endif %}</a></header>
-  {% if grouped %}<ul class="staff-grouped-findings">{% for group in finding_groups[:3] %}<li><strong>{{ group.count }}</strong><div><h3>{{ group.title }}</h3><p>{{ group.campuses[:3]|join(', ') }}{% if group.campuses|length > 3 %} and {{ group.campuses|length - 3 }} more{% endif %}</p><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),page=1)) }}">Review Evidence and Actions</a></div></li>{% else %}<li><p>No follow-up findings in this scope.</p></li>{% endfor %}</ul>{% else %}{{ follow_up_list(follow_ups,3) }}{% endif %}
+  {% if grouped %}<ul class="staff-grouped-findings">{% for group in finding_groups[:3] %}<li><strong>{{ group.count }}</strong><div><h3>{{ group.title }}</h3><p>{{ group.campuses[:3]|join(', ') }}{% if group.campuses|length > 3 %} and {{ group.campuses|length - 3 }} more{% endif %}</p><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),page=1)) }}">Review Evidence and Actions</a></div></li>{% else %}<li><p>No follow-up findings in this scope.</p></li>{% endfor %}</ul>{% else %}{{ follow_up_list(follow_ups,3,true) }}{% endif %}
 </section>
 {% endmacro %}
 

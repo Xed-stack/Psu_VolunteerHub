@@ -24,7 +24,7 @@ from app.utils.audit import log_activity
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/workspace')
 ACTIVITY_FIELDS = {'title', 'description', 'date', 'end_date', 'location', 'category', 'slots',
                    'cancellation_days', 'required_skills', 'sdg_ids', 'target_participants',
-                   'conducting_department', 'participant_type', 'departments', 'agreement_id', 'proposal_record'}
+                   'conducting_department', 'participant_type', 'departments', 'agreement_id', 'proposal_record', 'expected_partner_participants'}
 REMOVED_ACTIVITY_FIELDS = {'participation_agreement_text', 'participation_agreement_version',
                            'nda_required', 'nda_text', 'nda_version', 'volunteer_ids'}
 # Only these form fields can ever be persisted by browser autosave.
@@ -314,8 +314,9 @@ def activities():
 def activity(event_id):
     event = owned_event(event_id)
     counts = dict(db.session.query(Registration.status, func.count(Registration.id)).filter_by(event_id=event.id).group_by(Registration.status).all())
-    unrecorded = Registration.query.filter(Registration.event_id == event.id,
-        Registration.status != 'cancelled', ~Registration.attendance_record.has()).count()
+    from app.services.attendance_state import default_condition
+    unrecorded = db.session.query(Registration).join(Event,Registration.event_id==Event.id).outerjoin(Attendance,Attendance.registration_id==Registration.id).filter(Registration.event_id == event.id,
+        Registration.status != 'cancelled', Attendance.id.is_(None),~default_condition()).count()
     actual_present = db.session.query(func.count(Attendance.id)).join(Registration,Registration.id == Attendance.registration_id).filter(
         Registration.event_id == event.id,Registration.status != 'cancelled',Attendance.status == 'present').scalar()
     return render_template('workspace/activity.html', event=event, counts=counts, unrecorded=unrecorded,
@@ -372,7 +373,7 @@ def create_activity(step):
         if step == 1:
             try:
                 file = request.files.get('proposal')
-                if file and file.filename or not data.get('_proposal'):
+                if file and file.filename or (not data.get('_proposal') and not request.form.get('save_draft')):
                     document, extracted = save_document(file)
                     data = dict(data, _proposal=document)
                     for key, value in extracted.items():
@@ -405,7 +406,12 @@ def create_activity(step):
             if step == 3:
                 data['departments'] = request.form.getlist('departments')
         draft.payload = dict(data)
-        if not errors and step == 4:
+        target=request.form.get('save_step',type=int)
+        if target is not None and target not in (1,2,3,4):abort(400)
+        if not errors and step in (2,3) and not request.form.get('save_draft') and (target is None or target>step):
+            from app.services.activity_fields import stage_errors
+            errors.extend(stage_errors(data,step).values())
+        if not errors and step == 4 and not request.form.get('save_step') and not request.form.get('save_draft'):
             event, errors = publish_draft(data)
             if not errors:
                 db.session.add(event)
@@ -420,7 +426,7 @@ def create_activity(step):
                 return redirect(url_for('workspace.activity', event_id=event.id))
         db.session.commit()
         if not errors:
-            return redirect(url_for('workspace.create_activity', step=step + 1))
+            return redirect(url_for('workspace.create_activity', step=step if request.form.get('save_draft') else request.form.get('save_step',type=int) or step + 1))
     data = MultiDict((key, value) for key, values in data.items() if not key.startswith('_')
                      for value in (values if isinstance(values, list) else [values]))
     from app.routes.coordinator import _activity_categories, _max_event_slots
@@ -459,7 +465,7 @@ def publish_draft(payload, validate_only=False):
         errors.append('Choose a valid number of volunteer slots.')
     target = form.get('target_participants', type=int)
     if form.get('target_participants') and (target is None or target < 1):
-        errors.append('The numeric participant target must be positive.')
+        errors.append('Total Participant Target must be positive when provided.')
     skills = Skill.query.filter(Skill.is_active.is_(True),Skill.id.in_(form.getlist('required_skills'))).all()
     sdgs = SdgGoal.query.filter(SdgGoal.id.in_(form.getlist('sdg_ids'))).all()
     if len(skills) != len(set(form.getlist('required_skills'))) or len(sdgs) != len(set(form.getlist('sdg_ids'))):
@@ -476,6 +482,18 @@ def publish_draft(payload, validate_only=False):
         errors.append('Choose audience departments from the campus list.')
     if not payload.get('_proposal'):
         errors.append('Upload the approved proposal first.')
+    from app.services.activity_fields import partner_count,department_error
+    partner_agency=agreement.agency if agreement else None
+    if payload.get('_full_proposal')==1:
+        from app.routes.proposal import stored_record
+        agency_id=stored_record(payload).get('agency_id','')
+        partner_agency=PartnerAgency.query.filter_by(id=int(agency_id),campus_id=current_user.campus_id).first() if agency_id.isascii() and agency_id.isdigit() and len(agency_id)<11 else None
+    try:
+        expected_partner=partner_count(form.get('expected_partner_participants'),target,partner_agency.id if partner_agency else None)
+    except ValueError as exc:
+        errors.append(str(exc));expected_partner=None
+    department_problem=department_error(form.get('conducting_department',''),audience_departments())
+    if department_problem:errors.append(department_problem)
     if errors:
         return None, errors
     if validate_only:
@@ -504,6 +522,9 @@ def publish_draft(payload, validate_only=False):
         event.cover_uploaded_at = datetime.utcnow()
     event.required_skills_rel = skills
     event.sdgs = sdgs
+    if expected_partner is not None:
+        event.audience=dict(event.audience,expected_partner_participants=expected_partner,
+                           expected_partner_agency_id=partner_agency.id if partner_agency else None)
     return event, []
 
 
@@ -829,12 +850,10 @@ def external(event_id):
         query = query.filter(or_(ExternalParticipant.name.icontains(search, autoescape=True),
                                  ExternalParticipant.email.icontains(search, autoescape=True)))
     attendance_status = request.args.get('attendance_status', '')
-    if attendance_status == 'unmarked':
-        query = query.filter(~Registration.attendance_record.has())
-    elif attendance_status in ('present', 'absent', 'excused'):
-        query = query.filter(Registration.attendance_record.has(Attendance.status == attendance_status))
-    elif attendance_status:
+    if attendance_status not in ('','unmarked','present','absent','excused'):
         abort(400)
+    from app.services.attendance_state import roster_filter
+    query=roster_filter(query,attendance_status,event)
     from app.pagination import paginate
     pagination = paginate(query.order_by(ExternalParticipant.name, Registration.id), per_page=25)
     return render_template('workspace/external.html', event=event, groups=groups, registrations=pagination.items,
@@ -1007,23 +1026,23 @@ def export(format):
     values = [[r['event'].title, r['event'].campus.name if r['event'].campus else 'Unassigned',
                r['event'].conducting_department or 'Not recorded', str(r['event'].date), r['event'].lifecycle_status,
                'Yes' if r['conducted'] else 'No', r['attendees']] for r in data['rows']]
-    supplemental_headers = ['Registrations','Internal','External','Recorded present','Completed participation','Attendance rate (%)','Numeric participant target','Target outcome','Attendance recording']
+    supplemental_headers = ['Registrations','Internal','External','Recorded present','Completed participation','Attendance rate (%)','Total participant target','Target outcome','Attendance recording','Not Attended (System Default)']
     supplemental_values = [[r['metrics']['registrations'],r['metrics']['internal'],r['metrics']['external'],
         r['metrics']['present'],r['metrics']['completed'],r['metrics']['rate'] if r['metrics']['rate'] is not None else 'Pending / unavailable',
         r['event'].target_participants if r['event'].target_participants is not None else 'Not set',
         'Met' if r['metrics']['target_met'] is True else 'Not reached' if r['metrics']['target_met'] is False else 'Pending / unavailable',
-        'Complete' if r['metrics']['complete'] else 'End time not recorded' if not r['event'].end_date else 'Incomplete' if r['conducted'] else 'Upcoming / ongoing'] for r in data['rows']]
+        'Complete (includes system defaults)' if r['metrics']['complete'] and r['metrics']['defaulted'] else 'Complete' if r['metrics']['complete'] else 'End time not recorded' if not r['event'].end_date else 'Incomplete' if r['conducted'] else 'Upcoming / ongoing',r['metrics']['defaulted']] for r in data['rows']]
     headers += supplemental_headers
     for row,extra in zip(values,supplemental_values):
         row.extend(extra)
-    roster_headers = ['Volunteer', 'Participant type', 'Registration', 'Attendance']
+    from app.services.attendance_state import label as attendance_label,state as attendance_state
+    roster_headers = ['Volunteer', 'Participant type', 'Registration', 'Attendance','Attendance Basis']
     roster = []
     if data['event_id'] and data['rows'] and data['rows'][0]['event'].date <= local_now():
         for reg in data['rows'][0]['event'].registrations:
             roster.append([reg.participant.name if reg.participant else 'Not recorded',
                 'External' if reg.is_external else 'Account', reg.status,
-                {'present':'Attending', 'absent':'Not Attended', 'excused':'Excused'}.get(
-                    reg.attendance_record.status if reg.attendance_record else '', 'Unrecorded')])
+                attendance_label(reg), attendance_state(reg)['basis']])
     output = io.BytesIO()
     if format == 'csv':
         stream = io.StringIO()
@@ -1101,7 +1120,7 @@ def export(format):
             Paragraph('Rates and target outcomes remain pending until attendance recording is complete. Completed participation derives from recorded presence after the event ends.',styles['Normal'])])
         supplemental=Table([[Paragraph(escape(str(v)),styles['Normal']) for v in row] for row in
             [['Activity',*supplemental_headers],*[[r['event'].title,*extra] for r,extra in zip(data['rows'],supplemental_values)]]],
-            repeatRows=1,colWidths=[145,55,45,45,55,60,65,65,65,80])
+            repeatRows=1,colWidths=[120,50,45,45,55,60,65,65,65,85,85])
         supplemental.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),8)]))
         content.append(supplemental)
         trend_fig=Figure(figsize=(9,2.6),layout='constrained'); trend_ax=trend_fig.subplots()
@@ -1118,7 +1137,7 @@ def export(format):
         if roster:
             content.extend([Spacer(1, 14), Paragraph('Named attendance', styles['Heading2'])])
             roster_table = Table([[Paragraph(escape(str(v)), styles['Normal']) for v in row]
-                for row in [roster_headers, *roster]], repeatRows=1, colWidths=[240, 100, 100, 180])
+                for row in [roster_headers, *roster]], repeatRows=1, colWidths=[200, 100, 100, 200, 100])
             roster_table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),
                 ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e8eff8')),('BOTTOMPADDING',(0,0),(-1,-1),8)]))
             content.append(roster_table)

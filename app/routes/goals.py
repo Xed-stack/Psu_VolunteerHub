@@ -7,6 +7,7 @@ from xml.sax.saxutils import escape
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, Response, url_for
 from flask_login import login_required, current_user
+from app.services.activity_workflow import local_now
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from app.pagination import paginate
@@ -237,7 +238,7 @@ def workspace():
     else:
         query = query.filter((AnnualGoalProposal.status.in_(['submitted', 'returned', 'approved'])) |
                              (AnnualGoalProposal.campus_id.is_(None)))
-    return render_template('goals/workspace.html', proposals=query.order_by(AnnualGoalProposal.created_at.desc()).all(), director=director())
+    return render_template('goals/workspace.html', proposals=query.order_by(AnnualGoalProposal.created_at.desc()).all(), director=director(),current_year=local_now().year)
 
 
 @goals_bp.route('/proposals/new', methods=['GET', 'POST'])

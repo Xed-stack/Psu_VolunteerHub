@@ -28,7 +28,7 @@
     'required_skills','sdg_ids','target_participants','participation_agreement_text','conducting_department','participant_type',
     'departments','volunteer_ids','agreement_id','name','full_name','email','phone','contact_name','campus','campus_id',
     'college_affiliation','volunteer_type','sex','id_number','interest_ids','skill_ids','reference','valid_from','valid_until','role',
-    'proposal_record','notes','program','indicator','definition','unit','target_value','deadline','evidence_basis','source_document',
+    'proposal_record','expected_partner_participants','notes','program','indicator','definition','unit','target_value','deadline','evidence_basis','source_document',
     'coverage_note','actual_value','year','plan_type','first_name','last_name','skills','interests','responsible_office','comparison_rule','coverage_start','coverage_end','note','code','unit','program','college_affiliation_add','college_affiliation_remove','default_password_length','max_slots_per_event','nda_text','nda_version','nda_required','participation_agreement_version','message','announcement_type']);
   document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((form, index) => {
     if (form.dataset.noDraft !== undefined ||
@@ -132,7 +132,7 @@
       await Promise.all([...uploadTasks]);
       await saving;
       if (dirty) await save();
-      if (form.hasAttribute('data-proposal-form') && (dirty || uploadFailed)) {
+      if ((form.hasAttribute('data-proposal-form') || form.hasAttribute('data-activity-stage')) && (dirty || uploadFailed)) {
         text.textContent = 'Your changes could not be saved. Keep this page open and try again.';
         preparing = false;
         return;

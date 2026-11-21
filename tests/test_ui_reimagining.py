@@ -68,7 +68,7 @@ def test_periods_filters_and_export_values_agree(client,app,actors):
     csv_response=client.get('/workspace/reports/export/csv'+query)
     row=list(csv.DictReader(io.StringIO(csv_response.data.decode('utf-8-sig'))))[0]
     assert row['Registrations'] == '1' and row['Completed participation'] == '1'
-    assert row['Attendance rate (%)'] == '100.0' and row['Numeric participant target'] == '2'
+    assert row['Attendance rate (%)'] == '100.0' and row['Total participant target'] == '2'
     book=load_workbook(io.BytesIO(client.get('/workspace/reports/export/xlsx'+query).data))
     assert book['Activities'].max_row == 2 and len(book['Delivery trend']._charts) == 1
     assert client.get('/workspace/reports/export/pdf'+query).data.startswith(b'%PDF')

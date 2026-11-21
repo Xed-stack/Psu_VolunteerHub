@@ -222,7 +222,7 @@
               <td>{{ row.external_registrations }}</td>
               <td>{{ row.attended }}</td>
               <td>{{ row.completed }}</td>
-              <td>{% if not row.ended %}Upcoming or in Progress{% elif row.attendance_complete %}Fully Recorded{% else %}{{ row.missing_attendance }} Missing; {{ row.unconfirmed_present }} Awaiting Completion{% endif %}</td>
+              <td>{% if not row.ended %}Upcoming or in Progress{% elif row.attendance_complete and row.defaulted_attendance %}Complete · {{ row.defaulted_attendance }} Not Attended (System Default){% elif row.attendance_complete %}Fully Recorded{% else %}{{ row.missing_attendance }} Missing; {{ row.unconfirmed_present }} Awaiting Completion{% endif %}</td>
               <td>{% if selected_sex %}Whole-Activity Measure{% elif row.target_participants and row.target_participants > 0 %}{{ row.outcome_attended }} / {{ row.target_participants }}<small>{{ 'Provisional until Attendance Is Complete' if not row.attendance_complete else 'Target Reached' if row.outcome_attended >= row.target_participants else 'Target Not Reached' }}</small>{% else %}Not Set{% endif %}</td>
             </tr>
           {% else %}

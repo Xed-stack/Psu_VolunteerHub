@@ -97,6 +97,8 @@ def _activity_rows(query, args, now):
         selected &= User.college_affiliation == affiliation
     valid = eligible & selected
     present = Attendance.status == 'present'
+    from app.services.attendance_state import default_condition
+    defaulted=default_condition(now)
     def count(condition):
         return func.count(case((condition, 1)))
     facts = db.session.query(Registration.event_id,
@@ -105,14 +107,15 @@ def _activity_rows(query, args, now):
         count(valid & Registration.external_participant_id.isnot(None)).label('external'),
         count(valid & present).label('present'),
         count(valid & present & Registration.status.in_(('confirmed', 'completed'))).label('verified'),
-        count(eligible & Attendance.id.is_(None)).label('missing'),
-    ).outerjoin(User, User.id == Registration.user_id).outerjoin(
+        count(eligible & Attendance.id.is_(None) & ~defaulted).label('missing'),
+        count(defaulted & selected).label('defaulted'),
+    ).join(Event,Registration.event_id==Event.id).outerjoin(User, User.id == Registration.user_id).outerjoin(
         Attendance, Attendance.registration_id == Registration.id).filter(
         Registration.event_id.in_(event_ids)).group_by(Registration.event_id).all()
     by_id = {row.event_id:row._asdict() for row in facts}
     rows = []
     for event in events:
-        metrics = by_id.get(event.id, dict(registrations=0, internal=0, external=0, present=0, verified=0, missing=0)).copy()
+        metrics = by_id.get(event.id, dict(registrations=0, internal=0, external=0, present=0, verified=0, missing=0, defaulted=0)).copy()
         conducted = event.lifecycle_status == 'approved' and event.end_date is not None and event.end_date <= now
         complete = conducted and metrics['missing'] == 0
         metrics.update(complete=complete, completed=metrics['present'] if conducted else 0,
@@ -251,7 +254,7 @@ def follow_up_items(data):
     """Read-only findings; after-event corrections never reopen attendance."""
     labels = {
         'record_attendance':('Record Attendance Before the Event Ends','Record Attendance'),
-        'pending_attendance':('Ended with Unrecorded Attendance','Open Correction Report'),
+        'pending_attendance':('Ended with Unrecorded Attendance','View Activity Report'),
         'schedule_limit':('Attendance Is Read-Only: End Time Not Recorded','Review Schedule Limitation'),
         'missed_targets':('Verified Participation Did Not Reach the Numeric Target','Review Outreach and Target'),
         'low_attendance':('Attendance Is Below the Existing 75% Review Guide','Review Participation'),

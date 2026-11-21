@@ -1,0 +1,30 @@
+{% macro activity_schedule(start='',end='') %}
+{% for key,label,value in [('date','Start',start),('end_date','End',end)] %}
+<div class="field schedule-field" id="schedule-{{ key }}">
+  <label for="field-{{ key }}" data-schedule-label="{{ key }}">{{ label }} Date and Time *</label>
+  <input type="datetime-local" id="field-{{ key }}" name="{{ key }}" value="{{ value or '' }}" required aria-describedby="{{ 'start' if key=='date' else 'end' }}-date-error">
+  <button type="button" id="schedule-{{ 'start' if key=='date' else 'end' }}-display" class="schedule-display" data-picker="{{ key }}" aria-haspopup="dialog" aria-controls="schedule-picker" aria-describedby="{{ 'start' if key=='date' else 'end' }}-date-error" hidden>Select {{ label|lower }} date and time</button>
+  <small id="{{ 'start' if key=='date' else 'end' }}-date-error" class="schedule-error" role="alert" hidden></small>
+  <small>Philippine time (UTC+8).</small>
+</div>
+{% endfor %}
+<dialog id="schedule-picker" class="schedule-dialog" aria-labelledby="schedule-picker-heading">
+ <div class="schedule-dialog-content"><h3 id="schedule-picker-heading">Choose Start Date and Time</h3>
+ <label class="field" for="schedule-picker-date">Date<input type="date" id="schedule-picker-date"></label>
+ <div class="schedule-time-field" role="group" aria-labelledby="schedule-time-label"><span id="schedule-time-label">Time (12-hour format, PHT)</span>
+  <div class="schedule-time-controls">
+   {% for unit,caption,placeholder in [('hour','Hour','HH'),('minute','Minute','MM')] %}
+   {% if unit=='minute' %}<span class="schedule-time-colon" aria-hidden="true">:</span>{% endif %}
+   <div class="schedule-time-unit"><div class="schedule-time-combo"><div class="schedule-time-input-wrap">
+    <input id="schedule-picker-{{ unit }}" type="text" role="combobox" aria-autocomplete="list" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="{{ caption }}" aria-controls="schedule-{{ unit }}-options" aria-expanded="false" placeholder="{{ placeholder }}">
+    <div id="schedule-{{ unit }}-options" class="schedule-time-options" role="listbox" aria-label="Choose {{ unit }}" hidden></div>
+   </div><button type="button" class="schedule-time-arrow" data-time-toggle="{{ unit }}" aria-label="Show {{ unit }}s" aria-controls="schedule-{{ unit }}-options"><span aria-hidden="true">⌄</span></button></div><span class="schedule-time-caption">{{ caption }}</span></div>
+   {% endfor %}
+   <div class="schedule-time-unit schedule-time-period"><select id="schedule-picker-period" aria-label="AM or PM"><option>AM</option><option>PM</option></select><span class="schedule-time-caption">AM/PM</span></div>
+  </div>
+ </div>
+ <p id="schedule-picker-error" class="schedule-error" role="alert" hidden></p>
+ <div class="schedule-actions"><button type="button" class="btn btn--outline" id="schedule-picker-cancel">Cancel</button><button type="button" class="btn btn--primary" id="schedule-picker-confirm">Confirm</button></div>
+ </div>
+</dialog>
+{% endmacro %}

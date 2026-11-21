@@ -1,9 +1,34 @@
 (() => {
-  const form = document.querySelector('[data-proposal-form]');
+  const form = document.querySelector('[data-proposal-form], [data-activity-stage]');
   if (!form) return;
+  document.querySelectorAll('[data-proposal-exit]').forEach(link => link.addEventListener('click', event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const button = document.createElement('button');
+    button.type = 'submit'; button.name = 'save_step'; button.value = link.dataset.proposalExit;
+    button.formNoValidate = Number(button.value) <= Number(form.dataset.step || form.dataset.activityStage);
+    button.hidden = true; form.append(button); form.requestSubmit(button);
+  }));
+  if (!form.hasAttribute('data-proposal-form')) return;
+  form.querySelectorAll('[data-control-error]').forEach(error => {
+    const field = form.querySelector(`[name="${CSS.escape(error.dataset.controlError)}"]`);
+    if (!field) return;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', `${field.getAttribute('aria-describedby') || ''} ${error.id}`.trim());
+    field.closest('label')?.append(error);
+  });
   const sectionIndex = form.querySelector('.proposal-index details');
   if (sectionIndex) sectionIndex.open = window.matchMedia('(min-width: 1024px)').matches;
-  form.querySelectorAll('button[name="save_step"]').forEach(button => { button.formNoValidate = true; });
+  const reveal = target => {
+    const section = target?.closest('details');
+    if (section) section.open = true;
+  };
+  form.addEventListener('invalid', event => reveal(event.target), true);
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (link) reveal(document.getElementById(link.hash.slice(1)));
+  });
+  if (location.hash) reveal(document.getElementById(location.hash.slice(1)));
   const hidden = form.querySelector('[name="proposal_record"]');
   const read = () => { try { return JSON.parse(hidden.value || '{}'); } catch { return {}; } };
   const notify = () => hidden.dispatchEvent(new Event('input', { bubbles: true }));
@@ -18,6 +43,19 @@
       else record[key] = [...form.querySelectorAll(`[name="pr.${CSS.escape(key)}"]:checked`)].map(input => input.value);
     });
     hidden.value = JSON.stringify(record);
+    const conditional = {
+      budget_reason: record.budget_na === 'yes', budget: record.budget_na !== 'yes',
+      partnership_reason: record.partnership_status === 'none',
+      beneficiary_other: (record.beneficiary_groups || []).includes('Other Stakeholders'),
+      volunteer_other: (record.volunteer_groups || []).includes('Other Stakeholders')
+    };
+    for (const key of ['agency_id','psu_roles','partner_roles','partnership_duration']) conditional[key] = record.partnership_status !== 'none';
+    form.querySelectorAll('[data-required-marker]').forEach(marker => {
+      const required = conditional[marker.dataset.requiredMarker];
+      if (required === undefined) return;
+      marker.textContent = required ? ' *' : ' (Optional)';
+      marker.closest('label')?.querySelector('input,select,textarea')?.setAttribute('aria-required', String(required));
+    });
     const total = form.querySelector('[data-budget-total]');
     if (total) {
       const scaled = (value, places) => {
@@ -89,12 +127,5 @@
       if (status) status.textContent = 'Capturing proposal…';
     }
   });
-  document.querySelectorAll('[data-proposal-exit]').forEach(link => link.addEventListener('click', event => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    const button = document.createElement('button');
-    button.type = 'submit'; button.name = 'save_step'; button.value = link.dataset.proposalExit; button.formNoValidate = true;
-    button.hidden = true; form.append(button); form.requestSubmit(button);
-  }));
   collect();
 })();

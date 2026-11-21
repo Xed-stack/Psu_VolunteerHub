@@ -106,7 +106,7 @@ TOPICS = [
     topic('participation-history','Registration History and Attendance Evidence','Understand status, presence, completion, and unknown attendance.','Activities and Participation',('volunteer',),[
         'Open My Registrations and use search, status, campus, category, or date refinements to find an activity.',
         'Registration status, activity cancellation, schedule progress, and attendance evidence describe different things.',
-        'Completed participation comes from recorded presence. Unrecorded attendance is unknown; it is not automatically absence.',
+        'Completed participation comes from recorded presence. After the configured activation date, eligible ended activities display missing confirmed attendance as Not Attended (System Default). Historical unrecorded attendance remains unknown.',
         'If recorded participation appears incorrect after an event ends, contact its campus Coordinator for the printed-report correction process.'
     ],('registrations',),('withdrawal','getting-support'),keywords='not attended excused unmarked completed'),
     topic('profile','Profile Interests and Skills','Keep recommendation preferences and account information current.','Account Help',('volunteer',),[
@@ -142,7 +142,7 @@ TOPICS = [
         'During the event, open its attendance workspace. Record internal attendees and named external individuals; external groups support bulk entry.',
         'Internal Volunteers and External Volunteers open separate rosters. Save Attendance affects only the displayed page; save changes before searching, paging, or leaving. Attendance is not saved automatically.',
         'From External Attendance, open Add External Participants for multiline names or a UTF-8 CSV without a header. Group name and email are optional. A selected file takes precedence over typed names and must be selected again after a validation error.',
-        'Attending/Not Attended, excused, and unrecorded states remain distinct. Never mark everyone absent just because recording is incomplete.',
+        'Recorded attendance, system-defaulted Not Attended, excused, and unrecorded states remain distinct. System defaults never create recorded attendance evidence or verified participation.',
         'Every attendance write path, including bulk actions and imports, locks at the scheduled end time.',
         'After the event ends, use the combined printed report and established correction process. Legacy activities without an end time are read-only for attendance.'
     ],('staff-activities',),('activity-status','reports','getting-support'),('Attendance entry is permitted only while the event is ongoing. Missing evidence is not recorded absence.',)),

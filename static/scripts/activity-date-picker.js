@@ -1,6 +1,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector("form.activity-entry-form");
+    const form = document.getElementById('field-date')?.form;
     const fields = {
         date: document.getElementById("field-date"),
         end_date: document.getElementById("field-end_date")
@@ -27,6 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const pickerError = document.getElementById("schedule-picker-error");
     let active = null;
     if (!form || !fields.date || !fields.end_date || !dialog) return;
+    for (const key of ['date','end_date']) {
+        fields[key].hidden = true;
+        fields[key].required = false;
+        displays[key].hidden = false;
+        form.querySelector(`[data-schedule-label="${key}"]`)?.setAttribute('for', displays[key].id);
+    }
+    pickerDate.required = false;
 
     // Calendar components in Asia/Manila. Philippine civil time is UTC+08:00.
     const phParts = new Intl.DateTimeFormat("en-CA", {
@@ -84,14 +91,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if (filter && !value.includes(filter) && String(n) !== filter) continue;
         const option = document.createElement("button");
         option.type = "button";
+        option.tabIndex = -1;
         option.setAttribute("role","option");
         option.setAttribute("aria-selected",String(Number(filter)===n));
         option.textContent = value;
         option.addEventListener("click", () => {
             input.value = value;
             showPickerError("");
-            closeTimeList();
             input.focus();
+            closeTimeList();
+        });
+        option.addEventListener('keydown', event => {
+            const items = [...options.children], index = items.indexOf(option);
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                items[(index + (event.key === 'ArrowDown' ? 1 : items.length-1)) % items.length].focus();
+            } else if (event.key === 'Escape') {
+                event.preventDefault(); event.stopPropagation(); input.focus(); closeTimeList();
+            }
         });
         options.appendChild(option);
         }
@@ -109,6 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderTimeList(unit);
         });
         input.addEventListener("keydown", event => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault(); renderTimeList(unit); timeOptions[unit].firstElementChild?.focus();
+        }
         if (event.key === "Escape") { closeTimeList(); event.stopPropagation(); }
         if (event.key === "Enter") { event.preventDefault(); closeTimeList(); confirmPicker(); }
         });
@@ -195,15 +215,19 @@ document.addEventListener("DOMContentLoaded", () => {
     pickerDate.addEventListener("input",()=>showPickerError(""));
     for (const field of Object.values(fields)) field.addEventListener("change",refreshDisplays);
     form.addEventListener("submit",event=>{
+        if (event.submitter?.formNoValidate) return;
         if (!validate(true)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         const first = errors.date.hidden ? "end_date":"date";
         displays[first].focus();
+        displays[first].scrollIntoView({block:'center'});
         }
     },true);
     window.addEventListener("focus",()=>validate(false));
     refreshDisplays();
     // Draft restoration may run after this script. Recheck after page becomes fully loaded.
     window.addEventListener("load",refreshDisplays);
+    form.addEventListener('draft:restored',refreshDisplays);
+    for (const field of Object.values(fields)) field.addEventListener('input',refreshDisplays);
 });

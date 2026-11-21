@@ -1,5 +1,67 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Branch publication authorization, 22 November 2026
+
+The user requested publishing the completed Activity and Panel Refinement Repairs
+to both repository branches: `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. Both remote heads were verified at `03f8fe8`
+before publication. Include the repair source, built CSS, tests and QA notes.
+Exclude the unrelated documentation DOCX, `output/`, and `tmp/`.
+The implementation-time local-only notes below remain historical snapshots.
+This authorization does not activate the attendance policy, change operational
+data, publish main, or deploy the app.
+
+## Current handoff: Activity and Panel Refinement Repairs, 21 November 2026
+
+Implemented the approved combined regression/refinement plan locally on
+`codex/ui-workflow-overhaul`, based on `03f8fe8`. This entry supersedes older
+implementation-status claims for these controls; historical evidence remains below.
+No commit, push, deployment, dependencies, migration, or operational data changes.
+The unrelated documentation DOCX, `output/`, and `tmp/` were preserved.
+
+Shared PHT date/time dialog now serves full proposal creation, legacy saved drafts,
+and Edit Activity, with native fallback and restored canonical values. Removed the
+required temporary-date blocker. Required/conditional markers, accessible errors,
+collapsible section states, current-step Continue validation, and incomplete Save
+Draft/back/row actions added. Existing four routes, proposal capture/source review,
+budget precision, agency return flow, policies, permissions, and lifecycle locks remain.
+
+Total Participant Target retains its original calculation. Optional Expected Partner
+Participants refers to the selected primary agency (legacy MOA partner), is validated,
+and uses existing audience JSON plus the publishing snapshot. Conducting Department
+uses campus choices independently from notification departments. Overview removes
+the completed-event correction action while retaining an explanation; other links
+say View Activity Report. Annual Plans uses View {Campus} Annual Evidence with
+trusted scope/year instead of a misleading Back link.
+
+Attendance defaults are implemented as labelled derived state, never inserted
+evidence: confirmed/completed internal/external registrations missing attendance
+after an approved event ends strictly after a configured activation timestamp.
+Recorded values win; historical/unknown-end/cancelled/pending cases are excluded.
+Roster filters, counts, workspace and legacy reports/exports share the policy.
+Only recorded presence verifies participation. `ATTENDANCE_DEFAULTS_EFFECTIVE_FROM`
+must be an ISO timestamp with an explicit timezone; unset disables the policy.
+The actual environment was not changed. No schema change is needed for this pass.
+
+Verification: 89 proposal/workspace/attendance regression cases and 67 final
+acceptance/activity/proposal/UI/help/catalogue cases passed (overlapping runs).
+17 new acceptance cases plus four activity cases passed again after export cleanup.
+60 viewport/interaction browser groups plus a subsequent 25-group interaction run
+passed. Build, 131-template parse, changed syntax and diff checks passed.
+An expanded old reporting class stopped at an existing `/analytics` 302-versus-200
+expectation; the baseline already redirects that route. No full-suite/MySQL/manual
+screen-reader/physical-device claim. Detailed findings, verification and rollback:
+`docs/qa/UI_REFINEMENT_REPAIRS.md`.
+Six supported legacy export checks also passed; two old admin-fixture export tests
+fail because the baseline role enum already removed admin in favor of Director.
+
+Fresh isolated preview: `http://127.0.0.1:5003/workspace/create/1`.
+Coordinator: `coordinator@proposal.example` / `password`.
+Restart: `.venv/Scripts/python.exe scripts/qa_proposal_record.py --serve --port 5003`.
+Synthetic in-memory data resets on restart. Existing private previews are separate.
+The operational attendance policy remains off until an authorized rollout timestamp
+is configured. Extraction limitations (scans/ambiguity/manual review) are unchanged.
+
 ## Branch publication authorization, 21 November 2026
 
 The user requested pushing the latest fixes to the current branch. This revision
