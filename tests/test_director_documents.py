@@ -16,6 +16,7 @@ from tests.html_helpers import parse_html
 @pytest.mark.parametrize('coordinator,campus',[('coordinator',1),('other',2)])
 def test_coordinator_publish_director_discovers_and_downloads_proposal(app,client,actors,coordinator,campus):
     sign_in(client,actors,coordinator)
+    db.session.add(FormDraft(user_id=actors[coordinator],campus_id=campus,key='activity:new',payload={}));db.session.commit()
     published_before=Event.query.count()
     stream=docx();original=stream.getvalue();filename=f'Approved_Campus_{campus}.docx'
     assert client.post('/workspace/create/1',data={'proposal':(stream,filename)}).status_code==302

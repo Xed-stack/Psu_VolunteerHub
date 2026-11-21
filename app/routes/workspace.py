@@ -24,7 +24,7 @@ from app.utils.audit import log_activity
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/workspace')
 ACTIVITY_FIELDS = {'title', 'description', 'date', 'end_date', 'location', 'category', 'slots',
                    'cancellation_days', 'required_skills', 'sdg_ids', 'target_participants',
-                   'conducting_department', 'participant_type', 'departments', 'agreement_id'}
+                   'conducting_department', 'participant_type', 'departments', 'agreement_id', 'proposal_record'}
 REMOVED_ACTIVITY_FIELDS = {'participation_agreement_text', 'participation_agreement_version',
                            'nda_required', 'nda_text', 'nda_version', 'volunteer_ids'}
 # Only these form fields can ever be persisted by browser autosave.
@@ -200,13 +200,19 @@ def drafts(key):
     if request.method == 'DELETE':
         if draft:
             files = draft.payload.get('_files', {})
+            proposal_files = [draft.payload.get('_proposal'), draft.payload.get('_partnership_document'),
+                              draft.payload.get('_proposal_replacement',{}).get('document')]
             db.session.delete(draft)
             db.session.commit()
             remove_staged_files(files)
+            from app.routes.proposal import _remove_proposal
+            for document in proposal_files:
+                _remove_proposal(document)
         return '', 204
     if request.method == 'PUT':
         data = request.get_json(silent=True)
-        if not isinstance(data, dict) or len(json.dumps(data)) > 60000:
+        full = key == 'activity:new' and draft.payload.get('_full_proposal') == 1
+        if not isinstance(data, dict) or len(json.dumps(data).encode()) > (2*256*1024+60000 if full else 60000):
             abort(400)
         clean = {}
         for name, value in data.items():
@@ -215,6 +221,15 @@ def drafts(key):
             if activity_draft_key(key) and name in REMOVED_ACTIVITY_FIELDS:
                 continue
             values = value if isinstance(value, list) else [value]
+            if name == 'proposal_record':
+                if not full or len(values) != 1 or not isinstance(values[0],str):
+                    abort(400)
+                from app.services.proposal_record import normalize_record
+                try:
+                    clean[name] = [json.dumps(normalize_record(values[0]),ensure_ascii=False)]
+                except ValueError as exc:
+                    abort(400,description=str(exc))
+                continue
             if len(values) > 200 or any(not isinstance(v, str) or len(v) > 10000 for v in values):
                 abort(400)
             clean[name] = values
@@ -335,9 +350,19 @@ def cancel_activity(event_id):
 def create_activity(step):
     if step not in (1, 2, 3, 4) or not current_user.campus_id:
         abort(404 if step not in (1, 2, 3, 4) else 403)
-    draft = draft_for('activity:new', create=True)
+    draft = draft_for('activity:new')
+    if draft is None:
+        draft = draft_for('activity:new', create=True)
+        draft.payload = {'_full_proposal':1}
+        db.session.commit()
+    if request.method == 'POST' and request.form.get('upgrade_proposal') == 'yes':
+        draft.payload = dict(draft.payload, _full_proposal=1)
+        db.session.commit()
     if clean_activity_draft(draft):
         db.session.commit()
+    if draft.payload.get('_full_proposal') == 1:
+        from app.routes.proposal import create_proposal
+        return create_proposal(step, draft)
     from copy import deepcopy
     data = deepcopy(draft.payload or {})
     errors = []
@@ -413,7 +438,7 @@ def create_activity(step):
         departments=audience_departments())
 
 
-def publish_draft(payload):
+def publish_draft(payload, validate_only=False):
     form = MultiDict((key, value) for key, values in payload.items() if key in ACTIVITY_FIELDS
                      for value in (values if isinstance(values, list) else [values]))
     from app.routes.coordinator import _activity_categories, _max_event_slots, _parse_event_schedule
@@ -453,6 +478,8 @@ def publish_draft(payload):
         errors.append('Upload the approved proposal first.')
     if errors:
         return None, errors
+    if validate_only:
+        return None, []
     event = Event(title=form['title'].strip(), description=form['description'].strip(), date=schedule[0],
         end_date=schedule[1], cancellation_deadline=schedule[2], location=form.get('location', ''),
         category=form['category'], slots=slots, target_participants=target,
@@ -546,8 +573,9 @@ def partner(agency_id):
     pagination = db.paginate(PartnerAgreement.query.filter_by(agency_id=agency.id).order_by(
         PartnerAgreement.valid_until.desc(), PartnerAgreement.id.desc()).statement,
         per_page=25, max_per_page=25, error_out=False)
+    activity_draft = draft_for('activity:new') if request.args.get('activity_context') == 'create' else None
     return render_template('workspace/partner.html', agency=agency, pagination=pagination,
-                           today=local_now().date())
+                           full_proposal_context=bool(activity_draft and activity_draft.payload.get('_full_proposal')==1),today=local_now().date())
 
 
 def partner_agency(agency_id):
@@ -693,6 +721,11 @@ def agreement_use(agency_id, agreement_id):
         flash('Choose an agreement covering the saved activity start date. Complete Activity Details first if needed.', 'error')
         return redirect(partner_url('workspace.agreement_detail', agency_id=agency.id, agreement_id=agreement.id))
     draft.payload = dict(draft.payload, agreement_id=[str(agreement.id)])
+    if draft.payload.get('_full_proposal') == 1:
+        from app.routes.proposal import stored_record
+        record = stored_record(draft.payload)
+        record.update(agency_id=str(agency.id),partnership_status='existing')
+        draft.payload = dict(draft.payload,proposal_record=[json.dumps(record,ensure_ascii=False)])
     db.session.commit()
     flash('MOA selected for your activity draft.', 'success')
     return redirect(url_for('workspace.create_activity', step=3))

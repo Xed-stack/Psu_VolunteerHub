@@ -195,6 +195,8 @@ def create_app(config_name=None):
     app.register_blueprint(catalogue_bp)
     from app.routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp)
+    from app.routes.proposal import proposal_bp
+    app.register_blueprint(proposal_bp)
 
     @app.context_processor
     def inject_session_idle():
@@ -228,7 +230,12 @@ def create_app(config_name=None):
     # Production schema and account provisioning are explicit deployment steps.
     if config_name != 'production' and not app.config.get('REPORT_DEMO_MODE'):
         with app.app_context():
-            db.create_all()
+            if config_name == 'testing':
+                db.create_all()
+            else:
+                # Proposal storage requires its explicit migration outside isolated tests.
+                db.metadata.create_all(db.engine, tables=[table for table in db.metadata.sorted_tables
+                    if table.name != 'activity_proposals'])
             _seed_campuses(app)
             _seed_interests_skills(app)
             _seed_sdgs(app)

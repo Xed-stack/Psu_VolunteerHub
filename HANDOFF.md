@@ -1,5 +1,55 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Branch publication authorization, 21 November 2026
+
+The user requested pushing the latest fixes to the current branch. This revision
+contains the proposal capture/activity/agency implementation, tests, build output,
+and QA documentation. Publish to the configured tracking branch,
+`origin/codex/ui-workflow-overhaul`; main and deployment remain outside scope.
+The existing local dashboard/recommendation commit `f3be6da` is also ahead of origin.
+The local/uncommitted notes below describe the implementation-time snapshot.
+Generated sample proposals, unrelated DOCX, `output/`, `tmp/`, databases/uploads,
+and private QA artifacts are excluded. No operational migration is authorized.
+
+## Current handoff: Proposal Capture and Agency Setup, 21 November 2026
+
+Implemented the approved combined full-proposal and upload-to-form plan. Readable
+PSU PDF/DOCX values and identifiable tables fill new creation drafts locally, with
+initial capture/source states, manual completion, replacement comparison, and explicit
+review before publication. The actual blank reference yields no authored values.
+Full sections I–XVIII, bounded repeatable rows, exact PHP budget totals, separate
+beneficiary/volunteer/capacity/report targets, and staff-only proposal snapshots added.
+
+Agency contacts remain reusable/campus-scoped. New proposal → Partners → Add Agency →
+Use This Agency returns with the draft retained. One primary partner, existing MOA /
+renewal / new / none, activity-specific roles/duration, and private draft agreements.
+Draft agreements never become signed MOAs or alter report calculations. Existing
+MOA start-date checks, routes, policies, notifications, covers, and calculations remain.
+Unversioned drafts retain the old path and may explicitly upgrade without losing input.
+
+Additive `activity_proposals` table has an explicit exact-target, dry-run migration.
+Normal development startup excludes it; production startup remains non-migrating.
+Only disposable SQLite migration/rollback tests were run. No operational database or
+existing private-preview migration, new dependencies, commits, pushes, or deployment.
+
+Final: **20 focused tests passed**, **50 Chromium groups passed**, Tailwind,
+130-template parsing, changed syntax/contrast/diff checks passed. A broader run had
+122 passing cases and one missing-Help-link failure; that failure was fixed and
+verified in the final focused run. No full-suite/MySQL/manual-screen-reader/physical
+claim. Analysis, critique, preservation, evidence, migration and rollback:
+`docs/qa/PROPOSAL_CAPTURE_REMAKE.md`.
+
+Review the separate synthetic in-memory preview at `http://127.0.0.1:5002/workspace/create/1`.
+Coordinator: `coordinator@proposal.example` / `password` (Director/Volunteer equivalents
+in the QA report). Restart with `.venv/Scripts/python.exe scripts/qa_proposal_record.py --serve`;
+its synthetic database resets when stopped. Port 5000's private data/drafts/uploads
+were preserved. Files remain local/uncommitted on `codex/ui-workflow-overhaul`.
+
+Remaining limitation: no completed real proposal was supplied. Capture is conservative;
+ambiguous PDF columns, scans/handwriting and missing values require manual completion.
+No OCR, electronic approvals/signatures, generated documents, or multiple partners.
+Current user's skill responsibilities and during-work Antislop choice remain active.
+
 ## Current UI/UX Skills and Working Order — 16 November 2026
 
 UI/UX Pro Max is the primary skill for UX structure, interaction and design decisions.

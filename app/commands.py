@@ -283,6 +283,22 @@ def seed_demo_analytics():
         f'participants, and {created_external_registrations} external registrations created.')
 
 
+@click.command('migrate-proposals')
+@click.option('--database', required=True, help='Exact configured database name.')
+@click.option('--dry-run', is_flag=True, help='Inspect without changing schema or data.')
+@with_appcontext
+def migrate_proposals_command(database, dry_run):
+    """Add staff proposal storage without changing existing activities."""
+    from app.proposal_migration import migrate_proposals
+    try:
+        plan = migrate_proposals(db.engine, database, dry_run)
+    except (ValueError, SQLAlchemyError) as exc:
+        raise click.ClickException(str(exc) if isinstance(exc, ValueError) else 'Migration interrupted. Inspect the schema before retrying.') from None
+    for statement in plan:
+        click.echo(statement)
+    click.echo(f'{"Dry run" if dry_run else "Applied"}: {len(plan)} schema changes.')
+
+
 def register_commands(app):
     from app.demo_dataset import reset_and_seed_demo
     from app.presentation_dataset import reset_and_seed_presentation
@@ -298,6 +314,7 @@ def register_commands(app):
     app.cli.add_command(migrate_annual_goals_command)
     app.cli.add_command(sync_campuses)
     app.cli.add_command(migrate_workspace_command)
+    app.cli.add_command(migrate_proposals_command)
 
 
 @click.command('sync-campus-catalogue')

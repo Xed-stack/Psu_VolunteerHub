@@ -117,10 +117,11 @@ TOPICS = [
     ],('profile',),('recommendations','saved-drafts','campus')),
     topic('create-activity','Creating an Approved Activity','Start with a proposal and review each publication step.','Activity Management',('coordinator',),[
         'Start Create Activity by uploading the approved PDF or DOCX proposal. Documents are stored privately.',
-        'Review locally extracted details. Scanned or unreadable documents need manual entry; extraction does not verify the proposal’s contents.',
+        'Readable PSU-template proposals fill matching fields and identifiable table rows locally. Check capture results and complete missing fields. Scanned or unreadable documents need manual entry; extraction does not verify approval or signatures.',
         'Complete future start/end times in Philippine time, location, category, required skills, SDGs, capacity, and optional cover.',
-        'Complete Audience and Partners, then review everything before publishing. Coordinator confirmation publishes it as Approved without another Director approval.',
-        'Capacity controls registration places. The numeric participant target is a separate planning measure.'
+        'For new proposals, complete Proposal Details and Participation and Partnerships, including the team, objectives, implementation, budget, outcomes, evaluation, sustainability, and risks. Review captured tables and confirm the complete record before publishing.',
+        'Capacity controls registration places. The numeric participant target, estimated beneficiaries, and estimated volunteers are separate measures. The full proposal record is staff-only.',
+        'Earlier saved drafts retain their existing completion path. Add Full Proposal Details upgrades a saved draft without removing its existing input or attachment.'
     ],('create','drafts'),('audience','partners-moas','saved-drafts'),keywords='proposal extraction scanned cover image publish'),
     topic('audience','Departments and Activity Audiences','Choose whom to notify without restricting eligible registration.','Activity Management',('coordinator',),[
         'Enter the conducting department and participant type on the activity draft.',
@@ -132,7 +133,8 @@ TOPICS = [
         'Open Partners to search campus agencies. Use Add Agency or Edit Agency Details for contact information.',
         'Open an agency, select Add MOA, and provide its reference, validity dates, and signed PDF/DOCX document.',
         'View MOA shows current validity separately from applicability to an activity. The MOA must cover the activity start date inclusively.',
-        'From Audience and Partners, open Partners after the draft saves. Select Use This MOA on an applicable agreement to save only that choice and return to the draft.',
+        'From Participation and Partnerships, save before opening Partners. Use This Agency selects the primary agency for a full proposal; Use This MOA also selects its applicable signed agreement and returns to the draft.',
+        'Choose Existing MOA, For Renewal, New Partnership, or No External Partner in the proposal. Activity-specific roles and duration stay with that activity. Draft agreements are private attachments and never count as signed MOAs.',
         'Selecting an MOA does not publish the activity. Agreements and downloads remain private to authorized campus Coordinators.'
     ],('partners','create'),('create-activity','saved-drafts'),('MOA selection is optional. An agreement valid today may not cover a future activity date.',),keywords='agency contact validity signed document'),
     topic('attendance','Registrations, Attendance, and External Groups','Record evidence during the event and understand the end-time lock.','Activity Management',('coordinator',),[

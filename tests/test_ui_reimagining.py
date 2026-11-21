@@ -169,6 +169,7 @@ def test_registration_filters_deadline_and_read_only_decision(client,app,actors)
 
 def test_prepublication_cover_restores_and_removed_options_are_ignored(client,app,actors,tmp_path):
     sign_in(client,actors)
+    db.session.add(FormDraft(user_id=actors['coordinator'],campus_id=1,key='activity:new',payload={}));db.session.commit()
     app.static_folder=str(tmp_path/'public')
     assert client.post('/workspace/create/1',data={'proposal':(docx(),'approved.docx')}).status_code == 302
     event=Event.query.first();future=local_now()+timedelta(days=12)

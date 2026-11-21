@@ -92,8 +92,10 @@ def docx():
     return output
 
 
-def test_proposal_extract_resume_and_publish(client, app, actors):
+def test_legacy_proposal_extract_resume_and_publish(client, app, actors):
     sign_in(client, actors)
+    db.session.add(FormDraft(user_id=actors['coordinator'],campus_id=1,key='activity:new',payload={}))
+    db.session.commit()
     response = client.post('/workspace/create/1', data={'proposal': (docx(), 'approved.docx')})
     assert response.status_code == 302
     assert b'Campus learning day' in client.get('/workspace/create/2').data

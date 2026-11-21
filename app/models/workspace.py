@@ -35,6 +35,18 @@ class PartnerAgreement(db.Model):
     document = db.Column(db.JSON, nullable=False)
 
 
+class ActivityProposal(db.Model):
+    __tablename__ = 'activity_proposals'
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id', ondelete='RESTRICT'), primary_key=True)
+    agency_id = db.Column(db.Integer, db.ForeignKey('partner_agencies.id', ondelete='RESTRICT'))
+    schema_version = db.Column(db.Integer, nullable=False, default=1)
+    content = db.Column(db.JSON, nullable=False)
+    capture = db.Column(db.JSON, nullable=False, default=dict)
+    publishing_snapshot = db.Column(db.JSON, nullable=False, default=dict)
+    partnership_document = db.Column(db.JSON)
+    event = db.relationship('Event', backref=db.backref('proposal_record', uselist=False, lazy='select'))
+
+
 class ExternalGroup(db.Model):
     __tablename__ = 'external_groups'
     id = db.Column(db.Integer, primary_key=True)

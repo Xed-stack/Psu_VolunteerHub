@@ -35,6 +35,7 @@ def image_file():
 
 def test_create_ignores_removed_fields_and_cover_is_saved_in_details(client,app,actors,tmp_path):
     sign_in(client,actors);app.static_folder=str(tmp_path/'public')
+    db.session.add(FormDraft(user_id=actors['coordinator'],campus_id=1,key='activity:new',payload={}));db.session.commit()
     skills,sdgs=choices();event=Event.query.first()
     client.post('/workspace/create/1',data={'proposal':(docx(),'approved.docx')})
     draft=FormDraft.query.filter_by(user_id=actors['coordinator'],key='activity:new').one()
@@ -104,6 +105,7 @@ def test_activity_draft_cleanup_is_scoped_and_preserves_upload_metadata(client,a
 
 def test_departments_are_campus_scoped_and_drive_notifications(client,actors):
     sign_in(client,actors);_,sdgs=choices();event=Event.query.first()
+    db.session.add(FormDraft(user_id=actors['coordinator'],campus_id=1,key='activity:new',payload={}));db.session.commit()
     db.session.get(User,actors['volunteer']).college_affiliation='Local fixture department'
     outsider=User(name='Other campus',email='other-campus@example.org',role='volunteer',campus_id=2,college_affiliation='Other campus only',sex='prefer_not_to_say',password_hash='unused');db.session.add(outsider);db.session.commit()
     client.post('/workspace/create/1',data={'proposal':(docx(),'approved.docx')});client.post('/workspace/create/2',data=details(event,sdgs))

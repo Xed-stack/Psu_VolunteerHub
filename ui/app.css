@@ -41,6 +41,47 @@
   dialog::backdrop { background: rgb(17 28 44 / 60%); }
 }
 @layer components {
+  .proposal-page { @apply mx-auto w-full min-w-0 max-w-6xl; }
+  .proposal-page-links { @apply mb-3 flex flex-wrap gap-x-4 gap-y-1; }
+  .proposal-page-links > a { @apply min-h-11 content-center; }
+  .proposal-form { @apply min-w-0; }
+  .proposal-form .draft-status button { @apply min-h-11 min-w-11; }
+  .proposal-layout { @apply grid min-w-0 gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]; }
+  .proposal-main { @apply min-w-0; }
+  .proposal-index { @apply min-w-0; }
+  .proposal-index details { @apply rounded-lg border border-slate-300 bg-white p-4; }
+  .proposal-page :is(a,button,summary,input,select,textarea) { scroll-margin-block:calc(var(--role-header-height,4rem) + 1rem) 6rem; }
+  .proposal-index nav { @apply flex flex-col gap-1; }
+  .proposal-index a { @apply min-h-11 content-center rounded px-2 py-2 text-sm font-medium text-psu underline-offset-4 hover:bg-blue-50 hover:underline; }
+  .proposal-section { @apply mb-6 min-w-0 rounded-lg border border-slate-300 bg-white p-4 sm:p-6; }
+  .proposal-section > h2 { @apply mb-4; }
+  .proposal-section > p { @apply my-3; }
+  .proposal-field { @apply my-5 min-w-0; scroll-margin-top:calc(var(--role-header-height,4rem) + 1rem); }
+  .proposal-field h3 { @apply mb-2; }
+  .proposal-row { @apply my-4 min-w-0 rounded-md border border-slate-400 p-3 sm:p-4; }
+  .proposal-row legend { @apply px-1 text-sm font-semibold; }
+  .proposal-row .btn { @apply mt-3; }
+  .proposal-options { @apply mt-2 grid gap-1 sm:grid-cols-2; }
+  .proposal-options label, .proposal-check { @apply flex min-h-11 items-start gap-3 rounded p-2 text-base leading-6 hover:bg-blue-50; }
+  .proposal-options input, .proposal-check input { @apply mt-0.5; }
+  .proposal-capture { @apply mt-2 text-sm text-slate-600; }
+  .proposal-capture-summary { @apply mb-6 rounded-lg border border-slate-400 bg-white p-4; }
+  .proposal-capture-summary ul { @apply mt-4 grid gap-3; }
+  .proposal-capture-summary p { @apply text-sm text-slate-600; }
+  .proposal-error { @apply mt-2 text-base text-red-800; }
+  .proposal-summary-row { @apply my-3 grid min-w-0 gap-3 border-b border-slate-200 pb-4; }
+  .proposal-summary-row dt { @apply text-sm font-semibold text-slate-600; }
+  .proposal-summary-row dd { @apply mt-1 whitespace-pre-wrap text-base; }
+  .proposal-actions { @apply flex flex-wrap justify-between gap-3 border-t border-slate-300 py-6; }
+  .proposal-saved { @apply border-l-4 border-gold bg-blue-50 p-4; }
+  .proposal-replacement { @apply my-3 flex min-h-11 items-start gap-3 border-b border-slate-200 pb-3; }
+  .proposal-replacement span span { @apply mt-2 block whitespace-pre-wrap break-words font-normal; }
+  .proposal-replacement-group { @apply my-5 min-w-0 border-b border-slate-300 pb-5; }
+  .agency-entry { @apply max-w-3xl; }
+  .agency-entry fieldset { @apply mb-6 min-w-0 border-b border-slate-200 pb-6; }
+  .agency-entry fieldset:first-of-type .form-grid { @apply grid-cols-1; }
+  .agency-entry legend { @apply mb-3 text-xl font-semibold; }
+  @media print { .proposal-index,.proposal-actions,.proposal-capture-summary { display:none; } .proposal-layout { display:block; } }
   .director-proposal { @apply mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-slate-300 pb-5; }
   .director-proposal > div { @apply min-w-0; }
   .director-proposal h2 { @apply text-xl; }
