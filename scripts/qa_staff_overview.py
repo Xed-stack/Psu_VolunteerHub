@@ -50,15 +50,25 @@ def main():
                 context=browser.new_context(has_touch=True,reduced_motion='reduce')
                 context.add_cookies([dict(name='session',value=cookies[role],url=base)])
                 page=context.new_page();page.on('pageerror',lambda error:errors.append(str(error)))
-                for width,height in [(1440,1000),(1024,900),(768,1000),(390,844),(320,740),(844,390)]:
+                for width,height in [(1440,900),(1024,900),(768,1000),(390,844),(320,740),(844,390)]:
                     page.set_viewport_size(dict(width=width,height=height))
                     response=page.goto(base+'/workspace/overview');page.wait_for_load_state('networkidle')
                     assert response.status==200
-                    assert page.locator('.metric-tile').count()==5
+                    assert page.locator('.metric-tile').count()==(4 if role=='director' else 5)
                     assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),(role,width,'overflow')
                     assert page.locator('.workspace-hero').count()==0
                     if role=='director':
                         assert page.locator('.staff-campus-table tbody tr').count()==9
+                        assert page.locator('.metric-title').all_text_contents()==['Conducted Activities','Verified Attendees','Campus Annual Achievement','Findings to Review']
+                        primary=page.locator('.director-primary-grid')
+                        assert primary.locator('.staff-attention').count()==1 and primary.locator('[data-campus-chart]').count()==1
+                        assert primary.locator('[data-month-chart],[data-sex-chart],.staff-annual').count()==0
+                        assert page.locator('.director-secondary-summary').inner_text().find('Volunteer Accounts')>=0
+                        if width==1440:
+                            assert len(set(page.locator('.metric-tile').evaluate_all('els=>els.map(el=>Math.round(el.getBoundingClientRect().y))')))==1
+                            assert page.locator('.metric-tile').first.bounding_box()['width']>page.locator('.kpi-strip').bounding_box()['width']/4-2
+                        assert page.locator('.metric-tile').first.bounding_box()['width']>=page.locator('.metric-tile').last.bounding_box()['width']-2
+                        assert primary.evaluate("el=>el.getBoundingClientRect().top<document.querySelector('.director-details').getBoundingClientRect().top")
                         assert page.locator('.staff-annual-result').inner_text().startswith('1 / 3')
                         assert page.locator('.staff-university-targets').is_visible()
                         assert page.locator('[data-month-chart]').count()==1
@@ -67,6 +77,12 @@ def main():
                         assert page.get_by_role('link',name='Record Attendance',exact=True).count()==1
                     if width in (1440,390):page.screenshot(path=str(out/f'{role}-{width}.png'),full_page=True)
                     checks.append([role,width,height,'layout and visible data'])
+                page.set_viewport_size(dict(width=1440,height=900))
+                page.evaluate("document.documentElement.style.fontSize='125%'")
+                page.wait_for_timeout(250)
+                assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
+                page.screenshot(path=str(out/f'{role}-text125.png'))
+                checks.append([role,'125% text'])
                 page.set_viewport_size(dict(width=320,height=800))
                 page.evaluate("document.documentElement.style.fontSize='200%'")
                 page.wait_for_timeout(250)
@@ -100,6 +116,24 @@ def main():
                 assert page.locator('[data-guide-replay]').evaluate('el=>el===document.activeElement')
                 checks.append([role,'complete retargeted guide and focus return'])
                 if role=='director':
+                    page.goto(base+'/workspace/overview?period=all');page.wait_for_load_state('networkidle')
+                    page.locator('.metric-tile > a[href="#annual-title"]').click()
+                    assert 0<page.locator('#annual-title').bounding_box()['y']<400
+                    checks.append([role,'annual headline reaches visible detailed scope'])
+                    page.goto(base+'/workspace/overview?period=all&campus_id=2');page.wait_for_load_state('networkidle')
+                    review=page.get_by_role('link',name='Review These Findings',exact=True).first
+                    review.focus();assert review.evaluate("el=>getComputedStyle(el).outlineStyle!=='none'")
+                    review.press('Enter');page.wait_for_load_state('networkidle')
+                    args=parse_qs(urlsplit(page.url).query)
+                    assert args['campus_id']==['2'] and 'finding_type' in args
+                    assert page.locator('.finding-type-scope').is_visible()
+                    page.get_by_role('link',name='View All Findings',exact=True).click();page.wait_for_load_state('networkidle')
+                    args=parse_qs(urlsplit(page.url).query);assert args['campus_id']==['2'] and 'finding_type' not in args
+                    checks.append([role,'grouped queue, focus, scope and clear type'])
+                    page.goto(base+'/workspace/overview?period=all&activity_name=NoMatchingActivity');page.wait_for_load_state('networkidle')
+                    assert page.locator('.director-finding-total strong').inner_text()=='0'
+                    assert 'No follow-up findings' in page.locator('.staff-attention').inner_text()
+                    checks.append([role,'zero findings empty state'])
                     page.goto(base+'/workspace/overview?period=all&campus=1&campus=2&category=Environment')
                     form=page.locator('[data-overview-scope]');form.get_by_role('button',name='Apply',exact=True).click();page.wait_for_load_state('networkidle')
                     assert parse_qs(urlsplit(page.url).query)['campus']==['1','2']

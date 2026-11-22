@@ -22,8 +22,8 @@
       ['reports', 'Use Reports for Your Campus', 'Choose a report and scope, review its graphical results, and export matching values. Later attendance corrections belong on the printed report.'],
     ],
     director: [
-      ['metrics', 'Start with University Results', 'Review approved and conducted activities, all-time volunteer accounts, verified presences, and annual AOP achievement. Information icons explain each calculation.'],
-      ['follow-up', 'Follow up with Evidence', 'Open the work queue to review missing recording, schedule limitations, and verified target findings. Notify a campus coordinator only when you choose to send a reminder.'],
+      ['metrics', 'Start with University Results', 'Review conducted activities, verified presences, campus annual achievement, and generated findings to review. Approved Activities and all-time Volunteer Accounts remain in the secondary summary. Information icons explain each calculation.'],
+      ['follow-up', 'Follow up with Evidence', 'Review up to four finding types beside Campus Accomplishments, then open the matching queue. Findings are generated evidence, not unresolved review states. Notify a campus coordinator only when you choose to send a reminder.'],
       ['campus-comparison', 'Campus Accomplishments', 'Review conducted activities in the chart. Compare Campuses opens the report comparison and its campus selections. Expand Campus Details shows annual AOP, ASP, pending evidence, and campus links. Delivery volume does not measure quality.'],
       ['annual-goals', 'Review Annual Achievements', 'Campus obligations are combined without averaging percentages. University-wide targets stay separate. Pending evidence remains unknown; open the source targets for details.'],
       ['reports', 'Choose and Export a Report', 'Reports covers activity accomplishments, AOPs, approved proposals, and historical records. Screen filters follow through to exports.'],

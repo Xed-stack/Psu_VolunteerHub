@@ -153,13 +153,13 @@ TOPICS = [
         'Activity records remain permanent. Ended events direct you to reports and printed corrections rather than attendance editing.'
     ],('staff-activities',),('attendance','reports')),
     topic('overview','University and Campus Overview','Read headline measures within their stated scope.','Reports and Annual Plans',STAFF,[
-        'Directors start with university results and campus comparisons. Coordinators see their assigned campus.',
+        'Directors start with conducted activities, verified attendees, campus annual achievement, and findings to review. Campus Accomplishments and Needs Attention lead the Overview; approved activities, all-time accounts, annual details, delivery and attendance charts remain below. Coordinators see their assigned campus.',
         'Approved activities, conducted activities, verified attendees, and their period comparisons use the selected scope. Volunteer accounts are an account total, not a period attendance count.',
         'Repeated attendance across activities is different from unique volunteer accounts. Read each metric’s explanation before comparing them.',
         'Activity Delivery shows conducted activities over time. Sex-Disaggregated Verified Attendance separates Female, Male, Prefer Not to Say, and Not Recorded, including PSU and external participants. Only recorded presence on confirmed/completed registrations at conducted approved activities counts.',
         'Directors review Campus Accomplishments on Overview. Compare Campuses opens the report comparison for all campuses using the same period and other non-campus filters. Open its dropdown to select campuses; Activity Delivery shows a separate line for each compared campus. Applying comparison replaces the top Campus choice, while applying Report Filters clears comparison selections. Expand Campus Details retains the AOP, ASP, pending evidence, and campus links.',
         'AOP achievement retains its reporting-year scope. Open campus details, Reports, or Needs Attention for the source records.'
-    ],('overview','reports','follow-up'),('reports','annual-plans'),keywords='KPI five measures accounts attendance comparisons'),
+    ],('overview','reports','follow-up'),('reports','annual-plans'),keywords='KPI metrics accounts attendance comparisons findings'),
     topic('reports','Report Filters, Records, and Exports','Choose a scope and export the matching filtered dataset.','Reports and Annual Plans',STAFF,[
         'Directors can open Activities → an activity → Documents to read the approved proposal and supporting evidence across campuses. Published proposals are also available near the top of Activity Overview. This view is read-only; uploads and announcements remain Coordinator actions.',
         'Open Reports and select activity delivery, annual achievement, historical records, or People Insights as appropriate.',

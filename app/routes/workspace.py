@@ -896,13 +896,20 @@ def reports():
 @roles_required('director', 'admin', 'coordinator')
 def follow_up():
     from app.services.workspace_reports import follow_up_items
+    from app.services.staff_overview import FINDING_LABELS
+    finding_type = request.args.get('finding_type','')
+    if len(request.args.getlist('finding_type')) > 1 or (finding_type and finding_type not in FINDING_LABELS):
+        abort(400, description='Choose a listed finding type.')
     data = report_data()
     items = follow_up_items(data)
+    if finding_type:
+        items = [item for item in items if item['code'] == finding_type]
     # The queue is bounded in the UI even when the report scope spans many years.
     page = request.args.get('page',1,type=int)
     if page is None or page < 1:
         abort(400)
     return render_template('workspace/follow_up.html', **data, items=items[(page-1)*25:page*25],
+                           finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),
                            total=len(items), page=page, pages=max(1,(len(items)+24)//25))
 
 

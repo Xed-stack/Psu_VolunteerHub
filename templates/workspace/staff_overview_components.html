@@ -12,22 +12,27 @@
 </form><p class="staff-scope-description">{{ period_label }} · Philippine time. Annual plans use {{ year }}; account totals are all-time.</p></section>
 {% endmacro %}
 
-{% macro metrics(detail_views=false) %}
+{% macro metrics(detail_views=false, director_headlines=false) %}
 <section class="kpi-strip" data-tour-id="metrics" aria-label="Key Performance Indicators">
-{% for label,value,href,caption,explanation,key in [
+{% set metric_rows = [
   ('Approved Activities',approved,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='approved',page=1,view='activities' if detail_views else request.args.get('view'))),'Starts in period','Approved activities with a start date in the selected activity scope.','approved'),
   ('Conducted Activities',conducted,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='conducted',page=1,view='activities' if detail_views else request.args.get('view'))),'Recorded end passed','Approved activities with a known end time that has passed.','conducted'),
   ('Volunteer Accounts',accounts,url_for('workspace.volunteers',campus_id=campus_id),'All time · includes inactive','All-time volunteer accounts in the selected campus scope, including inactive accounts.','accounts'),
   ('Verified Attendees',attendees,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),view='participation' if detail_views else request.args.get('view'))),'Present records · repeats included','Recorded presences at conducted activities. A person attending two activities counts twice.','attendees'),
   ('AOP Targets Achieved',(goals.plans.AOP.met|string ~ ' / ' ~ goals.plans.AOP.total|string) if goals.plans.AOP.total else 'Not set',url_for('goals.details',year=year,campus=campus_id,plan='AOP'),('Campus' if campus_id else 'University') ~ ' targets · ' ~ year|string,'Approved AOP obligations with verified evidence. Campus rollup is shown separately from university-wide targets.','aop')
 ] %}
-<article class="metric-tile"><a href="{{ href }}"><span class="metric-title">{{ label }}</span><strong class="{{ 'metric-unset' if value == 'Not set' }}">{{ value }}</strong><span class="metric-context">{{ caption }}{% if key in deltas %}<span class="metric-change">{{ '+' if deltas[key] > 0 }}{{ deltas[key] }} vs previous {{ 'date range' if period == 'custom' else 'period' }}</span>{% endif %}</span></a>{{ info_tip(label,explanation,url_for('help_page')) }}</article>
+{% if director_headlines %}{% set metric_rows = [metric_rows[1],metric_rows[3],
+  ('Campus Annual Achievement',(campus_rollup.met|string ~ ' / ' ~ campus_rollup.total|string) if campus_rollup.total else 'Not Set', '#annual-title',year|string ~ ' · Campus obligations','Each approved obligation counts once per campus. Shared AOP/ASP obligations are not added twice; pending evidence remains in the denominator. University targets are separate.','campus_annual'),
+  ('Findings to Review',finding_total,url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),finding_type=none,page=1)),'Generated findings · not unique activities','Generated findings under existing activity and annual scope rules. An activity can produce more than one finding. This is not a count of unresolved or closed reviews.','findings')
+] %}{% endif %}
+{% for label,value,href,caption,explanation,key in metric_rows %}
+<article class="metric-tile"><a href="{{ href }}"><span class="metric-title">{{ label }}</span><strong class="{{ 'metric-unset' if value in ['Not set','Not Set'] }}">{{ value }}</strong><span class="metric-context">{{ caption }}{% if key in deltas %}<span class="metric-change">{{ '+' if deltas[key] > 0 }}{{ deltas[key] }} vs previous {{ 'date range' if period == 'custom' else 'period' }}</span>{% endif %}</span></a>{{ info_tip(label,explanation,url_for('help_page')) }}</article>
 {% endfor %}</section>
 {% endmacro %}
 
 {% macro annual_summary(director) %}
 {% set plan = campus_rollup if director else goals %}
-<section class="staff-annual" data-tour-id="annual-goals" aria-labelledby="annual-title"><header class="staff-section-heading"><h2 id="annual-title">{{ 'Campus Annual Achievement' if director else 'Campus Annual Plan' }}</h2>{{ info_tip('Annual Scope','Each approved obligation counts once per campus overall. Shared AOP and ASP obligations appear in each relevant plan. Pending evidence stays in the denominator; university targets remain separate.') }}</header>
+<section class="staff-annual" data-tour-id="annual-goals" aria-labelledby="annual-title"><header class="staff-section-heading"><h2 id="annual-title" tabindex="-1">{{ 'Campus Annual Achievement' if director else 'Campus Annual Plan' }}</h2>{{ info_tip('Annual Scope','Each approved obligation counts once per campus overall. Shared AOP and ASP obligations appear in each relevant plan. Pending evidence stays in the denominator; university targets remain separate.') }}</header>
   <p class="staff-note">{{ year }} · {{ 'Selected campuses' if director and (campus_id or request.args.getlist('campus')) else 'All campuses' if director else current_user.campus.name }}. Annual evidence is independent of activity filters.</p>
   <div class="staff-annual-result"><strong>{{ plan.met|string ~ ' / ' ~ plan.total|string if plan.total else 'Not set' }}</strong><span>{{ 'approved obligations achieved' if plan.total else 'No approved annual targets' }}{% if plan.rate is not none %} · {{ plan.rate }}%{% endif %}</span></div>
   <dl class="staff-plan-values">{% for kind in ['AOP','ASP'] %}<div><dt>{{ kind }}</dt><dd><a href="{{ url_for('goals.details',year=year,campus=campus_id,plan=kind,_anchor='campus-results' if director and not campus_id else none) }}">{{ plan.plans[kind].met|string ~ ' / ' ~ plan.plans[kind].total|string if plan.plans[kind].total else 'Not Set' }}</a></dd></div>{% endfor %}<div><dt>Awaiting Evidence</dt><dd>{{ plan.pending }}</dd></div></dl>
@@ -50,9 +55,12 @@
 </section>
 {% endmacro %}
 
-{% macro attention_preview(grouped) %}
-<section class="staff-section staff-attention" data-tour-id="follow-up" aria-labelledby="attention-title"><header class="staff-section-heading"><h2 id="attention-title">Needs Attention</h2><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),page=1)) }}">Full Queue{% if finding_total %} ({{ finding_total }}){% endif %}</a></header>
-  {% if grouped %}<ul class="staff-grouped-findings">{% for group in finding_groups[:3] %}<li><strong>{{ group.count }}</strong><div><h3>{{ group.title }}</h3><p>{{ group.campuses[:3]|join(', ') }}{% if group.campuses|length > 3 %} and {{ group.campuses|length - 3 }} more{% endif %}</p><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),page=1)) }}">Review Evidence and Actions</a></div></li>{% else %}<li><p>No follow-up findings in this scope.</p></li>{% endfor %}</ul>{% else %}{{ follow_up_list(follow_ups,3,true) }}{% endif %}
+{% macro attention_preview(grouped, director_overview=false) %}
+<section class="staff-section staff-attention" data-tour-id="follow-up" aria-labelledby="attention-title"><header class="staff-section-heading"><h2 id="attention-title">Needs Attention</h2><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),finding_type=none,page=1)) }}">{{ 'View All Findings' if director_overview else 'Full Queue' }}{% if finding_total %} ({{ finding_total }}){% endif %}</a></header>
+  {% if director_overview %}<p class="staff-note">Generated findings under the current scope. Activity findings use the selected activity scope; annual findings use {{ year }} and existing annual rules.</p><p class="director-finding-total"><strong>{{ finding_total }}</strong> Findings to Review</p>{% endif %}
+  {% if grouped %}<ul class="staff-grouped-findings">{% for group in finding_groups[:4 if director_overview else 3] %}<li><strong>{{ group.count }}</strong><div><h3>{{ group.title }}</h3><p>{{ group.campuses[:3]|join(', ') }}{% if group.campuses|length > 3 %} and {{ group.campuses|length - 3 }} more{% endif %}</p><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),finding_type=group.code if director_overview else none,page=1)) }}">{{ 'Review These Findings' if director_overview else 'Review Evidence and Actions' }}</a></div></li>{% else %}<li><p>No follow-up findings in this scope.</p></li>{% endfor %}</ul>{% else %}{{ follow_up_list(follow_ups,3,true) }}{% endif %}
+{% if director_overview and finding_groups|length > 4 %}<p class="staff-note">Showing 4 of {{ finding_groups|length }} finding types. View All Findings includes every type in this scope.</p>{% endif %}
+{% if director_overview %}<p class="staff-note">Historical findings remain evidence to assess. Reviewing them does not change recorded outcomes or mark them closed.</p>{% endif %}
 </section>
 {% endmacro %}
 
@@ -61,4 +69,11 @@
   <ul class="staff-agenda">{% for event in agenda %}{% set ongoing = event.end_date and event.date <= now < event.end_date %}<li><time datetime="{{ event.date.isoformat() }}"><strong>{{ event.date.strftime('%d') }}</strong>{{ event.date.strftime('%b %Y') }}</time><div><a class="staff-agenda-title" href="{{ linked_url('workspace.activity',event_id=event.id) }}">{{ event.title }}</a><p><span class="badge">{{ 'Ongoing' if ongoing else 'Upcoming' }}</span> {{ event.date.strftime('%I:%M %p') }} · {{ event.location or 'Location not recorded' }}</p>{% if not event.end_date %}<span class="staff-note">End time not recorded</span>{% endif %}</div><a class="text-link" href="{{ linked_url('coordinator.attendance' if ongoing else 'workspace.activity',event_id=event.id) }}">{{ 'Record Attendance' if ongoing else 'Open Activity' }}</a></li>{% else %}<li class="staff-empty">No upcoming approved activities. Create an activity from an approved proposal when your campus schedule is ready.</li>{% endfor %}</ul>
   <a class="text-link" href="{{ linked_url('workspace.activities') }}">All Campus Activities</a>
 </section>
+{% endmacro %}
+
+{% macro secondary_stats() %}
+<section class="director-secondary-summary" aria-label="Additional Overview Statistics"><dl>
+<div><dt><a href="{{ url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='approved',view='activities',page=1)) }}">Approved Activities</a></dt><dd><strong>{{ approved }}</strong><span>Starts in the selected period</span></dd></div>
+<div><dt><a href="{{ url_for('workspace.volunteers',campus_id=campus_id) }}">Volunteer Accounts</a></dt><dd><strong>{{ accounts }}</strong><span>All time · includes inactive accounts</span></dd></div>
+</dl></section>
 {% endmacro %}

@@ -1,5 +1,42 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Director Overview Refinement, 22 November 2026
+
+Implemented the approved refined plan locally on `codex/ui-workflow-overhaul`.
+Director-only headlines now show Conducted Activities, Verified Attendees, Campus
+Annual Achievement (existing campus rollup), and Findings to Review (raw generated
+findings, not unique activities or persisted unresolved reviews). Campus
+Accomplishments and Needs Attention lead the page. Approved Activities/all-time
+Volunteer Accounts remain below; full annual details then delivery/attendance
+charts and workspace links are retained. Top controls and Coordinator/Report
+presentations retain their current behavior. Admin uses its existing layout branch.
+
+Needs Attention shows up to four issue groups with scoped links. The existing
+queue validates optional `finding_type`, filters before pagination, identifies the
+selected type and clears it without losing report scope. No review/closure states,
+notification changes, historical changes or new calculations. Help/guide updated.
+
+Verification: 53 unique focused cases (52 combined plus a new preview-limit case),
+32 staff browser groups and 53 attendance/report browser groups passed. Running
+Jinja templates, CSS build, changed Python/JS syntax and whitespace checks passed.
+Rendered critique fixed a five-column CSS override and the annual KPI jump offset.
+Evidence, detailed audit, limitations and rollback:
+`docs/qa/DIRECTOR_OVERVIEW_REFINEMENT.md`.
+
+No full-suite/live-MySQL/physical-device/browser-zoom/manual-screen-reader claim.
+No commit/push/deployment, operational database, schema or dependency change.
+The existing SQL update/guide/test and its handoff entry, DOCX, output/tmp and
+deferred audit findings remain intact. The user's source plan file is unchanged.
+Rollback only this task's source, generated CSS, tests and notes; no DB rollback.
+
+The user subsequently authorized committing and pushing this Director Overview
+refinement to both `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. Both remote heads were verified at `218fccf`
+before publication. Include this entry, implementation, generated CSS, focused
+tests, browser checks and QA notes. Exclude unrelated SQL files and their handoff
+entry, DOCX, output and tmp. No deployment or operational database change is
+authorized by this publication.
+
 ## Current handoff: Campus Delivery Lines and Comparison Dropdown, 22 November 2026
 
 Implemented the approved report changes locally on `codex/ui-workflow-overhaul`.
