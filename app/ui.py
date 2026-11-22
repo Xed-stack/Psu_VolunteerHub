@@ -164,7 +164,7 @@ PAGES = {
     'workspace.draft_list':('drafts','Saved Drafts'), 'notifications.list_notifications':('notifications','Notifications'),
 }
 
-PAGES.update({'workspace.follow_up':('follow_up','Needs Attention'), 'workspace.campus':('overview','Campus Workspace'),
+PAGES.update({'finding_reviews.detail':('follow_up','Finding Review'), 'workspace.follow_up':('follow_up','Needs Attention'), 'workspace.campus':('overview','Campus Workspace'),
               'workspace.recognition':('reports','Outstanding Recognition'), 'workspace.people_insights':('reports','People Insights'),
               'director.activity_calendar':('calendar','University Calendar'),'coordinator.activity_calendar':('calendar','Campus Calendar')})
 

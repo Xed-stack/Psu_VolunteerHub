@@ -1,0 +1,25 @@
+{% extends 'layouts/role_base.html' %}
+{% from 'workspace/components.html' import heading with context %}
+{% from 'workspace/staff_overview_components.html' import scope_controls with context %}
+{% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}
+{% block content %}
+{{ heading('Needs Attention','Review evidence and record decisions without changing attendance or institutional results.',url_for('workspace.overview'),'Back to Overview') }}
+{{ scope_controls() }}
+<nav class="report-tabs" aria-label="Review Views">
+{% if current_user.role!='coordinator' %}<a href="{{ query_url(review_tab='active',page=1) }}" {{ 'aria-current=page' if review_tab=='active' }}>Active</a>{% else %}<a href="{{ query_url(remove=['review_tab'],page=1) }}">Needs Attention</a>{% endif %}
+<a href="{{ query_url(review_tab='reviewed',page=1) }}" {{ 'aria-current=page' if review_tab=='reviewed' }}>{{ 'Reviewed Recommendations' if current_user.role=='coordinator' else 'Reviewed' }}</a></nav>
+<form method="get" class="panel filter-form">
+{% from 'partials/filter_ui.html' import context_fields with context %}{{ context_fields(['review_group','finding_type','page']) }}
+<div class="filter-grid"><label class="field">Review Category<select name="review_group"><option value="">All Categories</option>{% for key,(label,codes) in groups.items() %}<option value="{{ key }}" {{ 'selected' if review_group==key }}>{{ label }}</option>{% endfor %}</select></label>
+<label class="field">Finding Type<select name="finding_type"><option value="">All Finding Types</option>{% for key,label in finding_labels.items() %}<option value="{{ key }}" {{ 'selected' if finding_type==key }}>{{ label }}</option>{% endfor %}</select></label></div>
+<button class="btn btn--outline">Apply Review Filters</button><a class="text-link" href="{{ query_url(remove=['review_group','finding_type'],page=1) }}">Clear Review Filters</a></form>
+<section class="workspace-section"><h2>{{ total }} {{ 'Active Reviews' if review_tab=='active' else 'Completed Assessments' }}</h2>
+<p class="scope-note">Review evidence covers the whole activity. Participant filters in Reports do not create separate reviews. Follow-up Sent remains active until a Director closes it.</p>
+<ul class="review-queue">{% for row in items %}
+{% set snap=row.snapshot if review_tab=='active' else row.content.snapshot %}
+<li><div><p class="scope-note">{{ snap.campus }} · {{ snap.scope }}</p><h3>{{ snap.title }}</h3>{% if snap.event_title %}<p>{{ snap.event_title }}</p>{% endif %}<p>{{ snap.evidence }}</p>
+{% if review_tab=='active' %}<p class="review-status">{{ 'Follow-up Sent' if row.status=='follow_up_sent' else 'Needs Review' }}{% if row.changed %} · Evidence Changed{% endif %}{% if not row.detected %} · Finding No Longer Detected{% endif %}</p>{% else %}<p class="scope-note">{{ reasons.get(row.content.closure_reason) }} · {{ row.actor_name }} · {{ row.created_at|review_pht }}</p>{% endif %}</div>
+<a class="btn btn--outline" href="{{ url_for('finding_reviews.detail',key=row.key,source=row.token,return_to=request.full_path.rstrip('?')) if review_tab=='active' else url_for('finding_reviews.detail',key=review_keys[row.review_id],occurrence=row.id,return_to=request.full_path.rstrip('?')) }}">{{ 'Review' if review_tab=='active' else 'View Assessment' }}</a></li>
+{% else %}<li><p>{{ 'No active reviews' if review_tab=='active' else 'No completed assessments' }} match this scope.</p></li>{% endfor %}</ul></section>
+<nav class="pagination" aria-label="Review Pages">{% if page>1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page<pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</nav>
+{% endblock %}

@@ -299,6 +299,20 @@ def migrate_proposals_command(database, dry_run):
     click.echo(f'{"Dry run" if dry_run else "Applied"}: {len(plan)} schema changes.')
 
 
+@click.command('migrate-finding-reviews')
+@click.option('--database', required=True, help='Exact configured database name.')
+@click.option('--dry-run', is_flag=True, help='Inspect without changing schema or data.')
+@with_appcontext
+def migrate_finding_reviews_command(database, dry_run):
+    from app.finding_review_migration import migrate_finding_reviews
+    try:
+        changes = migrate_finding_reviews(db.engine, database, dry_run)
+    except (ValueError, SQLAlchemyError) as exc:
+        raise click.ClickException(str(exc) if isinstance(exc, ValueError) else 'Migration interrupted; inspect the schema before retrying.') from None
+    for change in changes:click.echo(change)
+    click.echo(f'{"Dry run" if dry_run else "Applied"}: {len(changes)} schema changes.')
+
+
 def register_commands(app):
     from app.demo_dataset import reset_and_seed_demo
     from app.presentation_dataset import reset_and_seed_presentation
@@ -315,6 +329,7 @@ def register_commands(app):
     app.cli.add_command(sync_campuses)
     app.cli.add_command(migrate_workspace_command)
     app.cli.add_command(migrate_proposals_command)
+    app.cli.add_command(migrate_finding_reviews_command)
 
 
 @click.command('sync-campus-catalogue')

@@ -222,6 +222,9 @@ def campus_follow_up():
         code = request.form.get('guidance_kind', 'remaining_goals')
         if code not in ('no_targets', 'remaining_goals', 'pending_attendance', 'missed_targets', 'low_attendance', 'no_activities', 'record_attendance', 'schedule_limit'):
             raise ValueError
+        from app.services.finding_reviews import available
+        if available():
+            return redirect(url_for('workspace.follow_up',**dict(scope.to_dict(flat=False),campus_id=campus_id,finding_type=code,review_tab='active',page=1)))
         if request.form.get('guidance_event_id') and (not event_id or event_id < 1 or code not in ('pending_attendance', 'low_attendance', 'missed_targets', 'record_attendance', 'schedule_limit')):
             raise ValueError
         plan = annual_goal_summary(year, campus_id)

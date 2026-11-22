@@ -7,6 +7,7 @@ load_dotenv(os.path.join(basedir, '.env'))
 
 
 class Config:
+    FINDING_REVIEWS_ENABLED = os.environ.get('FINDING_REVIEWS_ENABLED', 'false').lower() == 'true'
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-fallback-key')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PERFORMANCE_METRICS_ENABLED = os.environ.get('PERFORMANCE_METRICS_ENABLED', 'false').lower() == 'true'

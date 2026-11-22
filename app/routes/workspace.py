@@ -874,6 +874,10 @@ def overview():
     from app.services.staff_overview import overview_context
     data = report_data()
     findings = follow_up_items(data)
+    from app.services import finding_reviews
+    reviews_ready = finding_reviews.available()
+    review_data = finding_reviews.canonical(request.args) if reviews_ready and current_user.role=='director' and any(request.args.get(k) for k in ('sex','affiliation','college_affiliation','attention')) else data
+    review_summary = finding_reviews.summary(review_data) if reviews_ready and current_user.role=='director' else None
     agenda = []
     if current_user.role == 'coordinator':
         now = data['now']
@@ -881,7 +885,7 @@ def overview():
             or_(Event.date > now, db.and_(Event.date <= now, Event.end_date > now))
         ).order_by(Event.date, Event.id).limit(5).all()
     return render_template('workspace/overview.html', **data, **overview_context(data, findings),
-                           follow_ups=findings, agenda=agenda)
+                           follow_ups=findings, agenda=agenda,reviews_ready=reviews_ready,review_summary=review_summary)
 
 
 @workspace_bp.route('/reports')
@@ -895,6 +899,10 @@ def reports():
 @login_required
 @roles_required('director', 'admin', 'coordinator')
 def follow_up():
+    from app.services import finding_reviews
+    if finding_reviews.available() and (current_user.role!='coordinator' or request.args.get('review_tab')=='reviewed'):
+        from app.routes.finding_reviews import queue_view
+        return queue_view(request.args)
     from app.services.workspace_reports import follow_up_items
     from app.services.staff_overview import FINDING_LABELS
     finding_type = request.args.get('finding_type','')
@@ -909,7 +917,7 @@ def follow_up():
     if page is None or page < 1:
         abort(400)
     return render_template('workspace/follow_up.html', **data, items=items[(page-1)*25:page*25],
-                           finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),
+                           finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),reviews_ready=finding_reviews.available(),
                            total=len(items), page=page, pages=max(1,(len(items)+24)//25))
 
 

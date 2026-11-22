@@ -67,6 +67,18 @@
       location.assign(url);
     });
   });
+  document.querySelectorAll('[data-review-chart]').forEach(el => {
+    const rows=JSON.parse(el.dataset.chartValues);
+    const total=rows.reduce((sum,row)=>sum+row.total,0);
+    const sizing=()=>({width:el.parentElement.clientWidth,height:Math.min(270,Math.max(180,el.parentElement.clientWidth))});
+    responsiveLayouts.set(el,sizing);
+    draw(el,[{type:'pie',hole:.65,sort:false,labels:rows.map(row=>row.label),values:rows.map(row=>row.total),
+      textinfo:'none',marker:{colors:['#00408b','#f4bd27','#83baff','#cbd5e1'],line:{color:'#ffffff',width:2}},
+      hovertemplate:'%{label}: %{value:,d}<extra></extra>'}],{
+        ...structuredClone(layout),...sizing(),margin:{t:10,r:10,b:10,l:10},
+        annotations:[{text:numbers.format(total)+'<br><span style="font-size:12px">Active<br>Reviews</span>',showarrow:false,
+          x:.5,y:.5,xref:'paper',yref:'paper',font:{size:23,color:'#111c2c'}}]});
+  });
   document.querySelectorAll('[data-sex-chart]').forEach(el => {
     const rows = JSON.parse(el.dataset.chartValues);
     const total = rows.reduce((sum,row) => sum + row.total,0);
@@ -139,7 +151,7 @@
       hovertemplate:'%{y}: %{x} known reported participations<extra></extra>'}],structuredClone(layout),config);
   });
   if (window.ResizeObserver) {
-    document.querySelectorAll('[data-campus-chart], [data-sex-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
+    document.querySelectorAll('[data-campus-chart], [data-review-chart], [data-sex-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
       let previousWidth = 0;
       new ResizeObserver(() => requestAnimationFrame(() => {
         if (el.isConnected && el.data && el.clientWidth && el.clientWidth !== previousWidth) {

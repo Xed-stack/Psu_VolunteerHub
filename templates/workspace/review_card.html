@@ -1,0 +1,11 @@
+{% macro review_card(summary) %}
+<section class="staff-section review-card" data-tour-id="follow-up" aria-labelledby="review-card-title">
+<header class="staff-section-heading"><h2 id="review-card-title">Needs Attention</h2><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),review_tab='active',page=1)) }}">View Queue</a></header>
+<p class="staff-note">Active reviews awaiting your decision. Source results stay unchanged.</p>
+{% if summary.total %}<div class="review-card-body"><div class="report-chart"><p data-chart-status class="staff-note">View the category counts for exact values.</p><div hidden data-review-chart data-chart-values='{{ summary.groups|tojson }}' aria-hidden="true"></div></div>
+<ul class="review-card-groups">{% for group in summary.groups %}<li><span>{{ group.label }}</span><strong>{{ group.total }}</strong><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),review_tab='active',review_group=group.key,finding_type=none,page=1)) }}">Review<span class="sr-only"> {{ group.label }}</span></a></li>{% endfor %}</ul></div>
+{% else %}<p class="review-empty"><strong>0 Active Reviews</strong><span>No active reviews in this scope. Completed assessments remain in Reviewed.</span></p>{% endif %}
+<p class="staff-note"><strong>{{ summary.follow_up_sent }}</strong> follow-ups sent within these active reviews.</p>
+<a class="text-link" href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),review_tab='reviewed',page=1)) }}">Reviewed History</a>
+</section>
+{% endmacro %}

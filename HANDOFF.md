@@ -1,5 +1,48 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Director Finding Review Workflow, 22 November 2026
+
+Implemented the approved persisted review workflow locally on
+`codex/ui-workflow-overhaul`. The Director Overview now has an Active Reviews
+KPI and four-category Needs Attention donut when enabled. Active/Reviewed queues,
+Director assessment/closure/reopening, contextual notifications, retained evidence
+snapshots and paginated history are implemented. Coordinators can read completed
+occurrences for their own campus. Material changed evidence returns closed
+findings to Active without GET writes or loss of previous completed decisions.
+Underlying attendance, targets, annual calculations and editing rules remain.
+
+Rollout is explicitly gated: `FINDING_REVIEWS_ENABLED` defaults to false and ordinary
+startup excludes the two review tables. An exact-database migration command and
+MySQL/MariaDB SQL alternative are supplied; neither was run on operational data.
+Enable only after an authorized migration and restart. Disable the flag to roll
+back while retaining review history. The real role model merges administration
+into Director; no separate read-only Admin role was introduced.
+
+Verification: 79 unique focused regression cases (combined run plus corrected
+edge-case check), seven isolated MariaDB migration cases, and 20 synthetic browser
+groups. Browser sizes cover 1440/1024/768/390/320px, enlarged text, native no-JS
+saving, chart failure, campus permissions, changed evidence, print and empty
+states. SQL tests used a separate disposable port/data directory and that server
+was shut down. CSS build, template/Python/JS syntax and whitespace checked.
+Final workflow-only regression rerun passed all 22 cases (85.43 seconds).
+Migration CLI dry run planned two tables without changing the isolated schema.
+
+Skills: UI/UX Pro Max, Frontend Design, Design Critique (before and after), Ponytail
+full, Antislop core/UI/Human/Layoutmobile during work, current Web Design Guidelines
+and Webapp Testing. Operator instructions and limitations:
+`docs/operations/FINDING_REVIEW_WORKFLOW.md`; detailed verification and critique:
+`docs/qa/FINDING_REVIEW_WORKFLOW.md`. No full-suite/operational migration/MySQL8/
+physical-device/manual-screen-reader claim. No commit/push/deployment/dependencies.
+All unrelated working files and prior handoff entries remain intact.
+
+The user subsequently authorized publishing this workflow to both
+`origin/codex/ui-workflow-overhaul` and `thesis/codex/ui-workflow-overhaul`.
+Both remote heads were verified at `b59a2b0` before publication. Include the
+workflow implementation, migration, tests, generated CSS and documentation.
+Exclude the separate catalogue/proposal SQL work and its handoff entry, DOCX,
+output and tmp. Publication does not apply the migration or enable the feature.
+
+
 ## Current handoff: Director Overview Refinement, 22 November 2026
 
 Implemented the approved refined plan locally on `codex/ui-workflow-overhaul`.

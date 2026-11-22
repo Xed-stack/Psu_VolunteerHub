@@ -42,6 +42,21 @@ def guidance_content(note):
     try:
         payload = json.loads(note.message)
         identity = payload['identity']
+        if payload.get('version') == 2:
+            if (current_user.role!='coordinator' or identity.get('campus_id')!=current_user.campus_id
+                    or not isinstance(payload.get('text'),str)):
+                return unavailable
+            code=payload.get('finding_type')
+            if code in ('no_targets','remaining_goals'):
+                year=payload.get('year')
+                if not isinstance(year,int) or not 1900<=year<=2100:return unavailable
+                link=url_for('goals.workspace') if code=='no_targets' else url_for('goals.details',year=year,campus=current_user.campus_id)
+            elif code=='record_attendance':
+                if not note.event or note.event.campus_id!=current_user.campus_id or note.event.id!=payload.get('event_id'):return unavailable
+                link=url_for('workspace.activity',event_id=note.event.id)
+            elif code=='no_activities':link=url_for('coordinator.activity_calendar')
+            else:return unavailable
+            return dict(text=payload['text'],url=link)
         if (payload['version'] != 1 or not isinstance(payload['text'], str)
                 or current_user.role != 'coordinator' or identity['campus_id'] != current_user.campus_id
                 or not isinstance(identity['goal_year'], int) or not 1900 <= identity['goal_year'] <= 2100):

@@ -228,6 +228,9 @@ def create_app(config_name=None):
     from app.ui import presentation_context
     app.context_processor(presentation_context)
 
+    from app.routes.finding_reviews import finding_reviews_bp
+    app.register_blueprint(finding_reviews_bp)
+
     from app.commands import register_commands
     register_commands(app)
 
@@ -239,7 +242,7 @@ def create_app(config_name=None):
             else:
                 # Proposal storage requires its explicit migration outside isolated tests.
                 db.metadata.create_all(db.engine, tables=[table for table in db.metadata.sorted_tables
-                    if table.name != 'activity_proposals'])
+                    if table.name not in ('activity_proposals','finding_reviews','finding_review_events')])
             _seed_campuses(app)
             _seed_interests_skills(app)
             _seed_sdgs(app)
