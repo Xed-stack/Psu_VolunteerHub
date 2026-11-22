@@ -243,6 +243,23 @@ def workspace_report(base, args, user, now, forced_campus=None):
     else:
         month_labels = [str(y) for y in range(bounds[0].year,bounds[1].year+1)]
         monthly = [sum(r['conducted'] for r in rows if r['event'].date.year == int(y)) for y in month_labels]
+    delivery_series = []
+    if selected and user.role != 'coordinator':
+        by_campus = {}
+        for row in rows:
+            if row['conducted']:
+                event = row['event']
+                key = (event.date.year,event.date.month) if last-first < 24 else event.date.year
+                counts = by_campus.setdefault(event.campus_id,{})
+                counts[key] = counts.get(key,0)+1
+        period_keys = bins if last-first < 24 else list(range(bounds[0].year,bounds[1].year+1))
+        visible_ids = {row['id'] for row in campus_chart}
+        delivery_series = [dict(id=c.id,name=c.name,style_index=index,
+            values=[by_campus.get(c.id,{}).get(key,0) for key in period_keys])
+            for index,c in enumerate(campuses) if c.id in visible_ids]
+        if None in by_campus:
+            delivery_series.append(dict(id=None,name='Unassigned',style_index=len(campuses),
+                values=[by_campus[None].get(key,0) for key in period_keys]))
     users = User.query
     if campus_id:
         users = users.filter_by(campus_id=campus_id)
@@ -271,7 +288,7 @@ def workspace_report(base, args, user, now, forced_campus=None):
             scope_parts.append(label + ': ' + args.get(key).replace('_',' '))
     return dict(scope, **current, rows=rows, campus_id=campus_id, department=department,event_id=event_id,
         goals=summary(scope['year'],campus_id=campus_id),campus_goals=comparisons(scope['year']) if not campus_id else [],
-        campuses=campuses,campus_chart=campus_chart,monthly=monthly,month_labels=month_labels,
+        campuses=campuses,campus_chart=campus_chart,monthly=monthly,month_labels=month_labels,delivery_series=delivery_series,
         sex_breakdown=verified_sex_summary(rows),
         accounts=accounts.count(),now=now,deltas=deltas,department_choices=department_choices,
         activity_choices=choices.filter_by(lifecycle_status='approved').order_by(Event.title).all(),

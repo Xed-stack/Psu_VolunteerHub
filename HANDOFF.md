@@ -1,5 +1,41 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Campus Delivery Lines and Comparison Dropdown, 22 November 2026
+
+Implemented the approved report changes locally on `codex/ui-workflow-overhaul`.
+Active campus comparisons now show one named delivery line per included campus,
+with stable colors, markers/dashes, shared period bins, zero values and a scoped
+text table. Unassigned conducted records are identified when in scope. Series
+use full filtered rows before pagination and add no per-campus database queries.
+Coordinator/dashboard aggregate rendering and existing report calculations remain.
+
+Top Report Filters clear comparison selections on submission, including All
+Campuses. Applying comparison clears the primary Campus selection, preserves
+other filters, resets pagination and returns to the chart anchor. Legacy URLs
+with both controls retain their intersection until a form is applied.
+Compare Campuses is a closed native disclosure with a floating, viewport-bounded
+panel, four standard visible rows, scrolling, Escape/focus return and outside
+closure. Native no-JavaScript operation and text/Plotly-failure fallbacks remain.
+
+Verification: 30 focused regressions, 16 new browser groups and 53 existing
+staff/report browser groups passed. All templates, CSS build, changed Python/JS
+syntax, contrast and diff checks passed. Desktop/mobile/enlarged-text critique
+fixed fallback alignment, panel width and trigger overlap. Details and evidence:
+`docs/qa/CAMPUS_DELIVERY_COMPARISON.md`.
+
+No commit/push/deployment, operational database, schema or dependency change.
+No full-suite/live-MySQL/physical-device/manual-screen-reader claim. Unrelated
+SQL/guide/test and its handoff entry, DOCX, output/tmp and deferred audit findings
+remain intact. Rollback only this task's source, generated CSS and documentation;
+no database rollback is needed.
+
+The user subsequently authorized publishing this report comparison change to the
+current branch, `origin/codex/ui-workflow-overhaul`. The remote head was verified
+at `4b92021` before publication. Include this entry, report implementation,
+generated CSS, tests, browser runners and QA notes. Exclude unrelated SQL files,
+their handoff entry, DOCX, output and tmp. No deployment or operational database
+change is authorized by this publication.
+
 ## Current handoff: Create Activity Posting Essentials, 22 November 2026
 
 Implemented the approved shorter form locally on `codex/ui-workflow-overhaul`.

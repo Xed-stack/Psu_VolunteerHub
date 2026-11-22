@@ -80,6 +80,7 @@ def main():
                         assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),(role,name,width)
                         assert page.locator('[data-chart-status]:visible').count()==0
                         if name=='summary' and role=='director':
+                            page.locator('[data-comparison-dropdown] > summary').click()
                             controls=page.locator('#campus-comparison .comparison-filters')
                             assert controls.locator('[name=campus]').count()==9
                             box=controls.locator('.comparison-campus-list')
@@ -126,6 +127,7 @@ def main():
                     title=page.locator('#campus-comparison-title')
                     assert title.evaluate('el=>el===document.activeElement')
                     assert title.bounding_box()['y']>0 and title.bounding_box()['y']<400
+                    page.locator('[data-comparison-dropdown] > summary').click()
                     form=page.locator('.comparison-filters')
                     form.locator('[name=campus][value="1"]').check()
                     form.locator('[name=campus][value="2"]').check()
@@ -133,6 +135,7 @@ def main():
                     args=parse_qs(urlsplit(page.url).query)
                     assert args['campus']==['1','2'] and args['page']==['1'] and page.url.endswith('#campus-comparison')
                     assert page.locator('#campus-comparison-title').bounding_box()['y']<400
+                    page.locator('[data-comparison-dropdown] > summary').click()
                     form=page.locator('.comparison-filters');form.locator('[name=campus_mode]').select_option('exclude')
                     form.get_by_role('button',name='Apply Comparison').click();page.wait_for_load_state('networkidle')
                     assert parse_qs(urlsplit(page.url).query)['campus_mode']==['exclude']
@@ -140,6 +143,7 @@ def main():
                     assert page.locator('.comparison-filters').count()==0
                     page.get_by_role('link',name='Adjust Campus Comparison').click();page.wait_for_load_state('networkidle')
                     assert page.locator('.comparison-filters [name=campus]:checked').count()==2
+                    page.locator('[data-comparison-dropdown] > summary').click()
                     page.get_by_role('link',name='Reset Comparison').click();page.wait_for_load_state('networkidle')
                     assert 'campus' not in parse_qs(urlsplit(page.url).query)
                     assert page.locator('#campus-comparison-title').bounding_box()['y']<400
@@ -177,8 +181,9 @@ def main():
                     assert fallback_page.locator('.sex-breakdown-table').is_visible()
                     assert fallback_page.locator('[data-chart-status]:visible').count()>=1
                     fallback_page.get_by_text('View Campus Values and Details',exact=True).click()
-                    assert fallback_page.locator('[data-tour-id="campus-comparison"] details').evaluate('el=>el.open')
+                    assert fallback_page.locator('[data-tour-id="campus-comparison"] details:not(.comparison-dropdown)').evaluate('el=>el.open')
                     if role=='director':
+                        fallback_page.locator('[data-comparison-dropdown] > summary').click()
                         form=fallback_page.locator('.comparison-filters');form.locator('[name=campus][value="2"]').check()
                         form.get_by_role('button',name='Apply Comparison').click();fallback_page.wait_for_load_state('networkidle')
                         assert fallback_page.url.endswith('#campus-comparison')

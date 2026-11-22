@@ -25,15 +25,15 @@ def test_dashboard_compare_link_resets_only_campus_scope(client,actors):
 
 
 @pytest.mark.parametrize('view',['summary','activities','participation'])
-def test_comparison_controls_and_top_form_preserve_scope(client,actors,view):
+def test_comparison_controls_preserve_other_filters_and_top_form_clears_comparison(client,actors,view):
     sign_in(client,actors,'director')
     path='/workspace/reports/results?period=all&campus=1&campus=2&campus_mode=exclude&sex=female&view='+view
     page=parse_html(client.get(path).text)
     top=form_with_control(page,'period',tags=('select',))
     values=form_values(top)
     assert top.all('select',name='campus_id')
-    assert values['campus']==['1','2'] and values['campus_mode']==['exclude']
-    assert all(i.attrs.get('type')=='hidden' for i in top.all('input',name='campus'))
+    assert 'campus' not in values and 'campus_mode' not in values
+    assert not top.all('input',name='campus')
     assert not top.all('select',name='campus_mode')
     if view=='summary':
         section=page.one('section',id='campus-comparison')
@@ -59,11 +59,11 @@ def test_comparison_keeps_primary_restriction_and_reset_preserves_other_filters(
     assert data['sex_breakdown']['total']==3 and data['campus_id']==1
     page=parse_html(response.text);form=form_with_control(page.one('section',id='campus-comparison'),'campus_mode')
     assert 'Primary Campus: Lingayen' in form.text
-    assert form_values(form)['campus_id']==['1']
+    assert 'campus_id' not in form_values(form)
     reset=next(a for a in form.all('a') if a.text=='Reset Comparison')
     query=parse_qs(urlsplit(reset.attrs['href']).query)
-    assert not {'campus','campus_mode'} & query.keys()
-    assert query['sex']==['female'] and query['campus_id']==['1'] and query['period']==['all']
+    assert not {'campus','campus_mode','campus_id'} & query.keys()
+    assert query['sex']==['female'] and query['period']==['all']
     assert urlsplit(reset.attrs['href']).fragment=='campus-comparison'
 
 

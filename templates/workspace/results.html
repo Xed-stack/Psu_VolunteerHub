@@ -9,7 +9,7 @@
 {{ report_tabs(report_view) }}
 {% if event_id and rows %}<a class="text-link" href="{{ url_for('workspace.activity_report',**dict(request.args.to_dict(flat=False),event_id=event_id,return_to=request.full_path.rstrip('?'))) }}">Open Combined Activity Report</a>{% endif %}
 {% if report_view != 'summary' and current_user.role != 'coordinator' %}<a class="text-link" href="{{ query_url(view='summary',page=1) }}#campus-comparison">Adjust Campus Comparison</a>{% endif %}
-{% if report_view == 'summary' %}<div class="report-headlines">{{ metrics(true) }}</div>{{ charts(campus_chart,monthly,month_labels,period_label,true) }}<p class="scope-note">Open Activity Records for delivery and proposals, or Participation Records for attendance and numeric targets.</p>{% endif %}
+{% if report_view == 'summary' %}<div class="report-headlines">{{ metrics(true) }}</div>{{ charts(campus_chart,monthly,month_labels,period_label,true,delivery_series) }}<p class="scope-note">Open Activity Records for delivery and proposals, or Participation Records for attendance and numeric targets.</p>{% endif %}
 {% if report_view in ['summary','participation'] %}{{ sex_attendance(sex_breakdown) }}{% endif %}
 {% if report_view == 'activities' %}
 <section class="workspace-section mt-6"><header class="section-top"><h2>Activity Delivery and Proposals</h2></header><div
@@ -36,4 +36,4 @@
 >Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a
   class="btn btn--outline"
   href="{{ query_url(page=page+1) }}"
->Next</a>{% endif %}</nav>{% endif %}</div>{% endblock %}{% block scripts %}{{ chart_scripts() }}{% endblock %}
+>Next</a>{% endif %}</nav>{% endif %}</div>{% endblock %}{% block scripts %}<script src="{{ url_for('static',filename='scripts/report-comparison.js') }}"></script>{{ chart_scripts() }}{% endblock %}

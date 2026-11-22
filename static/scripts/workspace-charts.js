@@ -97,9 +97,28 @@
     responsiveLayouts.set(el, sizing);
     const size = sizing();
     const values = JSON.parse(el.dataset.chartValues);
-    draw(el, [{ type: 'scatter', mode: 'lines+markers', x: labels,
-      y: JSON.parse(el.dataset.chartValues), line: { color: '#00408b', width: 3 }, marker: { size: 7 },
-      hovertemplate: '%{x}: %{y:,d} conducted activities<extra></extra>' }], { ...structuredClone(layout),width:size.width, margin:{t:24,r:16,b:55,l:40}, yaxis:{...countAxis(values),autorange:true}, xaxis: { type:'category',fixedrange:true,automargin:true,tickmode:'array',tickvals:size['xaxis.tickvals'],ticktext:size['xaxis.ticktext'],tickangle:0 } });
+    const series = JSON.parse(el.dataset.chartSeries || '[]');
+    const colors = ['#00408b','#0f766e','#475569','#806000'];
+    const dashes = ['solid','dash','dot'];
+    const symbols = ['circle','square','diamond','cross','x','triangle-up','triangle-down','pentagon','star'];
+    const style = index => ({color:colors[index % colors.length],dash:dashes[Math.floor(index/4) % dashes.length],symbol:symbols[index % symbols.length]});
+    el.closest('.staff-trend').querySelectorAll('[data-delivery-key]').forEach(key => {
+      const look = style(Number(key.dataset.deliveryKey));
+      key.style.borderColor = look.color;
+      key.style.borderStyle = {solid:'solid',dash:'dashed',dot:'dotted'}[look.dash];
+    });
+    const traces = series.length ? series.map(campus => {
+      const look = style(campus.style_index);
+      return {type:'scatter',mode:'lines+markers',name:campus.name,x:labels,y:campus.values,
+        line:{color:look.color,dash:look.dash,width:3},marker:{color:look.color,symbol:look.symbol,size:8},
+        hovertemplate:'%{x}: %{y:,d} conducted activities<extra>'+escape(campus.name)+'</extra>'};
+    }) : [{type:'scatter',mode:'lines+markers',x:labels,y:values,
+      line:{color:'#00408b',width:3},marker:{size:7},
+      hovertemplate:'%{x}: %{y:,d} conducted activities<extra></extra>'}];
+    const plotted = series.length ? series.flatMap(campus=>campus.values) : values;
+    draw(el,traces,{...structuredClone(layout),width:size.width,margin:{t:24,r:16,b:55,l:40},
+      yaxis:{...countAxis(plotted),...(Math.max(0,...plotted) ? {autorange:true} : {range:[0,1]})},
+      xaxis:{type:'category',fixedrange:true,automargin:true,tickmode:'array',tickvals:size['xaxis.tickvals'],ticktext:size['xaxis.ticktext'],tickangle:0}});
   });
   document.querySelectorAll('[data-target-chart]').forEach(el => {
     Plotly.newPlot(el, [{ type: 'bar', x: ['Target', 'Verified actual'], y: JSON.parse(el.dataset.chartValues),
