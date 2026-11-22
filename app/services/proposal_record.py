@@ -57,6 +57,19 @@ PARTICIPATION = [('beneficiaries','Target Beneficiaries',['beneficiary_count','b
     ('volunteers','Volunteer Participation',['volunteer_count','volunteer_groups','volunteer_other','engagement_areas'])]
 REQUIRED = ['implementing_unit','rationale','general_objectives','specific_objectives','methodology',
             'evaluation','sustainability','conclusion','beneficiary_count','volunteer_count']
+POSTING_RECORD_KEYS = {'partnership_status', 'agency_id'}
+POSTING_CAPTURE_KEYS = POSTING_RECORD_KEYS | {'title', 'description', 'date', 'end_date', 'location'}
+POSTING_PROFILE = 'posting_essentials_v1'
+
+
+def validate_posting_record(record):
+    """Validate posting choices without requiring proposal documentation twice."""
+    status = record.get('partnership_status', '')
+    if status not in ('none', 'existing', 'renewal', 'new'):
+        return {'partnership_status': 'Choose a partnership status.'}
+    if status != 'none' and not record.get('agency_id'):
+        return {'agency_id': 'Choose a primary agency.'}
+    return {}
 
 
 def normalize_record(value):
@@ -256,9 +269,11 @@ def capture_proposal(content, filename):
             if value:=_usable(body):
                 record[key]=value[:10000]
                 provenance[key]={'state':'Captured','source':'Section '+roman,'excerpt':value[:240]}
-    for key,label in [('title',r'(?:Title of the Outreach\s*/\s*Volunteer Activity|Activity Title|Title)'),('location',r'(?:Location\s*/\s*Community|Location|Venue)')]:
+    for key,label in [('title',r'(?:Title of the Outreach\s*/\s*Volunteer Activity|Activity Title|Title)'),
+                      ('description',r'(?:Public Activity Description|Activity Description|Description)'),
+                      ('location',r'(?:Location\s*/\s*Community|Location|Venue)')]:
         match=re.search(r'(?im)^\s*(?:[IVX]+\.\s*)?(?:[●•]\s*)?'+label+r'\s*:\s*([^\n]+)',text)
-        if match and (value:=_usable(match[1])) and len(value)<= (200 if key=='title' else 500):
+        if match and (value:=_usable(match[1])) and len(value)<= {'title':200,'description':10000,'location':500}[key]:
             operational[key]=value
             provenance[key]={'state':'Captured','source':'Proposal label','excerpt':value[:240]}
     for key,label in [('date','Start Date'),('end_date','End Date')]:

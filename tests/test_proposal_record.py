@@ -182,6 +182,12 @@ def test_publish_review_record_visibility_and_historical_fallback(client,actors)
     assert db.session.get(ActivityProposal,event.id).content['beneficiary_count']=='80'
     assert FormDraft.query.filter_by(user_id=actors['coordinator'],key='activity:new').first() is None
     url=f'/workspace/activities/{event.id}/proposal-record'
+    assert b'Public description only' in client.get(url).data
+    proposal=db.session.get(ActivityProposal,event.id)
+    assert proposal.content['_form_profile']=='posting_essentials_v1'
+    # Previously published full records retain their detailed presentation.
+    proposal.content={key:value for key,value in proposal.content.items() if key!='_form_profile'}
+    db.session.commit()
     assert b'Authored rationale' in client.get(url).data
     sign_in(client,actors,'director');assert client.get(url).status_code==200
     sign_in(client,actors,'other');assert client.get(url).status_code==404
@@ -199,7 +205,9 @@ def test_no_javascript_rows_save_and_validation_retention(client,actors):
     assert response.status_code==302
     response=client.get('/workspace/create/2')
     assert b'Ben Santos' in response.data and b'Changed rationale' in response.data
-    assert response.data.count(b'name="pr.team.name"')==3
+    assert b'name="pr.team.name"' not in response.data
+    draft=FormDraft.query.filter_by(user_id=actors['coordinator'],key='activity:new').one()
+    assert len(json.loads(draft.payload['proposal_record'][0])['team'])==2
 
 
 def test_replacement_compares_and_preserves_authored_values(client,actors):
@@ -240,7 +248,7 @@ def test_legacy_draft_remains_legacy_until_explicit_upgrade(client,actors):
     sign_in(client,actors)
     draft=FormDraft(user_id=actors['coordinator'],campus_id=1,key='activity:new',payload={'title':['Preserved legacy title'],'_proposal':{'name':'old.docx','path':'old.docx'}})
     db.session.add(draft);db.session.commit()
-    assert b'Add Full Proposal Details' in client.get('/workspace/create/1').data
+    assert b'Use the Shorter Posting Form' in client.get('/workspace/create/1').data
     assert b'Preserved legacy title' in client.get('/workspace/create/2').data
     assert client.post('/workspace/create/1',data={'upgrade_proposal':'yes'}).status_code==302
     db.session.refresh(draft)

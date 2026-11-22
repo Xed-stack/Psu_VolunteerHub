@@ -29,7 +29,7 @@ def test_partner_count_rejects_invalid_or_unassociated_estimates(value,total,age
 def test_draft_can_remain_incomplete_but_continue_validates(client,actors):
     draft=seed_draft(client,actors)
     response=client.post('/workspace/create/2',data={'title':'Retain this title','date':'bad','save_step':'3'})
-    assert response.status_code==200 and b'Check the Proposal' in response.data
+    assert response.status_code==200 and b'Check the Activity Details' in response.data
     assert draft.payload['title']==['Retain this title']
     response=client.post('/workspace/create/2',data={'description':'Incomplete but saved','save_draft':'yes'})
     assert response.status_code==302 and response.location.endswith('/create/2')
@@ -37,7 +37,7 @@ def test_draft_can_remain_incomplete_but_continue_validates(client,actors):
     response=client.post('/workspace/create/2',data={'save_step':'1'})
     assert response.status_code==302 and response.location.endswith('/create/1')
     html=client.get('/workspace/create/2').text
-    assert 'proposal-disclosure' in html and 'Complete' in html.split('id="section-purpose"')[1].split('</summary>')[0]
+    assert 'id="section-purpose"' not in html and 'name="pr.budget_na"' not in html
     assert 'id="schedule-picker-date" required' not in html
     assert 'data-schedule-label="date"' in html
     assert 'Public Activity Description *' in html

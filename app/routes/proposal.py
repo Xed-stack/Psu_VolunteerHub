@@ -13,7 +13,8 @@ from app.models.user import Skill
 from app.models.event import SdgGoal
 from app.services.activity_workflow import save_document, stage_cover
 from app.services.proposal_record import (SCALARS, CHOICES, TABLES, GROUPS, PARTICIPATION,
-    normalize_record, record_from_form, validate_record, capture_proposal, budget_totals)
+    normalize_record, record_from_form, validate_posting_record, capture_proposal, budget_totals,
+    POSTING_RECORD_KEYS, POSTING_CAPTURE_KEYS, POSTING_PROFILE)
 from app.utils.decorators import role_required, roles_required
 
 proposal_bp = Blueprint('proposal', __name__, url_prefix='/workspace')
@@ -70,7 +71,7 @@ def create_proposal(step, draft):
                     pending=payload.get('_proposal_replacement')
                     if not pending:
                         raise ValueError('No replacement proposal is waiting for review.')
-                    allowed=set(pending['record'])|set(pending['operational'])
+                    allowed=(set(pending['record']) & POSTING_RECORD_KEYS)|set(pending['operational'])
                     selected=set(request.form.getlist('replace_fields'))
                     if not selected<=allowed:
                         abort(400)
@@ -170,10 +171,13 @@ def create_proposal(step, draft):
                     target=step
                 elif step in (2,3) and (target is None or target>step):
                     from app.services.activity_fields import stage_errors
-                    field_errors.update(stage_errors(payload,step,record))
+                    field_errors.update(stage_errors(payload,step,record,posting=True))
                 if step==4 and not target:
                     payload['_show_validation']=True
-                    field_errors=validate_record(record)
+                    from app.services.activity_fields import stage_errors
+                    field_errors=validate_posting_record(record)
+                    for stage in (2,3):
+                        field_errors.update(stage_errors(payload,stage,record,posting=True))
                     _,publication_errors=publish_draft(payload,validate_only=True)
                     errors.extend(publication_errors)
                     agency_id=record.get('agency_id','')
@@ -187,12 +191,12 @@ def create_proposal(step, draft):
                             field_errors['agency_id']='The selected MOA must belong to the selected agency.'
                     if record.get('partnership_status')=='existing' and not agreement_value:
                         field_errors['partnership_status']='Select a signed MOA covering the activity start date.'
-                    unresolved={key for key,value in payload.get('_capture',{}).items() if value['state']=='Needs Review'}
+                    unresolved={key for key,value in payload.get('_capture',{}).items() if key in POSTING_CAPTURE_KEYS and value['state']=='Needs Review'}
                     confirmed=set(request.form.getlist('capture_confirmed'))
                     if unresolved-confirmed:
-                        errors.append('Confirm every captured table against the approved proposal.')
+                        errors.append('Confirm the captured posting details against the approved proposal.')
                     if request.form.get('proposal_reviewed')!='yes':
-                        errors.append('Confirm that you reviewed the complete proposal record.')
+                        errors.append('Confirm that you reviewed the activity posting details.')
                     if not field_errors and not errors:
                         if not inspect(db.engine).has_table('activity_proposals'):
                             errors.append('Proposal storage is not configured. Ask the administrator to run the reviewed proposal migration; your draft is saved.')
@@ -211,7 +215,7 @@ def create_proposal(step, draft):
                                 snapshot['Sustainable Development Goals']=['SDG '+str(goal.number)+' '+goal.name for goal in event.sdgs]
                                 snapshot['Signed MOA']=[agreement.reference] if agreement_value and agreement else []
                                 db.session.add(ActivityProposal(event_id=event.id,agency_id=agency.id if agency else None,
-                                    content=record,capture=payload.get('_capture',{}),partnership_document=payload.get('_partnership_document'),
+                                    content=dict(record,_form_profile=POSTING_PROFILE),capture=payload.get('_capture',{}),partnership_document=payload.get('_partnership_document'),
                                     publishing_snapshot=snapshot))
                                 notify_audience(event)
                                 log_activity('activity_created',event,{'proposal':True,'structured_proposal':1})
@@ -240,7 +244,7 @@ def create_proposal(step, draft):
             errors.append('The activity could not be saved. Your saved draft is retained. Try again.')
     record=stored_record(draft.payload)
     if draft.payload.get('_show_validation'):
-        field_errors.update(validate_record(record))
+        field_errors.update(validate_posting_record(record))
         _,validation_errors=publish_draft(draft.payload,validate_only=True)
         errors=list(dict.fromkeys(errors+validation_errors))
     data=MultiDict((key,value) for key,values in draft.payload.items() if not key.startswith('_') and key!='proposal_record'
@@ -251,23 +255,14 @@ def create_proposal(step, draft):
     available_skills={str(row.id) for row in Skill.query.filter_by(is_active=True).all()}
     if saved_skills-available_skills:
         errors.append('A saved skill is archived or unavailable. Remove or replace the unavailable selection in Activity Details.')
-    try:lines,total=budget_totals(record)
-    except ValueError:lines,total=[],None
-    from app.services.proposal_record import REQUIRED
-    all_field_errors=validate_record(record)
-    section_states={anchor:('Incomplete' if any(key in all_field_errors for key in keys) else 'Needs Review' if any(draft.payload.get('_capture',{}).get(key,{}).get('state')=='Needs Review' for key in keys) else 'Complete') for anchor,_,keys in GROUPS+PARTICIPATION}
-    required_keys=set(REQUIRED)|set(CHOICES)|{'team','implementation','risks','budget_na','partnership_status'}
-    required_keys.update({'budget_reason'} if record.get('budget_na')=='yes' else {'budget'})
-    if record.get('partnership_status')=='none':required_keys.add('partnership_reason')
-    else:required_keys.update(('agency_id','psu_roles','partner_roles','partnership_duration'))
-    if 'Other Stakeholders' in record.get('beneficiary_groups',[]):required_keys.add('beneficiary_other')
-    if 'Other Stakeholders' in record.get('volunteer_groups',[]):required_keys.add('volunteer_other')
-    return render_template('workspace/proposal_create.html',step=step,data=data,record=record,errors=errors,required_keys=required_keys,section_states=section_states,
+    posting_capture={key:value for key,value in draft.payload.get('_capture',{}).items() if key in POSTING_CAPTURE_KEYS}
+    return render_template('workspace/proposal_create.html',step=step,data=data,record=record,errors=errors,
+        posting_capture=posting_capture,posting_record_keys=POSTING_RECORD_KEYS,
         field_errors=field_errors,payload=draft.payload,proposal=draft.payload.get('_proposal'),
         skills=Skill.query.filter_by(is_active=True).order_by(Skill.name).all(),sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),
         categories=_activity_categories(),max_slots=_max_event_slots(),departments=audience_departments(),
         agencies=PartnerAgency.query.filter_by(campus_id=current_user.campus_id).order_by(PartnerAgency.name).all(),
-        budget_total=total,budget_lines=lines,**proposal_context())
+        **proposal_context())
 
 
 @proposal_bp.route('/partners/<int:agency_id>/use',methods=['POST'])
@@ -300,9 +295,11 @@ def record(event_id):
     event=owned_event(event_id)
     proposal=db.session.get(ActivityProposal,event.id) if inspect(db.engine).has_table('activity_proposals') else None
     content=proposal.content if proposal else {}
-    _,total=budget_totals(content)
+    posting_record=content.get('_form_profile')==POSTING_PROFILE
+    if posting_record:total=None
+    else:_,total=budget_totals(content)
     return render_template('workspace/proposal_record.html',event=event,record=content,proposal_record=proposal,
-                           budget_total=total,agency=db.session.get(PartnerAgency,proposal.agency_id) if proposal and proposal.agency_id else None,**proposal_context())
+                           posting_record=posting_record,budget_total=total,agency=db.session.get(PartnerAgency,proposal.agency_id) if proposal and proposal.agency_id else None,**proposal_context())
 
 
 @proposal_bp.route('/activities/<int:event_id>/partnership-draft')

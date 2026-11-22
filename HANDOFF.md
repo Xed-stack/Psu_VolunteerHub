@@ -1,5 +1,42 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Create Activity Posting Essentials, 22 November 2026
+
+Implemented the approved shorter form locally on `codex/ui-workflow-overhaul`.
+Approved Proposal → Activity Details → Registration and Partners → Review and
+Publish retains uploads/capture, manual fallback, replacement selection, saved
+drafts, scheduling, skills/SDGs, registration settings and campus partner/MOA
+controls. Budget and other detailed proposal sections no longer need re-entry or
+block publication. Only posting capture needs confirmation. Explicitly labelled
+public descriptions can be captured; private rationale is not made public.
+
+Posting-specific stage/final validation preserves existing operational checks.
+Authored structured draft details and attachments remain; legacy drafts retain
+an explicit non-destructive conversion. New publication JSON is marked
+`posting_essentials_v1` and uses a compact staff record; historical full records
+retain their rendering. No invented zero budget/N/A values or data backfill.
+
+Verification: 71 unique focused cases validated (56 existing regressions and a
+final clean 15-case posting suite), 29 isolated Chromium groups, all templates,
+CSS build, changed Python/JS syntax and diff checks. Responsive review fixed
+320px review overflow, partner label grouping and enlarged-text step wrapping.
+Details, evidence, critique, audit, limitations and rollback:
+`docs/qa/CREATE_ACTIVITY_POSTING_ESSENTIALS.md`.
+
+No commit/push/deployment, operational database change, schema or dependency.
+Existing SQL update/guide/test and its handoff, DOCX, output and tmp remain intact;
+the earlier audit fixes remain deferred. Capture still requires readable labelled
+text; scanned files need manual entry. No full-suite/live-MySQL/manual
+screen-reader or physical-device claim.
+
+The user subsequently authorized committing and pushing this Create Activity
+change to `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. Both remote heads were verified at `a995140`
+before publication. Include this entry, implementation, generated CSS, focused
+tests, browser runner and QA notes. Exclude the separate SQL update/guide/test
+and its handoff entry, DOCX, output and tmp. No deployment or operational database
+change is authorized by this publication.
+
 ## Current handoff: Campus Comparison Navigation and Donuts, 22 November 2026
 
 Implemented the approved UI-only plan locally on `codex/ui-workflow-overhaul`.

@@ -32,11 +32,11 @@ def department_error(value,choices,previous=None):
     return None
 
 
-def stage_errors(payload,step,record=None):
+def stage_errors(payload,step,record=None,*,posting=False):
     from werkzeug.datastructures import MultiDict
     from app.routes.coordinator import _parse_event_schedule,_activity_categories,_max_event_slots
     from app.routes.workspace import audience_departments
-    from app.services.proposal_record import validate_record,GROUPS,PARTICIPATION
+    from app.services.proposal_record import validate_record,validate_posting_record,GROUPS,PARTICIPATION
     form=MultiDict((key,item) for key,values in payload.items() if not key.startswith('_') for item in (values if isinstance(values,list) else [values]))
     errors={}
     if step==2:
@@ -69,10 +69,15 @@ def stage_errors(payload,step,record=None):
         agreement=PartnerAgreement.query.join(PartnerAgency).filter(PartnerAgreement.id==agreement_value,PartnerAgency.campus_id==current_user.campus_id).first() if agreement_value else None
         if record and record.get('partnership_status')!='none' and not agency:errors['agency_id']='Choose an agency belonging to your campus.'
         if agreement_value and (not agreement or (record and (not agency or agreement.agency_id!=agency.id))):errors['agency_id']='Choose a campus MOA belonging to the primary agency.'
+        if posting and record and record.get('partnership_status')=='existing' and not agreement_value:
+            errors['partnership_status']='Select a signed MOA covering the activity start date.'
         agency_id=agency.id if agency else agreement.agency_id if agreement and not record else None
         try:partner_count(form.get('expected_partner_participants'),total,agency_id)
         except ValueError as exc:errors['expected_partner_participants']=str(exc)
     if record is not None:
+        if posting:
+            if step==3:errors.update(validate_posting_record(record))
+            return errors
         groups=GROUPS if step==2 else PARTICIPATION
         keys={key for _,_,fields in groups for key in fields}
         if step==3:keys.update(('partnership_status','agency_id','psu_roles','partner_roles','partnership_duration','partnership_reason'))

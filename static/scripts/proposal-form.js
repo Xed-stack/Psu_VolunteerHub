@@ -50,6 +50,18 @@
       volunteer_other: (record.volunteer_groups || []).includes('Other Stakeholders')
     };
     for (const key of ['agency_id','psu_roles','partner_roles','partnership_duration']) conditional[key] = record.partnership_status !== 'none';
+    const partnerDetails = form.querySelector('[data-partner-details]');
+    if (partnerDetails) {
+      const hasPartner = ['existing', 'renewal', 'new'].includes(record.partnership_status);
+      partnerDetails.hidden = !hasPartner;
+      partnerDetails.querySelectorAll('input,select,button').forEach(control => { control.disabled = !hasPartner; });
+      const agency = partnerDetails.querySelector('[name="pr.agency_id"]');
+      if (agency) agency.required = hasPartner;
+      const agreement = partnerDetails.querySelector('[name="agreement_id"]');
+      if (agreement) agreement.required = record.partnership_status === 'existing';
+      conditional.agency_id = hasPartner;
+      conditional.agreement_id = record.partnership_status === 'existing';
+    }
     form.querySelectorAll('[data-required-marker]').forEach(marker => {
       const required = conditional[marker.dataset.requiredMarker];
       if (required === undefined) return;
