@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from threading import Thread
+from urllib.parse import parse_qs,urlsplit
 from pypdf import PdfReader
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -71,10 +72,23 @@ def main():
                     for name,path in paths:
                         assert page.goto(base+path).status==200;page.wait_for_load_state('networkidle')
                         chart=page.locator('[data-sex-chart]');chart.wait_for(state='visible')
-                        assert chart.evaluate('el=>el.data[0].x.reduce((a,b)=>a+b,0)')==(96 if role=='director' else 48)
+                        assert chart.evaluate('el=>el.data[0].type')=='pie'
+                        assert chart.evaluate('el=>el.data[0].hole')==.62
+                        assert chart.evaluate("el=>el.data[0].text.every((text,i)=>text===JSON.parse(el.dataset.chartValues)[i].share.toFixed(1)+'%')")
+                        assert chart.evaluate('el=>el.data[0].values.reduce((a,b)=>a+b,0)')==(96 if role=='director' else 48)
                         assert page.locator('.sex-breakdown-table tbody tr').count()==4
                         assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),(role,name,width)
                         assert page.locator('[data-chart-status]:visible').count()==0
+                        if name=='summary' and role=='director':
+                            controls=page.locator('#campus-comparison .comparison-filters')
+                            assert controls.locator('[name=campus]').count()==9
+                            box=controls.locator('.comparison-campus-list')
+                            assert box.evaluate('el=>el.scrollHeight>el.clientHeight')
+                            assert box.evaluate('el=>el.children[3].getBoundingClientRect().bottom<=el.getBoundingClientRect().bottom+1')
+                            assert box.locator('label').first.bounding_box()['height']>=44
+                            box.locator('input').last.focus()
+                            assert box.evaluate('el=>el.scrollTop>0')
+                            box.evaluate('el=>el.scrollTop=0')
                         if name=='overview' and role=='director':
                             details=page.locator('.campus-details');assert not details.evaluate('el=>el.open')
                             assert not page.locator('.staff-campus-table').is_visible()
@@ -84,9 +98,15 @@ def main():
                             assert summary.bounding_box()['height']>=44
                             summary.press('Enter');assert not details.evaluate('el=>el.open')
                         if width in [1440,390,320]:
+                            page.wait_for_function("[...document.querySelectorAll('[data-campus-chart],[data-month-chart],[data-sex-chart]')].every(el=>el.hidden || Math.abs(el._fullLayout.width-el.getBoundingClientRect().width)<2)")
                             page.locator('main').click(position=dict(x=2,y=2),force=True)
                             page.evaluate('window.scrollTo(0,0)')
                             page.screenshot(path=str(out/f'{role}-{name}-{width}.png'),full_page=True)
+                            if name=='summary':
+                                page.locator('[data-sex-chart]').scroll_into_view_if_needed();page.wait_for_timeout(300)
+                                page.screenshot(path=str(out/f'{role}-donut-viewport-{width}.png'))
+                                page.locator('#campus-comparison').scroll_into_view_if_needed();page.wait_for_timeout(300)
+                                page.screenshot(path=str(out/f'{role}-comparison-viewport-{width}.png'))
                         checks.append([role,name,width,'plots, totals, disclosure, overflow'])
                 page.goto(base+paths[1][1]);page.wait_for_load_state('networkidle')
                 page.set_viewport_size(dict(width=1440,height=950));page.set_viewport_size(dict(width=320,height=950));page.wait_for_timeout(400)
@@ -94,12 +114,40 @@ def main():
                 assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
                 checks.append([role,'live chart resize'])
                 page.evaluate("document.documentElement.style.fontSize='200%'");page.wait_for_timeout(400)
-                assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
-                page.screenshot(path=str(out/f'{role}-text200.png'),full_page=True);checks.append([role,'200% text'])
+                page.screenshot(path=str(out/f'{role}-text200.png'),full_page=True)
+                assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),page.evaluate("[...document.querySelectorAll('main *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).slice(0,8).map(el=>({tag:el.tagName,cls:String(el.className),width:el.getBoundingClientRect().width,text:el.textContent.slice(0,50)}))")
+                checks.append([role,'200% text'])
+                if role=='director':
+                    page.goto(base+'/workspace/overview?year=2025&period=quarterly&segment=2&campus_id=1');page.wait_for_load_state('networkidle')
+                    page.get_by_role('link',name='Compare Campuses',exact=True).click();page.wait_for_load_state('networkidle')
+                    args=parse_qs(urlsplit(page.url).query)
+                    assert args['year']==['2025'] and args['period']==['quarterly'] and args['segment']==['2']
+                    assert 'campus_id' not in args and page.url.endswith('#campus-comparison')
+                    title=page.locator('#campus-comparison-title')
+                    assert title.evaluate('el=>el===document.activeElement')
+                    assert title.bounding_box()['y']>0 and title.bounding_box()['y']<400
+                    form=page.locator('.comparison-filters')
+                    form.locator('[name=campus][value="1"]').check()
+                    form.locator('[name=campus][value="2"]').check()
+                    form.get_by_role('button',name='Apply Comparison').click();page.wait_for_load_state('networkidle')
+                    args=parse_qs(urlsplit(page.url).query)
+                    assert args['campus']==['1','2'] and args['page']==['1'] and page.url.endswith('#campus-comparison')
+                    assert page.locator('#campus-comparison-title').bounding_box()['y']<400
+                    form=page.locator('.comparison-filters');form.locator('[name=campus_mode]').select_option('exclude')
+                    form.get_by_role('button',name='Apply Comparison').click();page.wait_for_load_state('networkidle')
+                    assert parse_qs(urlsplit(page.url).query)['campus_mode']==['exclude']
+                    page.get_by_role('link',name='Participation Records',exact=True).click();page.wait_for_load_state('networkidle')
+                    assert page.locator('.comparison-filters').count()==0
+                    page.get_by_role('link',name='Adjust Campus Comparison').click();page.wait_for_load_state('networkidle')
+                    assert page.locator('.comparison-filters [name=campus]:checked').count()==2
+                    page.get_by_role('link',name='Reset Comparison').click();page.wait_for_load_state('networkidle')
+                    assert 'campus' not in parse_qs(urlsplit(page.url).query)
+                    assert page.locator('#campus-comparison-title').bounding_box()['y']<400
+                    checks.append([role,'dashboard link, anchored apply/include/exclude/reset, report tabs'])
                 for suffix in ['&sex=female','&activity_name=NoMatchingSyntheticActivity']:
                     page.goto(base+'/workspace/reports/results?period=all'+suffix);page.wait_for_load_state('networkidle')
                     if 'sex=' in suffix:
-                        assert page.locator('[data-sex-chart]').evaluate('el=>el.data[0].x.filter(n=>n>0).length')==1
+                        assert page.locator('[data-sex-chart]').evaluate('el=>el.data[0].values.filter(n=>n>0).length')==1
                     else:
                         assert page.locator('[data-sex-chart]').count()==0
                         assert 'No verified attendance' in page.locator('.sex-attendance').inner_text()
@@ -130,6 +178,13 @@ def main():
                     assert fallback_page.locator('[data-chart-status]:visible').count()>=1
                     fallback_page.get_by_text('View Campus Values and Details',exact=True).click()
                     assert fallback_page.locator('[data-tour-id="campus-comparison"] details').evaluate('el=>el.open')
+                    if role=='director':
+                        form=fallback_page.locator('.comparison-filters');form.locator('[name=campus][value="2"]').check()
+                        form.get_by_role('button',name='Apply Comparison').click();fallback_page.wait_for_load_state('networkidle')
+                        assert fallback_page.url.endswith('#campus-comparison')
+                        assert fallback_page.locator('#campus-comparison').bounding_box()['y']>=0
+                        assert fallback_page.locator('#campus-comparison').bounding_box()['y']<400
+                        assert parse_qs(urlsplit(fallback_page.url).query)['campus']==['2']
                     fallback.close();checks.append([role,blocked,'text fallback'])
             browser.close()
         assert not errors,errors

@@ -37,7 +37,9 @@
 {% endmacro %}
 
 {% macro campus_table() %}
-<section class="staff-section" data-tour-id="campus-comparison" aria-labelledby="campus-title"><header class="staff-section-heading"><h2 id="campus-title">Campus Comparison</h2><a href="{{ url_for('goals.details',year=year,_anchor='campus-results') }}">Annual Details</a></header>
+{% set comparison_args = request.args.to_dict(flat=False) %}
+{% for key in ['campus','campus_id','campus_mode','page','view','return_to','tour'] %}{% set ignored = comparison_args.pop(key,none) %}{% endfor %}
+<section class="staff-section" data-tour-id="campus-comparison" aria-labelledby="campus-title"><header class="staff-section-heading"><h2 id="campus-title">Campus Accomplishments</h2><a href="{{ url_for('workspace.report_results',view='summary',return_to=request.full_path.rstrip('?'),_anchor='campus-comparison',**comparison_args) }}">Compare Campuses</a></header>
   <p class="staff-note">Conducted activities: {{ period_label }}. AOP, ASP and evidence: {{ year }} annual targets. Delivery volume is not a performance grade.</p>
   {% if campus_chart|sum(attribute='count') %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? Expand Campus Details for exact values.</p><div hidden data-campus-chart data-chart-values='{{ campus_chart|tojson }}' aria-hidden="true"></div></div>{% else %}<p class="staff-empty">No conducted activities in this scope. Expand Campus Details to review annual evidence, or choose another period.</p>{% endif %}
   <details class="campus-details"><summary>Expand Campus Details</summary>

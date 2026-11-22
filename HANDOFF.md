@@ -1,5 +1,45 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Campus Comparison Navigation and Donuts, 22 November 2026
+
+Implemented the approved UI-only plan locally on `codex/ui-workflow-overhaul`.
+Director Overview now says Campus Accomplishments; Compare Campuses opens report
+Summary at its Campus Comparison anchor, initially removing campus restrictions
+while retaining period and other report filters. The existing detail table remains.
+
+Director comparison include/exclude choices moved from More Filters into the
+report chart panel: four standard visible rows with native vertical scrolling,
+Apply Comparison anchored to that panel, and a comparison-only reset. As explicitly
+selected, the primary Campus dropdown stays above and its restriction is named
+inside the panel. Whole-report/export filtering, Coordinator campus scope, annual
+KPI calculations, routes and unrelated charts remain. Other report tabs link back
+to comparison; native hidden parameters preserve applied scope between forms.
+
+Both staff Overviews and shared report attendance panels now use donuts with
+centered totals and server-provided rounded shares. Exact four-group PSU/external
+tables, zero groups, empty/failure states and print values remain. PDF/Excel chart
+formats and CSV contents stay unchanged. Help/tour and focused assertions updated.
+
+Verification: **51 focused regressions and 53 synthetic browser groups passed**,
+covering both roles, 1440/1024/768/390/320px, anchored navigation and filtering,
+four-row scrolling, keyboard/focus, 200% text, donut totals/shares, single/empty
+data, record tabs, exports/print and no-JavaScript/Plotly-failure fallbacks. Build,
+131-template parse, JS syntax, contrast and diff checks passed. Details, critique,
+gate, evidence paths, limitations and rollback: `docs/qa/CAMPUS_COMPARISON_DONUTS.md`.
+
+No full-suite, operational/MySQL, physical-device or manual screen-reader claim.
+At implementation completion there was no commit, push, deployment, operational
+data, schema or dependency change.
+The previous audit fixes remain deferred. Existing SQL/guide/test and its handoff,
+DOCX, output and tmp are preserved separately.
+
+The user subsequently authorized publishing this UI change to both
+`origin/codex/ui-workflow-overhaul` and `thesis/codex/ui-workflow-overhaul`.
+Both remote heads were verified at `4a68c00` before publication. Include the UI,
+generated CSS, tests, browser checks, QA notes and this entry; exclude the unrelated
+SQL update/guide/test and its handoff entry, DOCX, output and tmp. No deployment
+or operational database change is authorized by this publication.
+
 ## Current handoff: Dashboard and Report Visualizations, 22 November 2026
 
 Implemented the approved plan locally on `codex/ui-workflow-overhaul`. Both staff

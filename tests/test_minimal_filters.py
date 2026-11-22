@@ -10,12 +10,14 @@ from tests.html_helpers import parse_html,form_with_control,form_values
 def test_reports_primary_more_count_and_inactive_period_fields(client,app,actors):
     sign_in(client,actors,'director')
     response,_=screen(client,app,'/workspace/reports/results?year=2026&period=annual&category=No+such+category&sex=female&campus=1&campus=2')
-    page=parse_html(response.get_data(as_text=True));form=form_with_control(page,'period')
+    page=parse_html(response.get_data(as_text=True));form=form_with_control(page,'period',tags=('select',))
     more=form.one('details',**{'class':'filter-more'})
     assert 'open' not in more.attrs
-    assert '3 Active' in more.text
+    assert '2 Active' in more.text
     assert not more.all('details')
-    assert {i.attrs['name'] for i in more.all('select')} >= {'department','event_id','category','attention','sdg_id','sex','affiliation','campus_mode'}
+    assert {i.attrs['name'] for i in more.all('select')} >= {'department','event_id','category','attention','sdg_id','sex','affiliation'}
+    assert not more.all('select',name='campus_mode')
+    assert page.one('section',id='campus-comparison').all('select',name='campus_mode')
     assert not more.all('input',name='activity_name')
     assert 'data-period-inactive' in next(label for label in form.all('label') if 'data-period-segment' in label.attrs).attrs
     assert form_values(form)['campus'] == ['1','2']
@@ -38,11 +40,11 @@ def test_specialist_alias_clear_and_reset_preserve_other_filters(client,actors):
     sign_in(client,actors,'director')
     path='/workspace/reports/results?period=all&q=100%25_&college_affiliation=Mixed+Affiliation&sex=female&campus=1&campus=2&page=1'
     page=parse_html(client.get(path).get_data(as_text=True))
-    form=form_with_control(page,'period');values=form_values(form)
+    form=form_with_control(page,'period',tags=('select',));values=form_values(form)
     assert values['activity_name']==['100%_'] and values['affiliation']==['Mixed Affiliation']
     assert 'q' not in values and 'college_affiliation' not in values
     assert values['campus']==['1','2'] and 'page' not in values
-    assert '3 Active' in form.text
+    assert '2 Active' in form.text
     chip=next(a for a in page.all('a') if a.attrs.get('aria-label','').startswith('Remove Search:'))
     query=parse_qs(urlsplit(chip.attrs['href']).query)
     assert 'q' not in query and 'activity_name' not in query
@@ -56,7 +58,7 @@ def test_coordinator_scope_and_authored_case_stay_unchanged(client,app,actors):
     sign_in(client,actors)
     response,data=screen(client,app,'/workspace/reports/results?period=all&campus_id=2&campus=2&activity_name=100%25_')
     assert data['campus_id']==1 and b'aUTHORED title in PSU 100%_' in response.data
-    form=form_with_control(parse_html(response.get_data(as_text=True)),'period')
+    form=form_with_control(parse_html(response.get_data(as_text=True)),'period',tags=('select',))
     assert not form.all('select',name='campus_id') and not form.all('input',name='campus')
     assert b'MiXeD department' in response.data
     assert Event.query.first().title=='aUTHORED title in PSU 100%_'

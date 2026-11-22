@@ -34,9 +34,10 @@
 {% macro filters(year, period, segment, campuses, campus_id, activity_choices=[], event_id=none, department='') %}
 {% from 'partials/filter_ui.html' import more,actions,period_fields,context_fields with context %}
 {% set annual_only=request.endpoint == 'workspace.aop' %}
+{% set comparison_report=request.endpoint == 'workspace.report_results' %}
 <details class="panel mb-6 report-filters" open><summary>Report Filters <span class="text-sm font-normal">· {{ year }}{% if not annual_only %} · {{ {'semiannual':'Semi-Annual','all':'All Records','custom':'Custom Dates'}.get(period,period|title) }}{% endif %}</span></summary>
 <form method="get" class="filter-form" {{ 'data-period-controls' if not annual_only }}>
-{% if not annual_only %}{{ context_fields(['year','period','segment','campus_id','start_date','end_date','delivery','activity_name','q','department','event_id','category','attention','sdg_id','sex','affiliation','college_affiliation','campus','campus_mode','goal_year']) }}{% elif request.args.get('return_to') %}<input type="hidden" name="return_to" value="{{ request.args.get('return_to') }}">{% endif %}
+{% if not annual_only %}{{ context_fields(['year','period','segment','campus_id','start_date','end_date','delivery','activity_name','q','department','event_id','category','attention','sdg_id','sex','affiliation','college_affiliation','goal_year'] + ([] if comparison_report and current_user.role != 'coordinator' else ['campus','campus_mode'])) }}{% elif request.args.get('return_to') %}<input type="hidden" name="return_to" value="{{ request.args.get('return_to') }}">{% endif %}
 <div class="filter-grid">
 {{ input('year','Reporting Year',year,'number',true) }}
 {% if not annual_only %}{{ period_fields(period,segment,start.isoformat() if start else '',end.isoformat() if end else '') }}
@@ -45,7 +46,7 @@
 {% if current_user.role != 'coordinator' %}<label class="field"><span>Campus</span><select name="campus_id"><option value="">{{ 'University Targets' if annual_only else 'All Campuses' }}</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if campus_id == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>{% endif %}
 </div>
 {% if not annual_only %}
-{% call more(['department','event_id','category','attention','sdg_id','sex','affiliation','campus']) %}
+{% call more(['department','event_id','category','attention','sdg_id','sex','affiliation'] + ([] if comparison_report else ['campus'])) %}
 <label class="field"><span>Conducting Department</span><select name="department"><option value="">All Departments in Scope</option>{% for name in department_choices %}<option value="{{ name }}" {{ 'selected' if department == name }}>{{ name }}</option>{% endfor %}{% if department and department not in department_choices %}<option value="{{ department }}" selected>{{ department }} (No Records in Scope)</option>{% endif %}</select></label>
 <label class="field"><span>Exact Activity</span><select name="event_id"><option value="">All Activities</option>{% for event in activity_choices %}<option value="{{ event.id }}" {{ 'selected' if event_id == event.id }}>{{ event.title }}</option>{% endfor %}{% if event_id and not activity_choices|selectattr('id','equalto',event_id)|list %}<option value="{{ event_id }}" selected>Selected Activity (No Records in Scope)</option>{% endif %}</select></label>
 <label class="field"><span>Category</span><select name="category"><option value="">All Categories</option>{% for value in categories %}<option value="{{ value }}" {{ 'selected' if request.args.get('category') == value }}>{{ value }}</option>{% endfor %}{% if request.args.get('category') and request.args.get('category') not in categories %}<option value="{{ request.args.get('category') }}" selected>{{ request.args.get('category') }} (no records in scope)</option>{% endif %}</select></label>
@@ -54,7 +55,7 @@
 <label class="field"><span>Recorded Sex</span><select name="sex">{% for value,label in [('','All Participants'),('male','Male'),('female','Female'),('prefer_not_to_say','Prefer Not to Say'),('unrecorded','Not Recorded')] %}<option value="{{ value }}" {{ 'selected' if request.args.get('sex','') == value }}>{{ label }}</option>{% endfor %}</select></label>
 <label class="field"><span>Participant Affiliation</span><select name="affiliation"><option value="">All Affiliations</option>{% for value in affiliations %}<option value="{{ value }}" {{ 'selected' if request.args.get('affiliation',request.args.get('college_affiliation')) == value }}>{{ value }}</option>{% endfor %}{% set selected_affiliation=request.args.get('affiliation',request.args.get('college_affiliation','')) %}{% if selected_affiliation and selected_affiliation not in affiliations %}<option value="{{ selected_affiliation }}" selected>{{ selected_affiliation }} (no records in scope)</option>{% endif %}</select></label>
 <p class="filter-help">Recorded Sex refines PSU and external participant counts. Affiliation refines PSU account-based counts and excludes external participants. These filters do not change activity totals, all-time accounts, or annual targets.</p>
-{% if current_user.role != 'coordinator' %}<fieldset class="filter-campus"><legend>Compare Campuses</legend><label class="field"><span>Selection Mode</span><select name="campus_mode"><option value="include" {{ 'selected' if request.args.get('campus_mode','include') == 'include' }}>Include Selected Campuses</option><option value="exclude" {{ 'selected' if request.args.get('campus_mode') == 'exclude' }}>Exclude Selected Campuses</option></select></label><div class="check-grid">{% for campus in campuses %}<label class="check-row"><input type="checkbox" name="campus" value="{{ campus.id }}" {{ 'checked' if campus.id in request.args.getlist('campus',type=int) }}>{{ campus.name }}</label>{% endfor %}</div><p class="filter-help">No selection includes all campuses. The primary Campus field further narrows activity comparisons; annual targets use its scope.</p></fieldset>{% endif %}
+{% if current_user.role != 'coordinator' and not comparison_report %}<fieldset class="filter-campus"><legend>Compare Campuses</legend><label class="field"><span>Selection Mode</span><select name="campus_mode"><option value="include" {{ 'selected' if request.args.get('campus_mode','include') == 'include' }}>Include Selected Campuses</option><option value="exclude" {{ 'selected' if request.args.get('campus_mode') == 'exclude' }}>Exclude Selected Campuses</option></select></label><div class="check-grid">{% for campus in campuses %}<label class="check-row"><input type="checkbox" name="campus" value="{{ campus.id }}" {{ 'checked' if campus.id in request.args.getlist('campus',type=int) }}>{{ campus.name }}</label>{% endfor %}</div><p class="filter-help">No selection includes all campuses. The primary Campus field further narrows activity comparisons; annual targets use its scope.</p></fieldset>{% endif %}
 {% endcall %}
 <p class="filter-help">Reporting Year scopes annual plans even when activity dates use Custom Dates or All Records.</p>
 {% endif %}
@@ -68,9 +69,22 @@
   <p class="staff-note">{{ monthly|sum }} conducted activities. Periods without delivery show zero; attendance completeness is assessed separately.</p>
 </section>
 {% endmacro %}
-{% macro charts(campus_chart, monthly, month_labels, period_label) %}
-  <div class="grid gap-6 xl:grid-cols-2">
-    <section class="panel" data-tour-id="campus-comparison"><h2>Campus Accomplishments</h2><p class="mt-2 text-sm text-slate-600">Conducted approved activities, grouped by the campus that delivered them. {{ period_label }}.</p>{% if campus_chart|sum(attribute='count') %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? View Campus Values and Details below.</p><div hidden
+{% macro comparison_filters() %}
+{% from 'partials/filter_ui.html' import context_fields with context %}
+<form method="get" action="{{ url_for('workspace.report_results',_anchor='campus-comparison') }}" class="comparison-filters">
+{{ context_fields(['campus','campus_mode','view']) }}<input type="hidden" name="view" value="summary"><input type="hidden" name="page" value="1">
+<fieldset><legend>Compare Campuses</legend>
+  <label class="field"><span>Selection Mode</span><select name="campus_mode"><option value="include" {{ 'selected' if request.args.get('campus_mode','include') == 'include' }}>Include Selected Campuses</option><option value="exclude" {{ 'selected' if request.args.get('campus_mode') == 'exclude' }}>Exclude Selected Campuses</option></select></label>
+  <div class="comparison-campus-list">{% for campus in campuses %}<label class="comparison-campus-choice"><input type="checkbox" name="campus" value="{{ campus.id }}" {{ 'checked' if campus.id in request.args.getlist('campus',type=int) }}><span>{{ campus.name }}</span></label>{% endfor %}</div>
+  <p class="filter-help">{{ request.args.getlist('campus')|length }} selected. No selection includes all campuses. This selection applies to the whole report and its exports; annual targets retain their existing scope.</p>
+  {% if campus_id %}<p class="comparison-scope-note">Primary Campus: <strong>{{ (campuses|selectattr('id','equalto',campus_id)|first).name }}</strong>. The Campus dropdown above further restricts this selection. Choose All Campuses there to compare without that restriction.</p>{% endif %}
+</fieldset>
+<div class="filter-actions"><button class="btn btn--primary">Apply Comparison</button><a class="btn btn--outline" href="{{ query_url(remove=['campus','campus_mode'],view='summary',page=1) }}#campus-comparison">Reset Comparison</a></div>
+</form>
+{% endmacro %}
+{% macro charts(campus_chart, monthly, month_labels, period_label, comparison=false) %}
+  <div class="grid items-start gap-6 xl:grid-cols-2">
+    <section class="panel" data-tour-id="campus-comparison" {% if comparison %}id="campus-comparison" aria-labelledby="campus-comparison-title"{% endif %}><h2 {% if comparison %}id="campus-comparison-title" tabindex="-1"{% endif %}>{{ 'Campus Comparison' if comparison else 'Campus Accomplishments' }}</h2><p class="mt-2 text-sm text-slate-600">Conducted approved activities, grouped by the campus that delivered them. {{ period_label }}.</p>{% if comparison and current_user.role != 'coordinator' %}{{ comparison_filters() }}{% endif %}{% if campus_chart|sum(attribute='count') %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? View Campus Values and Details below.</p><div hidden
   data-campus-chart
   data-chart-values='{{ campus_chart|tojson }}'
   class="min-h-48"

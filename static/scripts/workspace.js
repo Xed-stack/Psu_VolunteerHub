@@ -1,4 +1,14 @@
 (() => {
+  if (location.hash === '#campus-comparison') {
+    const revealComparison = () => {
+      const panel = document.getElementById('campus-comparison');
+      if (!panel) return;
+      panel.scrollIntoView({block:'start',behavior:'instant'});
+      document.getElementById('campus-comparison-title')?.focus({preventScroll:true});
+    };
+    if (document.readyState === 'complete') revealComparison();
+    else window.addEventListener('load',revealComparison,{once:true});
+  }
   const recordTime = new Intl.DateTimeFormat('en-PH', {
     timeZone: 'Asia/Manila', day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,

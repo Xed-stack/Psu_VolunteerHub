@@ -157,7 +157,7 @@ TOPICS = [
         'Approved activities, conducted activities, verified attendees, and their period comparisons use the selected scope. Volunteer accounts are an account total, not a period attendance count.',
         'Repeated attendance across activities is different from unique volunteer accounts. Read each metric’s explanation before comparing them.',
         'Activity Delivery shows conducted activities over time. Sex-Disaggregated Verified Attendance separates Female, Male, Prefer Not to Say, and Not Recorded, including PSU and external participants. Only recorded presence on confirmed/completed registrations at conducted approved activities counts.',
-        'Directors compare campus delivery in a chart. Choose Expand Campus Details for the existing AOP, ASP, pending evidence, and campus links.',
+        'Directors review Campus Accomplishments on Overview. Compare Campuses opens the report comparison for all campuses using the same period and other non-campus filters. Expand Campus Details retains the AOP, ASP, pending evidence, and campus links.',
         'AOP achievement retains its reporting-year scope. Open campus details, Reports, or Needs Attention for the source records.'
     ],('overview','reports','follow-up'),('reports','annual-plans'),keywords='KPI five measures accounts attendance comparisons'),
     topic('reports','Report Filters, Records, and Exports','Choose a scope and export the matching filtered dataset.','Reports and Annual Plans',STAFF,[
@@ -167,7 +167,9 @@ TOPICS = [
         'Quarterly uses Quarter; Semi-Annual uses Half-Year; Custom Dates uses From/To. Reporting Year still scopes annual plans for All Records and Custom Dates.',
         'Activity Accomplishments separates Summary, Activity Records, and Participation Records. Open an activity’s combined report for its named roster and source details.',
         'Exports include all matching records, not only the visible page. Presentation tabs do not silently narrow export totals. Participant filters affect participant measures rather than unrelated activity/account totals.',
-        'Recorded Sex filters PSU and external participants using their recorded response. Participant Affiliation applies to PSU accounts and excludes external participants. The verified sex breakdown uses the same scoped evidence on screen and in PDF, Excel, and CSV exports.'
+        'Recorded Sex filters PSU and external participants using their recorded response. Participant Affiliation applies to PSU accounts and excludes external participants. The verified sex breakdown uses the same scoped evidence on screen and in PDF, Excel, and CSV exports.',
+        'Summary shows Campus Comparison. Directors select campuses in its scrollable checkbox list, choose include or exclude, then Apply Comparison. The whole report updates and returns to that section. The Campus dropdown above still applies; choose All Campuses there to avoid a primary-campus restriction.',
+        'The verified attendance donut shows shares of the scoped total. The table retains all four recorded-sex groups, exact counts, and PSU/external values, including zero groups. Downloaded PDF and Excel chart formats remain separate from the on-screen donut.'
     ],('reports',),('overview','annual-plans','navigation'),('Unknown evidence and incomplete recording must remain pending or unavailable, not invented zeroes.',),keywords='PDF Excel CSV quarter half-year department SDG sex affiliation'),
     topic('annual-plans','Annual Plans, Indicators, and Evidence','Understand AOP/ASP obligations and pending evidence.','Reports and Annual Plans',STAFF,[
         'Open Annual Plans or the Annual Plan Summary for the reporting year and authorized scope.',

@@ -755,6 +755,22 @@
   .staff-attention .queue-actions { @apply mt-2 max-w-none justify-start; }
   .staff-trend [data-month-chart] { min-height:15rem; }
   .report-chart { @apply min-w-0 max-w-full; }
+  #campus-comparison { scroll-margin-top:calc(var(--role-header-height,4rem) + 1rem); }
+  .comparison-filters { @apply my-5 min-w-0 rounded-md border border-slate-300 bg-slate-50 p-3; }
+  .comparison-filters legend { @apply mb-3 font-semibold; }
+  .comparison-filters fieldset { min-inline-size:0; }
+  .comparison-filters .btn { @apply min-w-0 whitespace-normal text-center; }
+  .comparison-filters .field { @apply mb-3; }
+  .comparison-campus-list { @apply overflow-y-auto rounded border border-slate-400 bg-white; max-height:calc(11rem + 2px); }
+  .comparison-campus-choice { @apply flex min-h-11 items-center gap-3 border-b border-slate-200 px-3 py-2 font-normal last:border-0 hover:bg-blue-50; }
+  .comparison-campus-choice span { @apply min-w-0; }
+  .comparison-campus-choice:focus-within { outline:3px solid var(--color-psu); outline-offset:-3px; }
+  .comparison-scope-note { @apply mt-3 text-sm leading-6 text-slate-700; }
+  .sex-chart-key { @apply mr-2 inline-block size-3 shrink-0 rounded-sm border border-ink align-middle; }
+  .sex-chart-key--female { background:#00408b; }
+  .sex-chart-key--male { background:#f4bd27; }
+  .sex-chart-key--prefer_not_to_say { background:#475569; }
+  .sex-chart-key--unrecorded { background:#cbd5e1; }
   .campus-details > summary, .staff-trend summary { @apply rounded px-2 hover:bg-blue-50 active:bg-blue-100; }
   .report-chart > [data-chart-status] { @apply my-4; }
   .attendance-total { @apply my-4 text-sm text-slate-600; }

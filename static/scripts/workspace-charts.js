@@ -28,29 +28,29 @@
       if (status) status.hidden = true;
     }).catch(() => { el.hidden = true; });
   };
-  const horizontal = (el, rows, attendance = false) => {
-    const values = rows.map(row => attendance ? row.total : row.count);
+  const horizontal = (el, rows) => {
+    const values = rows.map(row => row.count);
     const sizing = () => {
       const narrow = el.parentElement.clientWidth < 400;
-      const labels = rows.map(row => wrap(attendance ? row.label : row.name, narrow ? 13 : 20));
+      const labels = rows.map(row => wrap(row.name, narrow ? 13 : 20));
       let height = 0;
       const positions = labels.map(label => {
         const rowHeight = Math.max(40,label.split('<br>').length*17+12);
         const center = height + rowHeight/2; height += rowHeight; return center;
       });
       return {width:el.parentElement.clientWidth,height:Math.max(230,height+76),
-        margin:{t:16,r:attendance ? 90 : 45,b:50,l:narrow ? 112 : 155},
+        margin:{t:16,r:45,b:50,l:narrow ? 112 : 155},
         'yaxis.ticktext':labels,'yaxis.tickvals':positions,'yaxis.range':[height,0]};
     };
     responsiveLayouts.set(el, sizing);
     const size = sizing();
     draw(el, [{type:'bar',orientation:'h',x:values,y:size['yaxis.tickvals'],width:20,
-      marker:{color:'#00408b'},text:rows.map(row => attendance ? `${numbers.format(row.total)} (${row.share}%)` : numbers.format(row.count)),
+      marker:{color:'#00408b'},text:rows.map(row => numbers.format(row.count)),
       textposition:'outside',cliponaxis:false,
-      customdata:rows.map(row => attendance ? escape(row.label) : row.id),
-      hovertemplate: attendance ? '%{customdata}: %{x:,d} verified attendance records<extra></extra>' : '%{text} conducted activities<extra></extra>'
+      customdata:rows.map(row => row.id),
+      hovertemplate:'%{text} conducted activities<extra></extra>'
     }], {...structuredClone(layout),width:size.width,height:size.height,margin:size.margin,
-      xaxis:{...countAxis(values),title:{text:attendance ? 'Verified Attendance' : 'Conducted Activities',font:{size:12}},range:[0,Math.max(1,...values)*1.15]},
+      xaxis:{...countAxis(values),title:{text:'Conducted Activities',font:{size:12}},range:[0,Math.max(1,...values)*1.15]},
       yaxis:{fixedrange:true,autorange:false,range:size['yaxis.range'],tickmode:'array',tickvals:size['yaxis.tickvals'],ticktext:size['yaxis.ticktext'],automargin:true,ticks:'outside',ticklen:6,tickcolor:'#fff'}
     });
   };
@@ -67,7 +67,25 @@
       location.assign(url);
     });
   });
-  document.querySelectorAll('[data-sex-chart]').forEach(el => horizontal(el, JSON.parse(el.dataset.chartValues), true));
+  document.querySelectorAll('[data-sex-chart]').forEach(el => {
+    const rows = JSON.parse(el.dataset.chartValues);
+    const total = rows.reduce((sum,row) => sum + row.total,0);
+    const sizing = () => ({width:el.parentElement.clientWidth,height:Math.min(340,Math.max(240,el.parentElement.clientWidth)),
+      'annotations[0].font.size':Math.min(30,Math.max(16,el.parentElement.clientWidth/11))});
+    responsiveLayouts.set(el,sizing);
+    const size = sizing();
+    draw(el,[{type:'pie',hole:.62,sort:false,direction:'clockwise',
+      labels:rows.map(row=>row.label),values:rows.map(row=>row.total),
+      text:rows.map(row=>row.share === null ? '' : row.share.toFixed(1) + '%'),
+      marker:{colors:['#00408b','#f4bd27','#475569','#cbd5e1'],line:{color:'#111c2c',width:1.5}},
+      texttemplate:'%{text}',textposition:'inside',insidetextorientation:'horizontal',
+      textfont:{size:14,color:['#ffffff','#111c2c','#ffffff','#111c2c']},
+      hovertemplate:'%{label}: %{value:,d} (%{text})<extra></extra>'
+    }],{font:layout.font,paper_bgcolor:'#fff',showlegend:false,width:size.width,height:size.height,
+      margin:{t:16,r:16,b:16,l:16},uniformtext:{minsize:12,mode:'hide'},
+      annotations:[{text:numbers.format(total),showarrow:false,x:.5,y:.5,xref:'paper',yref:'paper',
+        font:{color:'#00408b',size:size['annotations[0].font.size']}}]});
+  });
   document.querySelectorAll('[data-month-chart]').forEach(el => {
     const labels = JSON.parse(el.dataset.chartLabels);
     const singleYear = new Set(labels.filter(label=>label.includes(' ')).map(label=>label.split(' ').at(-1))).size === 1;
