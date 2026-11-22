@@ -105,6 +105,7 @@ def main():
                     assert parse_qs(urlsplit(page.url).query)['campus']==['1','2']
                     assert parse_qs(urlsplit(page.url).query)['category']==['Environment']
                     original=page.url
+                    page.get_by_text('Expand Campus Details',exact=True).click()
                     page.locator('.staff-campus-table a[href*="/workspace/campuses/"]').first.click();page.wait_for_load_state('networkidle')
                     page.get_by_role('link',name='Back to Overview',exact=True).click();page.wait_for_load_state('networkidle')
                     assert page.url==original

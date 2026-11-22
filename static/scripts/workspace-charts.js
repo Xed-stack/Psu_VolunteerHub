@@ -5,11 +5,58 @@
     height: 300, showlegend: false, xaxis: { rangemode: 'tozero', fixedrange: true },
     yaxis: { fixedrange: true, automargin: true } };
   const config = { responsive: true, displayModeBar: false, staticPlot: false };
+  const numbers = new Intl.NumberFormat(document.documentElement.lang || 'en');
+  const responsiveLayouts = new WeakMap();
+  const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const wrap = (value, limit) => {
+    const lines = [''];
+    String(value).split(/\s+/).forEach(word => {
+      const chunks = word.match(new RegExp(`.{1,${limit}}`, 'gu')) || [''];
+      chunks.forEach(chunk => {
+        if ((lines.at(-1) + ' ' + chunk).trim().length > limit) lines.push(chunk);
+        else lines[lines.length - 1] = (lines.at(-1) + ' ' + chunk).trim();
+      });
+    });
+    return lines.map(escape).join('<br>');
+  };
+  const countAxis = values => ({rangemode:'tozero',fixedrange:true,tickformat:',d',
+    ...(Math.max(0,...values) < 10 ? {dtick:Math.max(1,Math.ceil(Math.max(0,...values)/4))} : {nticks:5})});
+  const draw = (el, traces, settings) => {
+    el.hidden = false;
+    return Plotly.newPlot(el, traces, {...settings, transition:{duration:0}}, config).then(() => {
+      const status = el.parentElement.querySelector('[data-chart-status]');
+      if (status) status.hidden = true;
+    }).catch(() => { el.hidden = true; });
+  };
+  const horizontal = (el, rows, attendance = false) => {
+    const values = rows.map(row => attendance ? row.total : row.count);
+    const sizing = () => {
+      const narrow = el.parentElement.clientWidth < 400;
+      const labels = rows.map(row => wrap(attendance ? row.label : row.name, narrow ? 13 : 20));
+      let height = 0;
+      const positions = labels.map(label => {
+        const rowHeight = Math.max(40,label.split('<br>').length*17+12);
+        const center = height + rowHeight/2; height += rowHeight; return center;
+      });
+      return {width:el.parentElement.clientWidth,height:Math.max(230,height+76),
+        margin:{t:16,r:attendance ? 90 : 45,b:50,l:narrow ? 112 : 155},
+        'yaxis.ticktext':labels,'yaxis.tickvals':positions,'yaxis.range':[height,0]};
+    };
+    responsiveLayouts.set(el, sizing);
+    const size = sizing();
+    draw(el, [{type:'bar',orientation:'h',x:values,y:size['yaxis.tickvals'],width:20,
+      marker:{color:'#00408b'},text:rows.map(row => attendance ? `${numbers.format(row.total)} (${row.share}%)` : numbers.format(row.count)),
+      textposition:'outside',cliponaxis:false,
+      customdata:rows.map(row => attendance ? escape(row.label) : row.id),
+      hovertemplate: attendance ? '%{customdata}: %{x:,d} verified attendance records<extra></extra>' : '%{text} conducted activities<extra></extra>'
+    }], {...structuredClone(layout),width:size.width,height:size.height,margin:size.margin,
+      xaxis:{...countAxis(values),title:{text:attendance ? 'Verified Attendance' : 'Conducted Activities',font:{size:12}},range:[0,Math.max(1,...values)*1.15]},
+      yaxis:{fixedrange:true,autorange:false,range:size['yaxis.range'],tickmode:'array',tickvals:size['yaxis.tickvals'],ticktext:size['yaxis.ticktext'],automargin:true,ticks:'outside',ticklen:6,tickcolor:'#fff'}
+    });
+  };
   document.querySelectorAll('[data-campus-chart]').forEach(el => {
     const rows = JSON.parse(el.dataset.chartValues);
-    Plotly.newPlot(el, [{ type: 'bar', orientation: 'h', x: rows.map(r => r.count),
-      y: rows.map(r => r.name), width: .55, marker: { color: '#00408b' }, customdata: rows.map(r => r.id),
-      hovertemplate: '%{y}: %{x} conducted activities<extra></extra>' }], { ...structuredClone(layout), height:Math.max(180,Math.min(420,rows.length*26+80)) }, config);
+    horizontal(el, rows);
     el.on('plotly_click', event => {
       const url = new URL(document.body.dataset.tourRole === 'director' ? '/workspace/campuses/' + event.points[0].customdata : '/workspace/reports/results', location.origin);
       url.search = location.search;
@@ -20,13 +67,21 @@
       location.assign(url);
     });
   });
+  document.querySelectorAll('[data-sex-chart]').forEach(el => horizontal(el, JSON.parse(el.dataset.chartValues), true));
   document.querySelectorAll('[data-month-chart]').forEach(el => {
     const labels = JSON.parse(el.dataset.chartLabels);
     const singleYear = new Set(labels.filter(label=>label.includes(' ')).map(label=>label.split(' ').at(-1))).size === 1;
-    const ticks = labels.filter((_,index)=>innerWidth > 500 || labels.length <= 8 || index % 2 === 0);
-    Plotly.newPlot(el, [{ type: 'scatter', mode: 'lines+markers', x: JSON.parse(el.dataset.chartLabels),
+    const sizing = () => {
+      const stride = Math.max(1, Math.ceil(labels.length / (el.parentElement.clientWidth < 400 ? 4 : 8)));
+      const ticks = labels.filter((_,index)=>index % stride === 0 || index === labels.length - 1);
+      return {width:el.parentElement.clientWidth,'xaxis.tickvals':ticks,'xaxis.ticktext':ticks.map(label=>singleYear ? label.split(' ')[0] : label)};
+    };
+    responsiveLayouts.set(el, sizing);
+    const size = sizing();
+    const values = JSON.parse(el.dataset.chartValues);
+    draw(el, [{ type: 'scatter', mode: 'lines+markers', x: labels,
       y: JSON.parse(el.dataset.chartValues), line: { color: '#00408b', width: 3 }, marker: { size: 7 },
-      hovertemplate: '%{x}: %{y} conducted activities<extra></extra>' }], { ...structuredClone(layout), margin:{...layout.margin,b:50}, yaxis:{...layout.yaxis,rangemode:'tozero',autorange:true}, xaxis: { type:'category',fixedrange:true,automargin:true,tickmode:'array',tickvals:ticks,ticktext:ticks.map(label=>singleYear ? label.split(' ')[0] : label),tickangle:0 } }, config);
+      hovertemplate: '%{x}: %{y:,d} conducted activities<extra></extra>' }], { ...structuredClone(layout),width:size.width, margin:{t:24,r:16,b:55,l:40}, yaxis:{...countAxis(values),autorange:true}, xaxis: { type:'category',fixedrange:true,automargin:true,tickmode:'array',tickvals:size['xaxis.tickvals'],ticktext:size['xaxis.ticktext'],tickangle:0 } });
   });
   document.querySelectorAll('[data-target-chart]').forEach(el => {
     Plotly.newPlot(el, [{ type: 'bar', x: ['Target', 'Verified actual'], y: JSON.parse(el.dataset.chartValues),
@@ -47,9 +102,18 @@
       hovertemplate:'%{y}: %{x} known reported participations<extra></extra>'}],structuredClone(layout),config);
   });
   if (window.ResizeObserver) {
-    document.querySelectorAll('[data-campus-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
+    document.querySelectorAll('[data-campus-chart], [data-sex-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
+      let previousWidth = 0;
       new ResizeObserver(() => requestAnimationFrame(() => {
-        if (el.isConnected && el.data) Plotly.Plots.resize(el);
+        if (el.isConnected && el.data && el.clientWidth && el.clientWidth !== previousWidth) {
+          previousWidth = el.clientWidth;
+          const sizing = responsiveLayouts.get(el);
+          if (sizing) {
+            const settings = sizing();
+            Plotly.update(el, settings['yaxis.tickvals'] ? {y:[settings['yaxis.tickvals']]} : {}, settings);
+          }
+          Plotly.Plots.resize(el);
+        }
       })).observe(el);
     });
   }

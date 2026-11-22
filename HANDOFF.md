@@ -1,5 +1,49 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current handoff: Dashboard and Report Visualizations, 22 November 2026
+
+Implemented the approved plan locally on `codex/ui-workflow-overhaul`. Both staff
+Overviews now show delivery and sex-disaggregated verified attendance; Summary,
+Participation Records, and Combined Activity Reports share the same breakdown.
+Director Campus Comparison starts with sorted bars; Expand Campus Details opens
+the complete existing annual/evidence table and its links. Existing five KPIs,
+Coordinator schedule/actions, annual scopes, follow-ups, routes and drafts remain.
+
+Recorded Sex now explicitly includes PSU and external participants, as approved.
+Affiliation remains account-only. Four groups keep missing sex separate from
+Prefer Not to Say. Confirmed/completed registrations with recorded presence at
+approved, conducted activities contribute; repeated attendance counts per activity.
+System defaults and unrecorded attendance never verify presence. Batched per-event
+counts aggregate before pagination and match the scoped headline and exports.
+
+CSV appends four verified-sex columns; Excel adds matching activity columns and a
+Verified Attendance by Sex sheet/chart; PDF adds a chart/table/total section.
+Native disclosures, visible exact values, Plotly-failure/no-JavaScript fallbacks,
+responsive chart resizing, print expansion/restoration, and Help/tour text updated.
+No new endpoint, schema, dependency, attendance-policy activation or operational
+database change. Existing unrelated SQL/guide/test, DOCX, output and tmp preserved.
+
+Verification: **116 regression cases passed** (verified-sex, attendance repairs,
+year demo, Help, workspace permissions/drafts/exports), plus an initial **21**
+Overview/report-journey cases (overlapping), and **one final export follow-up** after
+label/Excel-chart refinement. **52 feature browser groups and 27 existing staff
+groups passed** on synthetic in-memory SQLite. Build, 131-template parsing, changed
+syntax, contrast and whitespace checks passed. New PDF section and print values
+were rendered/reviewed; the native campus disclosure prints its rows and restores
+closed state. See `docs/qa/DASHBOARD_REPORT_VISUALIZATIONS.md` for critique, audit,
+Antislop gate, evidence paths, limitations and rollback.
+
+No full-suite, operational/MySQL, physical-device, manual screen-reader, native
+Excel-rendering, or Safari/Firefox claim. Source was local/uncommitted at
+implementation completion; no deployment. No database rollback is required.
+
+The user subsequently authorized committing and pushing this dashboard/report
+change to both `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. Both remote heads were verified at `db4b20a`
+before publication. Include this entry, implementation, generated CSS, tests,
+browser scripts and QA notes. The separate SQL update/guide/test and its handoff
+entry, DOCX, output and tmp remain local and outside this publication.
+
 ## Branch publication authorization, 22 November 2026
 
 The user requested publishing the completed Activity and Panel Refinement Repairs

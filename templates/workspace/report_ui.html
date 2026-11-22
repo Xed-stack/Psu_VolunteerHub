@@ -1,6 +1,21 @@
 {% macro exports(query, annual=false) %}
 <nav class="form-actions" aria-label="Report Exports">{% for format,label in [('pdf','Export PDF'),('xlsx','Export Excel'),('csv','Export CSV')] %}<a class="btn btn--outline" href="{{ url_for('workspace.export',format=format,**dict(query,report='aop')) if annual else url_for('workspace.export',format=format,**query) }}">{{ label }}</a>{% endfor %}<button class="btn btn--outline" type="button" data-print>Print This View</button></nav>
 {% endmacro %}
+{% macro sex_attendance(breakdown, section_id='verified-sex') %}
+<section class="staff-section sex-attendance" aria-labelledby="{{ section_id }}-title">
+  <header class="staff-section-heading"><h2 id="{{ section_id }}-title">Sex-Disaggregated Verified Attendance</h2></header>
+  <p class="staff-note">{{ period_label }}. {{ scope_label }}.</p>
+  <p class="staff-note">Recorded presence at approved, conducted activities, including PSU and external participants. Repeat attendance counts once per activity; missing sex stays Not Recorded.</p>
+  <p class="attendance-total"><strong>{{ breakdown.total }}</strong> verified attendance records</p>
+  {% if breakdown.total %}
+  <div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? Exact values are listed below.</p><div hidden data-sex-chart data-chart-values='{{ breakdown.groups|tojson }}' aria-hidden="true"></div></div>
+  {% else %}<p class="staff-empty">No verified attendance in this scope. Choose another period or review attendance records. Unrecorded attendance and system defaults do not verify participation.</p>{% endif %}
+  <table class="sex-breakdown-table"><caption class="sr-only">Verified attendance by recorded sex and participant type</caption><thead><tr><th scope="col">Recorded Sex</th><th scope="col">PSU</th><th scope="col">External</th><th scope="col">Total</th><th scope="col">Share</th></tr></thead><tbody>
+  {% for group in breakdown.groups %}<tr><th scope="row">{{ group.label }}</th><td><span class="sex-mobile-label" aria-hidden="true">PSU</span>{{ group.psu }}</td><td><span class="sex-mobile-label" aria-hidden="true">External</span>{{ group.external }}</td><td><span class="sex-mobile-label" aria-hidden="true">Total</span>{{ group.total }}</td><td><span class="sex-mobile-label" aria-hidden="true">Share</span>{{ (group.share|string ~ '%') if group.share is not none else 'Unavailable' }}</td></tr>{% endfor %}
+  </tbody></table>
+  <p class="staff-note">Share uses the scoped verified total, including Not Recorded. Rounded shares may not sum to 100%. Affiliation filters restrict this panel to PSU accounts.</p>
+</section>
+{% endmacro %}
 {% macro report_tabs(view) %}
 <nav class="workspace-tabs" aria-label="Report Views">{% for value,label in [('summary','Summary'),('activities','Activity Records'),('participation','Participation Records')] %}<a href="{{ query_url(view=value) }}" {% if view == value %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
 {% endmacro %}

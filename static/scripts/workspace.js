@@ -14,6 +14,15 @@
     el.replaceChildren(document.createTextNode(recordTime.format(value) + ' '), zone);
   });
   document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click', () => window.print()));
+  let printDetails = [];
+  window.addEventListener('beforeprint', () => {
+    printDetails = [...document.querySelectorAll('.campus-details:not([open]), .staff-trend details:not([open]), [data-tour-id="campus-comparison"] details:not([open])')];
+    printDetails.forEach(details => { details.open = true; });
+  });
+  window.addEventListener('afterprint', () => {
+    printDetails.forEach(details => { details.open = false; });
+    printDetails = [];
+  });
   document.querySelector('[data-form-errors]')?.focus();
   document.querySelectorAll('input:not([autocomplete]), textarea:not([autocomplete])').forEach(el => {
     if (el.type !== 'password' && el.type !== 'hidden') el.autocomplete = 'off';

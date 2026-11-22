@@ -39,9 +39,12 @@
 {% macro campus_table() %}
 <section class="staff-section" data-tour-id="campus-comparison" aria-labelledby="campus-title"><header class="staff-section-heading"><h2 id="campus-title">Campus Comparison</h2><a href="{{ url_for('goals.details',year=year,_anchor='campus-results') }}">Annual Details</a></header>
   <p class="staff-note">Conducted activities: {{ period_label }}. AOP, ASP and evidence: {{ year }} annual targets. Delivery volume is not a performance grade.</p>
+  {% if campus_chart|sum(attribute='count') %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? Expand Campus Details for exact values.</p><div hidden data-campus-chart data-chart-values='{{ campus_chart|tojson }}' aria-hidden="true"></div></div>{% else %}<p class="staff-empty">No conducted activities in this scope. Expand Campus Details to review annual evidence, or choose another period.</p>{% endif %}
+  <details class="campus-details"><summary>Expand Campus Details</summary>
   <table class="staff-campus-table"><thead><tr><th scope="col">Campus</th><th scope="col">Conducted</th><th scope="col">AOP</th><th scope="col">ASP</th><th scope="col">Pending</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody>
   {% for row in campus_comparison %}<tr><th scope="row">{{ row.campus }}</th><td><span class="staff-mobile-label" aria-hidden="true">Conducted</span>{{ row.conducted }}</td>{% for kind in ['AOP','ASP'] %}<td><span class="staff-mobile-label" aria-hidden="true">{{ kind }}</span><a href="{{ url_for('goals.details',year=year,campus=row.campus_id,plan=kind) }}">{{ row.plans[kind].met|string ~ ' / ' ~ row.plans[kind].total|string if row.plans[kind].total else 'Not Set' }}</a></td>{% endfor %}<td><span class="staff-mobile-label" aria-hidden="true">Evidence pending</span>{{ row.pending }}</td><td><a href="{{ url_for('workspace.campus',**dict(request.args.to_dict(flat=False),campus_id=row.campus_id,page=1,return_to=request.full_path.rstrip('?'))) }}">Open<span class="sr-only"> {{ row.campus }} Campus</span></a></td></tr>
   {% else %}<tr><td colspan="6">No campus rows in this selection. Clear a campus filter to widen the comparison.</td></tr>{% endfor %}</tbody></table>
+  </details>
 </section>
 {% endmacro %}
 

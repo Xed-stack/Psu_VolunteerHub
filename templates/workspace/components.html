@@ -51,9 +51,9 @@
 <label class="field"><span>Category</span><select name="category"><option value="">All Categories</option>{% for value in categories %}<option value="{{ value }}" {{ 'selected' if request.args.get('category') == value }}>{{ value }}</option>{% endfor %}{% if request.args.get('category') and request.args.get('category') not in categories %}<option value="{{ request.args.get('category') }}" selected>{{ request.args.get('category') }} (no records in scope)</option>{% endif %}</select></label>
 <label class="field"><span>Follow-Up</span><select name="attention">{% for value,label in [('','All Findings and Records'),('record_attendance','Attendance Due During Ongoing Event'),('pending_attendance','Ended with Unrecorded Attendance'),('schedule_limit','End Time Not Recorded'),('low_attendance','Below 75% Review Guide'),('missed_targets','Numeric Target Not Reached')] %}<option value="{{ value }}" {{ 'selected' if request.args.get('attention','') == value }}>{{ label }}</option>{% endfor %}</select></label>
 <label class="field"><span>Sustainable Development Goal</span><select name="sdg_id"><option value="">All SDGs</option>{% for goal in sdgs %}<option value="{{ goal.id }}" {{ 'selected' if request.args.get('sdg_id',type=int) == goal.id }}>SDG {{ goal.number }}: {{ goal.name }}</option>{% endfor %}</select></label>
-<label class="field"><span>Recorded Sex</span><select name="sex">{% for value,label in [('','All Participants'),('male','Male'),('female','Female'),('prefer_not_to_say','Prefer Not to Say'),('unrecorded','Not Recorded on Account')] %}<option value="{{ value }}" {{ 'selected' if request.args.get('sex','') == value }}>{{ label }}</option>{% endfor %}</select></label>
+<label class="field"><span>Recorded Sex</span><select name="sex">{% for value,label in [('','All Participants'),('male','Male'),('female','Female'),('prefer_not_to_say','Prefer Not to Say'),('unrecorded','Not Recorded')] %}<option value="{{ value }}" {{ 'selected' if request.args.get('sex','') == value }}>{{ label }}</option>{% endfor %}</select></label>
 <label class="field"><span>Participant Affiliation</span><select name="affiliation"><option value="">All Affiliations</option>{% for value in affiliations %}<option value="{{ value }}" {{ 'selected' if request.args.get('affiliation',request.args.get('college_affiliation')) == value }}>{{ value }}</option>{% endfor %}{% set selected_affiliation=request.args.get('affiliation',request.args.get('college_affiliation','')) %}{% if selected_affiliation and selected_affiliation not in affiliations %}<option value="{{ selected_affiliation }}" selected>{{ selected_affiliation }} (no records in scope)</option>{% endif %}</select></label>
-<p class="filter-help">Sex and affiliation refine account-based participant counts, excluding external participants without an account. They do not change activity totals, all-time accounts, or annual targets.</p>
+<p class="filter-help">Recorded Sex refines PSU and external participant counts. Affiliation refines PSU account-based counts and excludes external participants. These filters do not change activity totals, all-time accounts, or annual targets.</p>
 {% if current_user.role != 'coordinator' %}<fieldset class="filter-campus"><legend>Compare Campuses</legend><label class="field"><span>Selection Mode</span><select name="campus_mode"><option value="include" {{ 'selected' if request.args.get('campus_mode','include') == 'include' }}>Include Selected Campuses</option><option value="exclude" {{ 'selected' if request.args.get('campus_mode') == 'exclude' }}>Exclude Selected Campuses</option></select></label><div class="check-grid">{% for campus in campuses %}<label class="check-row"><input type="checkbox" name="campus" value="{{ campus.id }}" {{ 'checked' if campus.id in request.args.getlist('campus',type=int) }}>{{ campus.name }}</label>{% endfor %}</div><p class="filter-help">No selection includes all campuses. The primary Campus field further narrows activity comparisons; annual targets use its scope.</p></fieldset>{% endif %}
 {% endcall %}
 <p class="filter-help">Reporting Year scopes annual plans even when activity dates use Custom Dates or All Records.</p>
@@ -61,24 +61,25 @@
 {{ actions(url_for('workspace.aop') if annual_only else ui_clear_url) }}
 </form></details>
 {% endmacro %}
+{% macro delivery_chart(monthly, month_labels, period_label) %}
+<section class="staff-section staff-trend"><header class="staff-section-heading"><h2>Activity Delivery</h2></header><p class="staff-note">Conducted approved activities by start {{ 'year' if month_labels|length and month_labels[0]|length == 4 else 'month' }}. {{ period_label }}.</p>
+  {% if monthly|sum %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? View Delivery Values for exact counts.</p><div hidden data-month-chart data-chart-values='{{ monthly|tojson }}' data-chart-labels='{{ month_labels|tojson }}' aria-hidden="true"></div></div>{% else %}<p class="staff-empty">No conducted activities in this period. Choose another period or review approved activities.</p>{% endif %}
+  <details><summary>View Delivery Values</summary><ul class="staff-value-list">{% for label in month_labels %}<li>{{ label }} <strong>{{ monthly[loop.index0] }}</strong></li>{% endfor %}</ul></details>
+  <p class="staff-note">{{ monthly|sum }} conducted activities. Periods without delivery show zero; attendance completeness is assessed separately.</p>
+</section>
+{% endmacro %}
 {% macro charts(campus_chart, monthly, month_labels, period_label) %}
   <div class="grid gap-6 xl:grid-cols-2">
-    <section class="panel" data-tour-id="campus-comparison"><h2>Campus Accomplishments</h2><p class="mt-2 text-sm text-slate-600">Conducted approved activities, grouped by the campus that delivered them. {{ period_label }}.</p>{% if campus_chart|sum(attribute='count') %}<div
+    <section class="panel" data-tour-id="campus-comparison"><h2>Campus Accomplishments</h2><p class="mt-2 text-sm text-slate-600">Conducted approved activities, grouped by the campus that delivered them. {{ period_label }}.</p>{% if campus_chart|sum(attribute='count') %}<div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? View Campus Values and Details below.</p><div hidden
   data-campus-chart
   data-chart-values='{{ campus_chart|tojson }}'
   class="min-h-48"
   aria-hidden="true"
-></div>{% else %}<p class="empty-state my-5">No conducted activities are recorded in this scope.</p>{% endif %}<details class="mt-4"><summary>View Campus Values and Details</summary><ul class="divide-y divide-slate-200">{% for row in campus_chart %}<li class="flex items-center justify-between gap-3 py-2"><a
+></div></div>{% else %}<p class="empty-state my-5">No conducted activities are recorded in this scope.</p>{% endif %}<details class="mt-4"><summary>View Campus Values and Details</summary><ul class="divide-y divide-slate-200">{% for row in campus_chart %}<li class="flex items-center justify-between gap-3 py-2"><a
   class="min-h-11 content-center font-medium text-psu"
   href="{{ url_for('workspace.campus' if current_user.role == 'director' else 'workspace.report_results', **dict(request.args.to_dict(flat=False), campus_id=row.id, page=1, return_to=request.args.get('return_to','') if request.endpoint == 'workspace.campus' else request.full_path.rstrip('?'))) }}"
 >{{ row.name }}</a><strong class="tabular-nums">{{ row.count }}</strong></li>{% endfor %}</ul></details><p class="mt-3 text-sm">{{ campus_chart|selectattr('count', 'gt', 0) |list|length }} campuses recorded conducted activities in this scope. Counts describe delivery volume, not quality.</p></section>
-    <section class="panel"><h2>Activity Delivery over Time</h2><p class="mt-2 text-sm text-slate-600">Conducted activities grouped by start month (or year for scopes longer than 24 months). {{ period_label }}.</p>{% if monthly|sum %}<div
-  data-month-chart
-  data-chart-values='{{ monthly|tojson }}'
-  data-chart-labels='{{ month_labels|tojson }}'
-  class="min-h-48"
-  aria-hidden="true"
-></div>{% else %}<p class="empty-state my-5">A delivery trend will appear when conducted activities are recorded.</p>{% endif %}<details><summary>View Monthly Values</summary><ul class="mt-3 grid grid-cols-2 gap-3">{% for label in month_labels %}<li>{{ label }}: <strong>{{ monthly[loop.index0] }}</strong></li>{% endfor %}</ul></details><p class="mt-3 text-sm">{{ monthly|sum }} activities were conducted. Months without recorded delivery show zero; attendance completeness is assessed separately.</p></section>
+    {{ delivery_chart(monthly, month_labels, period_label) }}
   </div>
 {% endmacro %}
 {% macro chart_scripts() %}

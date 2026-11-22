@@ -3,12 +3,29 @@ from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 
 from flask import abort
-from sqlalchemy import case, func, or_
+from sqlalchemy import String, case, cast, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.models import db
-from app.models.event import Event, Registration, Attendance, Campus, SdgGoal
+from app.models.event import Event, Registration, Attendance, Campus, SdgGoal, ExternalParticipant
 from app.models.user import User
+
+
+SEX_LABELS = {'female': 'Female', 'male': 'Male',
+              'prefer_not_to_say': 'Prefer Not to Say', 'unrecorded': 'Not Recorded'}
+
+
+def verified_sex_summary(rows):
+    """Combine the same per-activity evidence used by the verified headline."""
+    groups = []
+    for key, label in SEX_LABELS.items():
+        psu = sum(row['sex_counts'][key]['psu'] for row in rows)
+        external = sum(row['sex_counts'][key]['external'] for row in rows)
+        groups.append(dict(key=key, label=label, psu=psu, external=external, total=psu + external))
+    total = sum(group['total'] for group in groups)
+    for group in groups:
+        group['share'] = round(group['total'] / total * 100, 1) if total else None
+    return dict(groups=groups, total=total)
 
 
 def reporting_period(args, now):
@@ -88,11 +105,14 @@ def _activity_rows(query, args, now):
     event_ids = query.with_entities(Event.id).statement
     eligible = Registration.status != 'cancelled'
     selected = db.true()
+    recorded_sex = case((Registration.user_id.isnot(None), cast(User.sex, String)),
+                        else_=cast(ExternalParticipant.sex, String))
+    sex_group = case((recorded_sex.in_(SEX_LABELS), recorded_sex), else_='unrecorded')
     sex, affiliation = args.get('sex', ''), args.get('affiliation', args.get('college_affiliation', ''))
     if sex:
         if sex not in ('male', 'female', 'prefer_not_to_say', 'unrecorded'):
             abort(400, description='Choose a listed recorded-sex filter.')
-        selected &= (User.id.isnot(None) & User.sex.is_(None)) if sex == 'unrecorded' else User.sex == sex
+        selected &= sex_group == sex
     if affiliation:
         selected &= User.college_affiliation == affiliation
     valid = eligible & selected
@@ -101,15 +121,22 @@ def _activity_rows(query, args, now):
     defaulted=default_condition(now)
     def count(condition):
         return func.count(case((condition, 1)))
+    verified = valid & present & Registration.status.in_(('confirmed', 'completed'))
+    sex_columns = [count(verified & (sex_group == key) & participant).label(f'{key}_{kind}')
+                   for key in SEX_LABELS for kind, participant in (
+                       ('psu', Registration.user_id.isnot(None)),
+                       ('external', Registration.user_id.is_(None)))]
     facts = db.session.query(Registration.event_id,
         count(valid).label('registrations'),
         count(valid & Registration.user_id.isnot(None)).label('internal'),
         count(valid & Registration.external_participant_id.isnot(None)).label('external'),
         count(valid & present).label('present'),
-        count(valid & present & Registration.status.in_(('confirmed', 'completed'))).label('verified'),
+        count(verified).label('verified'),
         count(eligible & Attendance.id.is_(None) & ~defaulted).label('missing'),
         count(defaulted & selected).label('defaulted'),
+        *sex_columns,
     ).join(Event,Registration.event_id==Event.id).outerjoin(User, User.id == Registration.user_id).outerjoin(
+        ExternalParticipant, ExternalParticipant.id == Registration.external_participant_id).outerjoin(
         Attendance, Attendance.registration_id == Registration.id).filter(
         Registration.event_id.in_(event_ids)).group_by(Registration.event_id).all()
     by_id = {row.event_id:row._asdict() for row in facts}
@@ -138,7 +165,10 @@ def _activity_rows(query, args, now):
             abort(400, description='Choose a listed follow-up filter.')
         if wanted and wanted not in attention:
             continue
-        rows.append(dict(event=event, conducted=conducted, attendees=metrics['verified'], metrics=metrics, attention=attention))
+        sex_counts = {key: {kind: metrics.pop(f'{key}_{kind}', 0) if conducted else 0
+                            for kind in ('psu', 'external')} for key in SEX_LABELS}
+        rows.append(dict(event=event, conducted=conducted, attendees=metrics['verified'], metrics=metrics,
+                         attention=attention, sex_counts=sex_counts))
     return rows
 
 
@@ -203,6 +233,7 @@ def workspace_report(base, args, user, now, forced_campus=None):
         accounts = accounts.filter(User.campus_id.notin_(selected) | User.campus_id.is_(None) if mode == 'exclude' else User.campus_id.in_(selected))
     campus_chart = [dict(id=c.id,name=c.name,count=sum(r['conducted'] for r in rows if r['event'].campus_id == c.id))
                     for c in campuses if (not campus_id or c.id == campus_id) and (not selected or user.role == 'coordinator' or (c.id in selected) == (mode == 'include'))]
+    campus_chart.sort(key=lambda row: (-row['count'], row['name']))
     bounds = (scope['start'],scope['end']) if scope['start'] else (min((r['event'].date.date() for r in rows),default=now.date()),max((r['event'].date.date() for r in rows),default=now.date()))
     first, last = (d.year * 12 + d.month - 1 for d in bounds)
     if last - first < 24:
@@ -241,6 +272,7 @@ def workspace_report(base, args, user, now, forced_campus=None):
     return dict(scope, **current, rows=rows, campus_id=campus_id, department=department,event_id=event_id,
         goals=summary(scope['year'],campus_id=campus_id),campus_goals=comparisons(scope['year']) if not campus_id else [],
         campuses=campuses,campus_chart=campus_chart,monthly=monthly,month_labels=month_labels,
+        sex_breakdown=verified_sex_summary(rows),
         accounts=accounts.count(),now=now,deltas=deltas,department_choices=department_choices,
         activity_choices=choices.filter_by(lifecycle_status='approved').order_by(Event.title).all(),
         categories=categories,affiliations=affiliations,sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),

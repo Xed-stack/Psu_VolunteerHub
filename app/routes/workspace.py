@@ -1035,6 +1035,11 @@ def export(format):
     headers += supplemental_headers
     for row,extra in zip(values,supplemental_values):
         row.extend(extra)
+    from app.services.workspace_reports import SEX_LABELS
+    sex_headers = ['Verified Attendance: ' + label for label in SEX_LABELS.values()]
+    headers += sex_headers
+    for row, report_row in zip(values, data['rows']):
+        row.extend(sum(report_row['sex_counts'][key].values()) for key in SEX_LABELS)
     from app.services.attendance_state import label as attendance_label,state as attendance_state
     roster_headers = ['Volunteer', 'Participant type', 'Registration', 'Attendance','Attendance Basis']
     roster = []
@@ -1094,9 +1099,28 @@ def export(format):
             line.add_data(Reference(trend,min_col=2,min_row=1,max_row=trend.max_row),titles_from_data=True)
             line.set_categories(Reference(trend,min_col=1,min_row=2,max_row=trend.max_row)); trend.add_chart(line,'D2')
         scope_sheet=book.create_sheet('Scope'); scope_sheet.append([data['period_label']]); scope_sheet.append([csv_safe(data['scope_label'])]); scope_sheet.append(['Participant filters affect participant counts; pending recording is not absence.'])
+        sex_sheet = book.create_sheet('Verified Attendance by Sex')
+        sex_sheet.append(['Recorded Sex', 'PSU', 'External', 'Total', 'Share (%)'])
+        for group in data['sex_breakdown']['groups']:
+            sex_sheet.append([group['label'], group['psu'], group['external'], group['total'], group['share']])
+        sex_sheet.append(['Total', sum(g['psu'] for g in data['sex_breakdown']['groups']),
+                          sum(g['external'] for g in data['sex_breakdown']['groups']), data['sex_breakdown']['total']])
+        sex_sheet.append([data['period_label']]); sex_sheet.append([csv_safe(data['scope_label'])])
+        sex_sheet.append(['Recorded presence at approved, conducted activities; confirmed/completed registrations only.'])
+        sex_sheet.append(['Repeat attendance counts per activity. Missing sex is Not Recorded. Shares include missing sex and may round.'])
+        sex_sheet.freeze_panes = 'B2'
+        for column in sex_sheet.columns:
+            sex_sheet.column_dimensions[column[0].column_letter].width = 24 if column[0].column > 1 else 38
+        sex_chart = BarChart(); sex_chart.type = 'bar'; sex_chart.title = 'Sex-Disaggregated Verified Attendance'
+        sex_chart.add_data(Reference(sex_sheet,min_col=4,min_row=1,max_row=5),titles_from_data=True)
+        sex_chart.set_categories(Reference(sex_sheet,min_col=1,min_row=2,max_row=5))
+        sex_chart.x_axis.scaling.orientation = 'maxMin'
+        sex_chart.series[0].graphicalProperties.solidFill = '00408B'
+        sex_chart.legend = None
+        sex_sheet.add_chart(sex_chart, 'G2')
         book.save(output)
     else:
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib import colors
@@ -1128,6 +1152,25 @@ def export(format):
         trend_ax.tick_params(axis='x',rotation=45,labelsize=7)
         trend_image=io.BytesIO(); trend_fig.savefig(trend_image,format='png',dpi=110); trend_image.seek(0)
         content.extend([Spacer(1,12),Paragraph('Delivery trend',styles['Heading2']),Image(trend_image,width=650,height=188)])
+        sex_content = [Spacer(1,16),Paragraph('Sex-Disaggregated Verified Attendance',styles['Heading2']),
+            Paragraph('Recorded presence at approved, conducted activities with confirmed/completed registrations. PSU and external participants are included; repeat attendance counts per activity. Missing sex is Not Recorded. Shares use the verified total and may round.',styles['Normal'])]
+        groups = data['sex_breakdown']['groups']
+        sex_fig = Figure(figsize=(9, 3), layout='constrained'); sex_ax = sex_fig.subplots()
+        bars = sex_ax.barh([g['label'] for g in groups], [g['total'] for g in groups], color='#00408b')
+        sex_ax.invert_yaxis(); sex_ax.set_xlabel('Verified Attendance')
+        from matplotlib.ticker import MaxNLocator
+        sex_ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        sex_ax.bar_label(bars, padding=4); sex_ax.set_xlim(0, max(1, max(g['total'] for g in groups)) * 1.2)
+        sex_image=io.BytesIO(); sex_fig.savefig(sex_image,format='png',dpi=120); sex_image.seek(0)
+        sex_content.append(Image(sex_image,width=600,height=200))
+        sex_table = Table([['Recorded Sex','PSU','External','Total','Share'],
+            *[[g['label'],g['psu'],g['external'],g['total'],str(g['share'])+'%' if g['share'] is not None else 'Unavailable'] for g in groups],
+            ['Total',sum(g['psu'] for g in groups),sum(g['external'] for g in groups),data['sex_breakdown']['total'],'']],
+            colWidths=[220,90,90,90,100],repeatRows=1)
+        sex_table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e8eff8')),
+            ('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),8)]))
+        sex_content.append(sex_table)
+        content.append(KeepTogether(sex_content))
         if data['event_id'] and data['rows']:
             event = data['rows'][0]['event']
             content.extend([Spacer(1, 14), Paragraph('Activity details', styles['Heading2']),

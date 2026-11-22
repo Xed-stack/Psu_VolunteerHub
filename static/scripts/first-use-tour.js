@@ -24,7 +24,7 @@
     director: [
       ['metrics', 'Start with University Results', 'Review approved and conducted activities, all-time volunteer accounts, verified presences, and annual AOP achievement. Information icons explain each calculation.'],
       ['follow-up', 'Follow up with Evidence', 'Open the work queue to review missing recording, schedule limitations, and verified target findings. Notify a campus coordinator only when you choose to send a reminder.'],
-      ['campus-comparison', 'Compare Campuses', 'Compare activity delivery for the selected period beside annual AOP, ASP, and pending evidence. Open a campus for details. Delivery volume does not measure quality.'],
+      ['campus-comparison', 'Compare Campuses', 'Compare conducted activities in the chart, then choose Expand Campus Details for annual AOP, ASP, pending evidence, and campus links. Delivery volume does not measure quality.'],
       ['annual-goals', 'Review Annual Achievements', 'Campus obligations are combined without averaging percentages. University-wide targets stay separate. Pending evidence remains unknown; open the source targets for details.'],
       ['reports', 'Choose and Export a Report', 'Reports covers activity accomplishments, AOPs, approved proposals, and historical records. Screen filters follow through to exports.'],
       ['management', 'Manage Accounts and Policies', 'Open dedicated screens for users, policies, settings, and imports. Imports require a validation preview and explicit confirmation.'],
