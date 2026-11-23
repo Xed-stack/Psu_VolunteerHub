@@ -159,9 +159,10 @@ def main():
             checks.append('Blocked chart library and no-JavaScript exact values and actions')
             context.add_cookies([dict(name='session', value=cookies['coordinator'], url=base)])
             page.goto(base + path)
-            assert page.locator('.metric-tile').count() == 5
-            assert page.locator('.director-achievement').count() == 0
-            checks.append('Coordinator Overview retains its five metrics')
+            assert page.locator('.director-achievement-metric').count() == 3
+            assert page.locator('.coordinator-primary-grid').count() == 1
+            assert page.locator('.director-overview').count() == 0
+            checks.append('Coordinator uses its approved three-metric reference layout')
             browser.close()
         assert not errors, errors
         print(f'{len(checks)} browser groups passed; {len(templates)} templates parsed; {out}')

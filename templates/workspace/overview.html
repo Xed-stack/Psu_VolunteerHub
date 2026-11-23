@@ -9,18 +9,16 @@
 {% set coordinator = current_user.role == 'coordinator' %}
 {% block title %}{{ 'Campus' if coordinator else 'University' }} Overview · PSU Volunteer Hub{% endblock %}
 {% block content %}
-<div class="staff-overview{{ ' director-overview' if director_overview }}">
+<div class="staff-overview{{ ' director-overview' if director_overview else ' coordinator-overview' if coordinator }}">
   <header class="staff-heading">
     <div><h1>{{ current_user.campus.name ~ ' Campus Overview' if coordinator else 'University Overview' }}</h1><p>{{ 'Your schedule, campus results, and next actions.' if coordinator else 'Activity delivery and annual achievement across PSU campuses.' }}</p></div>
     <div class="staff-actions">{% if coordinator %}<a class="btn btn--primary" data-tour-id="create-activity" href="{{ url_for('workspace.create_activity',step=1) }}">Create Activity</a>{% else %}<a class="btn btn--primary" data-tour-id="reports" href="{{ url_for('workspace.report_results',**request.args.to_dict(flat=False)) }}">Open Report</a>{% endif %}<a class="btn btn--outline" data-guide-replay href="{{ query_url(tour='1') }}">Show Dashboard Guide</a></div>
   </header>
   {{ scope_controls() }}
   {% with ui_filters=ui_filters|rejectattr('label','in',['Year','Period'])|list %}{% from 'partials/search_ui.html' import chips with context %}{{ chips() }}{% endwith %}
-  {% if director_overview %}{{ achievement_panel() }}{% else %}{{ metrics() }}{% endif %}
+  {% if director_overview or coordinator %}{{ achievement_panel(coordinator=coordinator) }}{% else %}{{ metrics() }}{% endif %}
   {% if coordinator %}
-    <div class="staff-main-grid staff-main-grid--agenda">{{ agenda_list() }}<div class="staff-side">{{ attention_preview(false) }}{{ annual_summary(false) }}</div></div>
-    <div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div>
-    <nav class="staff-footer-links" aria-label="Campus Workspaces"><a data-tour-id="reports" href="{{ url_for('workspace.reports') }}">Campus Reports</a><a href="{{ url_for('workspace.partners') }}">Partner Agencies and MOAs</a></nav>
+    <div class="coordinator-primary-grid">{{ agenda_list() }}{{ review_card(attention_summary,persisted=false,coordinator_reference=true) }}</div>
   {% elif director_overview %}
     <div class="director-primary-grid">{{ review_card(attention_summary,reviews_ready,director_reference=true) }}{{ commitments_table() }}</div>
   {% else %}

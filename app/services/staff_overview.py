@@ -38,6 +38,16 @@ def aop_achievement(data, dataset):
                 campuses_completed=sum(row['completed'] > 0 for row in campuses))
 
 
+def campus_aop_achievement(data):
+    """Present campus activity credit without changing goal-met calculations."""
+    rows = data['goals']['rows']
+    target = sum(int(row['target']) for row in rows)
+    completed = sum(int(row['actual'] or 0) for row in rows)
+    return dict(target=target, committed=target, completed=completed,
+                rate=round(completed / target * 100, 1) if target else None,
+                exceeded=max(completed - target, 0))
+
+
 def overview_context(data, findings):
     allowed = {row['id']: row for row in data['campus_chart']}
     annual = data['campus_goals']

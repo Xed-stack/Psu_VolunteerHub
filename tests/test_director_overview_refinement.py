@@ -30,7 +30,7 @@ def test_director_reference_reuses_values_and_ends_after_commitments(client,app,
     assert response.text.index('id="review-card-title"')<response.text.index('id="campus-title"')
 
 
-@pytest.mark.parametrize('role,path',[('coordinator','/workspace/overview'),('director','/workspace/reports/results')])
+@pytest.mark.parametrize('role,path',[('coordinator','/workspace/reports/results'),('director','/workspace/reports/results')])
 def test_other_metric_consumers_keep_five_tiles(client,actors,role,path):
     sign_in(client,actors,role)
     page=parse_html(client.get(path).text)

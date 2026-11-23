@@ -891,6 +891,9 @@ def overview():
         from app.services.aop_goals import dataset
         from app.services.staff_overview import aop_achievement
         data['aop_achievement'] = aop_achievement(data, dataset(data['year']))
+    elif current_user.role == 'coordinator':
+        from app.services.staff_overview import campus_aop_achievement
+        data['campus_achievement'] = campus_aop_achievement(data)
     findings = follow_up_items(data)
     from app.services import finding_reviews
     reviews_ready = finding_reviews.available()

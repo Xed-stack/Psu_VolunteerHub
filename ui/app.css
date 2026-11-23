@@ -512,6 +512,56 @@
   .aop-check input { @apply size-5 shrink-0 accent-psu; }
   .aop-page a { @apply inline-flex min-h-11 min-w-11 max-w-full items-center; }
   .aop-page summary { @apply min-h-11 min-w-11 max-w-full py-2; }
+  .aop-director { @apply space-y-5; }
+  .aop-director-scope { @apply grid min-w-0 items-end gap-4 rounded-lg border border-slate-300 bg-white p-4 sm:grid-cols-[minmax(7rem,1fr)_minmax(0,2fr)_auto]; }
+  .aop-director-scope .field { @apply min-w-0; }
+  .aop-director-summary, .aop-director-deliverables { @apply min-w-0 rounded-lg border border-slate-300 bg-white; }
+  .aop-director-summary > header { @apply rounded-t-lg bg-psu-deep px-4 py-3 text-white; }
+  .aop-director-summary > header h2 { @apply text-lg text-white; }
+  .aop-director-summary > header p { @apply mt-1 text-sm leading-6 text-blue-100; }
+  .aop-director-totals { @apply grid min-w-0 gap-5 p-4 sm:grid-cols-2 xl:grid-cols-4; }
+  .aop-director-totals > div { @apply min-w-0; }
+  .aop-director-totals dt { @apply text-sm font-medium text-slate-600; }
+  .aop-director-totals dd { @apply mt-2; }
+  .aop-director-totals strong { @apply block text-3xl font-bold tabular-nums text-psu-deep; }
+  .aop-director-totals span { @apply mt-1 block text-sm leading-6 text-slate-600; }
+  .aop-director-totals > div:last-child strong { @apply text-psu; }
+  .aop-director-note { @apply m-4 mt-0 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm; }
+  .aop-director-note p { @apply leading-6 text-psu-deep; }
+  .aop-breakdown { @apply divide-y divide-blue-200; }
+  .aop-breakdown li { @apply flex min-w-0 flex-wrap justify-between gap-x-4 gap-y-1 py-2; }
+  .aop-director-deliverables > header { @apply flex min-w-0 flex-wrap items-end justify-between gap-4 p-4; }
+  .aop-director-deliverables h2 { @apply text-lg; }
+  .aop-director-deliverables > header p { @apply mt-1 text-sm text-slate-600; }
+  .aop-director-search { @apply flex min-w-0 flex-wrap items-end gap-3; }
+  .aop-director-search .field { @apply min-w-0; flex:1 1 11rem; }
+  .aop-deliverables-table { @apply w-full table-fixed; }
+  .aop-deliverables-table th, .aop-deliverables-table td { @apply min-w-0 px-3 py-3 align-top; }
+  .aop-deliverables-table thead th { @apply bg-slate-50 text-sm; }
+  .aop-deliverables-table thead th:first-child { width:31%; }
+  .aop-deliverables-table thead th:nth-child(2) { width:18%; }
+  .aop-deliverables-table thead th:nth-child(3) { width:23%; }
+  .aop-deliverables-table thead th:nth-child(4) { width:10%; }
+  .aop-deliverables-table thead th:last-child { width:18%; }
+  .aop-deliverables-table tbody th { @apply border-b border-slate-200 bg-white font-semibold text-psu-deep; }
+  .aop-deliverables-table tbody th p { @apply mt-1 text-sm font-normal leading-6 text-slate-600; }
+  .aop-deliverables-table p, .aop-deliverables-table .scope-note { @apply text-sm leading-6; }
+  .aop-deliverables-table a { @apply text-psu underline underline-offset-4 hover:bg-blue-50; }
+  .aop-deliverables-table td { @apply tabular-nums; }
+  .aop-category-unset { @apply inline-block rounded border border-slate-500 bg-slate-50 px-2 py-1 text-sm text-slate-700; }
+  .aop-cell-label { @apply hidden; }
+  .aop-progress-track { @apply mt-2 block h-2 w-full rounded bg-slate-200; }
+  .aop-progress-track > span { @apply block h-full rounded bg-psu; }
+  .aop-director-pagination { @apply flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-slate-600; }
+  .aop-director-pagination > div { @apply flex flex-wrap gap-2; }
+  @media (max-width:767px) {
+    .aop-deliverables-table, .aop-deliverables-table tbody { @apply block; }
+    .aop-deliverables-table thead { @apply sr-only; }
+    .aop-deliverables-table tr { @apply block border-t border-slate-300 p-4; }
+    .aop-deliverables-table tbody th, .aop-deliverables-table td { @apply block w-full border-0 px-0 py-2; }
+    .aop-cell-label { @apply mb-1 block text-sm font-semibold text-slate-600; }
+  }
+  @media (max-width:479px) { .aop-director-search, .aop-director-search .field { @apply w-full; } }
   .journey-detail-layout { @apply grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]; }
   .journey-description { @apply grid gap-4; }
   .journey-description .journey-section { @apply mt-1; }
@@ -729,6 +779,7 @@
   .staff-main-grid--agenda { @apply xl:grid-cols-[minmax(0,1.7fr)_minmax(19rem,1fr)]; }
   .staff-side { @apply grid min-w-0 gap-6; }
   .director-primary-grid { @apply grid min-w-0 items-start gap-6 xl:grid-cols-2; }
+  .coordinator-primary-grid { @apply grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]; }
   .director-achievement { @apply min-w-0 rounded-xl border border-psu-deep p-4 text-white shadow-md sm:p-6; background:linear-gradient(110deg,#00234f,#00408b); }
   .director-achievement-top { @apply grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_13rem]; }
   .director-achievement-top > div { @apply min-w-0; }
@@ -752,15 +803,15 @@
   .director-achievement-metric h3 { @apply mt-2 text-sm font-semibold text-white; }
   .director-achievement-metric p { @apply mt-2 text-sm leading-6 text-blue-100; }
   .director-metric-scope span { @apply mt-1 block; }
-  .director-overview .review-card { container-type:inline-size; }
-  .director-overview .review-card-heading { @apply flex-wrap border-b border-slate-200 bg-white p-0 pb-4; }
-  .director-overview .review-card-heading > div { @apply min-w-0; flex:1 1 12rem; }
-  .director-overview .review-card-warning { @apply rounded-md border border-amber-700 bg-amber-50; }
+  :is(.director-overview,.coordinator-overview) .review-card { container-type:inline-size; }
+  :is(.director-overview,.coordinator-overview) .review-card-heading { @apply flex-wrap border-b border-slate-200 bg-white p-0 pb-4; }
+  :is(.director-overview,.coordinator-overview) .review-card-heading > div { @apply min-w-0; flex:1 1 12rem; }
+  :is(.director-overview,.coordinator-overview) .review-card-warning { @apply rounded-md border border-amber-700 bg-amber-50; }
   .director-review-total { @apply ml-auto rounded-md border border-amber-700 bg-amber-50 px-2 py-1 text-sm text-amber-900; }
-  .director-overview .review-card-body { @apply grid-cols-1; }
-  .director-overview .review-card-groups { @apply border-l-0 pl-0; }
-  .director-overview .review-card-groups li { @apply gap-2; }
-  .director-overview .review-card-groups a { @apply px-2; }
+  :is(.director-overview,.coordinator-overview) .review-card-body { @apply grid-cols-1; }
+  :is(.director-overview,.coordinator-overview) .review-card-groups { @apply border-l-0 pl-0; }
+  :is(.director-overview,.coordinator-overview) .review-card-groups li { @apply gap-2; }
+  :is(.director-overview,.coordinator-overview) .review-card-groups a { @apply px-2; }
   .director-review-next { @apply mt-4 rounded-md border border-blue-300 bg-blue-50 p-3 text-sm leading-6 text-psu-deep; }
   .director-review-next a { @apply inline-flex min-h-11 items-center font-semibold underline; }
   .director-commitments { @apply flex min-w-0 flex-col; }
@@ -774,7 +825,8 @@
   .director-commitments footer { @apply mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4; }
   .director-commitments footer a { @apply inline-flex min-h-11 items-center text-sm; }
   @container (min-width:380px) {
-    .director-overview .review-card-body { grid-template-columns:minmax(100px,.7fr) minmax(0,1.5fr); }
+    :is(.director-overview,.coordinator-overview) .review-card-body { grid-template-columns:minmax(100px,.7fr) minmax(0,1.5fr); }
+    .coordinator-overview .review-card-body { grid-template-columns:minmax(140px,.85fr) minmax(0,1.4fr); }
   }
   @media (min-width:480px) {
     .director-achievement-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -809,7 +861,7 @@
   .director-overview #annual-title { scroll-margin-top:calc(var(--role-header-height,4rem) + 1rem); }
   .director-details .staff-annual { @apply border-slate-200 bg-white; }
   .finding-type-scope { @apply mb-5 flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3; }
-  .director-overview .review-card { @apply border-slate-200; }
+  :is(.director-overview,.coordinator-overview) .review-card { @apply border-slate-200; }
   .review-card-heading { @apply mb-3 flex items-center gap-3 rounded-md bg-amber-50 p-3; }
   .review-card-heading h2 { @apply text-lg; }
   .review-card-heading .staff-note { @apply m-0 text-sm; }
@@ -1162,6 +1214,9 @@ html[data-js] [data-period-inactive] { display:none !important; }
   .staff-overview .staff-campus-table td { border:0; padding:0; min-width:0; }
   .staff-overview .staff-mobile-label { display:block; color:#475569; font-size:.875rem; }
   .staff-overview .staff-campus-table td[colspan] { grid-column:1 / -1; }
+}
+@media (max-width:479px) {
+  .coordinator-overview .staff-scope .field { flex-basis:100%; }
 }
 @media (max-width:767px) {
   html { scroll-padding-bottom:calc(6rem + env(safe-area-inset-bottom)); }

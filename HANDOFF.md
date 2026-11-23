@@ -1,5 +1,121 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current Handoff: Director AOP Goals Reference Layout, 24 November 2026
+
+Publication authorization: the user subsequently requested committing these
+completed UI changes to both `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. This includes the Coordinator Overview,
+Director AOP Goals layout and corrected headers, source/generated CSS, focused
+tests, browser runners and current QA/handoff notes. Exclude unrelated untracked
+SQL proposal files, old QA notes, documents, images, output/tmp and private data.
+No deployment or operational database action is authorized by this publication.
+
+Implemented the approved Director-only AOP Goals list overhaul locally on
+`codex/ui-workflow-overhaul`, preserving the earlier uncommitted Coordinator
+work. After the user's correction, table headers exactly match the reference:
+Activity Title, Category, Campus Commitments, Director Baseline, Progress / Status.
+Dates are retained beneath the activity title; Category displays Not Assigned
+because no goal category is currently stored. Progress Status remains the
+approved functional filter instead of Strategic Thrust. No new taxonomy,
+schema, dependency or publishing workflow. Native campus/year scope, navy-headed
+annual summary and searchable/paged deliverables table retain PSU identity.
+
+Summary totals use the entire annual campus scope independently of table filters.
+Director baselines remain university-wide when a campus is selected; completed
+and committed contributions then use that campus. Remaining work is summed per
+goal after flooring at zero, so one overachieved goal cannot conceal another's
+remaining work. Existing per-goal completion/eligibility rules remain unchanged.
+The table exposes exact progress including above 100%, dates, descriptions and
+all campus commitments via native disclosures. Search is GET `q` over titles/
+descriptions; GET `progress_status` accepts not_started/in_progress/met/above.
+Legacy `status`/program/office/basis links still open history. Filters apply before
+ten-row pagination and to all matching CSV/PDF rows. Director selected-campus
+exports use the displayed university baseline; Coordinator behavior is preserved.
+Create Goal, detail links, Saved Drafts, history, period-revision confirmation,
+permissions and notifications remain available.
+
+Verification: 30 focused AOP list/workflow tests plus 16 Overview regressions
+passed (46 distinct cases). Browser runner `scripts/qa_director_aop_list.py`
+passed 13 groups at 1440/1280/1024/768/390/320px, including pagination/search,
+stable scope totals, exports, disclosures, keyboard, long content, text reflow,
+empty states and no JavaScript. All 142 templates parsed; CSS build, contrast
+and whitespace checks passed. The actual port-5000 prepared preview was restarted
+without seeds/migrations and both Director/Coordinator AOP Goals returned HTTP
+200. Existing local SQLite, sessions and uploads remain. No full-suite,
+operational MySQL, physical-device, screen-reader or true-zoom claim.
+
+QA, rendered critique, guidelines audit, Antislop gate and rollback:
+`docs/qa/DIRECTOR_AOP_GOALS_LAYOUT.md`. Ignored browser evidence:
+`.qa-overhaul-temp/director-aop-list/`. Skills: UI/UX Pro Max, Frontend Design,
+Design Critique, Ponytail full, Antislop core/UI/Human/Layoutmobile during work,
+Search UX, Web Design Guidelines and Webapp Testing.
+
+Implementation and verification were local; publication is subsequently
+authorized above. No deployment, operational database change, migration
+or dependency addition. Preserve unrelated working files and the earlier
+Coordinator changes. Restart Python after future route changes; template-only
+reload does not load changed Python code.
+
+## Current Handoff: Coordinator Reference Overview, 24 November 2026
+
+Runtime follow-up: the port-5000 preview retained an older Python route while
+auto-reloading the new template, causing `campus_achievement is undefined`.
+Restarted the confirmed preview with `.qa-overhaul-temp/run_existing_aop_preview.py`
+against the same prepared SQLite database, uploads and session secret, without
+seeding or migration. Actual Coordinator and Director Overview requests on port
+5000 now return HTTP 200. The launcher suppresses startup seeding only, then
+restores normal template mode so no demo-directory banner is enabled.
+
+Implemented the approved Coordinator reference layout locally on
+`codex/ui-workflow-overhaul`, based on published Director revision `983bb73`.
+The Coordinator page now contains existing scope controls, a navy campus AOP
+achievement panel with three embedded metrics, then Your Campus Schedule beside
+Needs Attention (60%/40% desktop, stacked below 1280px). It ends there. Separate
+KPI/annual sections, lower delivery/sex charts and footer shortcuts are removed
+from this page; sidebar/mobile navigation retains Reports, AOP Goals, Partners
+and Calendar. Saved drafts, routes, permissions and report calculations remain.
+
+Campus achievement sums existing annual campus AOP row actuals divided by campus
+commitment quantities, with no additional queries. It can exceed 100%: 13/10
+shows 130% and 3 above target. Eligible activities count once per linked goal;
+commitments alone earn no credit. The selected year and signed-in campus apply
+independently of period/participant/activity filters. No commitment gives an unset
+percentage and campus AOP link. Existing goal-met calculations are unchanged.
+Conducted Activities/Verified Attendees retain report scope (presences include
+repeats); Campus Commitments is the submitted annual activity quantity.
+
+The agenda still has the next five approved ongoing/upcoming campus activities,
+independent of report filters, including eligible attendance links. Needs
+Attention shows all four generated finding categories and factual next actions;
+it does not expose Director review-decision permissions or copy the reference's
+certification claims. Coordinator guide order is scope, annual achievement,
+metrics, create activity, schedule and findings. Reused Director panel/card styles
+retain the existing PSU identity. Rendered fixes include singular finding copy,
+room for the desktop donut label and single-column scope fields below 480px.
+
+Verification: 41 distinct Python cases passed (160.19s), including Coordinator
+calculations/isolation, staff/Director regressions, existing attendance windows
+and saved drafts. Two finalized Next Action cases also passed separately.
+Coordinator browser: 21 groups passed; Director browser: 20 groups passed.
+Both runners use isolated synthetic SQLite and temporary servers, six widths
+from 1440 to 320px, and script fallbacks. All 141 templates parsed; CSS build,
+changed JavaScript syntax, contrast and whitespace checks passed. No full-suite,
+operational MySQL, physical-device, screen-reader or true-browser-zoom claim.
+
+QA, design critique, current guidelines audit, Antislop gate, limits and rollback:
+`docs/qa/COORDINATOR_REFERENCE_OVERVIEW.md`. Browser runner:
+`scripts/qa_coordinator_reference.py`; ignored evidence:
+`.qa-overhaul-temp/coordinator-reference/`. Existing Director browser runner's
+obsolete five-metric Coordinator assertion now checks the approved layout.
+Skills used: UI/UX Pro Max, Frontend Design, Design Critique before/after,
+Ponytail full, Antislop core/UI/Human/Layoutmobile during work, Web Design
+Guidelines and Webapp Testing.
+
+This Coordinator work remains uncommitted/unpushed. Prior Director publication
+does not authorize publishing this change. No deployment, database migration,
+operational data change or dependency addition. Unrelated untracked documents,
+SQL proposal files, review images, output/tmp and older QA notes remain intact.
+
 ## Current Handoff: Director Reference Overview, 24 November 2026
 
 Implemented the approved supplied-reference layout locally on

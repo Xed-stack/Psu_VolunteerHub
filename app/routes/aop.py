@@ -49,10 +49,34 @@ def index():
         abort(400, description=str(exc))
     campus_id = campus_scope()
     parents, children = aop.dataset(year)
+    presentation = {}
+    if current_user.role == 'director':
+        from app.services.aop_presentation import director_list, STATUSES
+        cards, totals, breakdown = director_list(parents, children, campus_id)
+        search = request.args.get('q', '').strip()[:200]
+        status = request.args.get('progress_status', '')
+        if status not in ('', *STATUSES):
+            abort(400, description='Choose a listed progress status.')
+        cards = [card for card in cards if
+                 (not search or search.casefold() in (card['goal'].indicator.name + ' ' +
+                  (card['goal'].indicator.definition or '')).casefold()) and
+                 (not status or card['status'] == status)]
+        presentation = dict(summary=totals, breakdown=breakdown, q=search,
+                            progress_status=status, statuses=STATUSES, row_count=len(cards))
     if request.args.get('export'):
+        if current_user.role == 'director':
+            source = {row['target_id']: row for row in aop.rows(year, data=(parents, children))}
+            rows = [dict(source[card['goal'].id], actual=card['result']['completed'],
+                         met=card['result']['completed'] >= card['result']['target'],
+                         overdue=card['goal'].end_date < local_now().date() and bool(card['result']['remaining']),
+                         status=STATUSES[card['status']]) for card in cards]
+            return export_rows(rows, summarize(rows, year, campus_id),
+                               dict(q=search, progress_status=status, baseline='University Director target'),
+                               request.args['export'])
         rows = aop.rows(year, campus_id)
         return export_rows(rows, summarize(rows, year, campus_id), {}, request.args['export'])
-    cards = [dict(goal=goal, university=aop.progress(goal, children),
+    if current_user.role != 'director':
+        cards = [dict(goal=goal, university=aop.progress(goal, children),
                   campus=aop.progress(goal, children, campus_id) if campus_id else None)
              for goal in parents]
     drafts = AnnualGoalProposal.query.filter(AnnualGoalProposal.workflow_kind != 'legacy')
@@ -66,10 +90,11 @@ def index():
     page = max(1, request.args.get('page', 1, type=int))
     pages = max(1, (len(cards)+9)//10)
     page = min(page, pages)
-    return render_template('goals/aop_index.html', cards=cards[(page-1)*10:page*10], year=year,
+    return render_template('goals/director_aop_index.html' if current_user.role == 'director' else 'goals/aop_index.html', cards=cards[(page-1)*10:page*10], year=year,
                            page=page, pages=pages, campus_id=campus_id, drafts=drafts, today=local_now().date(),
                            campuses=campus_query().order_by(Campus.name).all(),
-                           campus_name=db.session.get(Campus,campus_id).name if campus_id else None)
+                           campus_name=db.session.get(Campus,campus_id).name if campus_id else None,
+                           **presentation)
 
 
 def edit_goal(proposal_id=None):

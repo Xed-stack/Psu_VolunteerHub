@@ -14,12 +14,12 @@
       ['profile', 'Keep Your Profile Current', 'Use Update Your Profile beside Recent Participation to maintain your interests, skills, and preferred campus.'],
     ],
     coordinator: [
-      ['metrics', 'Start with Your Campus Overview', 'Activity figures use the reporting period. Volunteer accounts are all-time; verified attendees count each recorded presence. Information icons explain the measures.'],
-      ['follow-up', 'Start with the Work Queue', 'Needs Attention explains each finding and opens its source. Ongoing events allow attendance entry; ended events use printed corrections.'],
+      ['overview-scope', 'Choose Your Reporting Scope', 'Choose the calendar year and evaluation period, then Apply. Your campus is fixed to your account. Annual AOP figures use the selected year independently of activity-period and participant filters.'],
+      ['annual-goals', 'Track Campus AOP Achievement', 'Completed activity contributions are compared with your submitted campus commitments. Eligible activities earn credit once per linked goal. Achievement can exceed 100%; commitments alone earn no credit. Open the target summary for campus AOP details.'],
+      ['metrics', 'Review Delivery and Commitments', 'Conducted Activities and Verified Attendees use the reporting period. Verified attendees count recorded presences, including repeats. Campus Commitments is the submitted annual activity quantity.'],
       ['create-activity', 'Start with an Approved Proposal', 'Upload the approved PDF or DOCX, review extracted details, then complete audience and partners before publishing. Saved drafts survive refresh.'],
       ['activity-workspace', 'Follow Your Campus Schedule', 'Your agenda shows the next five ongoing or upcoming activities. Open an activity workspace or the full calendar. Record attendance during the event; it locks at the end.'],
-      ['annual-goals', 'Track Annual Achievements', 'Review targets and evidence. Pending evidence remains unknown until verified.'],
-      ['reports', 'Use Reports for Your Campus', 'Choose a report and scope, review its graphical results, and export matching values. Later attendance corrections belong on the printed report.'],
+      ['follow-up', 'Review Campus Findings', 'Use the category counts to open matching findings for your campus. These are generated findings, not Director review decisions. Ongoing events allow attendance entry; ended events use printed corrections. Reports remains available in navigation.'],
     ],
     director: [
       ['overview-scope', 'Choose the Overview Scope', 'Choose the calendar year, evaluation period, and campus scope, then Apply Scope. Annual AOP figures use the target year and campuses; delivery and attendance figures also use the evaluation period.'],
