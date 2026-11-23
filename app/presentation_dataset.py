@@ -162,6 +162,8 @@ def _preflight(database, now):
 def _clear(accounts):
     keep_ids = [user.id for user in accounts.values()]
     for table in CLEAR_TABLES:
+        if table is AnnualTarget.__table__:
+            db.session.execute(table.delete().where(table.c.director_target_id.is_not(None)))
         db.session.execute(table.delete())
     for table in ACCOUNT_TABLES:
         db.session.execute(table.delete().where(table.c.user_id.not_in(keep_ids)))
@@ -321,7 +323,7 @@ def _create_activities(accounts, campuses, volunteers, coordinators, now):
 
 def _create_goals(campuses, activity_groups):
     plans = {}
-    for kind in ('AOP', 'ASP'):
+    for kind in ('AOP',):
         plan = AnnualPlan(source_key=f'presentation:2026:{kind}', year=2026, plan_type=kind,
                           title=f'2026 Community Extension {kind}', status='approved',
                           source_document='2026 Community Extension Work Programme',
@@ -330,7 +332,7 @@ def _create_goals(campuses, activity_groups):
         plans[kind] = plan
     definitions = [('activities', 'Community outreach activities delivered', 'activities', 'AOP'),
                    ('verified_attendance', 'Verified volunteer participation', 'attendance occurrences', 'AOP'),
-                   ('unique_attendees', 'Individual volunteers engaged', 'people', 'ASP')]
+                   ('unique_attendees', 'Individual volunteers engaged', 'people', 'AOP')]
     for code in [*CAMPUS_DATA, 'UNIVERSITY']:
         campus = campuses.get(code)
         values = CAMPUS_DATA[code][1] if campus else (20, 220, 60)
@@ -360,7 +362,7 @@ def _validate_dataset(accounts, campuses, before, now):
     _require(before == after, 'A preserved account changed; replacement aborted.')
     _require(Counter(row.status for row in CancellationRequest.query.all()) ==
              {'pending': 8, 'approved': 8, 'rejected': 8}, 'Cancellation counts failed.')
-    _require(AnnualTarget.query.count() == 30 and AnnualResult.query.count() == 0, 'Goal counts failed.')
+    _require(AnnualTarget.query.filter_by(workflow_kind='legacy').count() == 30 and AnnualResult.query.count() == 0, 'Goal counts failed.')
     _require(Registration.query.filter_by(user_id=accounts['student@psu.edu'].id).count() > 3,
              'Default student participation is missing.')
     for user in User.query.filter_by(role='volunteer').all():
@@ -376,9 +378,9 @@ def _validate_dataset(accounts, campuses, before, now):
                  and reg.status == ('cancelled' if request.status == 'approved' else 'confirmed'),
                  f'Cancellation consistency failed for registration {reg.id} ({reg.status}, {request.status}).')
     for code, expected in EXPECTED_GOALS.items():
-        actual = summary(2026, campuses[code].id)
+        actual = summary(2026, campuses[code].id, historical=True)
         _require((actual['met'], actual['pending']) == expected, f'{code} goal outcomes failed.')
-    _require(summary(2026)['pending'] == 3, 'University incomplete evidence must remain pending.')
+    _require(summary(2026, historical=True)['pending'] == 3, 'University incomplete evidence must remain pending.')
     campus_id = accounts['coordinator@psu.edu'].campus_id
     _require(CancellationRequest.query.join(Registration).join(Event).filter(
         Event.campus_id == campus_id, CancellationRequest.status == 'pending').count() > 0,
@@ -412,7 +414,7 @@ def reset_and_seed_presentation(database, dry_run):
             count = db.session.scalar(select(func.count()).select_from(table).where(table.c.user_id.not_in(keep_ids)))
             click.echo(f'Clear other-account {table.name}: {count}')
         click.echo('Create: 80 volunteers + 8 coordinators; 92 total accounts; 28 activities (22 ended, 6 upcoming); '
-                   '30 goals; 24 cancellation requests (8 pending, 8 approved, 8 rejected).')
+                   '30 historical AOP records and 1 Director goal with 9 campus commitments; 24 cancellation requests (8 pending, 8 approved, 8 rejected).')
         click.echo('Preserve catalogues, settings, policy revisions and default-account acceptances. Uploaded files stay untouched.')
         if dry_run:
             return
@@ -423,6 +425,8 @@ def reset_and_seed_presentation(database, dry_run):
         volunteers, coordinators = _create_accounts(accounts, campuses)
         activities = _create_activities(accounts, campuses, volunteers, coordinators, now)
         _create_goals(campuses, activities)
+        from app.report_demo import seed_aop_commitments
+        seed_aop_commitments(2026,list(campuses.values()),[event for group in activities.values() for event in group])
         db.session.add(AuditLog(actor=accounts['admin@psu.edu'], action='presentation_dataset_reset',
             target_type='database', details='Fictional presentation records; not institutional evidence. '
             '2026 dataset: 28 activities, 80 new volunteers, 8 new coordinators; four default accounts retained.', created_at=now))
@@ -432,6 +436,6 @@ def reset_and_seed_presentation(database, dry_run):
         attendance = Attendance.query.count()
         db.session.commit()
         click.echo(f'Created 28 activities, {registrations} registrations, {attendance} attendance records, '
-                   '30 goals and 24 cancellation requests. Four default accounts preserved; 92 total accounts.')
+                   '40 AOP targets and 24 cancellation requests. Four default accounts preserved; 92 total accounts.')
     finally:
         db.session.rollback()

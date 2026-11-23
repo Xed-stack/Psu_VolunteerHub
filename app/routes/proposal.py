@@ -8,6 +8,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import MultiDict
 from app.models import db
+from app.services.aop_goals import choices as aop_choices
 from app.models.workspace import ActivityProposal, PartnerAgency, PartnerAgreement
 from app.models.user import Skill
 from app.models.event import SdgGoal
@@ -122,6 +123,8 @@ def create_proposal(step, draft):
                 payload['proposal_record']=[json.dumps(record,ensure_ascii=False)]
                 for key in ACTIVITY_FIELDS-{'proposal_record'}:
                     if key in request.form:payload[key]=request.form.getlist(key)
+                if 'aop_goals_present' in request.form:
+                    payload['aop_goal_ids']=request.form.getlist('aop_goal_ids')
                 if step==2:
                     for key in ('required_skills','sdg_ids'):
                         payload[key]=request.form.getlist(key)
@@ -210,11 +213,14 @@ def create_proposal(step, draft):
                                 created_cover=event.cover_image_path
                                 db.session.add(event)
                                 db.session.flush()
+                                from app.services.aop_goals import sync_links
+                                sync_links(event, payload.get('aop_goal_ids', []))
                                 snapshot={label:payload.get(key,[]) for key,label in [('title','Activity Title'),('description','Public Activity Description'),
                                     ('date','Start (Philippine Time)'),('end_date','End (Philippine Time)'),('location','Location'),('category','Category'),
                                     ('slots','Volunteer Registration Slots'),('target_participants','Total Participant Target'),('expected_partner_participants','Expected Partner Participants'),
                                     ('conducting_department','Conducting Department'),('participant_type','Type of Participants'),
                                     ('cancellation_days','Withdrawal Closes: Days Before Start'),('departments','Audience Departments')]}
+                                snapshot['AOP Goals']=[goal.name for goal in aop_choices(current_user.campus_id) if str(goal.id) in payload.get('aop_goal_ids',[])]
                                 snapshot['Required Skills']=[skill.name for skill in event.required_skills_rel]
                                 snapshot['Sustainable Development Goals']=['SDG '+str(goal.number)+' '+goal.name for goal in event.sdgs]
                                 snapshot['Signed MOA']=[agreement.reference] if agreement_value and agreement else []
@@ -238,6 +244,12 @@ def create_proposal(step, draft):
                 return redirect(partner_url('workspace.partners') if request.form.get('open_partners') else
                     url_for('workspace.create_activity',step=step if request.form.get('save_draft') else request.form.get('save_step',type=int) or min(step+1,4)))
         except ValueError as exc:
+            db.session.rollback()
+            if created_cover:
+                path=(Path(current_app.static_folder)/created_cover).resolve()
+                if path.is_relative_to((Path(current_app.static_folder)/'uploads'/'events').resolve()):
+                    path.unlink(missing_ok=True)
+            db.session.refresh(draft)
             errors.append(str(exc))
             draft.payload=payload
             db.session.commit()
@@ -264,6 +276,7 @@ def create_proposal(step, draft):
         errors.append('A saved skill is archived or unavailable. Remove or replace the unavailable selection in Activity Details.')
     posting_capture={key:value for key,value in draft.payload.get('_capture',{}).items() if key in POSTING_CAPTURE_KEYS}
     return render_template('workspace/proposal_create.html',step=step,data=data,record=record,errors=errors,
+        aop_goals=aop_choices(current_user.campus_id),
         posting_capture=posting_capture,posting_record_keys=POSTING_RECORD_KEYS,
         field_errors=field_errors,payload=draft.payload,proposal=draft.payload.get('_proposal'),
         skills=Skill.query.filter_by(is_active=True).order_by(Skill.name).all(),sdgs=SdgGoal.query.order_by(SdgGoal.number).all(),

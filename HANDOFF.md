@@ -1,5 +1,77 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+
+## Current Handoff: Dated AOP Goals and Campus Commitments, 23 November 2026
+
+Implemented the approved AOP-only workflow on `codex/ui-workflow-overhaul`.
+The user subsequently authorized committing and pushing this AOP work to both
+`origin/codex/ui-workflow-overhaul` and `thesis/codex/ui-workflow-overhaul`.
+Both remote heads were verified at base `d3fc627` before publication. Include the
+AOP implementation, generated CSS, tests, browser runner, QA and migration guides,
+and this entry. Exclude the unrelated SQL update/guide/test/handoff entry, DOCX,
+review JPGs, output/tmp and ignored private preview data. Deployment and operational
+migration remain unauthorized. Git HEAD identifies this publication's revision.
+The existing port-5000 database/preview was not migrated or restarted into this workflow.
+Existing databases require the explicit reviewed upgrade before running the new source.
+
+Directors publish university activity targets with required inclusive Start/End Dates
+within one AOP year. Coordinator commitment submission immediately establishes the
+campus target, without Director approval. Draft revisions leave submitted targets
+unchanged. Positive counts may exceed the university target. Published periods can
+be revised only after a signed impact preview/confirmation; original links/history
+remain when activities become ineligible. Published years cannot change.
+
+Completion is derived from distinct explicitly linked approved activities whose entire
+schedule lies within the goal period in Philippine time and whose end has passed.
+Attendance completeness does not gate new AOP credit; existing attendance windows,
+reports and recognition calculations remain unchanged. Earlier eligible activities
+can be linked after commitment submission. Original targets remain visible; remaining
+work is floored at zero and overachievement is shown separately. Existing activity
+creation/editing preserves optional AOP selections in drafts, validates campus/period
+at publication, and records mappings plus named publication snapshots.
+
+Existing annual models/history/mappings are reused with workflow kinds, parent goal
+references, period fields, unique campus constraints and optimistic versions. Shared
+request-local batches keep annual/campus queries bounded. Publication/change and
+commitment notifications use active in-app recipients and commit transactionally.
+Unpublished Director/campus draft content remains private in rendered history.
+Historical proposal/evidence writes are blocked; old office/program/status/basis URLs
+open explicit AOP History rather than broadening their scope.
+
+ASP is removed from active models, forms, navigation, imports, summaries, reports,
+help and synthetic datasets. The explicit `migrate-aop-commitments` CLI defaults to
+dry run and requires an exact configured database name. It archives retired rows
+and dependent history before transactional retirement; ambiguous references or
+archive identity conflicts abort. MySQL DDL is separately committed/rerunnable;
+the enum narrows only after retirement. No operational migration was executed.
+Old AOP remains read-only. Explicitly shared historical evidence is read from the
+retirement archive to preserve prior AOP assessments, including aggregates and
+unique-person counts, without converting retired targets/results or crediting new
+AOP goals. Original events, attendance, AOP evidence and authored sources remain.
+
+Verification: main annual/workflow/history/campus/report/presentation group 96 passed,
+1 MySQL integration skipped. Final AOP/posting group 37 passed, including draft and
+publication links; existing partner/attendance regressions passed separately. Final
+archive/history/schema group 35 passed, followed by the two shared-evidence checks.
+Browser runners passed 17 AOP groups and 30 existing shared-picker/partner/Overview
+groups at desktop/tablet/mobile widths, including 320px, CSRF, native date fallbacks,
+keyboard/enlarged text, touch targets and period revisions. CSS build, Python/JS
+syntax, 140-template parsing and whitespace checks passed. Isolated synthetic SQLite
+and headless Chromium only; no full-suite, operational MySQL/multi-process migration,
+manual screen-reader, physical-device or true browser-zoom claim.
+
+QA/critique/current guidelines audit and evidence: `docs/qa/AOP_GOALS_AND_COMMITMENTS.md`.
+Migration review, interfaces, limitations and rollback:
+`docs/operations/AOP_GOALS_AND_COMMITMENTS.md`. Local evidence is ignored under
+`.qa-overhaul-temp/aop-commitments/`; preview servers shut down after checks.
+
+Skills: UI/UX Pro Max, Frontend Design, Design Critique before/after, Ponytail full,
+Antislop core/UI/Human/Layoutmobile during work, Web Design Guidelines and Webapp
+Testing. No dependency added. All unrelated SQL catalogue/proposal work and handoff,
+DOCX, JPGs, output/tmp files and private data remain intact. Source rollback must
+retain data; an operational downgrade requires matching DB recovery with retention
+of post-upgrade commitments, mappings, history and archive, rather than code alone.
+
 ## Publication Authorization: 23 November 2026
 
 The user authorized committing and pushing this chat's attendance/queue,

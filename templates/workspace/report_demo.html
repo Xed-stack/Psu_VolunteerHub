@@ -13,7 +13,7 @@
       {% endfor %}
     </div></section>
     <section class="report-directory-group"><header><h2>Annual Evidence and Source Records</h2><p>Campus obligations and university targets remain separate. Unknown evidence stays pending.</p></header><div class="report-directory-links">
-      {% for title,description,endpoint in [('Annual Plan Summary','AOP/ASP obligations, campus achievements, and pending evidence.','workspace.aop'),('Indicators and Evidence','Definitions, linked activities, targets, and verified evidence.','goals.details'),('Historical Records','A separate illustrative aggregate register; excluded from live totals.','workspace.historical'),('People Insights','Account roles, selected interests, and skills.','workspace.people_insights')] %}
+      {% for title,description,endpoint in [('Annual Plan Summary','AOP obligations, campus achievements, and pending evidence.','workspace.aop'),('Indicators and Evidence','Definitions, linked activities, targets, and verified evidence.','goals.details'),('Historical Records','A separate illustrative aggregate register; excluded from live totals.','workspace.historical'),('People Insights','Account roles, selected interests, and skills.','workspace.people_insights')] %}
       <a class="report-directory-link" href="{{ url_for(endpoint, year=demo_year) }}"><strong>{{ title }}</strong><span>{{ description }}</span></a>
       {% endfor %}
       {% if current_user.role == 'director' %}<a class="report-directory-link" href="{{ url_for('workspace.recognition', award_year=demo_year) }}"><strong>Annual Recognition</strong><span>Rankings derived from recorded presence within {{ demo_year }}.</span></a>{% endif %}

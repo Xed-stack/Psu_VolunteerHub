@@ -185,7 +185,7 @@ def presentation_context():
     if endpoint=='workspace.activity_documents' and current_user.role=='director':
         title='Documents'
     if endpoint.startswith('goals.'):
-        section, title = 'goals', 'Annual Plans'
+        section, title = 'goals', 'AOP History' if request.args.get('history') == '1' else 'AOP Goals'
     elif endpoint.startswith('volunteer.'):
         section, title = 'profile', 'Your Profile'
     elif endpoint.startswith('admin.') and not section:

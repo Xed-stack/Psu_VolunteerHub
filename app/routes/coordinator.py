@@ -73,6 +73,9 @@ def _activity_form_context(event=None, **context):
     context.setdefault('max_slots', _max_event_slots())
     from app.routes.workspace import audience_departments
     context.setdefault('departments',audience_departments())
+    from app.services.aop_goals import choices, linked_goal_ids
+    context.setdefault('aop_goals',choices(current_user.campus_id))
+    context.setdefault('selected_aop_goals',linked_goal_ids(event) if event else [])
     return context
 
 
@@ -357,6 +360,14 @@ def edit_activity(event_id):
                   'error')
             return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
 
+        from app.services.aop_goals import validate_links, sync_links, linked_goal_ids
+        selected_goals = request.form.getlist('aop_goal_ids') if 'aop_goals_present' in request.form else linked_goal_ids(event)
+        try:
+            validate_links(selected_goals, event.campus_id, date, end_date, existing=linked_goal_ids(event))
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
+        previous_schedule = dict(start=str(event.date), end=str(event.end_date))
         event.title = title
         event.description = description
         event.date = date
@@ -389,6 +400,14 @@ def edit_activity(event_id):
             event.cover_uploaded_by_id = current_user.id
             event.cover_uploaded_at = datetime.utcnow()
         # campus_id is intentionally left unchanged (server-side ownership).
+        try:
+            sync_links(event, selected_goals)
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), 'error')
+            return render_template('coordinator/edit_activity.html', event=event, **_activity_form_context(event=event))
+        log_activity('activity_updated', event, dict(previous_schedule=previous_schedule,
+            schedule=dict(start=str(event.date),end=str(event.end_date)), aop_goal_ids=selected_goals))
         db.session.commit()
         if cover and old_cover:
             old_path = os.path.join(current_app.static_folder, old_cover)

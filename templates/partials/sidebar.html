@@ -34,7 +34,7 @@
       {{ nav_item('coordinator.activity_calendar' if current_user.role == 'coordinator' else 'director.activity_calendar','calendar_month','Calendar',['calendar']) }}
       {{ nav_item('workspace.follow_up', 'checklist', 'Needs Attention', ['follow_up']) }}
       <p class="nav-group-label mt-5">Planning and Evidence</p>
-      {{ nav_item('goals.workspace', 'flag', 'Annual Plans', ['goals']) }}
+      {{ nav_item('goals.workspace', 'flag', 'AOP Goals', ['goals']) }}
       {{ nav_item('workspace.reports', 'monitoring', 'Reports', ['reports']) }}
       {% if current_user.role == 'coordinator' %}{{ nav_item('workspace.partners', 'handshake', 'Partners', ['partners']) }}
     {% else %}{{ nav_item('workspace.management', 'manage_accounts', 'Management', ['management', 'settings', 'imports']) }}{% endif %}

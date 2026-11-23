@@ -22,7 +22,7 @@
         {% if plan.campus_rollup is defined %}<span>{{ display.pending }} Awaiting Evidence</span>{% endif %}
         <span class="goal-hero__cue{{ ' btn btn--outline' if plan.campus_rollup is defined }}">{{ 'View Campus Goal Results' if plan.campus_rollup is defined else 'View Goal Details' }}</span>
       </a>
-      <div class="goal-plan-pair">{% for kind, link in [('AOP', display.aop_url), ('ASP', display.asp_url)] %}
+      <div class="goal-plan-pair">{% for kind, link in [('AOP', display.aop_url)] %}
         <a class="goal-plan" href="{{ link }}"><span>{{ kind }}</span><small class="goal-plan__meaning">({{ 'Annual Operational Plan' if kind == 'AOP' else 'Annual Strategic Plan' }})</small><strong>{{ display.plans[kind].met }} <small>/ {{ display.plans[kind].total }}</small></strong><span>Goals Achieved</span></a>
       {% endfor %}</div>
       {% if plan.campus_ranking is defined %}
@@ -63,10 +63,10 @@
       {% endif %}
     </div>
     {% if plan.campus_rollup is defined %}
-    <p class="goal-scope-note">Campus achievement combines each campus’s approved goals. Pending evidence stays in the denominator. Shared AOP/ASP goals count once overall and appear in both plan totals.</p>
+    <p class="goal-scope-note">Campus achievement combines each campus’s approved goals. Pending evidence stays in the denominator. Shared AOP goals count once overall and appear in both plan totals.</p>
     <section class="goal-university" aria-label="University-Wide Targets">
       <div><h3>University-Wide Targets</h3><p>Separate from campus goals.</p></div>
-      <div><strong>{{ plan.status }}</strong><p>{{ plan.met }} of {{ plan.total }} goals achieved; {{ plan.pending }} awaiting evidence.</p><p>AOP {{ plan.plans.AOP.met }}/{{ plan.plans.AOP.total }} · ASP {{ plan.plans.ASP.met }}/{{ plan.plans.ASP.total }}</p></div>
+      <div><strong>{{ plan.status }}</strong><p>{{ plan.met }} of {{ plan.total }} goals achieved; {{ plan.pending }} awaiting evidence.</p><p>AOP {{ plan.plans.AOP.met }}/{{ plan.plans.AOP.total }}</p></div>
       <nav class="goal-overview__actions goal-university__actions" aria-label="University Goal Actions">
         <a class="btn btn--outline" href="{{ plan.detail_url }}">View University Targets</a>
         {% if move_workspace_actions %}

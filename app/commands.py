@@ -144,7 +144,7 @@ def import_historical_activities(csv_path, dry_run):
 @click.option('--dry-run', is_flag=True, help='Validate and report changes without committing them.')
 @with_appcontext
 def import_annual_plans(csv_path, dry_run):
-    """Idempotently import approved AOP/ASP definitions and results."""
+    """Idempotently import historical AOP definitions and results."""
     from app.annual_import import import_file
     from app.reports import ReportError
     try:
@@ -326,6 +326,7 @@ def register_commands(app):
     app.cli.add_command(reset_and_seed_presentation)
     app.cli.add_command(migrate_performance_indexes)
     app.cli.add_command(migrate_annual_goals_command)
+    app.cli.add_command(migrate_aop_command)
     app.cli.add_command(sync_campuses)
     app.cli.add_command(migrate_workspace_command)
     app.cli.add_command(migrate_proposals_command)
@@ -376,3 +377,19 @@ def migrate_workspace_command(database, dry_run):
                                    'Migration interrupted. Inspect schema and rerun; MySQL DDL commits independently.') from None
     for statement in statements:
         click.echo(statement)
+
+
+@click.command('migrate-aop-commitments')
+@click.option('--database', required=True, help='Exact configured database name.')
+@click.option('--apply', is_flag=True, help='Apply the reviewed migration; defaults to read-only dry run.')
+@with_appcontext
+def migrate_aop_command(database, apply):
+    """Archive retired plans and add dated goals. Requires an offline backed-up target."""
+    import json
+    from app.aop_migration import migrate_aop
+    try:
+        report = migrate_aop(db.engine, database, dry_run=not apply)
+    except (ValueError, SQLAlchemyError) as exc:
+        raise click.ClickException(str(exc) if isinstance(exc, ValueError) else
+            'Migration failed; inspect schema/archive state before rerunning. DDL may already be applied.') from None
+    click.echo(json.dumps(report, indent=2))

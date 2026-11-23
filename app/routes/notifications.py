@@ -36,6 +36,15 @@ def return_to_notifications():
 
 def guidance_content(note):
     """Decode only our guidance format and generate an authorized internal link."""
+    if note.notification_type == 'aop_goal':
+        try:
+            payload = json.loads(note.message)
+            identity = payload['goal_id']
+            if not isinstance(identity, int) or not isinstance(payload['text'], str) or current_user.role not in ('director', 'coordinator', 'admin'):
+                raise ValueError()
+            return dict(text=payload['text'], url=url_for('goals.target_detail', target_id=identity))
+        except (ValueError, KeyError, TypeError):
+            return dict(text='This AOP notification is unavailable. Open AOP Goals for current records.', url=None)
     if note.notification_type != 'campus_guidance':
         return dict(text=note.message, url=None)
     unavailable = dict(text='This guidance message is unavailable. Review your campus records for current guidance.', url=None)

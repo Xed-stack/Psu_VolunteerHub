@@ -31,6 +31,9 @@ NOW = datetime(2026, 11, 1, 12)
 @pytest.fixture
 def app(monkeypatch):
     monkeypatch.setattr('app.presentation_dataset._now', lambda: NOW)
+    monkeypatch.setattr('app.annual_goals.local_now', lambda: NOW)
+    monkeypatch.setattr('app.reports.local_now', lambda: NOW)
+    monkeypatch.setattr('app.services.aop_goals.local_now', lambda: NOW)
     instance = create_app('testing')
     with instance.app_context():
         db.session.remove()
@@ -93,7 +96,7 @@ def test_invalid_preconditions_leave_records_untouched(app, monkeypatch, problem
         if problem == 'account':
             user.email = 'renamed@example.org'
         elif problem == 'role':
-            user.role = 'director'
+            user.role = 'volunteer'
         elif problem == 'inactive':
             user._is_active = False
         elif problem == 'campus':
@@ -128,7 +131,7 @@ def test_complete_dataset_and_expected_reporting(app):
             assert Event.query.count() == 28
             assert ExternalParticipant.query.count() == 0
             assert Counter(request.status for request in CancellationRequest.query.all()) == {'pending': 8, 'approved': 8, 'rejected': 8}
-            assert AnnualTarget.query.count() == 30
+            assert AnnualTarget.query.count() == 40
             assert AnnualPlan.query.count() == 2
             assert AnnualResult.query.count() == 0
             assert AuditLog.query.one().action == 'presentation_dataset_reset'
@@ -155,10 +158,13 @@ def test_complete_dataset_and_expected_reporting(app):
                 assert User.query.filter_by(role='coordinator', campus_id=campus.id).count() == 1
                 assert Event.query.filter_by(campus_id=campus.id).count() == len(events)
                 plan = summary(2026, campus.id)
-                assert (plan['met'], plan['pending']) == EXPECTED_GOALS[code]
+                assert plan['total']==1 and plan['pending']==0
+                historical=summary(2026,campus.id,historical=True)
+                assert (historical['met'],historical['pending'])==EXPECTED_GOALS[code]
             ranking = campus_ranking(comparisons(2026), lowest=True)
             assert any(row['campus'] == 'Asingan' for row in ranking['leaders'])
-            assert summary(2026)['pending'] == 3
+            assert summary(2026)['pending'] == 0
+            assert summary(2026,historical=True)['pending']==3
             rows, totals = build_events_report(start_date='2026-01-01', end_date='2026-12-31', now=NOW)
             assert totals['event_count'] == 28
             assert sum(row['ended'] for row in rows) == 22
@@ -232,7 +238,8 @@ def test_cleans_annual_dependencies_and_preserves_reference_data(app):
     assert result.exit_code == 0, (result.output, result.exception)
     with app.app_context():
         assert {name: snapshot()[name] for name in retained_names} == before
-        assert not AnnualGoalProposal.query.count()
+        assert AnnualGoalProposal.query.count() == 10
+        assert AnnualGoalProposal.query.filter_by(workflow_kind='legacy').count() == 0
         assert not HistoricalActivity.query.count() and not AnalyticsSummary.query.count()
         assert not Milestone.query.count() and not RecommendationLog.query.count()
         for model in (TermsRevision, PrivacyRevision, ParticipationAgreementRevision):
@@ -281,7 +288,7 @@ def test_default_account_views_and_no_email(app, monkeypatch):
             session['_fresh'] = True
             session['auth_version'] = version
         for path in routes:
-            response = client.get(path)
+            response = client.get(path, follow_redirects=True)
             assert response.status_code == 200, (email, path, response.status_code, response.location)
 
 
@@ -290,43 +297,32 @@ def test_director_goal_queries_are_bounded_with_linked_activity_evidence(app):
     result = invoke(app)
     assert result.exit_code == 0, (result.output, result.exception)
     client = signed_in_client(app, 'director')
-    for path in ('/director_dash', '/analytics', '/annual-goals'):
+    for path in ('/workspace/overview', '/workspace/reports/results', '/annual-goals'):
         with query_count(app) as statements:
-            response = client.get(path)
+            response = client.get(path, follow_redirects=True)
         assert response.status_code == 200
         assert len(statements) <= 60, (path, len(statements))
     with app.app_context(), query_count(app) as statements:
         campus_results = comparisons(2026)
     assert len(statements) <= 10
-    assert [(row['campus'], row['met'], row['pending']) for row in campus_results] == [
-        ('Alaminos', 2, 0), ('Asingan', 0, 0), ('Bayambang', 1, 0),
-        ('Binmaley', 0, 3), ('Infanta', 0, 3), ('Lingayen', 3, 0),
-        ('San Carlos', 2, 0), ('Santa Maria', 3, 0), ('Urdaneta', 3, 0)]
+    assert len(campus_results)==9
+    assert all(row['total']==1 and row['pending']==0 for row in campus_results)
+    assert any(row['met'] for row in campus_results)
 
 
-def test_director_hero_matches_campus_results_and_separates_university_targets(app):
-    from tests.html_helpers import parse_html
+def test_director_overview_matches_submitted_campus_goals(app):
     from tests.test_system_performance import signed_in_client
+    from tests.test_ui_reimagining import screen
     assert invoke(app).exit_code == 0
-    client = signed_in_client(app, 'director')
-    page = parse_html(client.get('/director_dash?goal_year=2026&period=all&campus=1').get_data(as_text=True))
-    overview = page.one('section', **{'aria-label': 'Campus Annual-Plan Achievement'})
-    hero = overview.one('a', **{'class': 'goal-hero'})
-    assert '51.9%' in hero.text and '14 of 27 Approved Goals' in hero.text
-    assert '6 Awaiting Evidence' in hero.text
-    assert hero.attrs['href'] == '/annual-goals?year=2026#campus-results'
-    pair = overview.one('div', **{'class': 'goal-plan-pair'})
-    assert [link.one('strong').text for link in pair.all('a')] == ['9 / 18', '5 / 9']
-    for link in pair.all('a'):
-        detail = client.get(link.attrs['href'])
-        assert detail.status_code == 200 and b'id="campus-results"' in detail.data
-    university = overview.one('section', **{'aria-label': 'University-wide targets'})
-    assert 'Evidence pending' in university.text
-    assert '0 of 3 goals achieved; 3 awaiting evidence.' in university.text
-    assert university.one('a').attrs['href'] == '/annual-goals?year=2026'
-    empty = parse_html(client.get('/director_dash?goal_year=2025').get_data(as_text=True))
-    assert 'Not Available' in empty.one('a', **{'class': 'goal-hero'}).text
-    assert 'No approved targets' in empty.one('section', **{'aria-label': 'University-wide targets'}).text
+    client=signed_in_client(app,'director')
+    response,data=screen(client,app,'/workspace/overview?year=2026&period=all')
+    assert response.status_code == 200
+    assert data['campus_rollup']['total']==9 and data['campus_rollup']['pending']==0
+    assert data['goals']['total']==1 and data['goals']['rows'][0]['target']==10
+    assert data['goals']['rows'][0]['actual']==22
+    assert b'ASP' not in response.data
+    for campus in data['campus_goals']:
+        assert client.get(f"/annual-goals?year=2026&campus={campus['campus_id']}").status_code==200
 
 
 @pytest.mark.parametrize('code', ['BAYAMBANG', 'STAMARIA', 'ALAMINOS'])
@@ -385,7 +381,7 @@ def test_disposable_mariadb_transaction_and_production_guards(app, monkeypatch):
                 assert result.exit_code == 0, (result.output, result.exception)
                 assert User.query.count() == 92 and Event.query.count() == 28
                 assert db.session.execute(text('SELECT @@FOREIGN_KEY_CHECKS')).scalar() == 1
-                assert summary(2026, Campus.query.filter_by(code='ASINGAN').one().id)['remaining'] == 3
+                assert summary(2026, Campus.query.filter_by(code='ASINGAN').one().id)['remaining'] == 1
             app.testing = True
         finally:
             db.session.remove()

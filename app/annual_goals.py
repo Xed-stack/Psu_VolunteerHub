@@ -71,7 +71,7 @@ def validate_definition(data):
     values['plan_type'] = data.get('plan_type')
     values['comparison_rule'] = data.get('comparison_rule', 'gte')
     values['evidence_basis'] = data.get('evidence_basis', 'approved_aggregate')
-    if values['plan_type'] not in ('AOP', 'ASP') or values['comparison_rule'] not in RULES or values['evidence_basis'] not in BASES:
+    if values['plan_type'] != 'AOP' or values['comparison_rule'] not in RULES or values['evidence_basis'] not in BASES:
         raise ReportError('Choose a valid plan, comparison rule, and evidence basis.')
     values['target_value'] = str(number(data.get('target_value')))
     values['deadline'] = str(data.get('deadline', '')).strip()
@@ -208,14 +208,14 @@ def summarize(rows, year, campus_id=None, sample=False):
     """Summarize assessed goals: achieved / all goals * 100.
 
     Pending goals stay in denominator; no goals means rate None. Rows shared
-    across AOP/ASP count once overall but once in each relevant plan total.
+    across AOP count once overall but once in each relevant plan total.
     Keep verified unmet goals separate from pending; display overdue rows first,
     then pending, then code. This function assumes caller already merged shares.
     """
     met = sum(row['met'] for row in rows)
     pending = sum(row['pending'] for row in rows)
     plans = {kind: dict(total=sum(kind in row['plan_types'] for row in rows),
-                        met=sum(row['met'] and kind in row['plan_types'] for row in rows)) for kind in ('AOP', 'ASP')}
+                        met=sum(row['met'] and kind in row['plan_types'] for row in rows)) for kind in ('AOP',)}
     return dict(year=year, scope='Campus' if campus_id is not None else 'University', campus_id=campus_id,
                 total=len(rows), met=met, pending=pending, remaining=len(rows)-met-pending,
                 rate=round(met/len(rows)*100, 1) if rows else None, plans=plans, sample=sample,
@@ -257,14 +257,26 @@ def _activity_evidence(targets, year):
         Registration, Registration.event_id == Event.id).outerjoin(
         Attendance, Attendance.registration_id == Registration.id).filter(
         AnnualActivityMapping.target_id.in_([target.id for target in targets
-                                            if target.indicator.evidence_basis == 'unique_attendees']),
+                                            if target.indicator.evidence_basis == 'unique_attendees'
+                                            and not getattr(target, 'archived', False)]),
         (AnnualTarget.campus_id.is_(None) | (AnnualTarget.campus_id == Event.campus_id)),
         Event.id.in_([row['event_id'] for row in rows if row['ended']]),
         Registration.status != 'cancelled',
         Attendance.status == 'present',
         Event.date < datetime.combine(cutoff_for(year), datetime.max.time())
     ).group_by(AnnualActivityMapping.target_id).all()
-    return {row['event_id']: row for row in rows}, dict(counts)
+    counts = dict(counts)
+    for target in targets:
+        if getattr(target, 'archived', False) and target.indicator.evidence_basis == 'unique_attendees':
+            ids = {mapping.event.id for mapping in target.activity_mappings
+                   if target.campus_id is None or mapping.event.campus_id == target.campus_id}
+            ended = [row['event_id'] for row in rows if row['ended'] and row['event_id'] in ids]
+            counts[target.id] = db.session.query(_unique_participants()).select_from(Registration).join(
+                Attendance, Attendance.registration_id == Registration.id).join(Event, Event.id == Registration.event_id).filter(
+                    Registration.event_id.in_(ended), Registration.status != 'cancelled',
+                    Event.date < datetime.combine(cutoff_for(year), datetime.max.time()),
+                    Attendance.status == 'present').scalar() or 0
+    return {row['event_id']: row for row in rows}, counts
 
 
 def _summaries(year, campus_ids):
@@ -274,7 +286,8 @@ def _summaries(year, campus_ids):
     Eager-load definitions/results/mappings, batch evidence, then split by campus.
     """
     targets = AnnualTarget.query.join(AnnualIndicator).join(AnnualPlan).filter(
-        AnnualPlan.year == year, AnnualPlan.status == 'approved', AnnualTarget.is_active.is_(True),
+        AnnualPlan.year == year, AnnualPlan.plan_type == 'AOP', AnnualTarget.workflow_kind == 'legacy',
+        AnnualPlan.status == 'approved', AnnualTarget.is_active.is_(True),
         AnnualTarget.campus_id.in_([campus for campus in campus_ids if campus is not None]) |
         (AnnualTarget.campus_id.is_(None) if None in campus_ids else False)
     ).options(joinedload(AnnualTarget.indicator).joinedload(AnnualIndicator.plan),
@@ -282,6 +295,8 @@ def _summaries(year, campus_ids):
               selectinload(AnnualTarget.activity_mappings).joinedload(AnnualActivityMapping.event).load_only(
                   Event.id, Event.title, Event.campus_id)
     ).order_by(AnnualTarget.id).all()
+    from app.services.aop_history import shared_evidence
+    targets += shared_evidence(targets, year)
     evidence = _activity_evidence(targets, year)
     by_campus = defaultdict(list)
     for target in targets:
@@ -291,7 +306,7 @@ def _summaries(year, campus_ids):
 
 
 def _target_summary(targets, year, campus_id, activity_evidence):
-    """Merge matching shared AOP/ASP definitions into one overall goal row.
+    """Merge matching shared AOP definitions into one overall goal row.
 
     Prefer verified evidence and retain every plan label. Conflicting target
     definitions or verified actual values force pending status instead of a
@@ -304,7 +319,14 @@ def _target_summary(targets, year, campus_id, activity_evidence):
     for group in groups.values():
         evidence = [target_row(target, year, activity_evidence) for target in group]
         row = next((item for item in evidence if item['verified']), evidence[0])
-        row['plan_types'] = sorted({target.indicator.plan.plan_type for target in group})
+        row['plan_types'] = ['AOP']
+        row['plan_type'] = 'AOP'
+        row['target_id'] = next(target.id for target in group if not getattr(target, 'archived', False))
+        row['archived_results'] = [result for target in group if getattr(target, 'archived', False)
+                                   for result in target.results]
+        row['archived_events'] = [dict(id=mapping.event.id, title=mapping.event.title)
+                                 for target in group if getattr(target, 'archived', False)
+                                 for mapping in target.activity_mappings]
         # Conflicting shared definitions cannot support an achievement claim.
         if any((target.target_value, target.comparison_rule, target.indicator.unit, target.indicator.evidence_basis)
                != (group[0].target_value, group[0].comparison_rule, group[0].indicator.unit, group[0].indicator.evidence_basis) for target in group):
@@ -315,7 +337,7 @@ def _target_summary(targets, year, campus_id, activity_evidence):
     return summarize(rows, year, campus_id)
 
 
-def summary(year=None, campus_id=None, sample=False):
+def summary(year=None, campus_id=None, sample=False, historical=False):
     """Return one scope's annual results, or explicitly marked sample rows.
 
     Director/admin requests reuse request-cached university/campus batches;
@@ -324,6 +346,9 @@ def summary(year=None, campus_id=None, sample=False):
     year = selected_year(year)
     if sample:
         return summarize(sample_rows(campus_id), year, campus_id, True)
+    if not historical:
+        from app.services.aop_goals import rows
+        return summarize(rows(year, campus_id), year, campus_id)
     if has_request_context() and getattr(current_user, 'role', None) in ('director', 'admin'):
         return dict(_university_summaries(year)[campus_id])
     return _summaries(year, [campus_id])[campus_id]
@@ -358,8 +383,8 @@ def sample_rows(campus_id):
     rows = []
     for index, (name, types, target, actual) in enumerate([
         ('Community learning activities', ['AOP'], 8, 8),
-        ('Completed outreach programs', ['ASP'], 4, 3),
-        ('Partner-supported programs', ['AOP', 'ASP'], 3, 3),
+        ('Completed outreach programs', ['AOP'], 4, 3),
+        ('Partner-supported programs', ['AOP'], 3, 3),
         ('Verified participation occurrences', ['AOP'], 120, None)]):
         if campus_id and campus_id % 3 == 0:
             actual = target
@@ -376,7 +401,7 @@ def sample_rows(campus_id):
     return rows
 
 
-def comparisons(year=None, sample=False):
+def comparisons(year=None, sample=False, historical=False):
     """Return one goal summary per official campus, including campuses with no goals.
 
     Reuse batched evidence for real results; previews use labelled sample rows.
@@ -384,8 +409,12 @@ def comparisons(year=None, sample=False):
     """
     year = selected_year(year)
     campuses = _campuses()
+    from app.services import aop_goals
+    active_data = aop_goals.dataset(year) if not historical and not sample else None
     plans = ({campus.id: summarize(sample_rows(campus.id), year, campus.id, True) for campus in campuses}
-             if sample else _university_summaries(year))
+             if sample else (_university_summaries(year) if historical else
+                            {campus.id: summarize(aop_goals.rows(year, campus.id, active_data), year, campus.id)
+                             for campus in campuses}))
     return [dict(plans[campus.id], campus=campus.name) for campus in campuses]
 
 
@@ -417,7 +446,7 @@ def goal_guidance(plan):
     if plan.get('sample'):
         return []
     if not plan['total']:
-        code, priority, text = 'no_targets', 2, 'Submit or review campus goal proposals before interpreting annual performance.'
+        code, priority, text = 'no_targets', 2, 'Post a Director goal or submit a campus commitment before interpreting AOP progress.'
     elif plan['met'] < plan['total']:
         code, priority, text = 'remaining_goals', 6, 'Review remaining campus goals and agree on the next evidence or activity milestone.'
     else:
@@ -451,8 +480,7 @@ def dashboard_context(year=None, campus_id=None):
                                              _anchor='campus-results'),
                           aop_url=url_for('goals.details', year=year, plan='AOP',
                                           sample=1 if sample else None, _anchor='campus-results'),
-                          asp_url=url_for('goals.details', year=year, plan='ASP',
-                                          sample=1 if sample else None, _anchor='campus-results'))
+                          history_url=url_for('goals.details', year=year, history=1))
             plan['campus_rollup'] = rollup
         ranking = campus_ranking(plan['campus_summaries'], lowest=lowest)
         for campus in ranking['rows']:
@@ -466,12 +494,11 @@ def dashboard_context(year=None, campus_id=None):
         plan['guidance'] = present_guidance(goal_guidance(plan), campus_id, year)
     plan['detail_url'] = url_for('goals.details', year=year, sample=1 if sample else None)
     plan['aop_url'] = url_for('goals.details', year=year, plan='AOP', sample=1 if sample else None)
-    plan['asp_url'] = url_for('goals.details', year=year, plan='ASP', sample=1 if sample else None)
     plan['workspace_url'] = url_for('goals.workspace')
-    proposals = AnnualGoalProposal.query
+    proposals = AnnualGoalProposal.query.filter(AnnualGoalProposal.workflow_kind != 'legacy')
     if campus_id is not None:
         proposals = proposals.filter_by(campus_id=campus_id)
     else:
-        proposals = proposals.filter_by(status='submitted')
-    plan['proposal_count'] = proposals.filter(AnnualGoalProposal.status.in_(['draft', 'submitted', 'returned'])).count()
+        proposals = proposals.filter_by(status='draft')
+    plan['proposal_count'] = proposals.filter(AnnualGoalProposal.status.in_(['draft'])).count()
     return plan

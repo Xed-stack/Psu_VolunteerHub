@@ -6,8 +6,10 @@
   }
   let changed = false;
   document.querySelectorAll('form.goal-form').forEach((form) => {
-    form.addEventListener('input', () => { changed = true; });
-    form.addEventListener('submit', () => { changed = false; });
+    form.addEventListener('input', (event) => { if (event.target.name) changed = true; });
+    form.addEventListener('submit', (event) => {
+      queueMicrotask(() => { if (!event.defaultPrevented) changed = false; });
+    });
   });
   window.addEventListener('beforeunload', (event) => {
     if (!changed) return;

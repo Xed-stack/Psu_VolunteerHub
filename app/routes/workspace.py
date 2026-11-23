@@ -24,7 +24,7 @@ from app.utils.audit import log_activity
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/workspace')
 ACTIVITY_FIELDS = {'title', 'description', 'date', 'end_date', 'location', 'category', 'slots',
                    'cancellation_days', 'required_skills', 'sdg_ids', 'target_participants',
-                   'conducting_department', 'participant_type', 'departments', 'agreement_id', 'proposal_record', 'expected_partner_participants'}
+                   'conducting_department', 'participant_type', 'departments', 'agreement_id', 'proposal_record', 'expected_partner_participants', 'aop_goal_ids', 'aop_goals_present'}
 REMOVED_ACTIVITY_FIELDS = {'participation_agreement_text', 'participation_agreement_version',
                            'nda_required', 'nda_text', 'nda_version', 'volunteer_ids'}
 # Only these form fields can ever be persisted by browser autosave.
@@ -500,6 +500,12 @@ def publish_draft(payload, validate_only=False):
     if department_problem:errors.append(department_problem)
     if errors:
         return None, errors
+    from app.services.aop_goals import validate_links
+    from app.reports import ReportError
+    try:
+        validate_links(form.getlist('aop_goal_ids'), current_user.campus_id, schedule[0], schedule[1])
+    except ReportError as exc:
+        return None, [str(exc)]
     if validate_only:
         return None, []
     event = Event(title=form['title'].strip(), description=form['description'].strip(), date=schedule[0],
@@ -1225,13 +1231,13 @@ def export(format):
 def export_aop(data, format):
     from app.reports import csv_safe
     goals = [row for row in data['goals']['rows'] if 'AOP' in row['plan_types']]
-    headers = ['Indicator', 'Unit', 'Target', 'Verified actual', 'Status', 'Responsible office']
+    headers = ['Indicator', 'Unit', 'Target', 'Completed Activities', 'Status', 'Responsible Office', 'Start Date', 'End Date']
     rows = [[row['name'], row['unit'], float(row['target']),
-             float(row['actual']) if row['verified'] else None, row['status'], row['responsible_office']] for row in goals]
-    campus_headers = ['Campus', 'Obligations achieved', 'Total obligations', 'AOP achieved / total', 'ASP achieved / total', 'Pending evidence']
+             float(row['actual']) if row['verified'] else None, row['status'], row['responsible_office'], str(row.get('start_date', '')), str(row.get('end_date', ''))] for row in goals]
+    campus_headers = ['Campus', 'Obligations achieved', 'Total obligations', 'AOP achieved / total', 'Pending evidence']
     campus_values = [[campus['campus'], campus['met'], campus['total'],
                       f"{campus['plans']['AOP']['met']} / {campus['plans']['AOP']['total']}",
-                      f"{campus['plans']['ASP']['met']} / {campus['plans']['ASP']['total']}", campus['pending']]
+                      campus['pending']]
                      for campus in data['campus_goals']]
     groups = {}
     for row in goals:
@@ -1287,12 +1293,12 @@ def export_aop(data, format):
         content = [Paragraph(f'PSU · Annual Operational Plan · {data["year"]}', styles['Title']),
             Paragraph('Annual approved targets and verified evidence. Pending evidence remains unknown.', styles['Normal']), Spacer(1, 14)]
         table = Table([[Paragraph(escape(str(value if value is not None else 'Evidence pending')), styles['Normal'])
-                       for value in row] for row in [headers, *rows]], repeatRows=1, colWidths=[190, 80, 70, 80, 110, 100])
+                       for value in row] for row in [headers, *rows]], repeatRows=1, colWidths=[170, 55, 50, 70, 95, 85, 70, 70])
         content.append(table)
         if campus_values:
             content.extend([Spacer(1,14),Paragraph('Campus obligations, separate from university targets',styles['Heading2']),
                 Table([[Paragraph(escape(str(value)),styles['Normal']) for value in values]
-                       for values in [campus_headers,*campus_values]],repeatRows=1,colWidths=[180,90,90,100,100,90])])
+                       for values in [campus_headers,*campus_values]],repeatRows=1,colWidths=[210,100,100,110,100])])
         for unit, group in groups.items():
             # Split long comparisons so labels remain legible on paper.
             for offset in range(0, len(group), 6):

@@ -159,7 +159,7 @@ TOPICS = [
         'Approved activities, conducted activities, verified attendees, and their period comparisons use the selected scope. Volunteer accounts are an account total, not a period attendance count.',
         'Repeated attendance across activities is different from unique volunteer accounts. Read each metric’s explanation before comparing them.',
         'Activity Delivery shows conducted activities over time. Sex-Disaggregated Verified Attendance separates Female, Male, Prefer Not to Say, and Not Recorded, including PSU and external participants. Only recorded presence on confirmed/completed registrations at conducted approved activities counts.',
-        'Directors review Campus Accomplishments on Overview. Compare Campuses opens the report comparison for all campuses using the same period and other non-campus filters. Open its dropdown to select campuses; Activity Delivery shows a separate line for each compared campus. Applying comparison replaces the top Campus choice, while applying Report Filters clears comparison selections. Expand Campus Details retains the AOP, ASP, pending evidence, and campus links.',
+        'Directors review Campus Accomplishments on Overview. Compare Campuses opens the report comparison for all campuses using the same period and other non-campus filters. Open its dropdown to select campuses; Activity Delivery shows a separate line for each compared campus. Applying comparison replaces the top Campus choice, while applying Report Filters clears comparison selections. Expand Campus Details retains the AOP, pending evidence, and campus links.',
         'AOP achievement retains its reporting-year scope. Open campus details, Reports, or Needs Attention for the source records.'
     ],('overview','reports','follow-up'),('reports','annual-plans'),keywords='KPI metrics accounts attendance comparisons findings'),
     topic('finding-reviews','Finding Reviews and Completed Assessments','Record decisions without rewriting source evidence.','Reports and Annual Plans',STAFF,[
@@ -181,13 +181,13 @@ TOPICS = [
         'Summary shows Campus Comparison. Directors select campuses in its scrollable checkbox list, choose include or exclude, then Apply Comparison. The whole report updates and returns to that section. The Campus dropdown above still applies; choose All Campuses there to avoid a primary-campus restriction.',
         'The verified attendance donut shows shares of the scoped total. The table retains all four recorded-sex groups, exact counts, and PSU/external values, including zero groups. Downloaded PDF and Excel chart formats remain separate from the on-screen donut.'
     ],('reports',),('overview','annual-plans','navigation'),('Unknown evidence and incomplete recording must remain pending or unavailable, not invented zeroes.',),keywords='PDF Excel CSV quarter half-year department SDG sex affiliation'),
-    topic('annual-plans','Annual Plans, Indicators, and Evidence','Understand AOP/ASP obligations and pending evidence.','Reports and Annual Plans',STAFF,[
-        'Open Annual Plans or the Annual Plan Summary for the reporting year and authorized scope.',
-        'Review achieved/total obligations and pending evidence. Campus obligations are distinct from separately labelled university targets.',
-        'Open an indicator for its definition, unit, target, verified actual, source, coverage, linked activities, and evidence.',
-        'Use the authorized proposal/evidence actions available for your role. Shared AOP/ASP obligations retain their established deduplication.',
-        'Missing evidence remains pending. Compare target and actual only for compatible units and sufficient evidence.'
-    ],('annual-plans','aop'),('reports','saved-drafts'),keywords='AOP ASP indicator approval coverage unknown target actual'),
+    topic('annual-plans','AOP Goals and Campus Commitments','Track Director goals, campus commitments, and completed activities.','Reports and AOP Goals',STAFF,[
+        'Directors post a goal with its AOP year, activity target, Start Date, and End Date. Both dates must be within the selected year.',
+        'Coordinators submit a campus commitment. It becomes the campus AOP goal immediately, without Director approval. Drafts do not change active commitments.',
+        'Targets are not limits. Campuses may commit to and complete more activities than the Director target.',
+        'Link approved activities explicitly. Their entire schedule must fall within the goal period in Philippine time. Credit begins when the activity ends, independently of attendance completeness.',
+        'Keep attendance and reports complete using the existing recording window. Use AOP History for read-only historical evidence; historical records are separate from the new workflow.'
+    ],('annual-plans','aop'),('reports','saved-drafts'),keywords='AOP commitment period start end completed activities'),
     topic('follow-up','Needs Attention and Campus Follow-Up','Use evidence and the relevant next action.','Reports and Annual Plans',STAFF,[
         'Open Needs Attention to review findings with their campus, period, and supporting records.',
         'For ongoing events, follow the authorized attendance action. For ended events, use reports and printed corrections.',
@@ -224,7 +224,7 @@ ACTIONS = {
     'staff-activities': ('Activities','workspace.activities',STAFF,{}),
     'overview': ('Overview','workspace.overview',STAFF,{}),
     'reports': ('Reports','workspace.reports',STAFF,{}),
-    'annual-plans': ('Annual Plans','goals.workspace',STAFF,{}),
+    'annual-plans': ('AOP Goals','goals.workspace',STAFF,{}),
     'aop': ('Annual Plan Summary','workspace.aop',STAFF,{}),
     'follow-up': ('Needs Attention','workspace.follow_up',STAFF,{}),
     'accounts': ('User Accounts','admin.admin_dash',('director',),{}),

@@ -1,8 +1,8 @@
-{% macro moa_dates(errors) %}
-{% for key,label in [('valid_from','Valid From'),('valid_until','Valid Until')] %}
+{% macro moa_dates(errors, fields=[('valid_from','Valid From'),('valid_until','Valid Until')], values=none) %}
+{% for key,label in fields %}
 <div class="field"><label for="{{ key }}" data-moa-label="{{ key }}">{{ label }} *</label>
-<input type="date" id="{{ key }}" name="{{ key }}" value="{{ request.form.get(key,'') }}" required {% if errors.get(key) %}aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
-<button type="button" class="schedule-display" id="moa-{{ key }}-display" data-moa-picker="{{ key }}" aria-haspopup="dialog" aria-controls="moa-date-picker" hidden>Select {{ label }} Date</button>
+<input type="date" id="{{ key }}" name="{{ key }}" value="{{ values.get(key,'') if values is not none else request.form.get(key,'') }}" required {% if errors.get(key) %}aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
+<button type="button" class="schedule-display" id="moa-{{ key }}-display" data-moa-picker="{{ key }}" data-date-label="{{ label }}" aria-haspopup="dialog" aria-controls="moa-date-picker" hidden>Select {{ label }}{{ '' if label.endswith('Date') else ' Date' }}</button>
 {% if errors.get(key) %}<small class="text-red-700" id="{{ key }}-error">{{ errors[key] }}</small>{% endif %}</div>
 {% endfor %}
 <p class="schedule-error field--wide" id="moa-range-error" role="alert" hidden></p>

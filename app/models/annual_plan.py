@@ -1,4 +1,4 @@
-"""Approved annual operational and strategic plan records."""
+"""Annual operational plans, retained evidence, and campus commitments."""
 from datetime import datetime
 from app.models import db
 
@@ -8,7 +8,7 @@ class AnnualPlan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     source_key = db.Column(db.String(100), unique=True, nullable=False)
     year = db.Column(db.Integer, nullable=False, index=True)
-    plan_type = db.Column(db.Enum('AOP', 'ASP', name='annual_plan_types'), nullable=False)
+    plan_type = db.Column(db.Enum('AOP', name='annual_plan_types', validate_strings=True), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     status = db.Column(db.Enum('approved', 'superseded', name='annual_plan_statuses'),
                        nullable=False, default='approved')
@@ -50,6 +50,12 @@ class AnnualTarget(db.Model):
     activity_scope = db.Column(db.String(80), nullable=True)
     comparison_rule = db.Column(db.String(4), nullable=False, default='gte')
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    workflow_kind = db.Column(db.String(24), nullable=False, default='legacy', server_default='legacy')
+    director_target_id = db.Column(db.Integer, db.ForeignKey('annual_targets.id', ondelete='RESTRICT'))
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __table_args__ = (db.UniqueConstraint('director_target_id', 'campus_id', name='uq_aop_campus_commitment'),)
     campus = db.relationship('Campus')
     results = db.relationship('AnnualResult', backref='target', lazy=True,
                               cascade='all, delete-orphan')
@@ -98,4 +104,8 @@ class AnnualGoalProposal(db.Model):
     reviewed_at = db.Column(db.DateTime, nullable=True)
     review_note = db.Column(db.Text, nullable=True)
     history = db.Column(db.JSON, nullable=False, default=list)
+    workflow_kind = db.Column(db.String(24), nullable=False, default='legacy', server_default='legacy')
+    director_target_id = db.Column(db.Integer, db.ForeignKey('annual_targets.id', ondelete='RESTRICT'))
+    version = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    __table_args__ = (db.UniqueConstraint('director_target_id', 'campus_id', name='uq_aop_campus_draft'),)
     campus = db.relationship('Campus')

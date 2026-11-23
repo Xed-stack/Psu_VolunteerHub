@@ -10,6 +10,37 @@ from tests.test_workspace_overhaul import actors
 from tests.test_proposal_record import seed_draft, filled_docx
 
 
+def test_aop_selection_survives_draft_and_publishes_explicit_mapping(client, actors):
+    from app.models.annual_plan import AnnualActivityMapping
+    from tests.test_workspace_overhaul import sign_in
+    from tests.test_aop_commitments import publish, submit
+    sign_in(client,actors,'director')
+    goal=publish(client,end_date='2026-12-31')
+    sign_in(client,actors,'coordinator')
+    assert submit(client,goal,'3').status_code==302
+    draft=seed_draft(client,actors,{'partnership_status':'none'})
+    assert client.put('/workspace/drafts/activity:new',json={'aop_goal_ids':[str(goal.id)]}).status_code==200
+    db.session.refresh(draft)
+    assert draft.payload['aop_goal_ids']==[str(goal.id)]
+    page=client.get('/workspace/create/2').text
+    assert f'name="aop_goal_ids" value="{goal.id}" checked' in page
+    assert client.post('/workspace/create/4',data={'proposal_reviewed':'yes'}).status_code==302
+    proposal=ActivityProposal.query.one()
+    mapping=AnnualActivityMapping.query.one()
+    assert mapping.event_id==proposal.event_id and mapping.target.director_target_id==goal.id
+    assert proposal.publishing_snapshot['AOP Goals'][0].startswith(goal.indicator.name)
+
+
+def test_invalid_aop_selection_blocks_publication_without_partial_event(client,actors):
+    draft=seed_draft(client,actors,{'partnership_status':'none'})
+    draft.payload=dict(draft.payload,aop_goal_ids=['999999'])
+    db.session.commit()
+    before=Event.query.count()
+    response=client.post('/workspace/create/4',data={'proposal_reviewed':'yes'})
+    assert response.status_code==200 and 'submitted commitment for your campus' in response.text
+    assert Event.query.count()==before and ActivityProposal.query.count()==0
+
+
 def test_posting_ignores_incomplete_detailed_proposal_and_retains_it(client, actors):
     record={'partnership_status':'none','rationale':'Saved authored rationale',
             'budget':[{'item':'Saved budget item','unit_cost':'invalid'}]}

@@ -13,24 +13,24 @@ from tests.test_system_performance import query_count
 from tests.html_helpers import parse_html, form_with_control, form_values
 
 
-def test_rollup_separates_university_targets_and_merges_within_campus(client,app,actors):
+def test_rollup_excludes_historical_targets_from_new_aop_workflow(client,app,actors):
     target(campus=1,actual=4,shared='both')
-    target(campus=1,actual=4,shared='both',kind='ASP')
+    target(campus=1,actual=4,shared='both',kind='AOP')
     target(campus=2,actual=0)
     target(campus=2)
     target(actual=4)
     sign_in(client,actors,'director')
     response,data=screen(client,app,'/workspace/overview')
-    assert (data['campus_rollup']['met'],data['campus_rollup']['total'],data['campus_rollup']['pending']) == (1,3,1)
-    assert data['campus_rollup']['rate'] == 33.3
-    assert data['campus_rollup']['plans'] == {'AOP':{'met':1,'total':3},'ASP':{'met':1,'total':1}}
-    assert data['goals']['total'] == data['goals']['met'] == 1
+    assert (data['campus_rollup']['met'],data['campus_rollup']['total'],data['campus_rollup']['pending']) == (0,0,0)
+    assert data['campus_rollup']['rate'] is None
+    assert data['campus_rollup']['plans'] == {'AOP':{'met':0,'total':0}}
+    assert data['goals']['total'] == data['goals']['met'] == 0
     assert b'Campus Annual Achievement' in response.data and b'University-Wide Targets' in response.data
     with query_count(app) as queries:
         overview_context(data,data['follow_ups'])
     assert len(queries) == 0
     _,filtered=screen(client,app,'/workspace/overview?category=No+such+category')
-    assert filtered['conducted'] == 0 and filtered['campus_rollup']['total'] == 3
+    assert filtered['conducted'] == 0 and filtered['campus_rollup']['total'] == 0
 
 
 def test_scoped_rollup_unknowns_and_scope_controls_preserve_filters(client,app,actors):
@@ -38,7 +38,7 @@ def test_scoped_rollup_unknowns_and_scope_controls_preserve_filters(client,app,a
     target(campus=2)
     sign_in(client,actors,'director')
     response,data=screen(client,app,'/workspace/overview?period=all&campus=1&campus=2&campus_mode=include&activity_name=100%25_&sex=female&page=3')
-    assert data['campus_rollup']['total'] == 2 and data['campus_rollup']['pending'] == 1
+    assert data['campus_rollup']['total'] == 0 and data['campus_rollup']['pending'] == 0
     assert len(data['campus_comparison']) == 2
     page=parse_html(response.get_data(as_text=True))
     values=form_values(form_with_control(page,'period'))

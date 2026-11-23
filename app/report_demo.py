@@ -14,7 +14,7 @@ from sqlalchemy import event as sa_event, inspect
 
 from app.models import db
 from app.models.annual_plan import (AnnualActivityMapping, AnnualIndicator, AnnualPlan,
-                                   AnnualResult, AnnualTarget)
+                                   AnnualResult, AnnualTarget, AnnualGoalProposal)
 from app.models.event import (Attendance, Campus, Event, ExternalParticipant,
                               HistoricalActivity, Milestone, Registration, SdgGoal)
 from app.models.user import Interest, Skill, SystemSetting, User, VolunteerProfile
@@ -248,12 +248,13 @@ def _populate(year, password):
                 year_conducted=year, imported_by_id=director.id))
     db.session.flush()
     _annual_plans(year, campuses, activities)
+    seed_aop_commitments(year, campuses, activities)
 
 
 def _annual_plans(year, campuses, activities):
     end = date(year, 12, 31)
     plans = {}
-    for kind in ('AOP', 'ASP'):
+    for kind in ('AOP',):
         plan = AnnualPlan(source_key=f'demo-{year}-{kind}', year=year, plan_type=kind,
             title=f'{NOTICE}: {year} {kind}', source_document=f'Synthetic {kind} planning register',
             approval_reference=f'DEMO-{kind}-{year}', approval_date=date(year, 1, 2))
@@ -265,7 +266,7 @@ def _annual_plans(year, campuses, activities):
         if campus is None:
             supported = {campuses[i].id for i in (0, 3, 6)}
             events = [e for e in events if e.campus_id in supported]
-        for kind in ('AOP', 'ASP'):
+        for kind in ('AOP',):
             for index, (basis, unit) in enumerate((('activities', 'activities'), ('verified_attendance', 'attendance occurrences'), ('approved_aggregate', 'partnerships'))):
                 key = f'demo-{year}-{ci}-{kind}-{index}'
                 names = ['Community Activities Delivered', 'Verified Community Participation', 'Supported Community Partnerships']
@@ -287,7 +288,7 @@ def _annual_plans(year, campuses, activities):
                 else:
                     pending = campus is not None and ci % 4 == 0
                     db.session.add(AnnualResult(source_key=key, target=target,
-                        actual_value=None if pending else 6 if campus is None else (2 + (ci + (kind == 'ASP')) % 7),
+                        actual_value=None if pending else 6 if campus is None else (2 + ci % 7),
                         evidence_status='pending' if pending else 'verified', result_type='approved_aggregate',
                         source_document='Synthetic partnership evidence register',
                         coverage_note='Fictional aggregate for local report demonstrations only.',
@@ -373,3 +374,38 @@ def install_demo_views(app):
         options['filename'] = 'synthetic-' + options.get('filename', 'report.' + (fmt or 'bin'))
         response.headers['Content-Disposition'] = dump_options_header(kind, options)
         return response
+
+
+def seed_aop_commitments(year, campuses, activities):
+    """Synthetic Director goal and explicit campus commitments for local demos only."""
+    actor = User.query.filter_by(role='director').first()
+    key = f'synthetic-aop-commitments-{year}'
+    plan = AnnualPlan(source_key=key, year=year, plan_type='AOP', title='Synthetic Shared Community Activities',
+        source_document='Fictional local demonstration', approval_reference='SYNTHETIC', approval_date=date(year,1,1))
+    indicator = AnnualIndicator(source_key=key, plan=plan, code='SYNTHETIC-AOP', program='Community Extension',
+        name='Synthetic Shared Community Activities', definition='Fictional goal for local demonstrations only.',
+        unit='activities', responsible_office='PSU', evidence_basis='activities')
+    goal = AnnualTarget(source_key=key, indicator=indicator, target_value=10, workflow_kind='director_goal',
+                        start_date=date(year,1,1), end_date=date(year,12,31), deadline=date(year,12,31))
+    db.session.add(goal); db.session.flush()
+    payload=dict(year=year,title=indicator.name,description=indicator.definition,target_value=10,
+                 start_date=f'{year}-01-01',end_date=f'{year}-12-31')
+    db.session.add(AnnualGoalProposal(workflow_kind='director_goal',proposed_by_id=actor.id,
+        published_target_id=goal.id,payload=payload,status='published',history=[dict(action='published',actor=actor.id,
+        at=f'{year}-01-01T00:00:00',payload=payload)]))
+    for index,campus in enumerate(campuses):
+        coordinator=User.query.filter_by(role='coordinator',campus_id=campus.id).first()
+        if coordinator is None:continue
+        count=index+2
+        child=AnnualTarget(source_key=f'{key}:{campus.id}',indicator=indicator,campus_id=campus.id,
+            director_target_id=goal.id,workflow_kind='campus_commitment',target_value=count)
+        db.session.add(child); db.session.flush()
+        payload=dict(target_value=count,note='Fictional submitted campus commitment.')
+        db.session.add(AnnualGoalProposal(workflow_kind='campus_commitment',director_target_id=goal.id,
+            campus_id=campus.id,proposed_by_id=coordinator.id,published_target_id=child.id,payload=payload,
+            status='submitted',history=[dict(action='commitment_submitted',actor=coordinator.id,
+                at=f'{year}-01-02T00:00:00',payload=payload)]))
+        for event in {event.id:event for event in activities}.values():
+            if event.campus_id==campus.id and event.lifecycle_status=='approved' and event.end_date and event.date.year==event.end_date.year==year:
+                db.session.add(AnnualActivityMapping(target=child,event=event))
+    db.session.flush()

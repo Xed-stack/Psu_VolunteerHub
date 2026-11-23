@@ -70,6 +70,9 @@ def import_file(path, dry_run=False):
                         target_value=number(values['target_value']), comparison_rule=values['comparison_rule'],
                         deadline=date.fromisoformat(values['deadline']) if values['deadline'] else None)
                     target = AnnualTarget.query.filter_by(source_key=row['target_key']).first()
+                    new_target = target is None
+                    if target is not None and target.workflow_kind != 'legacy':
+                        raise ReportError('Published AOP goals and commitments cannot be changed by historical imports.')
                     if not target:
                         target = AnnualTarget(source_key=row['target_key'], **target_values)
                         db.session.add(target); db.session.flush(); created += 1
@@ -78,17 +81,14 @@ def import_file(path, dry_run=False):
                     else:
                         unchanged += 1
                     if row.get('replaces_target_key'):
-                        previous = AnnualTarget.query.filter_by(source_key=row['replaces_target_key']).first()
-                        if not previous or previous.id == target.id or previous.campus_id != target.campus_id or previous.indicator.plan.year != plan.year:
-                            raise ReportError('Replacement must reference a different target in the same year and scope.')
-                        previous.is_active = False
+                        raise ReportError('Historical AOP records are read-only; replacement imports are unavailable.')
                     if indicator.shared_key:
                         peers = AnnualTarget.query.join(AnnualIndicator).join(AnnualPlan).filter(
                             AnnualIndicator.shared_key == indicator.shared_key, AnnualPlan.year == plan.year,
                             AnnualTarget.campus_id == target.campus_id, AnnualTarget.is_active.is_(True), AnnualTarget.id != target.id).all()
                         if any((peer.target_value, peer.comparison_rule, peer.indicator.unit, peer.indicator.evidence_basis)
                                != (target.target_value, target.comparison_rule, indicator.unit, indicator.evidence_basis) for peer in peers):
-                            raise ReportError('Shared AOP/ASP targets have conflicting definitions.')
+                            raise ReportError('Shared AOP targets have conflicting definitions.')
                     if row.get('event_ids'):
                         if indicator.evidence_basis == 'approved_aggregate':
                             raise ReportError('Aggregate results cannot also count linked live activities.')
@@ -97,6 +97,8 @@ def import_file(path, dry_run=False):
                         if len(events) != len(ids) or any(event.date.year != plan.year or (campus and event.campus_id != campus.id) for event in events):
                             raise ReportError('Linked events must exist in the target year and scope.')
                         existing = {mapping.event_id for mapping in target.activity_mappings}
+                        if not new_target and ids - existing:
+                            raise ReportError('Historical AOP activity evidence is read-only.')
                         for event_id in ids - existing:
                             db.session.add(AnnualActivityMapping(target_id=target.id, event_id=event_id)); created += 1
                     if row.get('result_key'):
@@ -121,6 +123,8 @@ def import_file(path, dry_run=False):
                             result_type='approved_aggregate', source_document=source, coverage_note=coverage,
                             coverage_start=start, coverage_end=end, sex_counts=sex_counts)
                         result = AnnualResult.query.filter_by(source_key=row['result_key']).first()
+                        if not result and not new_target:
+                            raise ReportError('Historical AOP result evidence is read-only.')
                         if not result:
                             if len(row['result_key']) > 100:
                                 raise ReportError('result_key must contain at most 100 characters.')

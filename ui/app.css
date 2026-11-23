@@ -505,6 +505,13 @@
   .journey-facts, .journey-schedule .activity-facts { @apply mt-5 grid min-w-0 gap-x-6 gap-y-5 sm:grid-cols-2; }
   .journey-facts dt, .journey-schedule dt { @apply mb-1 text-sm text-slate-600; }
   .journey-facts dd, .journey-schedule dd { @apply text-base font-medium; }
+  .aop-progress { @apply my-5 grid grid-cols-2 gap-4 lg:grid-cols-4; }
+  .aop-progress dd { @apply text-xl font-semibold tabular-nums; }
+  .aop-check { @apply flex min-h-11 min-w-0 items-center gap-3 py-2; }
+  .aop-check span { min-width:0; overflow-wrap:anywhere; }
+  .aop-check input { @apply size-5 shrink-0 accent-psu; }
+  .aop-page a { @apply inline-flex min-h-11 min-w-11 max-w-full items-center; }
+  .aop-page summary { @apply min-h-11 min-w-11 max-w-full py-2; }
   .journey-detail-layout { @apply grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]; }
   .journey-description { @apply grid gap-4; }
   .journey-description .journey-section { @apply mt-1; }

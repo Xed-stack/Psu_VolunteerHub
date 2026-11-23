@@ -1,0 +1,5 @@
+{% macro period(goal) %}<p class="scope-note">Start Date: {{ goal.start_date.strftime('%d %b %Y') }} · End Date: {{ goal.end_date.strftime('%d %b %Y') }} · Philippine time</p>{% endmacro %}
+{% macro progress(values, label='Director Target') %}
+<dl class="journey-facts aop-progress"><div><dt>{{ label }}</dt><dd>{{ values.target }}</dd></div><div><dt>Completed Activities</dt><dd>{{ values.completed }}</dd></div><div><dt>Remaining Activities</dt><dd>{{ values.remaining }}</dd></div>{% if values.exceeded %}<div><dt>Above Target</dt><dd>{{ values.exceeded }}</dd></div>{% endif %}</dl>
+{% endmacro %}
+{% macro schedule(event) %}Start: {{ event.date.strftime('%d %b %Y, %I:%M %p') if event.date else 'Not recorded' }} · End: {{ event.end_date.strftime('%d %b %Y, %I:%M %p') if event.end_date else 'Not recorded' }} · PHT{% endmacro %}

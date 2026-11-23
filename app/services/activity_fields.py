@@ -50,8 +50,13 @@ def stage_errors(payload,step,record=None,*,posting=False):
     if step==2:
         for key,text in [('title','Activity Title'),('description','Public Activity Description')]:
             if not form.get(key,'').strip():errors[key]='Complete '+text+'.'
-        _,error=_parse_event_schedule(form)
+        schedule,error=_parse_event_schedule(form)
         if error:errors['date']=error
+        if not error and form.getlist('aop_goal_ids'):
+            from flask_login import current_user
+            from app.services.aop_goals import validate_links
+            try:validate_links(form.getlist('aop_goal_ids'),current_user.campus_id,schedule[0],schedule[1])
+            except ValueError as exc:errors['aop_goal_ids']=str(exc)
         if form.get('category') not in _activity_categories():errors['category']='Choose an available Category.'
         error=department_error(form.get('conducting_department',''),audience_departments())
         if error:errors['conducting_department']=error

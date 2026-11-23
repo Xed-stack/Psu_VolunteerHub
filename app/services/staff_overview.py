@@ -6,10 +6,10 @@ FINDING_LABELS = {
     'record_attendance': 'Ongoing Activities Need Attendance',
     'pending_attendance': 'Ended Activities Have Unrecorded Attendance',
     'schedule_limit': 'Activities Have Incomplete Schedules',
-    'no_targets': 'Campuses Have No Approved Annual Targets',
+    'no_targets': 'Campuses Have No AOP Commitments',
     'missed_targets': 'Activities Did Not Reach Their Numeric Target',
     'low_attendance': 'Activities Need Participation Review',
-    'remaining_goals': 'Campuses Have Annual Evidence or Targets to Review',
+    'remaining_goals': 'Campuses Have AOP Activities Remaining',
     'no_activities': 'Campuses Have No Approved Activities in This Period',
 }
 

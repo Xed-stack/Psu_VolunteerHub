@@ -11,7 +11,10 @@ from app.models import db
 from app.models.annual_plan import (AnnualPlan, AnnualIndicator, AnnualTarget, AnnualResult,
                                    AnnualGoalProposal, AnnualActivityMapping)
 from app.models.event import Event, ExternalParticipant, Registration, Attendance
-from app.annual_goals import summary, participation
+from app.annual_goals import summary as current_summary, participation
+
+def summary(*args, **kwargs):
+    return current_summary(*args, **dict(kwargs, historical=True))
 from app.annual_import import import_file
 from app.reports import ReportError
 
@@ -51,64 +54,47 @@ def target(campus=None, kind='AOP', shared=None, actual=None, value=4, rule='gte
 
 def test_scope_shared_membership_zero_and_comparison_rules(app):
     target(actual=4, shared='same')
-    target(actual=4, kind='ASP', shared='same')
+    target(actual=4, kind='AOP', shared='same')
     target(campus=1, actual=0, value=0, rule='eq')
     target(campus=1, actual=3, value=4, rule='lte')
     target(campus=1)
     target(campus=2, actual=0)
     university = summary()
     assert university['total'] == university['met'] == 1
-    assert university['plans'] == {'AOP': {'total': 1, 'met': 1}, 'ASP': {'total': 1, 'met': 1}}
+    assert university['plans'] == {'AOP': {'total': 1, 'met': 1}}
     campus = summary(campus_id=1)
     assert (campus['total'], campus['met'], campus['pending'], campus['remaining']) == (3, 2, 1, 0)
     assert campus['rate'] == 66.7
     assert summary(campus_id=3)['rate'] is None
 
 
-def test_proposal_review_revision_and_cross_campus_permissions(app, client):
+def test_historical_proposals_are_read_only_and_campus_scoped(app, client):
     coordinator = _create_user(app, email='goals-campus@test.com', role='coordinator', campus_id=1)
     reviewer = _create_user(app, email='goals-director@test.com', role='director', campus_id=1)
     outsider = _create_user(app, email='goals-other@test.com', role='coordinator', campus_id=2)
-    _login_as(client, coordinator)
-    response = client.post('/annual-goals/proposals/new', data=dict(definition(), action='submit', campus_id='2'))
-    assert response.status_code == 302
-    proposal = AnnualGoalProposal.query.one()
-    assert proposal.campus_id == 1 and proposal.status == 'submitted'
-    assert summary(campus_id=1)['total'] == 0
+    proposal = AnnualGoalProposal(campus_id=1, proposed_by_id=coordinator, payload=definition(), history=[], status='submitted')
+    db.session.add(proposal); db.session.commit()
     _login_as(client, outsider)
     assert client.get(f'/annual-goals/proposals/{proposal.id}').status_code == 403
     assert client.post(f'/annual-goals/proposals/{proposal.id}/edit', data=definition()).status_code == 403
     _login_as(client, coordinator)
-    assert client.post(f'/annual-goals/proposals/{proposal.id}', data={'action': 'approve'}).status_code == 403
+    assert client.get(f'/annual-goals/proposals/{proposal.id}').status_code == 200
+    assert client.post(f'/annual-goals/proposals/{proposal.id}/edit', data=definition()).status_code == 409
     _login_as(client, reviewer)
-    assert client.post(f'/annual-goals/proposals/{proposal.id}', data={'action':'return'}).status_code == 400
-    assert client.post(f'/annual-goals/proposals/{proposal.id}', data={'action':'return', 'note':'Clarify the program definition.'}).status_code == 302
-    _login_as(client, coordinator)
-    assert client.post(f'/annual-goals/proposals/{proposal.id}/edit', data=dict(definition(), action='submit')).status_code == 302
-    _login_as(client, reviewer)
-    assert client.post(f'/annual-goals/proposals/{proposal.id}', data={'action':'approve'}).status_code == 302
     assert client.post(f'/annual-goals/proposals/{proposal.id}', data={'action':'approve'}).status_code == 409
-    old = db.session.get(AnnualTarget, proposal.published_target_id)
-    _login_as(client, coordinator)
-    values = definition(); values['target_value'] = '8'
-    assert client.post(f'/annual-goals/proposals/new?revise={old.id}', data=dict(values, action='submit')).status_code == 302
-    assert old.is_active and summary(campus_id=1)['total'] == 1
-    revision = AnnualGoalProposal.query.order_by(AnnualGoalProposal.id.desc()).first()
-    _login_as(client, reviewer)
-    assert client.post(f'/annual-goals/proposals/{revision.id}', data={'action':'approve'}).status_code == 302
-    assert not old.is_active and summary(campus_id=1)['total'] == 1
-    assert len(proposal.history) >= 4
+    assert proposal.status == 'submitted' and AnnualTarget.query.count() == 0
 
 
 def test_university_publish_cannot_be_done_by_coordinator(app, client):
+    from tests.test_aop_commitments import values
     uid = _create_user(app, email='goal-university@test.com', role='coordinator', campus_id=1)
     _login_as(client, uid)
-    assert client.post('/annual-goals/proposals/new', data=dict(definition(), action='publish')).status_code == 400
+    assert client.post('/annual-goals/proposals/new', data=dict(values(), action='publish')).status_code == 403
     assert AnnualTarget.query.count() == 0
     reviewer = _create_user(app, email='goal-publish@test.com', role='director', campus_id=1)
     _login_as(client, reviewer)
-    assert client.post('/annual-goals/proposals/new', data=dict(definition(), action='publish')).status_code == 302
-    assert summary()['total'] == 1 and summary(campus_id=1)['total'] == 0
+    assert client.post('/annual-goals/proposals/new', data=dict(values(), action='publish')).status_code == 302
+    assert current_summary(2026)['total'] == 1 and summary()['total'] == 0
 
 
 def test_attendance_basis_cancellations_repeats_unknown_and_tie(app):
@@ -156,7 +142,7 @@ def test_sample_drilldown_export_isolation_and_all_templates(app, client):
     before = AnnualTarget.query.count()
     for path in ['/director_dash?sample=1','/analytics?sample=1','/annual-goals?sample=1',
                  '/annual-goals?sample=1&campus=1&plan=AOP','/annual-goals/workspace','/annual-goals/proposals/new']:
-        result = client.get(path)
+        result = client.get(path, follow_redirects=True)
         assert result.status_code == 200, (path,result.data[:200])
     assert client.get('/annual-goals?sample=1&export=csv').status_code == 400
     assert client.post('/annual-goals/proposals/new?sample=1', data=dict(definition(),action='publish')).status_code == 400
@@ -166,26 +152,22 @@ def test_sample_drilldown_export_isolation_and_all_templates(app, client):
     uid = _create_user(app, email='goals-preview-campus@test.com', role='coordinator', campus_id=1)
     _login_as(client, uid)
     for path in ['/coordinator_dash?sample=1','/coordinator_analytics?sample=1','/annual-goals?sample=1&campus=2']:
-        assert client.get(path).status_code == 200
+        assert client.get(path, follow_redirects=True).status_code == 200
     assert b'Campus goal results' not in client.get('/annual-goals?sample=1').data
 
 
-def test_filters_exports_and_evidence_route(app, client):
+def test_historical_filters_exports_and_evidence_are_read_only(app, client):
     item = target(actual=4)
     pending = target()
     uid = _create_user(app, email='goals-export@test.com', role='director', campus_id=1)
     _login_as(client, uid)
     for kind in ['csv','pdf']:
-        response = client.get(f'/annual-goals?status=met&export={kind}')
+        response = client.get(f'/annual-goals?history=1&status=met&export={kind}')
         assert response.status_code == 200
         assert response.data.startswith(b'%PDF') if kind == 'pdf' else b'GOAL-0' in response.data and b'GOAL-1' not in response.data
-    assert client.get(f'/annual-goals/targets/{item.id}/evidence').status_code == 200
-    assert client.post(f'/annual-goals/targets/{item.id}/evidence', data={}).status_code == 400
-    year = date.today().year
-    response = client.post(f'/annual-goals/targets/{pending.id}/evidence', data=dict(actual_value='8',
-        coverage_start=f'{year}-01-01', coverage_end=date.today().isoformat(), source_document='Approval 2',
-        coverage_note='Cumulative annual count', approved='1'))
-    assert response.status_code == 302 and summary()['met'] == 2
+    assert client.get(f'/annual-goals/targets/{item.id}/evidence').status_code == 302
+    assert client.post(f'/annual-goals/targets/{pending.id}/evidence', data={'actual_value':'8'}).status_code == 409
+    assert summary()['met'] == 1 and AnnualResult.query.count() == 1
     assert client.get('/annual-goals?year=oops').status_code == 400
     assert client.get('/annual-goals?campus=999').status_code == 400
 
@@ -214,21 +196,15 @@ def test_import_dry_run_rollback_idempotence_and_conflicts(app, tmp_path):
         import_file(path)
 
 
-def test_shared_revision_keeps_memberships_and_old_evidence_history(app, client):
+def test_historical_shared_evidence_survives_retirement_read_only(app, client):
     old = target(campus=1, actual=4, shared='shared-goal')
-    peer = target(campus=1, actual=4, kind='ASP', shared='shared-goal')
-    uid = _create_user(app, email='shared-coordinator@test.com', role='coordinator', campus_id=1)
-    reviewer = _create_user(app, email='shared-director@test.com', role='director', campus_id=1)
+    peer = target(campus=1, actual=4, shared='shared-goal')
+    uid = _create_user(app, email='shared-director@test.com', role='director', campus_id=1)
     _login_as(client, uid)
-    assert client.post(f'/annual-goals/proposals/new?revise={old.id}', data=dict(definition(),action='submit')).status_code == 302
-    proposal = AnnualGoalProposal.query.one()
-    _login_as(client, reviewer)
-    assert client.post(f'/annual-goals/proposals/{proposal.id}',data={'action':'approve'}).status_code == 302
-    result = summary(campus_id=1)
-    assert result['total'] == 1 and result['pending'] == 1
-    assert result['plans']['AOP']['total'] == result['plans']['ASP']['total'] == 1
-    assert not old.is_active and not peer.is_active
-    assert AnnualResult.query.count() == 2
+    assert client.post(f'/annual-goals/proposals/new?revise={old.id}', data=dict(definition(),action='publish')).status_code == 409
+    assert old.is_active and peer.is_active and AnnualResult.query.count() == 2
+    assert summary(campus_id=1)['total'] == 1
+    assert current_summary(campus_id=1)['total'] == 0
 
 
 def test_invalid_targets_and_sample_posts_never_publish(app, client):
@@ -238,7 +214,7 @@ def test_invalid_targets_and_sample_posts_never_publish(app, client):
         data = definition(); data['target_value'] = invalid
         assert client.post('/annual-goals/proposals/new',data=dict(data,action='publish')).status_code == 400
     assert AnnualTarget.query.count() == AnnualGoalProposal.query.count() == 0
-    assert client.get('/director_dash?goal_year=bogus').status_code == 400
+    assert client.get('/annual-goals?year=bogus').status_code == 400
     assert client.get('/annual-goals?sample=1&export=pdf').status_code == 400
 
 
@@ -247,11 +223,11 @@ def test_pagination_and_filters_do_not_change_whole_scope_judgment(app, client):
         target(actual=4 if index % 2 else None)
     uid = _create_user(app,email='goal-pagination@test.com',role='director',campus_id=1)
     _login_as(client,uid)
-    page = client.get('/annual-goals?page=2&plan=AOP')
+    page = client.get('/annual-goals?history=1&page=2&plan=AOP')
     assert page.status_code == 200 and b'Page 2 of 2' in page.data
     assert b'GOAL-9' in page.data
-    filtered = client.get('/annual-goals?status=met')
+    filtered = client.get('/annual-goals?history=1&status=met')
     assert b'Goals Achieved</h2><strong>5 / 11</strong>' in filtered.data
-    assert b'GOAL-0' not in client.get('/annual-goals?status=met&export=csv').data
+    assert b'GOAL-0' not in client.get('/annual-goals?history=1&status=met&export=csv').data
     app.config['WTF_CSRF_ENABLED'] = True
     assert client.post('/annual-goals/proposals/new',data=dict(definition(),action='publish')).status_code == 400

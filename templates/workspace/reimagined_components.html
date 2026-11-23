@@ -30,7 +30,7 @@
   value="{{ item.scope_query|tojson|forceescape }}"
 >{% include 'partials/csrf_field.html' %}<input type="hidden" name="queue_return" value="{{ request.full_path.rstrip('?') if request.endpoint=='workspace.follow_up' else '' }}"><button class="btn btn--outline text-xs">{{ 'Remind Coordinator' if item.code=='record_attendance' else 'Notify Coordinator' }}</button></form>{% endif %}{% elif current_user.role=='director' and item.code=='record_attendance' %}<button class="btn btn--outline" disabled>Remind Coordinator</button><p class="scope-note">No active Coordinator is assigned.</p>{% endif %}</div></li>
 {% endmacro %}
-{% macro annual_snapshot() %}<div class="annual-snapshot">{% for kind in ['AOP','ASP'] %}<a
+{% macro annual_snapshot() %}<div class="annual-snapshot">{% for kind in ['AOP'] %}<a
   href="{{ url_for('goals.details',year=year,campus=campus_id,plan=kind) }}"
 ><span>{{ kind }} Targets Achieved</span><strong>{{ (goals.plans[kind].met|string ~ ' / ' ~ goals.plans[kind].total|string) if goals.plans[kind].total else 'Not Set' }}</strong><span>View Indicators</span></a>{% endfor %}</div><p class="mt-4 text-sm text-slate-600">{{ year }} annual context. {{ goals.pending }} awaiting evidence. Unknown evidence remains pending.</p><a
   class="text-link mt-2"

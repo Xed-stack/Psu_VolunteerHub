@@ -70,11 +70,11 @@ def test_rerun_coverage_and_attendance_integrity(report_app):
         assert not Registration.query.join(Attendance).filter(Registration.status=='cancelled').count()
         assert all(r.registered_at < r.event.date and r.participant.created_at <= r.registered_at for r in Registration.query.all())
         assert all(e.date.year == 2025 and e.date < e.end_date for e in Event.query.all())
-        assert all(c['total'] == 4 for c in before['annual_campuses'])
+        assert all(c['total'] == 1 for c in before['annual_campuses'])
         assert any(c['achieved'] for c in before['annual_campuses'])
-        assert any(c['pending'] for c in before['annual_campuses'])
-        assert before['university_targets']['total'] == 4
-        assert AnnualTarget.query.count() == 60
+        assert all(c['pending']==0 for c in before['annual_campuses'])
+        assert before['university_targets']['total'] == 1
+        assert AnnualTarget.query.count() == 40
 
 
 @pytest.mark.parametrize('path', ['/demo', '/workspace/overview', '/workspace/reports/results',

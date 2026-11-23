@@ -1,22 +1,26 @@
 (() => {
   const dialog = document.getElementById('moa-date-picker');
   if (!dialog || !window.HTMLDialogElement) return;
-  const fields = ['valid_from', 'valid_until'].map(id => document.getElementById(id));
+  const buttons = [...document.querySelectorAll('[data-moa-picker]')];
+  const fields = buttons.map(button => document.getElementById(button.dataset.moaPicker));
   const form = fields[0].form;
   const picker = document.getElementById('moa-picker-date');
   const pickerError = document.getElementById('moa-picker-error');
   const rangeError = document.getElementById('moa-range-error');
-  const buttons = fields.map(field => document.querySelector(`[data-moa-picker="${field.id}"]`));
+  const labels = buttons.map((button, index) => button.dataset.dateLabel || `Valid ${index ? 'Until' : 'From'}`);
+  const year = form.elements.namedItem('year');
   const format = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   let active = 0;
   const refresh = () => {
     fields.forEach((field, index) => {
       const value = field.value;
-      buttons[index].textContent = value ? format.format(new Date(value + 'T00:00:00Z')) : `Select Valid ${index ? 'Until' : 'From'} Date`;
+      buttons[index].setAttribute('aria-label', `${labels[index]} (required): ${value ? format.format(new Date(value + 'T00:00:00Z')) : 'not selected'}`);
+      buttons[index].textContent = value ? format.format(new Date(value + 'T00:00:00Z')) : `Select ${labels[index]}${labels[index].endsWith('Date') ? '' : ' Date'}`;
     });
     const reversed = fields[0].value && fields[1].value && fields[1].value < fields[0].value;
-    rangeError.textContent = reversed ? 'Valid Until must be on or after Valid From.' : '';
-    rangeError.hidden = !reversed;
+    const outsideYear = year?.value && fields.some(field => field.value && field.value.slice(0, 4) !== year.value);
+    rangeError.textContent = reversed ? `${labels[1]} must be on or after ${labels[0]}.` : outsideYear ? 'Both dates must be within the AOP year.' : '';
+    rangeError.hidden = !reversed && !outsideYear;
   };
   fields.forEach((field, index) => {
     field.hidden = true;
@@ -30,9 +34,14 @@
     document.querySelectorAll(`a[href="#${field.id}"]`).forEach(link => { link.href = '#' + buttons[index].id; });
     buttons[index].addEventListener('click', () => {
       active = index;
-      document.getElementById('moa-date-heading').textContent = `Choose Valid ${index ? 'Until' : 'From'} Date`;
+      document.getElementById('moa-date-heading').textContent = `Choose ${labels[index]}${labels[index].endsWith('Date') ? '' : ' Date'}`;
       picker.value = field.value;
       picker.min = index ? fields[0].value : '';
+      picker.max = '';
+      if (year?.value && year.checkValidity()) {
+        picker.min = picker.min > `${year.value}-01-01` ? picker.min : `${year.value}-01-01`;
+        picker.max = `${year.value}-12-31`;
+      }
       pickerError.hidden = true;
       dialog.showModal();
     });
@@ -43,7 +52,7 @@
   dialog.addEventListener('close', () => buttons[active].focus());
   dialog.querySelector('[data-moa-confirm]').addEventListener('click', () => {
     if (!picker.value || !picker.checkValidity()) {
-      pickerError.textContent = active && fields[0].value ? 'Choose a date on or after Valid From.' : 'Choose a valid calendar date.';
+      pickerError.textContent = active && fields[0].value ? `Choose a date on or after ${labels[0]}.` : 'Choose a valid calendar date.';
       pickerError.hidden = false;
       picker.focus();
       return;
@@ -58,6 +67,7 @@
     if (event.key === 'Enter') { event.preventDefault(); dialog.querySelector('[data-moa-confirm]').click(); }
   });
   form.addEventListener('draft:restored', refresh);
+  year?.addEventListener('input', refresh);
   window.addEventListener('load', refresh);
   form.addEventListener('submit', event => {
     if (event.submitter?.formNoValidate) return;
@@ -65,7 +75,7 @@
     refresh();
     if (missing !== -1 || !rangeError.hidden) {
       event.preventDefault();
-      if (missing !== -1) { rangeError.textContent = 'Choose both validity dates.'; rangeError.hidden = false; }
+      if (missing !== -1) { rangeError.textContent = 'Choose both dates.'; rangeError.hidden = false; }
       buttons[missing === -1 ? 1 : missing].focus();
     }
   });

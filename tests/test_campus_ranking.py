@@ -41,30 +41,18 @@ def test_empty_and_zero_states_do_not_name_a_winner(rows,state):
     assert result['state'] == state and result['leaders'] == []
 
 
-def test_director_routes_reuse_scoped_deduplicated_goals_without_sex_queries(app,client,monkeypatch):
+def test_director_routes_exclude_history_without_sex_queries(app,client,monkeypatch):
+    from tests.test_ui_reimagining import screen
     target(campus=1,actual=4,shared='campus-shared')
-    target(campus=1,actual=4,shared='campus-shared',kind='ASP')
-    target(campus=2,actual=4)
     target(campus=2)
     uid = _create_user(app,email='campus-ranking-director@test.com',role='director',campus_id=1)
     _login_as(client,uid)
-    forbidden = Mock(side_effect=AssertionError('Director hero must not calculate sex participation'))
+    forbidden = Mock(side_effect=AssertionError('Director overview must not calculate sex participation'))
     monkeypatch.setattr('app.annual_goals.participation',forbidden)
-    response = client.get('/director_dash')
-    assert response.status_code == 200
-    body = response.get_data(as_text=True)
-    assert 'Worst Performing Campus' in body
-    assert 'goal-campus-ranking' in body
-    assert '50.0% · 1 of 2 Goals Achieved' in body
-    assert 'Participation by Recorded Sex' not in body
-    analytics = client.get('/analytics')
-    assert analytics.status_code == 200
-    analytics_body = analytics.get_data(as_text=True)
-    assert 'goal-campus-ranking' not in analytics_body
-    assert 'University Annual-Plan Achievement' not in analytics_body
+    response,data=screen(client,app,'/workspace/overview')
+    assert response.status_code == 200 and data['campus_rollup']['total'] == 0
+    assert client.get('/annual-goals?history=1&campus=1').status_code == 200
     forbidden.assert_not_called()
-    monkeypatch.undo()
-    assert 'Actual participation by recorded sex' in client.get('/annual-goals?campus=1').get_data(as_text=True)
 
 
 def test_sample_year_and_drilldowns_preserved(app,monkeypatch):
@@ -78,56 +66,48 @@ def test_sample_year_and_drilldowns_preserved(app,monkeypatch):
         'year':['2024'],'campus':['2'],'sample':['1']}
 
 
-def test_campus_rollup_weights_goals_and_keeps_shared_memberships(app, client):
-    target(campus=1, actual=4, shared='both')
-    target(campus=1, actual=4, shared='both', kind='ASP')
-    target(campus=2, actual=0)
+def test_campus_rollup_keeps_historical_evidence_separate(app, client):
+    from tests.test_ui_reimagining import screen
+    target(campus=1,actual=4,shared='both')
+    target(campus=1,actual=4,shared='both')
     target(campus=2)
     target(actual=4)
-    _login_as(client, _create_user(app, role='director', email='rollup@test.com'))
-    response = client.get('/director_dash')
-    from tests.html_helpers import parse_html
-    page = parse_html(response.get_data(as_text=True))
-    hero = page.one('a', **{'class': 'goal-hero'})
-    assert '33.3%' in hero.text and '1 of 3 Approved Goals' in hero.text
-    assert '1 Awaiting Evidence' in hero.text
-    plans = page.one('div', **{'class': 'goal-plan-pair'})
-    assert [link.one('strong').text for link in plans.all('a')] == ['1 / 3', '1 / 1']
-    university = page.one('section', **{'aria-label': 'University-wide targets'})
-    assert 'All targets met' in university.text and '1 of 1 goals achieved' in university.text
+    _login_as(client,_create_user(app,role='director',email='rollup@test.com'))
+    response,data=screen(client,app,'/workspace/overview')
+    assert response.status_code == 200
+    assert data['campus_rollup']['total'] == data['goals']['total'] == 0
+    assert data['campus_rollup']['plans'] == {'AOP':{'total':0,'met':0}}
+    from tests.test_annual_goals import summary
+    assert summary(campus_id=1)['met'] == 1 and summary()['met'] == 1
 
 
-def test_coordinator_still_gets_participation_and_director_empty_preview_states(app,client):
-    uid = _create_user(app,email='campus-ranking-coordinator@test.com',role='coordinator',campus_id=1)
+def test_coordinator_participation_and_director_empty_states(app,client):
+    from tests.test_ui_reimagining import screen
+    uid=_create_user(app,email='campus-ranking-coordinator@test.com',role='coordinator',campus_id=1)
     _login_as(client,uid)
-    for path in ['/coordinator_dash','/coordinator_analytics']:
-        body = client.get(path).get_data(as_text=True)
-        assert 'Participation by Recorded Sex' in body and 'goal-campus-ranking' not in body
-    uid = _create_user(app,email='campus-ranking-empty@test.com',role='director',campus_id=1)
+    response,data=screen(client,app,'/workspace/overview')
+    assert response.status_code == 200
+    assert data['goals']['campus_id'] == 1
+    from app.annual_goals import participation
+    assert participation(date.today().year,1)['total'] >= 0
+    uid=_create_user(app,email='campus-ranking-empty@test.com',role='director',campus_id=1)
     _login_as(client,uid)
-    body = client.get('/director_dash').get_data(as_text=True)
-    assert 'No approved campus targets for this year.' in body
-    target(campus=1)
-    body = client.get('/director_dash').get_data(as_text=True)
-    assert 'Worst Performing Campus' in body and '0.0% · 0 of 1 Goals Achieved' in body
-    preview = client.get('/director_dash?sample=1').get_data(as_text=True)
-    assert '4 Campuses Tied' in preview and 'Lowest Annual Goal-Achievement Rate · Sample Data' in preview
-    assert 'Worst Performing Campus' in client.get('/director_dash').get_data(as_text=True)
+    assert 'No AOP Goals' in client.get('/annual-goals').get_data(as_text=True)
+    preview=client.get('/annual-goals?sample=1',follow_redirects=True)
+    assert preview.status_code == 200 and b'Sample Data' in preview.data
 
 
 def test_director_can_notify_active_campus_coordinator(app, client):
-    coordinator = _create_user(app, email='follow-up-coordinator@test.com', role='coordinator', campus_id=1)
-    director = _create_user(app, email='follow-up-director@test.com', role='director', campus_id=1)
-    target(campus=1, actual=0, value=4)
-    _login_as(client, director)
-    body = client.get('/director_dash').get_data(as_text=True)
-    assert 'Recommended Follow-Up' in body
-    assert 'Notify Lingayen Coordinator' in body
-    response = client.post('/director/campus-follow-up', data={
-        'follow_up_campus_id': '1', 'goal_year': str(date.today().year)})
+    from tests.test_aop_commitments import publish, submit
+    coordinator=_create_user(app,email='follow-up-coordinator@test.com',role='coordinator',campus_id=1)
+    director=_create_user(app,email='follow-up-director@test.com',role='director',campus_id=1)
+    _login_as(client,director)
+    goal=publish(client)
+    _login_as(client,coordinator)
+    submit(client,goal,'4')
+    _login_as(client,director)
+    response=client.post('/director/campus-follow-up',data={
+        'follow_up_campus_id':'1','goal_year':'2026'})
     assert response.status_code == 302
-    note = Notification.query.filter_by(user_id=coordinator, notification_type='campus_guidance').one()
-    assert 'Lingayen' in note.title and '0.0%' in note.message and str(date.today().year) in note.message
-    client.post('/director/campus-follow-up', data={
-        'follow_up_campus_id': '1', 'goal_year': str(date.today().year)})
-    assert Notification.query.filter_by(user_id=coordinator, notification_type='campus_guidance').count() == 1
+    note=Notification.query.filter_by(user_id=coordinator,notification_type='campus_guidance').one()
+    assert 'Lingayen' in note.title and '0 of 1' in note.message

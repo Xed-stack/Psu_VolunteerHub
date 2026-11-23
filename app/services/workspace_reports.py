@@ -329,8 +329,8 @@ def follow_up_items(data):
             continue
         for tip in goal_guidance(goals):
             items.append(dict(code=tip['code'],event=None,campus=campuses.get(campus_id),
-                title='No Approved Annual Targets' if tip['code'] == 'no_targets' else 'Annual Targets or Evidence Need Review',
-                action='Review Annual Plans',url=url_for('goals.details',year=data['year'],campus=campus_id),
+                title='No Campus AOP Commitment' if tip['code'] == 'no_targets' else 'AOP Activities Remaining',
+                action='View AOP Goals',url=url_for('goals.details',year=data['year'],campus=campus_id),
                 evidence=tip['evidence'],scope=tip['scope_label']))
     if data.get('allow_scheduling'):
         for campus_id in allowed:
