@@ -16,6 +16,8 @@ function setup({ confirmed = true } = {}) {
     dataset: { attendanceBulk: status }, addEventListener(name, handler) { listeners[status] = handler; }
   }));
   const workspace = {
+    dataset: {},
+    hasAttribute() { return false; },
     addEventListener(name, handler) { listeners[`workspace:${name}`] = handler; },
     querySelectorAll(selector) {
       if (selector === '[data-attendance-status]') return selects;
@@ -42,7 +44,7 @@ test('attendance workspace updates counts and changes every visible status after
   assert.deepEqual(ui.values(), { registered: 2, present: 0, absent: 0, excused: 1, unmarked: 1 });
   ui.click('present');
   assert.deepEqual(ui.selects.map(select => select.value), ['present', 'present']);
-  assert.match(ui.confirmation(), /all 2 displayed volunteers as Present/);
+  assert.match(ui.confirmation(), /all 2 displayed volunteers as Attended/);
   assert.deepEqual(ui.values(), { registered: 2, present: 2, absent: 0, excused: 0, unmarked: 0 });
   assert.match(ui.changeStatus.textContent, /Save attendance/);
 });
@@ -52,6 +54,17 @@ test('cancelled bulk confirmation leaves attendance statuses unchanged', () => {
   ui.click('absent');
   assert.deepEqual(ui.selects.map(select => select.value), ['', 'excused']);
   assert.equal(ui.changeStatus.textContent, '');
+});
+
+test('bulk presence permits an individual absence before an explicit save', () => {
+  const ui = setup();
+  ui.click('present');
+  ui.selects[1].value = 'absent';
+  ui.selects[1].change();
+  assert.deepEqual(ui.selects.map(select => select.value), ['present', 'absent']);
+  assert.equal(ui.values().present, 1);
+  assert.equal(ui.values().absent, 1);
+  assert.match(ui.changeStatus.textContent, /2 unsaved attendance changes/);
 });
 
 test('leaving warns only for unsaved changes and submitting allows navigation', () => {

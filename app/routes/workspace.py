@@ -226,7 +226,11 @@ def drafts(key):
                     abort(400)
                 from app.services.proposal_record import normalize_record
                 try:
-                    clean[name] = [json.dumps(normalize_record(values[0]),ensure_ascii=False)]
+                    record=normalize_record(values[0])
+                    from app.services.activity_fields import additional_agency_error
+                    error=additional_agency_error(record,current_user.campus_id)
+                    if error:raise ValueError(error)
+                    clean[name] = [json.dumps(record,ensure_ascii=False)]
                 except ValueError as exc:
                     abort(400,description=str(exc))
                 continue
@@ -746,6 +750,8 @@ def agreement_use(agency_id, agreement_id):
         from app.routes.proposal import stored_record
         record = stored_record(draft.payload)
         record.update(agency_id=str(agency.id),partnership_status='existing')
+        from app.services.proposal_record import normalize_record
+        record=normalize_record(record)
         draft.payload = dict(draft.payload,proposal_record=[json.dumps(record,ensure_ascii=False)])
     db.session.commit()
     flash('MOA selected for your activity draft.', 'success')
@@ -794,7 +800,9 @@ def external(event_id):
                 status = values[row.id]
                 if not status:
                     continue
-                if status not in ('present', 'absent', 'excused'):
+                if status=='excused' and row.attendance_record and row.attendance_record.status=='excused':
+                    continue
+                if status not in ('present', 'absent'):
                     abort(400)
                 if row.attendance_record:
                     row.attendance_record.status = status
@@ -878,6 +886,9 @@ def overview():
     reviews_ready = finding_reviews.available()
     review_data = finding_reviews.canonical(request.args) if reviews_ready and current_user.role=='director' and any(request.args.get(k) for k in ('sex','affiliation','college_affiliation','attention')) else data
     review_summary = finding_reviews.summary(review_data) if reviews_ready and current_user.role=='director' else None
+    attention_summary=review_summary or dict(total=len(findings),follow_up_sent=0,
+        groups=[dict(key=key,label=label,total=sum(f['code'] in codes for f in findings))
+                for key,(label,codes) in finding_reviews.GROUPS.items()])
     agenda = []
     if current_user.role == 'coordinator':
         now = data['now']
@@ -885,7 +896,7 @@ def overview():
             or_(Event.date > now, db.and_(Event.date <= now, Event.end_date > now))
         ).order_by(Event.date, Event.id).limit(5).all()
     return render_template('workspace/overview.html', **data, **overview_context(data, findings),
-                           follow_ups=findings, agenda=agenda,reviews_ready=reviews_ready,review_summary=review_summary)
+                           follow_ups=findings, agenda=agenda,reviews_ready=reviews_ready,review_summary=review_summary,attention_summary=attention_summary)
 
 
 @workspace_bp.route('/reports')
@@ -908,16 +919,22 @@ def follow_up():
     finding_type = request.args.get('finding_type','')
     if len(request.args.getlist('finding_type')) > 1 or (finding_type and finding_type not in FINDING_LABELS):
         abort(400, description='Choose a listed finding type.')
+    review_group=request.args.get('review_group','')
+    if len(request.args.getlist('review_group'))>1 or review_group not in ('',*finding_reviews.GROUPS):
+        abort(400,description='Choose a listed review category.')
     data = report_data()
     items = follow_up_items(data)
     if finding_type:
         items = [item for item in items if item['code'] == finding_type]
+    if review_group:
+        items = [item for item in items if item['code'] in finding_reviews.GROUPS[review_group][1]]
     # The queue is bounded in the UI even when the report scope spans many years.
     page = request.args.get('page',1,type=int)
     if page is None or page < 1:
         abort(400)
     return render_template('workspace/follow_up.html', **data, items=items[(page-1)*25:page*25],
                            finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),reviews_ready=finding_reviews.available(),
+                           review_group=review_group,groups=finding_reviews.GROUPS,finding_labels=FINDING_LABELS,
                            total=len(items), page=page, pages=max(1,(len(items)+24)//25))
 
 

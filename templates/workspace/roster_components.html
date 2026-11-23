@@ -14,11 +14,12 @@
 <nav class="roster-tabs" aria-label="Volunteer Rosters"><a href="{{ roster_link('coordinator.attendance',event.id) }}" {% if not external %}aria-current="page"{% endif %}>Internal Volunteers</a><a href="{{ roster_link('workspace.external',event.id) }}" {% if external %}aria-current="page"{% endif %}>External Volunteers</a></nav>
 {% endmacro %}
 {% macro status(reg,editable,id) %}
-{% set labels={'present':'Attending','absent':'Not Attended','excused':'Excused'} %}
+{% set labels={'present':'Attended','absent':'Not Attended'} %}
 {% set recorded=reg.attendance_record.status if reg.attendance_record else '' %}
 {% if editable %}
 <input type="hidden" name="registration_id" value="{{ reg.id }}"><label class="sr-only" for="{{ id }}">Attendance for {{ reg.participant.name if reg.participant else 'Volunteer' }}</label>
-<select name="status" id="{{ id }}" data-attendance-status>{% if not recorded %}<option value="">Unrecorded</option>{% endif %}{% for value,label in labels.items() %}<option value="{{ value }}" {{ 'selected' if recorded == value }}>{{ label }}</option>{% endfor %}</select><span class="roster-print-status">{{ labels.get(recorded,'Unrecorded' if not recorded else 'Unavailable') }}</span>
+<select name="status" id="{{ id }}" data-attendance-status>{% if not recorded or recorded=='excused' %}<option value="">{{ 'Excused (Existing Record)' if recorded=='excused' else 'Unrecorded' }}</option>{% endif %}{% for value,label in labels.items() %}<option value="{{ value }}" {{ 'selected' if recorded == value }}>{{ label }}</option>{% endfor %}</select><span class="roster-print-status">{{ labels.get(recorded,'Excused (Existing Record)' if recorded=='excused' else 'Unrecorded') }}</span>
 {% else %}<span>{{ attendance_label(reg) }}</span>{% endif %}
 {% endmacro %}
+{% macro bulk() %}<div class="roster-bulk"><button class="btn btn--outline" type="button" data-attendance-bulk="present" hidden>All Attended</button><p class="scope-note">All Attended changes only the people displayed on this page. You can change individual statuses before saving.</p></div>{% endmacro %}
 {% macro save(label) %}<footer class="roster-save"><div><p>Save applies only to the people displayed on this page.</p><p role="status" aria-live="polite" data-attendance-change-status>No unsaved changes.</p></div><button class="btn btn--primary" type="submit">{{ label }}</button></footer>{% endmacro %}

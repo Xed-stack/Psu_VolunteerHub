@@ -35,7 +35,7 @@ def state(registration, now=None):
 
 def label(registration, now=None):
     value=state(registration,now)
-    text={'present':'Attending','absent':'Not Attended','excused':'Excused'}.get(value['status'],'Unrecorded')
+    text={'present':'Attended','absent':'Not Attended','excused':'Excused'}.get(value['status'],'Unrecorded')
     return text+(' (System Default)' if value['basis']=='system_default' else '')
 
 

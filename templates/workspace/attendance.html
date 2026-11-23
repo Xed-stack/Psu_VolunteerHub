@@ -1,5 +1,5 @@
 {% extends 'layouts/role_base.html' %}
-{% from 'workspace/roster_components.html' import heading,timing,tabs,status,save with context %}
+{% from 'workspace/roster_components.html' import heading,timing,tabs,status,save,bulk with context %}
 {% from 'partials/search_ui.html' import search_input,results,empty with context %}
 {% from 'partials/filter_ui.html' import actions,context_fields with context %}
 {% from 'partials/pagination.html' import pages with context %}
@@ -8,10 +8,11 @@
 {% if selected_event %}
 {{ heading('Internal Attendance',selected_event) }}{{ timing(selected_event,now) }}{{ tabs(selected_event) }}
 {% if selected_event.date <= now %}
-<form method="get" class="roster-filters"><input type="hidden" name="event_id" value="{{ selected_event.id }}">{{ context_fields(['event_id','volunteer_search','attendance_status']) }}{{ search_input('volunteer_search','Search Attendance Roster','Name, email, or volunteer ID…') }}<label class="field">Attendance Status<select name="attendance_status">{% for value,label in [('','All Statuses'),('present','Attending'),('absent','Not Attended'),('excused','Excused'),('unmarked','Unrecorded')] %}<option value="{{ value }}" {{ 'selected' if attendance_filter == value }}>{{ label }}</option>{% endfor %}</select></label>{{ actions() }}</form>
+<form method="get" class="roster-filters"><input type="hidden" name="event_id" value="{{ selected_event.id }}">{{ context_fields(['event_id','volunteer_search','attendance_status']) }}{{ search_input('volunteer_search','Search Attendance Roster','Name, email, or volunteer ID…') }}<label class="field">Attendance Status<select name="attendance_status">{% for value,label in [('','All Statuses'),('present','Attended'),('absent','Not Attended'),('unmarked','Unrecorded')] %}<option value="{{ value }}" {{ 'selected' if attendance_filter == value }}>{{ label }}</option>{% endfor %}</select></label>{{ actions() }}</form>
 {{ results(pagination.total,volunteer_search,'volunteer name, A–Z') }}
 <form class="roster-records" method="post" action="{{ roster_link('coordinator.attendance',selected_event.id) }}" data-attendance-workspace data-no-draft>
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="event_id" value="{{ selected_event.id }}">
+{% if not attendance_locked and registrations %}{{ bulk() }}{% endif %}
 <table class="roster-table"><caption class="sr-only">Internal Attendance for {{ selected_event.title }}</caption><thead><tr><th scope="col">Volunteer</th><th scope="col">Registration</th><th scope="col">Attendance</th></tr></thead><tbody>
 {% for reg in registrations %}<tr><td><strong>{{ highlight(reg.user.name,volunteer_search) if reg.user else 'Unknown' }}</strong><p>{{ reg.user.email if reg.user else '' }}</p></td><td><span class="roster-mobile-label" aria-hidden="true">Registration</span>{{ {'pending':'Pending','confirmed':'Confirmed','completed':'Completed','cancelled':'Cancelled'}.get(reg.status,reg.status) }}</td><td><span class="roster-mobile-label" aria-hidden="true">Attendance</span>{{ status(reg,not attendance_locked,'attendance-' ~ reg.id) }}</td></tr>{% else %}<tr><td colspan="3">{{ empty(volunteer_search,'volunteers') }}</td></tr>{% endfor %}
 </tbody></table>{% if not attendance_locked and registrations %}{{ save('Save Attendance') }}{% endif %}</form>

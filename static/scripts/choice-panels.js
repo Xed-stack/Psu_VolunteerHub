@@ -10,11 +10,12 @@
       const term = query.value.trim().toLocaleLowerCase();
       let visible = 0;
       inputs.forEach(input => {
-        const show = input.dataset.choiceLabel.toLocaleLowerCase().includes(term);
+        const show = input.dataset.choiceExcluded !== 'true' && input.dataset.choiceLabel.toLocaleLowerCase().includes(term);
         input.closest('label').hidden = !show;
         if (show) visible += 1;
       });
-      status.textContent = visible ? `${visible} of ${inputs.length} options shown.`
+      const available = inputs.filter(input => input.dataset.choiceExcluded !== 'true').length;
+      status.textContent = visible ? `${visible} of ${available} options shown.`
         : term ? `No options match “${query.value.trim()}”. Choose Show All to see every option.` : 'No options are available.';
     };
     const update = () => {
@@ -57,6 +58,7 @@
       changed?.dispatchEvent(new Event('change',{bubbles:true})); query.focus();
     });
     panel.addEventListener('change',event => { if (inputs.includes(event.target)) update(); });
+    panel.addEventListener('choice:refresh',() => { filter(); update(); });
     panel.addEventListener('invalid',() => { query.value = ''; filter(); },true);
     panel.closest('form')?.addEventListener('draft:restored',update);
     panel.closest('form')?.addEventListener('reset',() => setTimeout(() => { query.value = ''; filter(); update(); },0));

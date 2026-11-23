@@ -144,8 +144,12 @@ def create_proposal(step, draft):
                         _remove_proposal(previous)
                     if record.get('partnership_status')=='none':
                         record['agency_id']=''
+                        if 'additional_agency_ids' in record:record['additional_agency_ids']=[]
                         payload['agreement_id']=[]
                         payload['proposal_record']=[json.dumps(record,ensure_ascii=False)]
+                    from app.services.activity_fields import additional_agency_error
+                    additional_error=additional_agency_error(record,current_user.campus_id)
+                    if additional_error:field_errors['additional_agency_ids']=additional_error
                 if request.form.get('row_action'):
                     action,table,index=request.form['row_action'].split(':')
                     if table not in TABLES:abort(400)
@@ -214,6 +218,9 @@ def create_proposal(step, draft):
                                 snapshot['Required Skills']=[skill.name for skill in event.required_skills_rel]
                                 snapshot['Sustainable Development Goals']=['SDG '+str(goal.number)+' '+goal.name for goal in event.sdgs]
                                 snapshot['Signed MOA']=[agreement.reference] if agreement_value and agreement else []
+                                if record.get('additional_agency_ids'):
+                                    snapshot['Additional Partner Agencies']=[a.name for a in PartnerAgency.query.filter(
+                                        PartnerAgency.id.in_(record['additional_agency_ids']),PartnerAgency.campus_id==current_user.campus_id).order_by(PartnerAgency.name)]
                                 db.session.add(ActivityProposal(event_id=event.id,agency_id=agency.id if agency else None,
                                     content=dict(record,_form_profile=POSTING_PROFILE),capture=payload.get('_capture',{}),partnership_document=payload.get('_partnership_document'),
                                     publishing_snapshot=snapshot))
@@ -276,6 +283,7 @@ def use_agency(agency_id):
     if not draft or draft.payload.get('_full_proposal')!=1:abort(400)
     record=stored_record(draft.payload)
     record['agency_id']=str(agency.id)
+    record=normalize_record(record)
     if record.get('partnership_status') not in ('existing','renewal','new'):record['partnership_status']='new'
     payload=dict(draft.payload,proposal_record=[json.dumps(record,ensure_ascii=False)])
     agreement_value=(payload.get('agreement_id') or [''])[0]

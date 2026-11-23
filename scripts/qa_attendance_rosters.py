@@ -131,8 +131,8 @@ def exercise(page,context,app,base,eid,out,checks):
         checks.append([name,'touch targets, 200% text and print'])
 
     nojs=context.browser.new_context(java_script_enabled=False,storage_state=context.storage_state())
-    np=nojs.new_page();np.goto(base+internal);np.locator('[data-attendance-status]').first.select_option('excused');np.get_by_role('button',name='Save Attendance',exact=True).click();np.wait_for_load_state('networkidle')
-    assert np.locator('[data-attendance-status]').first.input_value()=='excused'
+    np=nojs.new_page();np.goto(base+internal);expect(np.get_by_role('button',name='All Attended')).to_be_hidden();np.locator('[data-attendance-status]').first.select_option('absent');np.get_by_role('button',name='Save Attendance',exact=True).click();np.wait_for_load_state('networkidle')
+    assert np.locator('[data-attendance-status]').first.input_value()=='absent'
     np.goto(base+entry);np.locator('#roster').fill('No JS Person');np.get_by_role('button',name='Save Named Roster',exact=True).click();np.wait_for_load_state('networkidle')
     assert np.url.startswith(base+external) and 'new' not in np.url
     nojs.close();checks.append('Native no-JavaScript attendance and external-entry saves')

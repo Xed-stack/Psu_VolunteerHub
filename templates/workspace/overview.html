@@ -21,7 +21,7 @@
     <div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div>
     <nav class="staff-footer-links" aria-label="Campus Workspaces"><a data-tour-id="reports" href="{{ url_for('workspace.reports') }}">Campus Reports</a><a href="{{ url_for('workspace.partners') }}">Partner Agencies and MOAs</a></nav>
   {% elif director_overview %}
-    <div class="director-primary-grid">{{ campus_table() }}{{ review_card(review_summary) if review_summary else attention_preview(true,true) }}</div>
+    <div class="director-primary-grid">{{ campus_table() }}{{ review_card(attention_summary,reviews_ready) }}</div>
     {{ secondary_stats() }}
     <div class="director-details">{{ annual_summary(true) }}<div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div></div>
     <nav class="staff-footer-links" aria-label="University Workspaces"><a href="{{ url_for('director.activity_calendar') }}">University Calendar</a><a href="{{ url_for('workspace.recognition',award_year=year) }}">Annual Recognition</a><a data-tour-id="management" href="{{ url_for('workspace.management') }}">Accounts and Policies</a></nav>

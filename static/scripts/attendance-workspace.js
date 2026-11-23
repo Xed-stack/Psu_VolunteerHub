@@ -5,7 +5,7 @@
   const statuses = [...workspace.querySelectorAll('[data-attendance-status]')];
   const countNodes = [...workspace.querySelectorAll('[data-attendance-count]')];
   const changeStatus = workspace.querySelector('[data-attendance-change-status]');
-  const labels = { present: 'Present', absent: 'Absent' };
+  const labels = { present: 'Attended', absent: 'Not Attended' };
   const initial = statuses.map(select => select.value);
   const entry = workspace.hasAttribute('data-roster-entry');
   const entryControls = entry ? [...workspace.elements].filter(el => el.name && el.type !== 'hidden') : [];
@@ -52,6 +52,7 @@
     if (changeStatus) changeStatus.textContent = changed ? `${changed} unsaved attendance change${changed === 1 ? '' : 's'}. Save attendance before leaving this page.` : 'No unsaved changes.';
   }));
   workspace.querySelectorAll('[data-attendance-bulk]').forEach(button => {
+    button.hidden = false;
     button.addEventListener('click', () => setAll(button.dataset.attendanceBulk));
   });
   updateCounts();

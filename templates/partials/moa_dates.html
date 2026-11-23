@@ -1,0 +1,13 @@
+{% macro moa_dates(errors) %}
+{% for key,label in [('valid_from','Valid From'),('valid_until','Valid Until')] %}
+<div class="field"><label for="{{ key }}" data-moa-label="{{ key }}">{{ label }} *</label>
+<input type="date" id="{{ key }}" name="{{ key }}" value="{{ request.form.get(key,'') }}" required {% if errors.get(key) %}aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
+<button type="button" class="schedule-display" id="moa-{{ key }}-display" data-moa-picker="{{ key }}" aria-haspopup="dialog" aria-controls="moa-date-picker" hidden>Select {{ label }} Date</button>
+{% if errors.get(key) %}<small class="text-red-700" id="{{ key }}-error">{{ errors[key] }}</small>{% endif %}</div>
+{% endfor %}
+<p class="schedule-error field--wide" id="moa-range-error" role="alert" hidden></p>
+<dialog id="moa-date-picker" class="schedule-dialog" aria-labelledby="moa-date-heading"><div class="schedule-dialog-content">
+<h3 id="moa-date-heading">Choose Valid From Date</h3><label class="field" for="moa-picker-date">Date<input type="date" id="moa-picker-date"></label>
+<p class="schedule-error" id="moa-picker-error" role="alert" hidden></p>
+<div class="schedule-actions"><button type="button" class="btn btn--outline" data-moa-cancel>Cancel</button><button type="button" class="btn btn--primary" data-moa-confirm>Confirm</button></div></div></dialog>
+{% endmacro %}

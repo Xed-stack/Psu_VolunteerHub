@@ -57,7 +57,7 @@ PARTICIPATION = [('beneficiaries','Target Beneficiaries',['beneficiary_count','b
     ('volunteers','Volunteer Participation',['volunteer_count','volunteer_groups','volunteer_other','engagement_areas'])]
 REQUIRED = ['implementing_unit','rationale','general_objectives','specific_objectives','methodology',
             'evaluation','sustainability','conclusion','beneficiary_count','volunteer_count']
-POSTING_RECORD_KEYS = {'partnership_status', 'agency_id'}
+POSTING_RECORD_KEYS = {'partnership_status', 'agency_id', 'additional_agency_ids'}
 POSTING_CAPTURE_KEYS = POSTING_RECORD_KEYS | {'title', 'description', 'date', 'end_date', 'location'}
 POSTING_PROFILE = 'posting_essentials_v1'
 
@@ -80,7 +80,7 @@ def normalize_record(value):
             raise ValueError('The proposal record could not be read. Reload the saved draft and try again.') from exc
     if not isinstance(value, dict) or len(json.dumps(value).encode()) > MAX_RECORD_BYTES:
         raise ValueError('Keep the proposal record within 256 KiB.')
-    if set(value) - (SCALARS.keys() | CHOICES.keys() | TABLES.keys()):
+    if set(value) - (SCALARS.keys() | CHOICES.keys() | TABLES.keys() | {'additional_agency_ids'}):
         raise ValueError('The proposal contains an unsupported field.')
     result = {}
     for key, item in value.items():
@@ -88,6 +88,10 @@ def normalize_record(value):
             if not isinstance(item, str) or len(item) > 10000:
                 raise ValueError('Use 10,000 characters or fewer in each proposal field.')
             result[key] = item.strip()
+        elif key == 'additional_agency_ids':
+            if not isinstance(item,list) or any(not isinstance(v,str) or len(v)>10 or not v.isascii() or not v.isdigit() or int(v)<1 for v in item):
+                raise ValueError('Choose available additional partner agencies.')
+            result[key]=list(dict.fromkeys(str(int(v)) for v in item))
         elif key in CHOICES:
             if not isinstance(item, list) or any(not isinstance(v,str) or v not in CHOICES[key] for v in item):
                 raise ValueError('Choose available proposal options.')
@@ -104,11 +108,17 @@ def normalize_record(value):
                 if any(clean.values()):
                     rows.append(clean)
             result[key] = rows
+    if 'additional_agency_ids' in result:
+        primary=result.get('agency_id','')
+        if len(primary)<=10 and primary.isascii() and primary.isdigit():primary=str(int(primary))
+        result['additional_agency_ids']=[] if result.get('partnership_status')=='none' else [v for v in result['additional_agency_ids'] if v!=primary]
     return result
 
 
 def record_from_form(form, previous, remove=None):
     result = dict(previous)
+    if 'pr.present.additional_agency_ids' in form:
+        result['additional_agency_ids']=form.getlist('pr.additional_agency_ids')
     for key in SCALARS:
         if 'pr.'+key in form:
             result[key] = form['pr.'+key]

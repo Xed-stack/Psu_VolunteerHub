@@ -1,0 +1,24 @@
+{% from 'partials/filter_ui.html' import context_fields with context %}
+{% from 'workspace/roster_components.html' import schedule with context %}
+{% macro dates(start,end) %}
+{% set start=start|review_schedule %}{% set end=end|review_schedule %}
+<div class="finding-schedule"><p><strong>Start:</strong> {{ schedule(start) if start else 'Start time not recorded' }}</p><p><strong>End:</strong> {{ schedule(end) if end else 'End time not recorded' }}</p><p class="scope-note">Philippine time</p></div>
+{% endmacro %}
+{% macro snapshot_dates(snap) %}
+{% if snap.event_id %}{{ dates(snap.facts.get('start',snap.activity_date) if snap.facts is mapping else snap.activity_date,snap.facts.get('end') if snap.facts is mapping else none) }}{% endif %}
+{% endmacro %}
+{% macro categories() %}
+<form method="get" class="panel filter-form">
+{{ context_fields(['review_group','finding_type','page']) }}
+<label class="field">Review Category<select name="review_group"><option value="">All Categories</option>{% for key,(label,codes) in groups.items() %}<option value="{{ key }}" {{ 'selected' if review_group==key }}>{{ label }}</option>{% endfor %}</select></label>
+<div class="filter-actions"><button class="btn btn--outline">Apply Review Filters</button><a class="text-link" href="{{ query_url(remove=['review_group','finding_type'],page=1) }}">Clear Review Filters</a></div></form>
+{% if finding_type %}<p class="scope-note"><strong>Finding Type:</strong> {{ finding_labels.get(finding_type) }}. <a class="text-link" href="{{ query_url(remove=['finding_type'],page=1) }}">Clear Finding Type</a>. Applying Review Category replaces this exact finding scope.</p>{% endif %}
+{% endmacro %}
+{% macro reminder(row) %}
+<form method="post" action="{{ url_for('finding_reviews.detail',key=row.key) }}" data-no-draft>
+{% include 'partials/csrf_field.html' %}
+<input type="hidden" name="source" value="{{ row.token }}"><input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="version" value="{{ row.version }}"><input type="hidden" name="action" value="follow_up"><input type="hidden" name="queue_return" value="{{ request.full_path.rstrip('?') }}">
+<button class="btn btn--outline" {{ 'disabled' if not row.can_follow_up }}>Remind Coordinator</button>
+{% if not row.can_follow_up %}<p class="scope-note">No active Coordinator is assigned. Open the finding to review its evidence.</p>{% endif %}
+</form>
+{% endmacro %}

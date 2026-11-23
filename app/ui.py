@@ -83,6 +83,16 @@ def back_url(endpoint, **values):
     return linked_url(endpoint, **values)
 
 
+def follow_up_return(value):
+    """Only the finding queue can receive a quick-action return destination."""
+    if (value and len(value) < 8192 and value.startswith('/') and not value.startswith('//')
+            and '\\' not in value and not any(ord(c) < 32 or ord(c) == 127 for c in value)):
+        parsed = urlsplit(value)
+        if not parsed.netloc and not parsed.scheme and parsed.path == url_for('workspace.follow_up'):
+            return value
+    return None
+
+
 def highlight(value, query=''):
     value, query = str(value or ''), str(query or '').strip()[:200]
     if not query:

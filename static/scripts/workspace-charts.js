@@ -76,8 +76,8 @@
       textinfo:'none',marker:{colors:['#00408b','#f4bd27','#83baff','#cbd5e1'],line:{color:'#ffffff',width:2}},
       hovertemplate:'%{label}: %{value:,d}<extra></extra>'}],{
         ...structuredClone(layout),...sizing(),margin:{t:10,r:10,b:10,l:10},
-        annotations:[{text:numbers.format(total)+'<br><span style="font-size:12px">Active<br>Reviews</span>',showarrow:false,
-          x:.5,y:.5,xref:'paper',yref:'paper',font:{size:23,color:'#111c2c'}}]});
+        annotations:[{text:'<b>'+numbers.format(total)+'</b>',showarrow:false,x:.5,y:.62,xref:'paper',yref:'paper',font:{size:26,color:'#111c2c'}},
+          {text:el.dataset.reviewLabel==='Findings'?'Findings':'Active<br>Reviews',showarrow:false,x:.5,y:.35,xref:'paper',yref:'paper',font:{size:12,color:'#111c2c'}}]});
   });
   document.querySelectorAll('[data-sex-chart]').forEach(el => {
     const rows = JSON.parse(el.dataset.chartValues);

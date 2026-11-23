@@ -17,8 +17,7 @@
    {% if unit=='minute' %}<span class="schedule-time-colon" aria-hidden="true">:</span>{% endif %}
    <div class="schedule-time-unit"><div class="schedule-time-combo"><div class="schedule-time-input-wrap">
     <input id="schedule-picker-{{ unit }}" type="text" role="combobox" aria-autocomplete="list" inputmode="numeric" autocomplete="off" maxlength="2" aria-label="{{ caption }}" aria-controls="schedule-{{ unit }}-options" aria-expanded="false" placeholder="{{ placeholder }}">
-    <div id="schedule-{{ unit }}-options" class="schedule-time-options" role="listbox" aria-label="Choose {{ unit }}" hidden></div>
-   </div><button type="button" class="schedule-time-arrow" data-time-toggle="{{ unit }}" aria-label="Show {{ unit }}s" aria-controls="schedule-{{ unit }}-options"><span aria-hidden="true">⌄</span></button></div><span class="schedule-time-caption">{{ caption }}</span></div>
+   </div><button type="button" class="schedule-time-arrow" data-time-toggle="{{ unit }}" aria-label="Show {{ unit }}s" aria-controls="schedule-{{ unit }}-options"><svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 6 4 4 4-4"/></svg></button></div><span class="schedule-time-caption">{{ caption }}</span><div id="schedule-{{ unit }}-options" class="schedule-time-options" role="listbox" aria-label="Choose {{ unit }}" hidden></div></div>
    {% endfor %}
    <div class="schedule-time-unit schedule-time-period"><select id="schedule-picker-period" aria-label="AM or PM"><option>AM</option><option>PM</option></select><span class="schedule-time-caption">AM/PM</span></div>
   </div>

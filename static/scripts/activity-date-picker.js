@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
     document.addEventListener("pointerdown", event => {
-        if (!event.target.closest(".schedule-time-combo")) closeTimeList();
+        if (!event.target.closest(".schedule-time-unit")) closeTimeList();
     });
     periodInput.addEventListener("change",()=>showPickerError(""));
     function message(field, text) {
@@ -193,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
     displays.date.addEventListener("click",()=>openPicker("date"));
     displays.end_date.addEventListener("click",()=>openPicker("end_date"));
     document.getElementById("schedule-picker-cancel").addEventListener("click",()=>{closeTimeList();dialog.close();});
+    dialog.addEventListener('close',()=>{closeTimeList();displays[active]?.focus();});
     function confirmPicker() {
         if (!pickerDate.value) return showPickerError("Select a calendar date.");
         const time = validTime();

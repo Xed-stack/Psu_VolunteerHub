@@ -65,17 +65,18 @@ def test_finding_groups_link_to_matching_scoped_queue(client,app,actors):
     sign_in(client,actors,'director')
     response,data=screen(client,app,'/workspace/overview?period=all&campus_id=1')
     page=parse_html(response.text)
-    links=[a for a in page.all('a') if a.text=='Review These Findings']
-    assert len(links)==min(4,len(data['finding_groups']))
-    for link,group in zip(links,data['finding_groups']):
+    from app.services.finding_reviews import GROUPS
+    links=[a for a in page.all('a') if 'review_group=' in a.attrs.get('href','')]
+    assert len(links)==4
+    for link,group in zip(links,data['attention_summary']['groups']):
         query=parse_qs(urlsplit(link.attrs['href']).query)
-        assert query['finding_type']==[group['code']] and query['campus_id']==['1'] and query['page']==['1']
+        assert query['review_group']==[group['key']] and query['campus_id']==['1'] and query['page']==['1']
         queued,context=screen(client,app,link.attrs['href'])
-        assert context['total']==group['count']
-        assert all(item['code']==group['code'] and item['campus'].id==1 for item in context['items'])
-        reset=next(a for a in parse_html(queued.text).all('a') if a.text=='View All Findings')
+        assert context['total']==group['total']
+        assert all(item['code'] in GROUPS[group['key']][1] and item['campus'].id==1 for item in context['items'])
+        reset=next(a for a in parse_html(queued.text).all('a') if a.text=='Clear Review Filters')
         reset_args=parse_qs(urlsplit(reset.attrs['href']).query)
-        assert 'finding_type' not in reset_args and reset_args['campus_id']==['1']
+        assert 'review_group' not in reset_args and reset_args['campus_id']==['1']
 
 
 def test_queue_filters_before_pagination_and_does_not_change_facts(client,app,actors):
@@ -127,6 +128,6 @@ def test_preview_limits_groups_without_losing_total(client,app,actors,monkeypatc
     response,data=screen(client,app,'/workspace/overview')
     page=parse_html(response.text)
     assert data['finding_total']==8
-    links=[a for a in page.all('a') if a.text=='Review These Findings']
-    assert len(links)==4 and 'Showing 4 of 8 finding types' in page.text
-    assert [parse_qs(urlsplit(a.attrs['href']).query)['finding_type'][0] for a in links]==list(FINDING_LABELS)[:4]
+    links=[a for a in page.all('a') if 'review_group=' in a.attrs.get('href','')]
+    assert len(links)==4 and sum(g['total'] for g in data['attention_summary']['groups'])==8
+    assert [parse_qs(urlsplit(a.attrs['href']).query)['review_group'][0] for a in links]==[g['key'] for g in data['attention_summary']['groups']]

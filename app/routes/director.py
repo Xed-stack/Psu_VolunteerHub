@@ -249,9 +249,19 @@ def campus_follow_up():
     navigation['goal_year'] = year
     navigation['guidance_open'] = '1'
     destination = url_for('workspace.overview', **scope.to_dict(flat=False)) + '#follow-up'
+    from app.ui import follow_up_return
+    destination = follow_up_return(request.form.get('queue_return')) or destination
     if not record or plan.get('sample') or request.form.get('sample') == '1':
         flash('This recommendation has cleared or is unavailable. No reminder was sent.', 'info')
         return redirect(destination)
+    reminder_event=None
+    if code=='record_attendance':
+        from app.services.activity_workflow import attendance_open
+        reminder_event=Event.query.filter_by(id=event_id,campus_id=campus.id).populate_existing().with_for_update().first()
+        if not reminder_event or not attendance_open(reminder_event):
+            db.session.rollback()
+            flash('The activity is no longer open for attendance. No reminder was sent.','info')
+            return redirect(destination)
     if code == 'remaining_goals':
         text = f'The {campus.name} campus is at {plan["rate"]}% annual goal achievement for {year}. '
     else:
@@ -286,6 +296,10 @@ def campus_follow_up():
                     db.session.add(Notification(user_id=coordinator.id, title=title,
                         message=message, notification_type='campus_guidance', related_event_id=event_id))
                     sent += 1
+            if reminder_event and not attendance_open(reminder_event):
+                db.session.rollback()
+                flash('The activity ended before the reminder was saved. No reminder was sent.','info')
+                return redirect(destination)
             db.session.commit()
             flash(f'Follow-up sent to {sent} coordinator(s) for {campus.name}.' if sent else
                   f'An equivalent unread reminder already exists for {campus.name}.', 'success' if sent else 'info')

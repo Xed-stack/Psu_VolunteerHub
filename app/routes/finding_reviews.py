@@ -1,5 +1,5 @@
 """Authorized review reads and explicit Director-only transactional decisions."""
-from flask import Blueprint,abort,request,render_template,redirect,url_for,flash
+from flask import Blueprint,abort,request,render_template,redirect,url_for,flash,g
 from flask_login import login_required,current_user
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 from datetime import timedelta
@@ -22,6 +22,15 @@ def review_pht(value):
     return (value+timedelta(hours=8)).strftime('%d %b %Y, %I:%M %p Philippine time')
 
 
+@finding_reviews_bp.app_template_filter('review_schedule')
+def review_schedule(value):
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(value) if isinstance(value,str) else value
+    except ValueError:
+        return None
+
+
 def source_available(snapshot):
     event=db.session.get(Event,snapshot.get('event_id')) if snapshot.get('event_id') else None
     return bool(event and (current_user.role!='coordinator' or event.campus_id==current_user.campus_id))
@@ -32,7 +41,8 @@ def queue_view(args):
     tab=args.get('review_tab','reviewed' if current_user.role=='coordinator' else 'active')
     group=args.get('review_group','')
     code=args.get('finding_type','')
-    if tab not in ('active','reviewed') or group not in ('',*service.GROUPS) or code not in ('',*service.FINDING_LABELS):abort(400)
+    if (tab not in ('active','reviewed') or group not in ('',*service.GROUPS) or code not in ('',*service.FINDING_LABELS)
+            or len(args.getlist('review_group'))>1 or len(args.getlist('finding_type'))>1):abort(400)
     if current_user.role=='coordinator' and tab!='reviewed':abort(403)
     page=args.get('page',1,type=int)
     if page is None or page<1:abort(400)
@@ -77,7 +87,12 @@ def detail(key):
         try:
             service.mutate(item,request.form.get('action',''),request.form)
             db.session.commit()
-            flash('Review decision saved. Original evidence is unchanged.','success')
+            action=request.form.get('action')
+            message=('An equivalent unread reminder already exists.' if g.get('finding_reminder_reused') else 'Reminder sent to the campus Coordinator(s).') if action=='follow_up' else 'Review decision saved. Original evidence is unchanged.'
+            flash(message,'info' if g.get('finding_reminder_reused') else 'success')
+            from app.ui import follow_up_return
+            destination=follow_up_return(request.form.get('queue_return')) if action=='follow_up' else None
+            if destination:return redirect(destination)
             return redirect(url_for('finding_reviews.detail',key=key,source=item['token'],return_to=request.args.get('return_to') or None))
         except ValueError as exc:
             db.session.rollback();error=str(exc);status=400

@@ -1,11 +1,13 @@
 {% extends 'layouts/role_base.html' %}
 {% from 'workspace/components.html' import heading with context %}
+{% from 'workspace/finding_controls.html' import snapshot_dates with context %}
 {% set snap=item.snapshot if item else occurrence.content.snapshot %}
 {% block title %}Finding Review · PSU Volunteer Hub{% endblock %}
 {% block content %}<div class="finding-review-page">
 {{ heading('Finding Review',snap.title,back_url('workspace.follow_up'),'Back to Needs Attention') }}
 {% if error %}<section class="panel review-error" role="alert" tabindex="-1" data-form-errors><h2>Review Not Saved</h2><p>{{ error }}</p><p>Your entered assessment remains below. Reload in a separate tab to compare the latest evidence before resubmitting.</p></section>{% endif %}
 <section class="panel"><h2>{{ snap.campus }}</h2><p>{{ snap.event_title or snap.scope }}</p><p>{{ snap.evidence }}</p>
+{{ snapshot_dates(snap) }}
 {% if item %}<p class="review-status">{{ {'needs_review':'Needs Review','follow_up_sent':'Follow-up Sent','closed':'Reviewed and Closed'}[item.status] }}{% if item.changed %} · Evidence Changed{% endif %}{% if not item.detected %} · Finding No Longer Detected{% endif %}</p>{% endif %}
 {% if snap.facts is mapping and snap.facts.metrics %}<dl class="review-facts">{% for key,label in [('registrations','Eligible Registrations'),('present','Recorded Present'),('recorded_absent','Recorded Absent'),('missing','Unrecorded'),('defaulted','System-Default Absence')] %}<div><dt>{{ label }}</dt><dd>{{ snap.facts.metrics.get(key,0) }}</dd></div>{% endfor %}</dl>{% endif %}
 <p class="scope-note">System-default absence is derived, not recorded absence. Assessment and closure never rewrite attendance, targets or historical results.</p>

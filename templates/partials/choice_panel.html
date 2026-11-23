@@ -1,4 +1,4 @@
-{% macro choice_panel(name,title,options,selected=none,value_attr='id',label_attr='name',sdg=false,required=false,help='',error='') %}
+{% macro choice_panel(name,title,options,selected=none,value_attr='id',label_attr='name',sdg=false,required=false,help='',error='',excluded=none) %}
 {% set selected = selected or [] %}{% set catalogue = namespace(values=[]) %}
 <fieldset class="choice-panel" data-choice-panel {{ 'data-choice-required' if required }} {% if error %}aria-invalid="true" aria-describedby="error-{{ name }}"{% endif %}>
   <legend>{{ title }}{% if required %} <span aria-hidden="true">*</span>{% endif %}</legend>
@@ -15,7 +15,7 @@
     {% set label = ('SDG ' ~ option.number ~ ': ' ~ option.name) if sdg else (option|attr(label_attr)) if label_attr else option %}
     {% if option.is_active is defined and not option.is_active %}{% set label = label ~ ' (Archived)' %}{% endif %}
     {% set catalogue.values = catalogue.values + [value] %}
-    <label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-{{ loop.index }}" name="{{ name }}" value="{{ value }}" {{ 'checked' if value in selected }} data-choice-label="{{ label }}"><span>{{ label }}</span></label>
+    <label class="choice-panel__option" {{ 'hidden' if value in (excluded or []) }}><input type="checkbox" id="choice-{{ name }}-{{ loop.index }}" name="{{ name }}" value="{{ value }}" {{ 'checked' if value in selected }} {{ 'disabled data-choice-excluded=true' if value in (excluded or []) }} data-choice-label="{{ label }}"><span>{{ label }}</span></label>
   {% endfor %}
   {% for value in selected if value not in catalogue.values %}<label class="choice-panel__option"><input type="checkbox" id="choice-{{ name }}-unavailable-{{ loop.index }}" name="{{ name }}" value="{{ value }}" checked data-choice-label="Unavailable selection: {{ value }}"><span>Unavailable selection: {{ value }}. Remove this selection before saving.</span></label>{% endfor %}
   {% if not options and not selected %}<p class="scope-note">No options are available.</p>{% endif %}

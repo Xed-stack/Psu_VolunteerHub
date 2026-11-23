@@ -1,5 +1,103 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Publication Authorization: 23 November 2026
+
+The user authorized committing and pushing this chat's attendance/queue,
+Overview card, partner-agency and date-picker refinements to both
+`origin/codex/ui-workflow-overhaul` and `thesis/codex/ui-workflow-overhaul`.
+Both remote heads were verified at `cedbf23` before publication. Include the
+implementation, generated CSS, focused tests, browser runners, QA notes and
+these UI handoff entries. Exclude the separate SQL catalogue/proposal update,
+its guide/test/handoff entry, DOCX, review JPGs, output/tmp and ignored local
+preview databases, scripts, uploads and screenshots. Publication does not
+authorize deployment, operational database changes or review-flag activation.
+
+## Current handoff: Overview Card, Partner Agencies and Date Pickers, 23 November 2026
+
+Running-preview follow-up: port 5000 was still using a cached older MOA template
+from `.qa-overhaul-temp/run_finding_review_preview.py` (debug/process reload off).
+Restarted that confirmed preview with template auto-reload enabled, retaining
+its existing SQLite file and uploads. The preview's random session key rotates,
+so existing browser sessions need to sign in again. Actual port-5000 browser
+verification now opens the date-only MOA dialog with no JavaScript errors and
+without submitting an agreement. Evidence: `.qa-overhaul-temp/running-moa-dialog.png`.
+Hour/minute arrows also use centered SVG chevrons matching the AM/PM caret style;
+the 30-group isolated browser rerun passed. Python-source edits still require
+a preview restart. Details are in the QA note below.
+
+Implemented the approved reference-based plan locally on
+`codex/ui-workflow-overhaul`. Director Needs Attention now uses the supplied
+amber-header/donut/category-row composition with actual values and original
+categories. Persisted Active Reviews and generated fallback Findings retain
+distinct labels and scope. Queue/history actions remain; the guide identifies
+persisted state explicitly. Coordinator Overview layout is unchanged.
+
+Activity time suggestions flow within the dialog, with independently scrollable
+lists, 44px arrows, narrow-screen reflow and explicit focus return. Add MOA now
+uses matching formatted date buttons/dialog styling, without time controls as
+the user confirmed. Historical/same-day dates, inclusive validity, date-only
+storage, native no-JavaScript input and draft/upload restoration remain.
+
+Create Activity retains one Primary Agency/MOA and supports multiple optional
+Additional Partner Agencies using the existing searchable checkbox panel.
+The optional `additional_agency_ids` array is stored in existing proposal JSON;
+normalization removes duplicates/primary IDs, validates structure and enforces
+campus ownership at draft/stage/publication boundaries. Partner detours retain
+the list; No External Partner clears it. Published snapshots freeze agency names.
+Primary MOA applicability and Expected Partner Participants calculations remain.
+No dependency, schema migration or review-feature activation is introduced.
+
+Verification: clean 56-case refinement/Overview/review/staff and 57-case existing
+proposal/posting/partner runs passed, covering 113 distinct Python cases. Browser
+verification passed 30 new groups, 29 existing posting groups and 32 staff checks.
+CSS build, all-template parsing, changed syntax, contrast and whitespace checks
+passed. Isolated synthetic in-memory SQLite/Chromium only; temporary servers
+stopped. Full critique, current guidelines audit, Antislop gate, evidence and
+limitations: `docs/qa/OVERVIEW_PARTNERS_PICKERS.md`.
+
+Skills: UI/UX Pro Max, Frontend Design, Design Critique before/after, Ponytail full,
+Antislop core/UI/Human/Layoutmobile during work, Web Design Guidelines, Webapp
+Testing. No full-suite/operational-MySQL/physical-device/manual-screen-reader/
+true-browser-zoom claim. No commit, push, deploy or operational-data change.
+All prior attendance/queue refinements and unrelated SQL, DOCX, JPG, output/tmp
+work remain intact. Presentation rollback must retain additive JSON parsing
+compatibility so saved additional-agency selections continue to open; retain
+uploads, publication snapshots and review history. No DB rollback is needed.
+
+## Current handoff: Needs Attention and Attendance Refinements, 23 November 2026
+
+Implemented the approved plan locally on `codex/ui-workflow-overhaul`.
+Enabled/fallback Needs Attention queues show start/end schedules in Philippine
+time, use Review Category, retain old exact-type URLs with a removable scope note,
+and hide Advanced Filters in Reports only on this page. Ongoing attendance
+findings offer one Remind Coordinator button; enabled finding-title links retain
+assessment/history access. Existing POST paths preserve authored decisions,
+signed evidence/concurrency guards, active-campus recipients and unread reminder
+deduplication. Current/end-of-submission timing checks prevent stale reminders;
+legacy attendance notification links now open the activity workspace.
+
+Both attendance rosters restore All Attended for displayed rows only, retaining
+individual exceptions and explicit saving. Labels use Attended/Not Attended.
+New Excused writes are rejected; existing records and unchanged legacy form
+submissions are preserved. Historical calculations, enum and locking remain.
+Outstanding Recognition uses the existing Reports card pattern; rankings remain.
+
+Verification: main 79-case regression run, additional 57-case compatibility/edge
+run and final 23-case refinement run all passed (overlapping cases). Four Node
+tests, 30 new browser groups and 37 existing roster browser groups passed.
+All-template parsing, CSS build, changed Python/JS syntax, contrast and whitespace
+checks passed. Isolated in-memory SQLite/synthetic Chromium only; no operational
+database writes. Rendered critique repaired missing Active/Reviewed tab spacing,
+selection and 44px targets. Full critique, current guidelines audit, Antislop gate,
+evidence, limitations and rollback: `docs/qa/ATTENTION_ATTENDANCE_REFINEMENTS.md`.
+
+Skills: UI/UX Pro Max, Frontend Design, Design Critique before/after, Ponytail full,
+Antislop core/UI/Human/Layoutmobile during work, Web Design Guidelines and Webapp
+Testing. No full-suite/operational-MySQL/physical-device/manual-screen-reader/
+true-browser-zoom claim. No commit, push, deploy, dependency, migration or rollout
+flag change. Existing SQL work/handoff, DOCX, review JPGs, output/tmp remain intact.
+Rollback only this task's files/generated CSS; retain attendance and review data.
+
 ## Current handoff: Director Finding Review Workflow, 22 November 2026
 
 Implemented the approved persisted review workflow locally on

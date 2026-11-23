@@ -42,6 +42,7 @@
         Object.fromEntries([...row.querySelectorAll('[data-record-row]')].map(input => [input.dataset.recordRow, input.value])));
       else record[key] = [...form.querySelectorAll(`[name="pr.${CSS.escape(key)}"]:checked`)].map(input => input.value);
     });
+    if (record.additional_agency_ids) record.additional_agency_ids = record.additional_agency_ids.filter(id => id !== record.agency_id);
     hidden.value = JSON.stringify(record);
     const conditional = {
       budget_reason: record.budget_na === 'yes', budget: record.budget_na !== 'yes',
@@ -61,6 +62,14 @@
       if (agreement) agreement.required = record.partnership_status === 'existing';
       conditional.agency_id = hasPartner;
       conditional.agreement_id = record.partnership_status === 'existing';
+      const additional = partnerDetails.querySelector('[data-choice-panel]');
+      additional?.querySelectorAll('input[type=checkbox]').forEach(input => {
+        const primary = input.value === record.agency_id;
+        input.dataset.choiceExcluded = String(primary);
+        input.disabled = !hasPartner || primary;
+        if (primary) input.checked = false;
+      });
+      additional?.dispatchEvent(new Event('choice:refresh'));
     }
     form.querySelectorAll('[data-required-marker]').forEach(marker => {
       const required = conditional[marker.dataset.requiredMarker];

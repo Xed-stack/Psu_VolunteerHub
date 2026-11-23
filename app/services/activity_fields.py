@@ -14,6 +14,14 @@ def partner_count(value,total,agency_id):
     return number
 
 
+def additional_agency_error(record,campus_id):
+    from app.models.workspace import PartnerAgency
+    ids=record.get('additional_agency_ids',[])
+    if ids and PartnerAgency.query.filter(PartnerAgency.campus_id==campus_id,PartnerAgency.id.in_(ids)).count()!=len(ids):
+        return 'Choose additional partner agencies belonging to your campus.'
+    return None
+
+
 def primary_agency(event):
     from sqlalchemy import inspect
     from app.models import db
@@ -64,6 +72,8 @@ def stage_errors(payload,step,record=None,*,posting=False):
         from flask_login import current_user
         from app.models.workspace import PartnerAgency,PartnerAgreement
         agency_id=record.get('agency_id') if record else None
+        additional_error=additional_agency_error(record or {},current_user.campus_id)
+        if additional_error:errors['additional_agency_ids']=additional_error
         agency=PartnerAgency.query.filter_by(id=agency_id,campus_id=current_user.campus_id).first() if agency_id else None
         agreement_value=form.get('agreement_id')
         agreement=PartnerAgreement.query.join(PartnerAgency).filter(PartnerAgreement.id==agreement_value,PartnerAgency.campus_id==current_user.campus_id).first() if agreement_value else None

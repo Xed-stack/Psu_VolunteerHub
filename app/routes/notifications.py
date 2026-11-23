@@ -65,6 +65,10 @@ def guidance_content(note):
         if code in ('remaining_goals', 'no_targets'):
             link = (url_for('goals.workspace') if code == 'no_targets' else
                     url_for('goals.details', year=identity['goal_year'], campus=current_user.campus_id))
+        elif code=='record_attendance':
+            if not note.event or note.event.campus_id!=current_user.campus_id or note.event.id!=identity.get('event_id'):
+                return unavailable
+            link=url_for('workspace.activity',event_id=note.event.id)
         elif code in ('pending_attendance', 'missed_targets', 'low_attendance', 'no_activities'):
             scope = identity['scope']
             if not isinstance(scope, dict) or any(not isinstance(value, list) or

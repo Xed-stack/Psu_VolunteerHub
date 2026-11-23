@@ -156,7 +156,7 @@ def test_reopen_requires_reason_and_preserves_closed_snapshot(client,app,review_
 
 def test_feature_disabled_and_missing_storage_fall_back(client,app,review_case):
     app.config['FINDING_REVIEWS_ENABLED']=False
-    response=client.get('/workspace/overview');assert 'Findings to Review' in response.text and 'data-review-chart' not in response.text
+    response=client.get('/workspace/overview');assert 'Findings to Review' in response.text and 'data-review-label="Findings"' in response.text
     app.config['FINDING_REVIEWS_ENABLED']=True
     FindingReviewEvent.__table__.drop(db.engine)
     response=client.get('/workspace/follow-up');assert response.status_code==200 and 'Generated findings are shown' in response.text

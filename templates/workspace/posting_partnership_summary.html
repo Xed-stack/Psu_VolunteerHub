@@ -2,6 +2,7 @@
 <dl class="proposal-summary-row">
 <div><dt>Partnership Status</dt><dd>{{ {'none':'No External Partner','existing':'Existing MOA','renewal':'For Renewal','new':'New Partnership'}.get(record.get('partnership_status'),'Not recorded') }}</dd></div>
 {% if record.get('partnership_status') != 'none' %}<div><dt>Primary Agency</dt><dd>{{ selected_agency.name if selected_agency else 'No agency selected' }}</dd></div>{% endif %}
+{% if record.get('additional_agency_ids') and record.get('partnership_status') != 'none' and review_mode %}<div><dt>Additional Partner Agencies</dt><dd>{% for agency in agencies if agency.id|string in record['additional_agency_ids'] %}{{ agency.name }}{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
 </dl>
 {% if review_mode %}<button class="text-link" type="submit" name="save_step" formnovalidate value="3">Edit Registration and Partners</button>{% endif %}
 </section>

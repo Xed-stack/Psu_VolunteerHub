@@ -222,8 +222,8 @@ def mutate(item, action, form):
     if form.get('revision')!=item['revision'] or form.get('version',type=int)!=item['version']:
         abort(409,description='The evidence or review changed. Compare the latest values before saving.')
     if action not in ('save','close','reopen','follow_up'):raise ValueError('Choose a listed review action.')
-    note=form.get('assessment','').strip()
-    recommendation=form.get('recommendation','')
+    note=form.get('assessment',item['assessment'] if action=='follow_up' else '').strip()
+    recommendation=form.get('recommendation',item['recommendation'] if action=='follow_up' else '')
     reason=form.get('closure_reason','')
     if len(note)>4000 or recommendation not in RECOMMENDATIONS:raise ValueError('Keep the assessment within 4,000 characters and choose a listed recommendation.')
     if action in ('save','close','reopen') and len(note)<10:raise ValueError('Enter an assessment of at least 10 characters.')
@@ -231,11 +231,16 @@ def mutate(item, action, form):
     if action=='reopen' and item['status']!='closed':raise ValueError('Only a closed review can be reopened.')
     if item['status']=='closed' and action!='reopen':raise ValueError('Reopen this review before changing its assessment.')
     if action=='follow_up' and not item.get('can_follow_up'):raise ValueError('This finding requires assessment rather than a corrective follow-up.')
+    if action=='follow_up' and item['snapshot']['code']=='record_attendance':
+        from app.services.activity_workflow import attendance_open
+        event=Event.query.filter_by(id=item['snapshot']['event_id'],campus_id=item['snapshot']['campus_id']).populate_existing().with_for_update().first()
+        if not event or not attendance_open(event):raise ValueError('The activity is no longer open for attendance. No reminder was sent.')
     if action=='follow_up' and item['saved'] and item['status']=='follow_up_sent' and not item['changed']:
         identity=dict(review_key=item['key'],fingerprint=item['fingerprint'],campus_id=item['snapshot']['campus_id'])
         recipients=User.query.filter_by(role='coordinator',campus_id=item['snapshot']['campus_id'],_is_active=True).all()
         if recipients and all(any(_same_notification(n,identity) for n in Notification.query.filter_by(
             user_id=person.id,notification_type='campus_guidance',is_read=False).all()) for person in recipients):
+            g.finding_reminder_reused=True
             return item['saved']
     now=datetime.utcnow()
     row=item['saved']
@@ -270,6 +275,9 @@ def mutate(item, action, form):
     event=FindingReviewEvent(review_id=row.id,campus_id=row.campus_id,actor_id=current_user.id,actor_name=current_user.name,
         action={'save':'assessed','close':'closed','reopen':'reopened','follow_up':'follow_up_sent'}[action],content=snapshot_content(row))
     db.session.add(event);log_activity('finding_review_'+event.action,row,dict(fingerprint=row.fingerprint,version=row.version))
+    if action=='follow_up' and row.finding_type=='record_attendance':
+        if not attendance_open(db.session.get(Event,row.event_id)):
+            raise ValueError('The activity ended before the reminder was saved. No reminder was sent.')
     return row
 
 

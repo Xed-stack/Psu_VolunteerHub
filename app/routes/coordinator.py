@@ -567,7 +567,9 @@ def attendance():
             status = statuses[i] if i < len(statuses) else ''
             if not status:
                 continue
-            if status not in {'present', 'absent', 'excused'}:
+            if status=='excused' and reg.attendance_record and reg.attendance_record.status=='excused':
+                continue
+            if status not in {'present', 'absent'}:
                 abort(400)
             registration_updates.append(dict(id=reg.id, status='confirmed'))
             existing = reg.attendance_record

@@ -135,6 +135,8 @@ TOPICS = [
         'View MOA shows current validity separately from applicability to an activity. The MOA must cover the activity start date inclusively.',
         'From Registration and Partners, save before opening Partners. Use This Agency selects the primary agency for the activity; Use This MOA also selects its applicable signed agreement and returns to the draft.',
         'Choose Existing MOA, For Renewal, New Partnership, or No External Partner in the proposal. Activity-specific roles and duration stay with that activity. Draft agreements are private attachments and never count as signed MOAs.',
+        'Choose one Primary Agency and any Additional Partner Agencies. The selected signed MOA and Expected Partner Participants apply to the primary agency only. Additional agencies are retained in your saved draft and published staff record.',
+        'Add MOA uses the same date-picker presentation as activity creation, without time controls. Valid From and Valid Until remain inclusive calendar dates; historical and same-day agreements are allowed.',
         'Selecting an MOA does not publish the activity. Agreements and downloads remain private to authorized campus Coordinators.'
     ],('partners','create'),('create-activity','saved-drafts'),('MOA selection is optional. An agreement valid today may not cover a future activity date.',),keywords='agency contact validity signed document'),
     topic('attendance','Registrations, Attendance, and External Groups','Record evidence during the event and understand the end-time lock.','Activity Management',('coordinator',),[
@@ -142,7 +144,7 @@ TOPICS = [
         'During the event, open its attendance workspace. Record internal attendees and named external individuals; external groups support bulk entry.',
         'Internal Volunteers and External Volunteers open separate rosters. Save Attendance affects only the displayed page; save changes before searching, paging, or leaving. Attendance is not saved automatically.',
         'From External Attendance, open Add External Participants for multiline names or a UTF-8 CSV without a header. Group name and email are optional. A selected file takes precedence over typed names and must be selected again after a validation error.',
-        'Recorded attendance, system-defaulted Not Attended, excused, and unrecorded states remain distinct. System defaults never create recorded attendance evidence or verified participation.',
+        'Choose Attended or Not Attended. All Attended marks only the displayed page; you can change individual statuses before Save Attendance. Unrecorded values and existing Excused records remain unchanged until explicitly updated. Excused is no longer available for new entries. System-default absence never creates recorded evidence or verified participation.',
         'Every attendance write path, including bulk actions and imports, locks at the scheduled end time.',
         'After the event ends, use the combined printed report and established correction process. Legacy activities without an end time are read-only for attendance.'
     ],('staff-activities',),('activity-status','reports','getting-support'),('Attendance entry is permitted only while the event is ongoing. Missing evidence is not recorded absence.',)),
@@ -189,7 +191,7 @@ TOPICS = [
     topic('follow-up','Needs Attention and Campus Follow-Up','Use evidence and the relevant next action.','Reports and Annual Plans',STAFF,[
         'Open Needs Attention to review findings with their campus, period, and supporting records.',
         'For ongoing events, follow the authorized attendance action. For ended events, use reports and printed corrections.',
-        'Directors can use the explicit Notify Coordinator action when available. Duplicate-reminder handling avoids repeated reminders.',
+        'Needs Attention shows activity start and end times in Philippine time. Use Review Category to filter findings. Directors can use Remind Coordinator for ongoing attendance findings; equivalent unread reminders are not resent. The finding title opens its assessment and history when review management is enabled.',
         'Check the underlying evidence before taking action; an alert does not make missing evidence a verified result.'
     ],('follow-up','overview'),('attendance','reports')),
     topic('accounts','Managing User Accounts','Review records and manage access with protected actions.','Management',('director',),[

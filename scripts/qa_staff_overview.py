@@ -13,7 +13,7 @@ from app.models import db
 from app.models.event import Event
 from app.models.user import User
 from app.services.activity_workflow import local_now
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright,expect
 from werkzeug.serving import make_server
 from tests.test_annual_goals import target
 
@@ -61,7 +61,7 @@ def main():
                         assert page.locator('.staff-campus-table tbody tr').count()==9
                         assert page.locator('.metric-title').all_text_contents()==['Conducted Activities','Verified Attendees','Campus Annual Achievement','Findings to Review']
                         primary=page.locator('.director-primary-grid')
-                        assert primary.locator('.staff-attention').count()==1 and primary.locator('[data-campus-chart]').count()==1
+                        assert primary.locator('.review-card').count()==1 and primary.locator('[data-campus-chart]').count()==1
                         assert primary.locator('[data-month-chart],[data-sex-chart],.staff-annual').count()==0
                         assert page.locator('.director-secondary-summary').inner_text().find('Volunteer Accounts')>=0
                         if width==1440:
@@ -121,18 +121,18 @@ def main():
                     assert 0<page.locator('#annual-title').bounding_box()['y']<400
                     checks.append([role,'annual headline reaches visible detailed scope'])
                     page.goto(base+'/workspace/overview?period=all&campus_id=2');page.wait_for_load_state('networkidle')
-                    review=page.get_by_role('link',name='Review These Findings',exact=True).first
+                    review=page.locator('.review-card-groups a').first
                     review.focus();assert review.evaluate("el=>getComputedStyle(el).outlineStyle!=='none'")
                     review.press('Enter');page.wait_for_load_state('networkidle')
                     args=parse_qs(urlsplit(page.url).query)
-                    assert args['campus_id']==['2'] and 'finding_type' in args
-                    assert page.locator('.finding-type-scope').is_visible()
-                    page.get_by_role('link',name='View All Findings',exact=True).click();page.wait_for_load_state('networkidle')
-                    args=parse_qs(urlsplit(page.url).query);assert args['campus_id']==['2'] and 'finding_type' not in args
-                    checks.append([role,'grouped queue, focus, scope and clear type'])
+                    assert args['campus_id']==['2'] and 'review_group' in args
+                    expect(page.locator('select[name=review_group]')).to_have_value(args['review_group'][0])
+                    page.get_by_role('link',name='Clear Review Filters',exact=True).click();page.wait_for_load_state('networkidle')
+                    args=parse_qs(urlsplit(page.url).query);assert args['campus_id']==['2'] and 'review_group' not in args
+                    checks.append([role,'category queue, focus, scope and clear category'])
                     page.goto(base+'/workspace/overview?period=all&activity_name=NoMatchingActivity');page.wait_for_load_state('networkidle')
-                    assert page.locator('.director-finding-total strong').inner_text()=='0'
-                    assert 'No follow-up findings' in page.locator('.staff-attention').inner_text()
+                    assert page.locator('.review-empty strong').inner_text()=='0 Findings'
+                    assert 'No generated findings' in page.locator('.review-card').inner_text()
                     checks.append([role,'zero findings empty state'])
                     page.goto(base+'/workspace/overview?period=all&campus=1&campus=2&category=Environment')
                     form=page.locator('[data-overview-scope]');form.get_by_role('button',name='Apply',exact=True).click();page.wait_for_load_state('networkidle')
