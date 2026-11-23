@@ -887,6 +887,10 @@ def overview():
     from app.services.workspace_reports import follow_up_items
     from app.services.staff_overview import overview_context
     data = report_data()
+    if current_user.role == 'director':
+        from app.services.aop_goals import dataset
+        from app.services.staff_overview import aop_achievement
+        data['aop_achievement'] = aop_achievement(data, dataset(data['year']))
     findings = follow_up_items(data)
     from app.services import finding_reviews
     reviews_ready = finding_reviews.available()

@@ -3,6 +3,7 @@
 {% from 'workspace/report_ui.html' import sex_attendance with context %}
 {% from 'workspace/staff_overview_components.html' import scope_controls, metrics, annual_summary, campus_table, attention_preview, agenda_list, secondary_stats with context %}
 {% from 'workspace/review_card.html' import review_card with context %}
+{% from 'workspace/director_overview.html' import achievement_panel, commitments_table with context %}
 {% set tour_page = true %}
 {% set director_overview = current_user.role == 'director' %}
 {% set coordinator = current_user.role == 'coordinator' %}
@@ -15,16 +16,13 @@
   </header>
   {{ scope_controls() }}
   {% with ui_filters=ui_filters|rejectattr('label','in',['Year','Period'])|list %}{% from 'partials/search_ui.html' import chips with context %}{{ chips() }}{% endwith %}
-  {{ metrics(director_headlines=director_overview) }}
+  {% if director_overview %}{{ achievement_panel() }}{% else %}{{ metrics() }}{% endif %}
   {% if coordinator %}
     <div class="staff-main-grid staff-main-grid--agenda">{{ agenda_list() }}<div class="staff-side">{{ attention_preview(false) }}{{ annual_summary(false) }}</div></div>
     <div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div>
     <nav class="staff-footer-links" aria-label="Campus Workspaces"><a data-tour-id="reports" href="{{ url_for('workspace.reports') }}">Campus Reports</a><a href="{{ url_for('workspace.partners') }}">Partner Agencies and MOAs</a></nav>
   {% elif director_overview %}
-    <div class="director-primary-grid">{{ campus_table() }}{{ review_card(attention_summary,reviews_ready) }}</div>
-    {{ secondary_stats() }}
-    <div class="director-details">{{ annual_summary(true) }}<div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div></div>
-    <nav class="staff-footer-links" aria-label="University Workspaces"><a href="{{ url_for('director.activity_calendar') }}">University Calendar</a><a href="{{ url_for('workspace.recognition',award_year=year) }}">Annual Recognition</a><a data-tour-id="management" href="{{ url_for('workspace.management') }}">Accounts and Policies</a></nav>
+    <div class="director-primary-grid">{{ review_card(attention_summary,reviews_ready,director_reference=true) }}{{ commitments_table() }}</div>
   {% else %}
     <div class="staff-main-grid">{{ campus_table() }}{{ annual_summary(true) }}</div>
     <div class="staff-secondary-grid">{{ delivery_chart(monthly, month_labels, period_label) }}{{ sex_attendance(sex_breakdown) }}</div>

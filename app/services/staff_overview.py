@@ -14,6 +14,30 @@ FINDING_LABELS = {
 }
 
 
+def aop_achievement(data, dataset):
+    """Aggregate existing per-goal credits against university Director targets."""
+    from app.services.aop_goals import progress
+
+    goals, children = dataset
+    allowed = {row['id'] for row in data['campus_chart']}
+    selected = [child for child in children if child.campus_id in allowed]
+    target = sum(int(goal.target_value) for goal in goals)
+    completed = sum(progress(goal, selected)['completed'] for goal in goals)
+    campuses = []
+    for campus in sorted(data.get('campuses', []), key=lambda campus: campus.name):
+        if campus.id not in allowed:
+            continue
+        commitments = [child for child in selected if child.campus_id == campus.id]
+        campuses.append(dict(id=campus.id, name=campus.name, submitted=bool(commitments),
+            committed=sum(int(child.target_value) for child in commitments),
+            completed=sum(progress(goal, commitments)['completed'] for goal in goals)))
+    return dict(target=target, completed=completed,
+                committed=sum(int(child.target_value) for child in selected),
+                rate=round(completed / target * 100, 1) if target else None,
+                exceeded=max(completed - target, 0), campuses=campuses,
+                campuses_completed=sum(row['completed'] > 0 for row in campuses))
+
+
 def overview_context(data, findings):
     allowed = {row['id']: row for row in data['campus_chart']}
     annual = data['campus_goals']

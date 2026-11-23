@@ -1,5 +1,59 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Current Handoff: Director Reference Overview, 24 November 2026
+
+Implemented the approved supplied-reference layout locally on
+`codex/ui-workflow-overhaul`, after the user-requested reset to origin `3a158fe`.
+The Director Overview now has scope controls, one navy annual achievement panel
+with three embedded metrics, then Needs Attention beside Campus Annual
+Commitments and Accomplishments. It ends there; lower charts, annual/secondary
+summaries and footer shortcuts are removed from this page. Shared shell/footer,
+Reports, Coordinator screens and administrative access remain.
+
+AOP achievement sums completed per-goal activity contributions against summed
+university Director targets. It can exceed 100%: 13/10 displays 130% and 3 above
+target. Campus commitments alone earn no credit. Year/campus scope applies to
+annual figures independently of period/participant filters. Campus subsets keep
+the university denominator, explicitly labelled. Existing AOP eligibility and
+goal-met calculations are unchanged. Conducted/attendee metrics retain reporting
+scope; campus commitments are annual submitted quantities. Every selected campus
+appears alphabetically; no submission differs from zero completed contributions.
+
+Reused the review card, category/queue/history navigation and generated-findings
+fallback. Next Action is derived from actual category counts, without invented
+certification deadlines. Updated the Director guide to scope, achievement,
+metrics, reviews, campus commitments and Reports. Readable mobile records,
+keyboard focus, gold-badge contrast and donut boundary contrast were verified.
+The source has merged administration into the Director role; tests exercise
+management/settings rather than constructing an unsupported Admin role.
+
+Verification: 71 distinct Python cases passed across focused/cross-screen runs;
+the final AOP/administration subset passed all 7 cases. 20 synthetic headless
+Chromium groups passed across both review modes at 1440/1280/1024/768/390/320px,
+including 130%, five evaluation periods, navigation, guide, long names, enlarged
+text, empty states and script fallbacks. CSS build, 141-template parse, both
+changed JavaScript syntax checks, contrast calculations and whitespace passed.
+No full-suite, operational MySQL, physical-device, screen-reader or true-zoom
+claim. Browser servers used disposable in-memory SQLite and were stopped.
+
+QA, design critique, current guidelines audit, Antislop gate and rollback:
+`docs/qa/DIRECTOR_REFERENCE_OVERVIEW.md`. Reproducible browser runner:
+`scripts/qa_director_reference.py`; ignored evidence:
+`.qa-overhaul-temp/director-reference/`. Skills used: UI/UX Pro Max, Frontend
+Design, Design Critique before/after, Ponytail full, Antislop core/UI/Human/
+Layoutmobile during work, Web Design Guidelines and Webapp Testing.
+
+The user subsequently authorized committing and pushing this reference Overview
+implementation to `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. Both remote heads were verified at `3a158fe`
+before publication. Include this task's implementation, generated CSS, tests,
+browser runner, QA and this entry; exclude unrelated untracked files. No deployment,
+migration, dependency or operational database change was authorized or performed.
+Unrelated untracked documents, SQL proposal files, review images, output/tmp,
+private previews and older QA notes remain intact. The relevant untracked AOP
+test was adapted to this approved layout; the older untracked browser runner
+remains historical and is not the current verification command.
+
 
 ## Current Handoff: Dated AOP Goals and Campus Commitments, 23 November 2026
 

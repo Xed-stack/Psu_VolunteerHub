@@ -12,23 +12,22 @@ from tests.test_annual_goals import target
 from tests.html_helpers import parse_html,form_values,form_with_control
 
 
-def test_director_headlines_reuse_values_and_preserve_secondary_statistics(client,app,actors):
-    target(campus=1,actual=4,shared='shared');target(campus=1,actual=4,shared='shared',kind='ASP')
+def test_director_reference_reuses_values_and_ends_after_commitments(client,app,actors):
+    target(campus=1,actual=4,shared='shared')
     target(campus=2);target(actual=4)
     sign_in(client,actors,'director')
     response,data=screen(client,app,'/workspace/overview?period=all')
     page=parse_html(response.text)
-    tiles=page.all('article',**{'class':'metric-tile'})
-    assert [t.one('span',**{'class':'metric-title'}).text for t in tiles]==[
-        'Conducted Activities','Verified Attendees','Campus Annual Achievement','Findings to Review']
-    assert [t.all('strong')[0].text for t in tiles]==[str(data['conducted']),str(data['attendees']),'1 / 2',str(data['finding_total'])]
-    assert data['campus_rollup']['pending']==1 and data['goals']['total']==1
-    secondary=page.one('section',**{'class':'director-secondary-summary'})
-    assert 'Approved Activities' in secondary.text and 'Volunteer Accounts' in secondary.text
-    assert 'All time' in secondary.text and str(data['accounts']) in secondary.text
-    primary=response.text.split('class="director-primary-grid"')[1].split('class="director-secondary-summary"')[0]
-    assert 'Campus Accomplishments' in primary and 'Needs Attention' in primary
-    assert 'id="annual-title"' not in primary and 'data-month-chart' not in primary and 'data-sex-chart' not in primary
+    tiles=page.all('article',**{'class':'director-achievement-metric'})
+    assert [t.one('h3').text for t in tiles]==[
+        'Conducted Activities','Verified Attendees','Campus Committed Activities']
+    assert [t.all('strong')[0].text for t in tiles]==[str(data['conducted']),str(data['attendees']),'0']
+    assert not page.all('section',**{'class':'director-secondary-summary'})
+    assert not page.all('article',**{'class':'metric-tile'})
+    for obsolete in ('data-campus-chart','data-month-chart','data-sex-chart','staff-footer-links','director-details'):
+        assert obsolete not in response.text
+    assert response.text.index('class="staff-scope"')<response.text.index('class="director-achievement"')<response.text.index('class="director-primary-grid"')
+    assert response.text.index('id="review-card-title"')<response.text.index('id="campus-title"')
 
 
 @pytest.mark.parametrize('role,path',[('coordinator','/workspace/overview'),('director','/workspace/reports/results')])
@@ -47,7 +46,7 @@ def test_overview_scope_controls_and_links_keep_context(client,actors):
     assert values['year']==['2025'] and values['segment']==['2'] and values['campus_id']==['1'] and values['sex']==['female']
     link=next(a for a in page.all('a') if a.text=='Open Report')
     assert parse_qs(urlsplit(link.attrs['href']).query)['sex']==['female']
-    assert any(a.attrs.get('href')=='#annual-title' for a in page.all('a'))
+    assert page.one('h2',id='annual-title')
 
 
 @pytest.mark.parametrize('value',['invented','pending','<script>'])
@@ -66,7 +65,7 @@ def test_finding_groups_link_to_matching_scoped_queue(client,app,actors):
     response,data=screen(client,app,'/workspace/overview?period=all&campus_id=1')
     page=parse_html(response.text)
     from app.services.finding_reviews import GROUPS
-    links=[a for a in page.all('a') if 'review_group=' in a.attrs.get('href','')]
+    links=page.one('ul',**{'class':'review-card-groups'}).all('a')
     assert len(links)==4
     for link,group in zip(links,data['attention_summary']['groups']):
         query=parse_qs(urlsplit(link.attrs['href']).query)
@@ -106,8 +105,9 @@ def test_known_empty_finding_type_and_unset_annual_state(client,actors):
     response=client.get('/workspace/follow-up?period=all&finding_type=record_attendance&activity_name=NoMatch')
     assert response.status_code==200 and 'No follow-up findings' in response.text
     page=parse_html(client.get('/workspace/overview?year=1900').text)
-    third=page.all('article',**{'class':'metric-tile'})[2]
-    assert third.all('strong')[0].text=='Not Set'
+    third=page.all('article',**{'class':'director-achievement-metric'})[2]
+    assert third.all('strong')[0].text=='0'
+    assert 'AOP Target Not Set' in page.text
     assert 'Active Reviews' not in page.text and 'Reviewed and Closed' not in page.text
 
 
@@ -128,6 +128,6 @@ def test_preview_limits_groups_without_losing_total(client,app,actors,monkeypatc
     response,data=screen(client,app,'/workspace/overview')
     page=parse_html(response.text)
     assert data['finding_total']==8
-    links=[a for a in page.all('a') if 'review_group=' in a.attrs.get('href','')]
+    links=page.one('ul',**{'class':'review-card-groups'}).all('a')
     assert len(links)==4 and sum(g['total'] for g in data['attention_summary']['groups'])==8
     assert [parse_qs(urlsplit(a.attrs['href']).query)['review_group'][0] for a in links]==[g['key'] for g in data['attention_summary']['groups']]

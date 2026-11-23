@@ -25,7 +25,7 @@ def test_rollup_excludes_historical_targets_from_new_aop_workflow(client,app,act
     assert data['campus_rollup']['rate'] is None
     assert data['campus_rollup']['plans'] == {'AOP':{'met':0,'total':0}}
     assert data['goals']['total'] == data['goals']['met'] == 0
-    assert b'Campus Annual Achievement' in response.data and b'University-Wide Targets' in response.data
+    assert b'AOP Target Not Set' in response.data and b'Campus Annual Commitments and Accomplishments' in response.data
     with query_count(app) as queries:
         overview_context(data,data['follow_ups'])
     assert len(queries) == 0
@@ -83,14 +83,16 @@ def test_grouped_preview_keeps_full_queue_individual_actions(client,app,actors):
     assert queue.status_code == 200 and b'Notify Coordinator' in queue.data
 
 
-def test_campus_drilldown_returns_to_filtered_overview(client,app,actors):
+def test_campus_commitments_open_annual_details(client,app,actors):
     sign_in(client,actors,'director')
     path='/workspace/overview?period=all&category=Environment'
     response=client.get(path)
     page=parse_html(response.get_data(as_text=True))
-    detail=next(a.attrs['href'] for a in page.all('a') if a.attrs.get('href','').startswith('/workspace/campuses/'))
-    detail_page=parse_html(client.get(detail).get_data(as_text=True))
-    assert any(a.attrs.get('href') == path for a in detail_page.all('a'))
+    table=page.one('table',**{'class':'director-commitments-table'})
+    detail=table.all('a')[0].attrs['href']
+    assert parse_qs(urlsplit(detail).query)['year']==[str(local_now().year)]
+    assert 'campus' in parse_qs(urlsplit(detail).query)
+    assert client.get(detail).status_code==200
 
 
 def test_overview_populated_annual_query_count_does_not_grow_per_target(client,app,actors):

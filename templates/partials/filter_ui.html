@@ -13,8 +13,8 @@
 {% for key,values in request.args.lists() if key not in exclude + ['page','category_page','tour','export'] %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endfor %}
 {% endmacro %}
 
-{% macro period_fields(period,segment,start='',end='') %}
-<label class="field"><span>Period</span><select name="period">{% for value,label in [('annual','Annual'),('semiannual','Semi-Annual'),('quarterly','Quarterly'),('custom','Custom Dates'),('all','All Records')] %}<option value="{{ value }}" {{ 'selected' if period == value }}>{{ label }}</option>{% endfor %}</select></label>
+{% macro period_fields(period,segment,start='',end='',period_label='Period') %}
+<label class="field"><span>{{ period_label }}</span><select name="period">{% for value,label in [('annual','Annual'),('semiannual','Semi-Annual'),('quarterly','Quarterly'),('custom','Custom Dates'),('all','All Records')] %}<option value="{{ value }}" {{ 'selected' if period == value }}>{{ label }}</option>{% endfor %}</select></label>
 <label class="field" data-period-segment {{ 'data-period-inactive' if period not in ['quarterly','semiannual'] }}><span data-segment-label>{{ 'Half-Year' if period == 'semiannual' else 'Quarter' }}</span><select name="segment">{% for n,label in [(1,'First'),(2,'Second'),(3,'Third'),(4,'Fourth')] %}<option value="{{ n }}" {{ 'selected' if segment == n }}>{{ label }} {{ 'Half' if period == 'semiannual' else 'Quarter' }}</option>{% endfor %}</select></label>
 <label class="field" data-period-date {{ 'data-period-inactive' if period != 'custom' }}><span>From <span aria-hidden="true">*</span></span><input type="date" name="start_date" value="{{ start if period == 'custom' else '' }}" {{ 'required' if period == 'custom' }}></label>
 <label class="field" data-period-date {{ 'data-period-inactive' if period != 'custom' }}><span>To <span aria-hidden="true">*</span></span><input type="date" name="end_date" value="{{ end if period == 'custom' else '' }}" {{ 'required' if period == 'custom' }}></label>

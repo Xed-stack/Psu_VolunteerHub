@@ -73,7 +73,7 @@
     const sizing=()=>({width:el.parentElement.clientWidth,height:Math.min(270,Math.max(180,el.parentElement.clientWidth))});
     responsiveLayouts.set(el,sizing);
     draw(el,[{type:'pie',hole:.65,sort:false,labels:rows.map(row=>row.label),values:rows.map(row=>row.total),
-      textinfo:'none',marker:{colors:['#00408b','#f4bd27','#83baff','#cbd5e1'],line:{color:'#ffffff',width:2}},
+      textinfo:'none',marker:{colors:['#00408b','#f4bd27','#83baff','#cbd5e1'],line:{color:['#ffffff','#111c2c','#111c2c','#111c2c'],width:1.5}},
       hovertemplate:'%{label}: %{value:,d}<extra></extra>'}],{
         ...structuredClone(layout),...sizing(),margin:{t:10,r:10,b:10,l:10},
         annotations:[{text:'<b>'+numbers.format(total)+'</b>',showarrow:false,x:.5,y:.62,xref:'paper',yref:'paper',font:{size:26,color:'#111c2c'}},

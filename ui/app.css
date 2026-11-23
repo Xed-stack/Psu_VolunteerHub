@@ -729,6 +729,73 @@
   .staff-main-grid--agenda { @apply xl:grid-cols-[minmax(0,1.7fr)_minmax(19rem,1fr)]; }
   .staff-side { @apply grid min-w-0 gap-6; }
   .director-primary-grid { @apply grid min-w-0 items-start gap-6 xl:grid-cols-2; }
+  .director-achievement { @apply min-w-0 rounded-xl border border-psu-deep p-4 text-white shadow-md sm:p-6; background:linear-gradient(110deg,#00234f,#00408b); }
+  .director-achievement-top { @apply grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_13rem]; }
+  .director-achievement-top > div { @apply min-w-0; }
+  .director-achievement-label { @apply mb-4 flex flex-wrap items-center gap-2 text-sm; }
+  .director-achievement-label strong { @apply rounded-md bg-gold px-3 py-1.5 text-psu-deep; }
+  .director-achievement-label > span { @apply rounded-md border border-blue-200 px-3 py-1 text-white; }
+  .director-achievement h2 { @apply mb-3 max-w-2xl text-2xl font-bold leading-tight text-white sm:text-3xl; }
+  .director-achievement-top p:not(.director-achievement-label) { @apply text-sm leading-6; }
+  .director-achievement-top p:not(.director-achievement-label) strong { @apply text-gold; }
+  .director-achievement-top .director-achievement-scope { @apply mt-3 text-blue-100; }
+  .director-target { @apply flex min-w-0 flex-col justify-center gap-2 self-start rounded-xl border border-blue-200 bg-white/10 p-5 text-sm text-white hover:bg-white/20; }
+  .director-target > span:first-child { @apply flex flex-wrap items-baseline gap-2 font-semibold; }
+  .director-target strong { @apply text-5xl font-bold tabular-nums text-gold; }
+  .director-target > span:last-child { @apply text-blue-100; }
+  .director-achievement :is(a,button):focus-visible { @apply outline-gold; }
+  .director-achievement-metrics { @apply mt-6 grid min-w-0 gap-4 border-t border-blue-200/50 pt-5; }
+  .director-achievement-metric { @apply min-w-0 rounded-lg border border-blue-200 bg-white/5; }
+  .director-achievement-metric a { @apply block h-full rounded-lg p-4 text-white hover:bg-white/10; }
+  .director-achievement-metric a > strong { @apply text-3xl font-bold tabular-nums; }
+  .director-achievement-metric:nth-child(2) a > strong { @apply text-gold; }
+  .director-achievement-metric h3 { @apply mt-2 text-sm font-semibold text-white; }
+  .director-achievement-metric p { @apply mt-2 text-sm leading-6 text-blue-100; }
+  .director-metric-scope span { @apply mt-1 block; }
+  .director-overview .review-card { container-type:inline-size; }
+  .director-overview .review-card-heading { @apply flex-wrap border-b border-slate-200 bg-white p-0 pb-4; }
+  .director-overview .review-card-heading > div { @apply min-w-0; flex:1 1 12rem; }
+  .director-overview .review-card-warning { @apply rounded-md border border-amber-700 bg-amber-50; }
+  .director-review-total { @apply ml-auto rounded-md border border-amber-700 bg-amber-50 px-2 py-1 text-sm text-amber-900; }
+  .director-overview .review-card-body { @apply grid-cols-1; }
+  .director-overview .review-card-groups { @apply border-l-0 pl-0; }
+  .director-overview .review-card-groups li { @apply gap-2; }
+  .director-overview .review-card-groups a { @apply px-2; }
+  .director-review-next { @apply mt-4 rounded-md border border-blue-300 bg-blue-50 p-3 text-sm leading-6 text-psu-deep; }
+  .director-review-next a { @apply inline-flex min-h-11 items-center font-semibold underline; }
+  .director-commitments { @apply flex min-w-0 flex-col; }
+  .director-commitments header > h2 { @apply mb-2 text-lg; }
+  .director-commitments-table { @apply my-5 table-fixed; }
+  .director-commitments-table th, .director-commitments-table td { @apply px-2 py-3; }
+  .director-commitments-table tbody th { @apply border-b border-slate-200 bg-white font-semibold; }
+  .director-commitments-table a { @apply inline-flex min-h-11 items-center rounded text-psu underline underline-offset-4 hover:bg-blue-50; }
+  .director-commitments-table td { @apply tabular-nums; }
+  .director-cell-label { @apply hidden; }
+  .director-commitments footer { @apply mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4; }
+  .director-commitments footer a { @apply inline-flex min-h-11 items-center text-sm; }
+  @container (min-width:380px) {
+    .director-overview .review-card-body { grid-template-columns:minmax(100px,.7fr) minmax(0,1.5fr); }
+  }
+  @media (min-width:480px) {
+    .director-achievement-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .director-achievement-metric:last-child { grid-column:1 / -1; }
+  }
+  @media (min-width:1024px) {
+    .director-achievement-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .director-achievement-metric:last-child { grid-column:auto; }
+  }
+  @media (min-width:1280px) {
+    .director-overview .director-primary-grid { grid-template-columns:minmax(0,2fr) minmax(0,3fr); }
+  }
+  @media (max-width:639px) {
+    .director-overview .staff-scope .field { flex:1 1 100%; }
+    .director-commitments-table, .director-commitments-table tbody { @apply block; }
+    .director-commitments-table thead { @apply sr-only; }
+    .director-commitments-table tr { @apply mb-3 block rounded-md border border-slate-300 p-3; }
+    .director-commitments-table tbody th { @apply block border-0 p-0; }
+    .director-commitments-table td { @apply flex items-baseline justify-between gap-3 border-0 px-0 py-2; }
+    .director-cell-label { @apply block font-medium text-slate-600; }
+  }
   .director-overview .staff-attention { @apply border-psu; }
   .director-finding-total { @apply my-4 flex flex-wrap items-baseline gap-3 text-sm text-slate-600; }
   .director-finding-total strong { @apply text-3xl font-bold tabular-nums text-psu; }
@@ -742,7 +809,7 @@
   .director-overview #annual-title { scroll-margin-top:calc(var(--role-header-height,4rem) + 1rem); }
   .director-details .staff-annual { @apply border-slate-200 bg-white; }
   .finding-type-scope { @apply mb-5 flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3; }
-  .director-overview .review-card { @apply border-amber-400; }
+  .director-overview .review-card { @apply border-slate-200; }
   .review-card-heading { @apply mb-3 flex items-center gap-3 rounded-md bg-amber-50 p-3; }
   .review-card-heading h2 { @apply text-lg; }
   .review-card-heading .staff-note { @apply m-0 text-sm; }
