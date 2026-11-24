@@ -1,5 +1,31 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Reports Directory Historical Card Removal, 25 November 2026
+
+Removed Historical Source Records and its historical-aggregate group copy from
+`templates/workspace/reports.html`. The remaining group is People; Activity
+Accomplishments, Annual Operational Plan, People Insights and Director Annual
+Recognition remain available. This is a Reports directory removal, not deletion
+of stored historical data or existing import/export routes. No CSS, mobile
+layout, JavaScript, permissions or database changes.
+
+Local Chromium checks passed for Director and Coordinator at 1440/1024px:
+historical card/copy/link absent, all remaining report destinations HTTP 200,
+keyboard entry into Activity Accomplishments and no page overflow/page errors.
+Rendered review and the current Web Interface Guidelines audit passed. Evidence:
+`.qa-overhaul-temp/reports-directory-removal/`. No Admin preview account existed;
+the same shared template applies. Full-suite checks and CSS build were not
+needed for this template-only removal and were not run.
+
+Antislop gate: Hard PASS (browser/link/keyboard checks); Purpose PASS (requested
+removal, existing PSU styles); Liveliness PASS (retained institutional 2/2/1
+direction); Craftsmanship PASS (focused template change, rendered verification).
+Skills continue from the current session: Ponytail full, Antislop core/UI/Human,
+UI/UX Pro Max, Frontend Design, Design Critique, Web Design Guidelines and Webapp
+Testing. The user authorized committing and pushing this removal to both
+configured `codex/ui-workflow-overhaul` remote branches. Rollback restores only
+this template edit and entry. Preserve unrelated work.
+
 ## Activity Accomplishments SDG Donut, 24 November 2026
 
 Added desktop SDG Alignment beside Sex-Disaggregated Verified Attendance in
