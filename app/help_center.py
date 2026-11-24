@@ -190,6 +190,7 @@ TOPICS = [
     ],('annual-plans','aop'),('reports','saved-drafts'),keywords='AOP commitment period start end completed activities'),
     topic('follow-up','Needs Attention and Campus Follow-Up','Use evidence and the relevant next action.','Reports and Annual Plans',STAFF,[
         'Open Needs Attention to review findings with their campus, period, and supporting records.',
+        'Coordinator Needs Attention uses a compact campus queue at desktop widths, with category counts, expandable evidence, and read-only completed recommendations.',
         'For ongoing events, follow the authorized attendance action. For ended events, use reports and printed corrections.',
         'Needs Attention shows activity start and end times in Philippine time. Use Review Category to filter findings. Directors can use Remind Coordinator for ongoing attendance findings; equivalent unread reminders are not resent. The finding title opens its assessment and history when review management is enabled.',
         'Check the underlying evidence before taking action; an alert does not make missing evidence a verified result.'

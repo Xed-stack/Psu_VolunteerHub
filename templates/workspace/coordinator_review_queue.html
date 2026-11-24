@@ -1,0 +1,35 @@
+{% extends 'workspace/review_queue.html' %}
+{% from 'workspace/staff_overview_components.html' import scope_controls with context %}
+{% from 'workspace/finding_controls.html' import snapshot_dates with context %}
+{% block content %}
+<div class="needs-original">{{ super() }}</div>
+<div class="needs-desktop">
+  <a class="needs-back" href="{{ url_for('workspace.overview') }}">Back to Overview</a>
+  <header class="needs-heading"><div><h1>Needs Attention</h1><span class="needs-pending">{{ total }} {{ 'Recommendation' if total==1 else 'Recommendations' }}</span></div><p class="needs-role">Campus Coordinator · {{ current_user.campus.name if current_user.campus else 'Unassigned campus' }}</p></header>
+  {{ scope_controls(false, true) }}
+  <div class="needs-view-row"><nav aria-label="Coordinator Review Views"><a href="{{ url_for('workspace.follow_up',**dict(request.args.to_dict(flat=False),review_tab=none,page=1)) }}">Needs Attention</a><a aria-current="page" href="{{ query_url(remove=['export'],page=1) }}">Reviewed Recommendations <span>{{ tab_counts.reviewed }}</span></a></nav></div>
+  <nav class="needs-categories" aria-label="Review Categories"><a href="{{ query_url(remove=['review_group','finding_type'],page=1) }}" {{ 'aria-current=page' if not review_group and not finding_type }}>All <span>{{ tab_counts.reviewed }}</span></a>{% for key,(label,codes) in groups.items() %}<a href="{{ query_url(remove=['finding_type'],review_group=key,page=1) }}" {{ 'aria-current=page' if review_group==key }}>{{ label }} <span>{{ category_counts[key] }}</span></a>{% endfor %}<a class="needs-clear" href="{{ query_url(remove=['review_group','finding_type'],page=1) }}">Clear Filters</a></nav>
+  {% if finding_type %}<p class="needs-type">Finding Type · {{ finding_labels[finding_type] }} <a href="{{ query_url(remove=['finding_type'],page=1) }}">Clear Finding Type</a></p>{% endif %}
+  <aside class="needs-policy"><p><strong>Campus evidence.</strong> Completed recommendations are read-only. Attendance and institutional results are unchanged.</p><strong>Campus Scope</strong></aside>
+  <div class="needs-toolbar"><p>{{ total }} {{ 'Completed Recommendation' if total==1 else 'Completed Recommendations' }}<span>{{ period_label }}</span></p></div>
+  <ul class="needs-queue">{% for row in items %}
+    {% set snap=row.content.snapshot %}
+    {% set detail_url=url_for('finding_reviews.detail',key=review_keys[row.review_id],occurrence=row.id,return_to=request.full_path.rstrip('?')) %}
+    <li>
+      <div class="needs-evidence">
+        <h2><a href="{{ detail_url }}">{{ snap.title }}</a></h2>
+        <p class="needs-meta">{% if snap.event_title %}{{ snap.event_title }} · {% endif %}{{ snap.campus }} ·
+          {% for key,(label,codes) in groups.items() if snap.code in codes %}{{ label }} · {% endfor %}
+          {% set activity_date=snap.activity_date|review_schedule %}
+          {{ activity_date.strftime('%d %b %Y, %I:%M %p PHT') if activity_date else snap.scope }}</p>
+        <details class="needs-evidence-details">
+          <summary><strong>Evidence.</strong> {{ snap.evidence }}</summary>
+          <div><p>{{ snap.scope }}</p>{{ snapshot_dates(snap) }}<p>{{ reasons.get(row.content.closure_reason) }} · {{ row.actor_name }} · {{ row.created_at|review_pht }}</p></div>
+        </details>
+      </div>
+      <div class="needs-row-actions"><p class="needs-status needs-status--sent">Reviewed</p><div><a class="btn btn--primary" href="{{ detail_url }}">View Assessment</a></div></div>
+    </li>
+  {% else %}<li class="needs-empty">No completed recommendations match this scope. Change the year or period, or clear the category filter.</li>{% endfor %}</ul>
+  <nav class="needs-pagination" aria-label="Coordinator Review Pages"><p>{% if total %}Showing {{ (page-1)*page_size+1 }}–{{ [page*page_size,total]|min }} of {{ total }}{% else %}0 recommendations{% endif %} · {{ 'Your campus' if not campus_id else 'Selected campus' }}</p><div>{% if page>1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page<pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</div></nav>
+</div>
+{% endblock %}

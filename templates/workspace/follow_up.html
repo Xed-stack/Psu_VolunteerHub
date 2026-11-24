@@ -1,9 +1,9 @@
 {% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading with context %}{% from 'workspace/reimagined_components.html' import follow_up_list with context %}
 {% from 'workspace/staff_overview_components.html' import scope_controls with context %}
-{% from 'workspace/finding_controls.html' import categories with context %}
+{% from 'workspace/finding_controls.html' import categories, dates with context %}
 {% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}
 {% block content %}
-<div class="attention-v2">
+<div class="needs-original"><div class="attention-v2">
 {{ heading('Needs Attention','Review evidence, open the relevant workspace, and follow up without changing locked attendance.',url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)),'Back to Overview') }}
 {{ scope_controls(false, true) }}
 {% if reviews_ready and current_user.role=='coordinator' %}
@@ -19,11 +19,7 @@
   <article class="attention-v2-tile"><span>Total Findings</span><strong>{{ total }}</strong></article>
   <article class="attention-v2-tile"><span>Current</span><strong>{{ phases.current if phases is defined else 0 }}</strong></article>
   <article class="attention-v2-tile"><span>Past</span><strong>{{ phases.past if phases is defined else 0 }}</strong></article>
-  <article class="attention-v2-tile"><span>Reviewed</span><strong>{{ phases.annual if phases is defined else 0 }}</strong></article>
-</section>
-<section class="attention-v2-segments" aria-label="Finding phases">
-  <a href="#current-findings" class="is-active">Current &amp; Ongoing <span>{{ phases.current if phases is defined else 0 }}</span></a>
-  <a href="#past-findings">Past &amp; Completed <span>{{ phases.past if phases is defined else 0 }}</span></a>
+  <article class="attention-v2-tile"><span>Annual Plans</span><strong>{{ phases.annual if phases is defined else 0 }}</strong></article>
 </section>
 <section class="workspace-section attention-v2-queue" id="current-findings" aria-labelledby="current-title">
   <header class="section-top"><h2 id="current-title">Current &amp; Ongoing Activities</h2><p class="text-sm text-slate-600">{{ period_label }}</p></header>
@@ -31,5 +27,36 @@
   {{ follow_up_list(items) }}
 </section>
 <nav class="pagination attention-v2-footer" aria-label="Follow-up Pages">{% if page > 1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}{% if total %} · Showing {{ first_row }}-{{ last_row }} of {{ total }}{% endif %}</span>{% if page < pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</nav>
+</div></div>
+{% if current_user.role=='coordinator' %}
+<div class="needs-desktop">
+  <a class="needs-back" href="{{ url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)) }}">Back to Overview</a>
+  <header class="needs-heading"><div><h1>Needs Attention</h1><span class="needs-pending">{{ total }} {{ 'Finding' if total==1 else 'Findings' }}</span></div><p class="needs-role">Campus Coordinator · {{ current_user.campus.name if current_user.campus else 'Unassigned campus' }}</p></header>
+  {{ scope_controls(false, true) }}
+  <div class="needs-view-row"><nav aria-label="Coordinator Finding Views"><a aria-current="page" href="{{ query_url(remove=['review_tab'],page=1) }}">Needs Attention <span>{{ total }}</span></a>{% if reviews_ready %}<a href="{{ query_url(review_tab='reviewed',page=1) }}">Reviewed Recommendations{% if reviewed_count is not none %} <span>{{ reviewed_count }}</span>{% endif %}</a>{% endif %}</nav></div>
+  <nav class="needs-categories" aria-label="Review Categories"><a href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}" {{ 'aria-current=page' if not review_group and not finding_type }}>All <span>{{ total }}</span></a>{% for key,(label,codes) in groups.items() %}<a href="{{ query_url(remove=['finding_type','export'],review_group=key,page=1) }}" {{ 'aria-current=page' if review_group==key }}>{{ label }} <span>{{ category_counts[key] }}</span></a>{% endfor %}<a class="needs-clear" href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}">Clear Filters</a></nav>
+  {% if finding_type %}<p class="needs-type">Finding Type · {{ finding_label }} <a href="{{ query_url(remove=['finding_type'],page=1) }}">Clear Finding Type</a></p>{% endif %}
+  <aside class="needs-policy"><p><strong>Campus evidence.</strong> Findings use the selected report scope. Annual plans use {{ year }}. Attendance remains locked after an event ends.</p><strong>Read-Only Reviews</strong></aside>
+  <div class="needs-toolbar"><p>{{ total }} {{ 'Finding' if total==1 else 'Findings' }}<span>{{ period_label }}</span></p></div>
+  <ul class="needs-queue">{% for item in items %}
+    <li>
+      <div class="needs-evidence">
+        <h2><a href="{{ item.url }}">{{ item.title }}</a></h2>
+        <p class="needs-meta">{% if item.event %}{{ item.event.title }} · {% endif %}{{ item.campus.name if item.campus else 'Unassigned campus' }} ·
+          {% for key,(label,codes) in groups.items() if item.code in codes %}{{ label }} · {% endfor %}
+          {% if item.event %}{{ item.event.date.strftime('%d %b %Y, %I:%M %p PHT') }}{% else %}{{ item.scope }}{% endif %}</p>
+        <details class="needs-evidence-details">
+          <summary><strong>Evidence.</strong> {{ item.evidence }}</summary>
+          <div>{% if item.event %}{{ dates(item.event.date,item.event.end_date) }}{% endif %}<p>{{ item.scope }}</p></div>
+        </details>
+      </div>
+      <div class="needs-row-actions">
+        <p class="needs-status{% if item.phase!='current' %} needs-status--sent{% endif %}">{{ 'Annual Plan' if item.phase=='annual' else 'Past' if item.phase=='past' else 'Current' }}</p>
+        <div><a class="btn btn--primary" href="{{ item.url }}">{{ item.action }}</a></div>
+      </div>
+    </li>
+  {% else %}<li class="needs-empty">No findings match this scope. Change the year or period, or clear the category filter.</li>{% endfor %}</ul>
+  <nav class="needs-pagination" aria-label="Coordinator Finding Pages"><p>{% if total %}Showing {{ first_row }}–{{ last_row }} of {{ total }}{% else %}0 findings{% endif %} · {{ 'Your campus' if not campus_id else 'Selected campus' }}</p><div>{% if page>1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page<pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</div></nav>
 </div>
+{% endif %}
 {% endblock %}

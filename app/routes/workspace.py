@@ -936,6 +936,8 @@ def follow_up():
     if len(request.args.getlist('review_group'))>1 or review_group not in ('',*finding_reviews.GROUPS):
         abort(400,description='Choose a listed review category.')
     data = report_data()
+    reviewed_count = (finding_reviews.history_query(finding_reviews.canonical(request.args)).count()
+                      if finding_reviews.available() and current_user.role=='coordinator' else None)
     now = data['now']
     items = follow_up_items(data)
     for item in items:
@@ -949,6 +951,7 @@ def follow_up():
             item['phase'] = 'current' if event.date >= now else 'past'
         else:
             item['phase'] = 'current'
+    category_counts = {key: sum(item['code'] in codes for item in items) for key, (_, codes) in finding_reviews.GROUPS.items()}
     if finding_type:
         items = [item for item in items if item['code'] == finding_type]
     if review_group:
@@ -968,7 +971,9 @@ def follow_up():
     last_row = min(page*5,len(items))
     return render_template('workspace/follow_up.html', **data, items=page_items,
                            finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),reviews_ready=finding_reviews.available(),
+                           reviewed_count=reviewed_count,
                            review_group=review_group,groups=finding_reviews.GROUPS,finding_labels=FINDING_LABELS,
+                           category_counts=category_counts,
                            total=len(items), page=page, pages=pages, phases=phases,
                            first_row=first_row, last_row=last_row)
 

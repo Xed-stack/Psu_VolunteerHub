@@ -50,7 +50,7 @@ def queue_view(args):
     page=args.get('page',1,type=int)
     if page is None or page<1:abort(400)
     director=current_user.role=='director'
-    page_size=5 if director else 25
+    page_size=5 if current_user.role in ('director','coordinator') else 25
     presentation={}
     if director:
         active_rows=service.active_items(data)
@@ -78,6 +78,9 @@ def queue_view(args):
         items=items[(page-1)*page_size:page*page_size]
     else:
         query=service.history_query(data)
+        if not director:
+            presentation['tab_counts']={'reviewed':query.count()}
+            presentation['category_counts']={key:query.filter(FindingReview.finding_type.in_(codes)).count() for key,(_,codes) in service.GROUPS.items()}
         if group:query=query.filter(FindingReview.finding_type.in_(service.GROUPS[group][1]))
         if code:query=query.filter(FindingReview.finding_type==code)
         total=query.count();pages=max(1,(total+page_size-1)//page_size);page=min(page,pages)
@@ -99,7 +102,8 @@ def queue_view(args):
             writer.writerow([csv_safe(value) for value in values])
         return Response(stream.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename="needs-attention-{data["year"]}-{tab}.csv"'})
     review_keys={row.id:row.finding_key for row in FindingReview.query.filter(FindingReview.id.in_([i.review_id for i in items])).all()} if tab=='reviewed' else {}
-    return render_template('workspace/director_review_queue.html' if director else 'workspace/review_queue.html',**data,review_tab=tab,review_group=group,review_keys=review_keys,finding_labels=service.FINDING_LABELS,
+    template='workspace/director_review_queue.html' if director else 'workspace/coordinator_review_queue.html' if current_user.role=='coordinator' else 'workspace/review_queue.html'
+    return render_template(template,**data,review_tab=tab,review_group=group,review_keys=review_keys,finding_labels=service.FINDING_LABELS,
         finding_type=code,groups=service.GROUPS,items=items,total=total,page=page,pages=pages,page_size=page_size,reasons=service.REASONS,**presentation)
 
 
