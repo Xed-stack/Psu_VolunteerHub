@@ -582,8 +582,9 @@ def _validate(expected, accounts, snapshot, now):
 @click.option('--database', required=True, help='Exact new destination database name.')
 @click.option('--year', type=click.Choice(['2026']), default='2026', show_default=True)
 @click.option('--dry-run', is_flag=True, help='Read-only target/source validation and planned totals.')
+@click.option('--resume-empty-schema', is_flag=True, help='Reuse known application tables only if every table is empty; never delete rows or tables.')
 @with_appcontext
-def seed_railway_year(database, year, dry_run):
+def seed_railway_year(database, year, dry_run, resume_empty_schema):
     """Provision a new database, copy four logins, and populate the 2026 year."""
     created=[]
     committed=False
@@ -600,7 +601,14 @@ def seed_railway_year(database, year, dry_run):
                             for p,h in manifest['files'].items()), 'Seed documents are missing or changed.')
                 click.echo('Existing 2026 seed verified; no changes made.')
                 return
-        require(not tables, 'Destination is not empty. Use a new database; no reset is performed.')
+        if tables and resume_empty_schema:
+            require(tables <= set(db.metadata.tables), 'Destination contains unknown tables; recovery refused.')
+            with db.engine.connect() as connection:
+                require(all(connection.execute(select(db.metadata.tables[name]).limit(1)).first() is None
+                            for name in sorted(tables)),
+                        'Destination contains rows; empty-schema recovery refused. Nothing was reset.')
+        else:
+            require(not tables, 'Destination is not empty. Use a new database; no reset is performed.')
         now=local_now().replace(second=0, microsecond=0)
         require(datetime(2026,11,1)<=now<datetime(2026,12,21),
                 'This 2026 schedule requires 1 November through 20 December 2026; review dates before later use.')

@@ -153,6 +153,38 @@ def test_preflight_refuses_unsafe_inputs(seed_app, monkeypatch, problem):
             assert inspect(db.engine).get_table_names()==[]
 
 
+def test_resume_empty_schema_completes_without_reset(seed_app):
+    with seed_app.app_context():
+        db.metadata.tables['campuses'].create(db.engine)
+    result = invoke(seed_app, '--resume-empty-schema', '--dry-run')
+    assert result.exit_code == 0, result.output
+    with seed_app.app_context():
+        assert inspect(db.engine).get_table_names() == ['campuses']
+    result = invoke(seed_app, '--resume-empty-schema')
+    assert result.exit_code == 0, result.output
+    with seed_app.app_context():
+        assert Event.query.count() == 90
+
+
+@pytest.mark.parametrize('problem', ['unknown_table', 'existing_rows'])
+def test_resume_refuses_unrelated_or_populated_schema(seed_app, problem):
+    with seed_app.app_context():
+        with db.engine.begin() as conn:
+            if problem == 'unknown_table':
+                conn.exec_driver_sql('CREATE TABLE unrelated (id INTEGER PRIMARY KEY)')
+            else:
+                db.metadata.tables['campuses'].create(conn)
+                conn.exec_driver_sql("INSERT INTO campuses (id, name, code) VALUES (1, 'Existing', 'EX')")
+    result = invoke(seed_app, '--resume-empty-schema')
+    assert result.exit_code != 0
+    assert 'refused' in result.output
+    with seed_app.app_context():
+        if problem == 'unknown_table':
+            assert inspect(db.engine).get_table_names() == ['unrelated']
+        else:
+            assert db.session.execute(db.select(db.metadata.tables['campuses'].c.name)).scalar_one() == 'Existing'
+
+
 def test_failure_rolls_back_rows_and_created_files(seed_app,monkeypatch):
     from app import railway_year_dataset as seed
     def fail():

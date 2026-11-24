@@ -189,7 +189,7 @@ class Registration(db.Model):
         'users.id', ondelete='CASCADE'), nullable=True)
     external_participant_id = db.Column(
         db.Integer, db.ForeignKey(
-            'external_participants.id', ondelete='SET NULL'), nullable=True)
+            'external_participants.id', ondelete='CASCADE'), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey(
         'events.id', ondelete='CASCADE'), nullable=False)
     status = db.Column(
