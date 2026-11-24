@@ -27,6 +27,9 @@ installed skill in this session, so its responsibilities were applied directly.
 - Low, defect found after rendering: a squeezed search field at 768px and the
   grammar "1 Agreements". The filters now reflow below 1024px and singular
   counts read correctly.
+- Low, defect found in review: header labels drifted from their columns because
+  the header and each row sized their own `auto` tracks. All five tracks now use
+  the same `minmax` widths, so labels sit above their cells.
 - Low, deliberate: the reference shows agency type, contact role and an
   accreditation validity claim. No such fields exist in the model, so they are
   omitted rather than invented. The summary shows the current campus directory
