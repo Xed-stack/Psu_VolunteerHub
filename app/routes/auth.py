@@ -20,11 +20,19 @@ from app.models.policy import (TermsRevision, TermsAcceptance, PrivacyRevision,
                                PrivacyAcknowledgement)
 from app.models import db
 from app.services.email import send_email
+from app.services.activity_workflow import local_now
 from app.services.session_idle import session_status
 from app.security import password_error, password_min_length as _password_min_length
 import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+
+@auth_bp.app_context_processor
+def inject_auth_footer_year():
+    return {'footer_year': local_now().year}
+
+
 _recovery_delivery_slots = threading.BoundedSemaphore(4)
 
 VOLUNTEER_TYPES = {'student', 'faculty', 'staff'}

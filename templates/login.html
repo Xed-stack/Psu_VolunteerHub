@@ -1,57 +1,82 @@
 {% extends 'layouts/auth_base.html' %}
 {% block title %}Sign In · PSU Volunteer Hub{% endblock %}
 {% block auth_page_class %} login-page{% endblock %}
-{% block auth_theme_color %}#ffffff{% endblock %}
+{% block auth_theme_color %}#f8fafc{% endblock %}
 {% block auth_navigation %}{% endblock %}
 {% block auth_messages %}{% endblock %}
 {% block body %}
-  <main class="auth-shell login-shell" id="main-content" tabindex="-1">
-    <figure class="login-photo">
-      <img src="{{ url_for('static',filename='assets/FB_IMG_1788789005999.jpg') }}" alt="PSU volunteers gathered during a coastal cleanup" width="2048" height="1536" fetchpriority="high" decoding="async">
-      <figcaption>Service starts with people working together.</figcaption>
-    </figure>
-    <div class="login-workspace">
-      {% include 'partials/auth_nav.html' %}
-      {% include 'partials/flash_messages.html' %}
-      <section class="auth-form login-form" aria-labelledby="login-title">
-      <div class="login-form__content">
-      <header class="auth-form__heading">
-        <h1 id="login-title">Sign In</h1>
-        <p>Access your PSU Volunteer Hub account.</p>
-      </header>
-      {% if form_error %}
-        <div class="auth-errors" role="alert" tabindex="-1" data-error-summary>
-          <p id="login-error">{{ form_error }}</p>
-          <a href="{{ url_for('auth.forgot_password') }}">Recover Your Password</a>
+  <div class="login-portal">
+    <header class="login-portal__header">
+      <a class="login-portal__brand" href="{{ url_for('home') }}">
+        <img src="{{ url_for('static', filename='assets/PSU-logo.png') }}" alt="" width="40" height="40">
+        <span class="login-portal__brand-text">
+          <span class="login-portal__title">PSU Volunteer Hub <span class="login-portal__badge">Official Portal</span></span>
+          <span class="login-portal__tagline">Pangasinan State University · Service starts with people working together.</span>
+        </span>
+      </a>
+      <nav class="login-portal__nav" aria-label="Account Navigation">
+        <a class="button button--secondary" href="{{ url_for('home') }}">Home</a>
+        <a class="button button--secondary" href="{{ url_for('help_page') }}">Help &amp; Guides</a>
+      </nav>
+    </header>
+
+    <main class="login-portal__main" id="main-content" tabindex="-1">
+      <section class="login-card" aria-labelledby="login-title">
+        <span class="login-card__accent" aria-hidden="true"></span>
+        {% include 'partials/flash_messages.html' %}
+        <div class="login-card__body">
+          <h1 id="login-title">Sign In</h1>
+          <p class="login-card__intro">Access your PSU Volunteer Hub account to coordinate activities, and track deliverables.</p>
+          {% if form_error %}
+            <div class="auth-errors" role="alert" tabindex="-1" data-error-summary>
+              <p id="login-error">{{ form_error }}</p>
+              <a href="{{ url_for('auth.forgot_password') }}">Recover Your Password</a>
+            </div>
+          {% endif %}
+          <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post" data-no-draft>
+            {% include 'partials/csrf_field.html' %}
+            <div class="login-field">
+              <label for="identifier">Email or ID Number <span aria-hidden="true">*</span></label>
+              <div class="login-input">
+                <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                <input class="input" id="identifier" name="identifier" required
+                  autocomplete="username" spellcheck="false" autocapitalize="none"
+                  placeholder="Enter you Institutional Email"
+                  value="{{ request.form.get('identifier', '') }}"
+                  aria-describedby="identifier-help{% if form_error %} login-error{% endif %}"
+                  {% if form_error %}aria-invalid="true"{% endif %}>
+              </div>
+              <p class="login-field__help" id="identifier-help">Use your institutional email address or PSU ID number.</p>
+            </div>
+            <div class="login-field">
+              <label for="password">Password <span aria-hidden="true">*</span></label>
+              <div class="login-input login-input--password">
+                <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+                <input class="input" id="password" type="password" name="password" required autocomplete="current-password"
+                  placeholder="Enter your password"
+                  {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
+                <button class="login-toggle" type="button" data-toggle-password="password" aria-controls="password" aria-label="Show Password" aria-pressed="false" hidden>Show</button>
+              </div>
+            </div>
+            <a class="login-card__forgot" href="{{ url_for('auth.forgot_password') }}">Forgot Your Password?</a>
+            <button class="button button--primary button--block login-card__submit" type="submit">Sign In <span aria-hidden="true">→</span></button>
+          </form>
+          <p class="login-card__divider"><span>Institutional Access</span></p>
+          <p class="login-card__switch">New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an Account</a></p>
         </div>
-      {% endif %}
-      <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="post" data-no-draft>
-        {% include 'partials/csrf_field.html' %}
-        <div class="field">
-          <label for="identifier">Email or ID Number <span aria-hidden="true">*</span></label>
-          <input class="input" id="identifier" name="identifier" required
-            autocomplete="username" spellcheck="false" autocapitalize="none"
-            value="{{ request.form.get('identifier', '') }}"
-            aria-describedby="identifier-help{% if form_error %} login-error{% endif %}"
-            {% if form_error %}aria-invalid="true"{% endif %}>
-          <p class="login-field-help" id="identifier-help">Use your email address or PSU ID number.</p>
-        </div>
-        <div class="field">
-          <label for="password">Password <span aria-hidden="true">*</span></label>
-          <div class="password-input login-password">
-            <input class="input" id="password" type="password" name="password" required autocomplete="current-password"
-              {% if form_error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
-            <button class="button button--secondary" type="button" data-toggle-password="password" aria-controls="password" aria-label="Show Password" aria-pressed="false" hidden>Show</button>
-          </div>
-        </div>
-        <a class="auth-text-link auth-forgot" href="{{ url_for('auth.forgot_password') }}">Forgot Your Password?</a>
-        <button class="button button--primary button--block" type="submit">Sign In</button>
-      </form>
-      <p class="auth-switch">New to the Hub? <a href="{{ url_for('auth.interests') }}">Create an Account</a></p>
-      </div>
       </section>
-    </div>
-  </main>
+    </main>
+
+    <footer class="login-portal__footer" aria-label="Portal Footer">
+      <div class="login-portal__footer-inner">
+        <p>© {{ footer_year }} Pangasinan State University. All rights reserved.</p>
+        <nav class="login-portal__footer-nav" aria-label="Policy Guidance">
+          <a href="{{ url_for('help_page', slug='agreements') }}" title="Privacy and participation guidance">Privacy Policy</a>
+          <a href="{{ url_for('help_page', slug='getting-started') }}" title="Terms and account guidance">Terms of Service</a>
+        </nav>
+      </div>
+    </footer>
+  </div>
   {% if show_reactivation_modal %}
     <dialog class="auth-modal" aria-labelledby="reactivation-title" aria-describedby="reactivation-description" data-auto-open>
       <div class="auth-modal__card">

@@ -53,16 +53,18 @@ def index():
     if current_user.role == 'director':
         from app.services.aop_presentation import director_list, STATUSES
         cards, totals, breakdown = director_list(parents, children, campus_id)
+        active_goals = len(cards)
         search = request.args.get('q', '').strip()[:200]
         status = request.args.get('progress_status', '')
         if status not in ('', *STATUSES):
             abort(400, description='Choose a listed progress status.')
         cards = [card for card in cards if
                  (not search or search.casefold() in (card['goal'].indicator.name + ' ' +
-                  (card['goal'].indicator.definition or '')).casefold()) and
+                  (card['goal'].indicator.definition or '') + ' ' +
+                  ' '.join(child.campus.name for child in card['result']['commitments'])).casefold()) and
                  (not status or card['status'] == status)]
         presentation = dict(summary=totals, breakdown=breakdown, q=search,
-                            progress_status=status, statuses=STATUSES, row_count=len(cards))
+                            progress_status=status, statuses=STATUSES, row_count=len(cards), active_goals=active_goals)
     if request.args.get('export'):
         if current_user.role == 'director':
             source = {row['target_id']: row for row in aop.rows(year, data=(parents, children))}

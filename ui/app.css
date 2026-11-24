@@ -1047,40 +1047,57 @@
   .auth-brand__intro > p:last-child { @apply text-blue-100; }
   .auth-brand__photo { @apply rounded-lg; }
   .auth-form { @apply self-start; }
-  .login-page { @apply bg-white; }
-  .login-page .auth-nav { @apply gap-3 border-0 px-5 py-4 sm:px-8 lg:px-8; }
-  .login-page .auth-nav__brand { @apply min-w-0; }
-  .login-page .auth-nav__links { @apply shrink-0 gap-2; }
-  .login-page .auth-nav__link { @apply px-3; }
-  .login-page .login-shell { @apply m-0 grid min-h-svh w-full max-w-none items-stretch gap-0 bg-white p-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]; }
-  .login-page .login-photo { @apply relative m-0 hidden overflow-hidden bg-psu-deep lg:block; }
-  .login-page .login-photo img { @apply absolute inset-0 h-full w-full object-cover object-[50%_65%]; }
-  .login-page .login-photo figcaption { @apply absolute right-0 bottom-0 left-0 border-t-3 border-gold bg-psu-deep p-8 text-2xl leading-snug text-white xl:p-12; }
-  .login-page .login-workspace { @apply flex min-w-0 flex-col; }
-  .login-page .login-workspace { padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  .login-page .login-form { @apply flex min-w-0 flex-1 items-center self-auto rounded-none border-0 px-5 py-8 sm:px-8 sm:py-12 lg:px-10; }
-  .login-page .login-form__content { @apply mx-auto w-full max-w-[25rem]; }
-  .login-page .login-form .auth-form__heading { @apply mb-8; }
-  .login-page .login-form .auth-form__heading h1 { @apply m-0 text-3xl leading-tight text-psu-deep sm:text-4xl; }
-  .login-page .login-form .auth-form__heading p { @apply mt-2 text-base text-slate-600; }
-  .login-page .login-form .auth-errors { @apply mb-5; }
-  .login-page .login-form form { @apply gap-5; }
-  .login-page .login-field-help { @apply text-sm leading-6 text-slate-600; }
-  .login-page .login-password { @apply grid grid-cols-[minmax(0,1fr)_auto] gap-0 rounded-md border border-slate-500 bg-white focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-psu; }
-  .login-page .login-password input { @apply min-w-0 rounded-r-none border-0 bg-transparent; }
-  .login-page .login-password button { @apply min-w-14 rounded-l-none border-0 border-l border-slate-300 px-3 text-sm; }
-  .login-page .auth-forgot { @apply justify-self-start; }
-  .login-page .login-form button[type=submit] { @apply w-full; }
-  .login-page .login-form .auth-switch { @apply mt-6 border-t border-slate-200 pt-4 text-base text-slate-600; }
-  .login-page .auth-switch a { @apply inline-flex min-h-11 items-center font-semibold text-psu underline underline-offset-4; }
+  .login-page { background:linear-gradient(180deg,#f8fafc 0%,#eef2f7 55%,#f8fafc 100%); }
+  .login-portal { @apply flex min-h-svh flex-col; }
+  .login-portal__header { @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-3 shadow-sm sm:px-8; }
+  .login-portal__brand { @apply flex min-w-0 items-center gap-3 no-underline; }
+  .login-portal__brand img { @apply size-10 shrink-0 rounded-full; }
+  .login-portal__brand-text { @apply flex min-w-0 flex-col; }
+  .login-portal__title { @apply flex flex-wrap items-center gap-2 text-lg font-bold leading-tight text-psu-deep sm:text-xl; }
+  .login-portal__badge { @apply rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800; }
+  .login-portal__tagline { @apply text-xs leading-5 text-slate-600; }
+  .login-portal__nav { @apply flex flex-wrap items-center gap-2; }
+  .login-portal__nav .button { @apply min-h-11 border-slate-300 bg-white px-3 text-xs font-semibold text-psu-deep shadow-sm; }
+  .login-portal__main { @apply flex flex-1 items-center justify-center px-4 py-10 sm:px-6; }
+  .login-card { @apply relative w-full max-w-[25rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg; }
+  .login-card__accent { @apply block h-1 w-full; background:linear-gradient(90deg,#0c213d 0%,#0c213d 55%,#f4bd27 100%); }
+  .login-card__body { @apply px-6 pb-7 pt-5 sm:px-8; }
+  .login-page .flash-stack { @apply m-0 grid gap-2 px-4 pt-4; }
+  .login-page .flash { @apply flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700; }
+  .login-page .flash__content { @apply flex min-w-0 flex-wrap items-center gap-1; }
+  .login-page .flash__content::before { content:'info'; @apply text-base leading-none text-amber-600; font-family:'Material Symbols Outlined'; }
+  .login-page .flash__label { @apply font-bold text-psu-deep; }
+  .login-page .flash__label::after { content:':'; }
+  .login-page .flash__action, .login-page .flash__dismiss { @apply ml-auto inline-flex min-h-11 items-center text-xs font-semibold text-psu underline-offset-2 hover:underline; }
+  .login-card h1 { @apply text-[30px] font-bold leading-tight text-psu-deep; }
+  .login-card__intro { @apply mt-2 max-w-[34ch] text-sm leading-6 text-slate-600; }
+  .login-card .auth-errors { @apply mb-4 p-3 text-sm; }
+  .login-card form { @apply mt-6 grid gap-4; }
+  .login-field label { @apply block text-[13px] font-semibold text-psu-deep; }
+  .login-field label span { @apply text-red-700; }
+  .login-input { @apply relative flex min-h-11 items-center rounded-md border border-slate-300 bg-white transition-colors focus-within:border-psu focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-psu; }
+  .login-input > .material-symbols-outlined { @apply pointer-events-none absolute left-3 text-[18px] leading-none text-slate-400; }
+  .login-input input { @apply min-h-11 min-w-0 w-full border-0 bg-transparent py-2.5 pl-10 pr-3 text-sm text-ink placeholder:text-slate-400 focus-visible:outline-none; }
+  .login-input--password input { @apply pr-16; }
+  .login-field__help { @apply text-xs leading-5 text-slate-500; }
+  .login-toggle { @apply absolute right-2 inline-flex min-h-11 items-center border-0 bg-transparent px-2 text-xs font-semibold text-psu; }
+  .login-card__forgot { @apply inline-flex min-h-11 items-center justify-self-end text-xs font-semibold text-psu underline underline-offset-2 hover:text-psu-deep; }
+  .login-card__submit { @apply mt-1 min-h-12 w-full gap-2 py-3 text-sm font-semibold text-white shadow-sm; background:#0c213d; }
+  .login-card__submit:hover { background:var(--color-psu); }
+  .login-card__divider { @apply mt-6 flex items-center gap-3 text-[10px] font-bold uppercase tracking-wide text-slate-500; }
+  .login-card__divider::before, .login-card__divider::after { content:''; @apply h-px flex-1 bg-slate-200; }
+  .login-card__switch { @apply mt-5 text-center text-[13px] text-slate-600; }
+  .login-card__switch a { @apply font-bold text-psu underline underline-offset-2 hover:text-psu-deep; }
+  .login-portal__footer { @apply border-t border-slate-200 bg-white/80 px-5 py-4 sm:px-8; }
+  .login-portal__footer-inner { @apply mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-slate-500; }
+  .login-portal__footer-inner p { @apply text-xs leading-5 text-slate-500; }
+  .login-portal__footer-nav { @apply flex flex-wrap items-center gap-4; }
+  .login-portal__footer-nav a { @apply inline-flex min-h-11 items-center text-xs text-slate-600 underline-offset-2 hover:text-psu hover:underline; }
   .login-page .auth-modal { @apply w-[min(28rem,calc(100%-2rem))] border-slate-300 p-6; }
   .login-page .auth-modal__card { @apply grid gap-4; }
   .login-page .auth-modal h2 { @apply text-2xl text-psu-deep; }
   .login-page .auth-modal p { @apply text-base text-slate-600; }
   .login-page .auth-modal { overscroll-behavior:contain; }
-  @media (max-height: 40rem) {
-    .login-page .login-form { @apply items-start py-6; }
-  }
   .login-page .auth-notice { @apply mx-auto mb-6 w-[calc(100%-2rem)] max-w-[28rem] rounded-lg border border-slate-300 bg-white p-5; }
   .onboarding-page { @apply flex min-h-svh flex-col bg-white; }
   .onboarding-page .auth-nav { @apply mx-auto w-full max-w-7xl gap-3 border-0 px-5 py-4 sm:px-8; }
@@ -1745,7 +1762,6 @@ html[data-js] [data-period-inactive] { display:none !important; }
     .agency-card__foot { @apply items-start; }
   }
 @media (min-width:1024px) {
-  .aop-director > .aop-director-deliverables,
   .aop-director > nav[aria-label="AOP Records"] { display:none; }
   body:has(.aop-director) .role-content { padding-top:2rem; }
   body:has(.aop-director) .breadcrumbs,
@@ -1793,4 +1809,22 @@ html[data-js] [data-period-inactive] { display:none !important; }
   .aop-campus-tiles strong { font-weight:500; }
   .aop-campus-tiles span { color:#1d4ed8; font-weight:600; }
   .aop-campus-tiles small { font-size:.8125rem; color:#047857; }
+  .aop-director-deliverables { border-color:#e2e8f0; border-radius:.5rem; }
+  .aop-director-deliverables > header { display:block; padding:.75rem 1rem; border-bottom:1px solid #e2e8f0; }
+  .aop-director-search { margin-top:.5rem; }
+  .aop-director-deliverables h2 { font-size:.9375rem; font-weight:700; color:#0c213d; }
+  .aop-posted-count { color:var(--color-psu); font-size:.75rem; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+  .aop-director-deliverables > header p { font-size:.75rem; line-height:1.5; }
+  .aop-director-search .field { font-size:.75rem; }
+  .aop-director-search .field input, .aop-director-search .field select { min-height:44px; font-size:.8125rem; }
+  .aop-director-search .btn { min-height:44px; font-size:.75rem; }
+  .aop-deliverables-table { table-layout:fixed; font-size:.75rem; }
+  .aop-deliverables-table thead th { background:#fff; border-bottom:1px solid #cbd5e1; padding:.5rem .75rem; color:#475569; font-size:.625rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+  .aop-deliverables-table tbody th, .aop-deliverables-table td { padding:.625rem .75rem; line-height:1.45; border-bottom:1px solid #edf2f7; }
+  .aop-deliverables-table tbody th p { font-size:.75rem; }
+  .aop-deliverables-table td p { font-size:.75rem; }
+  .aop-category-unset { font-size:.75rem; }
+  .aop-progress-track { margin-top:.375rem; }
+  .aop-director-pagination { padding:.625rem 1rem; font-size:.75rem; }
+  .aop-director-pagination .btn { min-height:44px; font-size:.75rem; }
 }
