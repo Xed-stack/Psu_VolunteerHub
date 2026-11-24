@@ -3,6 +3,9 @@ from flask import Blueprint,abort,request,render_template,redirect,url_for,flash
 from flask_login import login_required,current_user
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 from datetime import timedelta
+import csv
+import io
+from flask import Response
 from app.models import db
 from app.models.finding_review import FindingReview,FindingReviewEvent
 from app.models.event import Event
@@ -46,21 +49,58 @@ def queue_view(args):
     if current_user.role=='coordinator' and tab!='reviewed':abort(403)
     page=args.get('page',1,type=int)
     if page is None or page<1:abort(400)
+    director=current_user.role=='director'
+    page_size=5 if director else 25
+    presentation={}
+    if director:
+        active_rows=service.active_items(data)
+        history=service.history_query(data)
+        presentation['tab_counts']=dict(active=len(active_rows),reviewed=history.count())
+        if tab=='active':
+            presentation['category_counts']={key:sum(row['group']==key for row in active_rows) for key in service.GROUPS}
+        else:
+            presentation['category_counts']={key:history.filter(FindingReview.finding_type.in_(codes)).count() for key,(_,codes) in service.GROUPS.items()}
+        sort=args.get('sort','actionable')
+        if sort not in ('actionable','campus','title'):abort(400,description='Choose a listed review order.')
+        presentation['sort']=sort
     if tab=='active':
-        items=service.active_items(data)
+        items=active_rows if director else service.active_items(data)
         if group:items=[i for i in items if i['group']==group]
         if code:items=[i for i in items if i['snapshot']['code']==code]
-        total=len(items);pages=max(1,(total+24)//25);page=min(page,pages)
-        items=items[(page-1)*25:page*25]
+        if director:
+            items.sort(key=lambda row: ((not row['can_follow_up'],not row['changed']) if sort=='actionable' else ()) +
+                ((row['snapshot']['campus'].casefold(),row['snapshot']['title'].casefold()) if sort!='title' else
+                 (row['snapshot']['title'].casefold(),row['snapshot']['campus'].casefold())))
+            presentation['reminder_count']=sum(row['can_follow_up'] and row['detected'] for row in items)
+            presentation['missing_coordinator_count']=sum(row['detected'] and not row.get('has_coordinator',True) for row in items)
+            export_items=items
+        total=len(items);pages=max(1,(total+page_size-1)//page_size);page=min(page,pages)
+        items=items[(page-1)*page_size:page*page_size]
     else:
         query=service.history_query(data)
         if group:query=query.filter(FindingReview.finding_type.in_(service.GROUPS[group][1]))
         if code:query=query.filter(FindingReview.finding_type==code)
-        total=query.count();pages=max(1,(total+24)//25);page=min(page,pages)
-        items=query.order_by(FindingReviewEvent.created_at.desc(),FindingReviewEvent.id.desc()).offset((page-1)*25).limit(25).all()
+        total=query.count();pages=max(1,(total+page_size-1)//page_size);page=min(page,pages)
+        ordered=query.order_by(FindingReviewEvent.created_at.desc(),FindingReviewEvent.id.desc())
+        items=ordered.offset((page-1)*page_size).limit(page_size).all()
+        if director:
+            presentation['reminder_count']=0
+            if args.get('export'):export_items=ordered.all()
+    if director and args.get('export'):
+        if args['export']!='csv':abort(400,description='Choose CSV for finding exports.')
+        stream=io.StringIO()
+        writer=csv.writer(stream)
+        writer.writerow(['Campus','Finding','Activity','Scope','Evidence','Review Status'])
+        from app.reports import csv_safe
+        for row in export_items:
+            snap=row['snapshot'] if tab=='active' else row.content['snapshot']
+            values=[snap['campus'],snap['title'],snap.get('event_title',''),snap['scope'],snap['evidence'],
+                    row['status'].replace('_',' ').title() if tab=='active' else 'Reviewed']
+            writer.writerow([csv_safe(value) for value in values])
+        return Response(stream.getvalue(),mimetype='text/csv',headers={'Content-Disposition':f'attachment; filename="needs-attention-{data["year"]}-{tab}.csv"'})
     review_keys={row.id:row.finding_key for row in FindingReview.query.filter(FindingReview.id.in_([i.review_id for i in items])).all()} if tab=='reviewed' else {}
-    return render_template('workspace/review_queue.html',**data,review_tab=tab,review_group=group,review_keys=review_keys,finding_labels=service.FINDING_LABELS,
-        finding_type=code,groups=service.GROUPS,items=items,total=total,page=page,pages=pages,reasons=service.REASONS)
+    return render_template('workspace/director_review_queue.html' if director else 'workspace/review_queue.html',**data,review_tab=tab,review_group=group,review_keys=review_keys,finding_labels=service.FINDING_LABELS,
+        finding_type=code,groups=service.GROUPS,items=items,total=total,page=page,pages=pages,page_size=page_size,reasons=service.REASONS,**presentation)
 
 
 @finding_reviews_bp.route('/<string:key>',methods=['GET','POST'])

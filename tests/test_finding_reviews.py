@@ -47,6 +47,42 @@ def test_get_refresh_creates_no_review_and_filters_keep_identity(client,app,revi
     assert client.get('/workspace/finding-reviews/'+first['key']+'?source='+first['token']).status_code==200
 
 
+def test_director_queue_counts_categories_and_csv_cover_all_pages(client,app,actors,review_case):
+    import csv
+    import io
+    now=local_now()
+    for index in range(26):
+        event=Event(title='=1+1' if index==0 else f'Export fixture {index}',description='Synthetic',
+            date=now-timedelta(days=2),end_date=now-timedelta(days=1),campus_id=1,
+            lifecycle_status='approved')
+        db.session.add(event)
+        db.session.flush()
+        db.session.add(Registration(event_id=event.id,user_id=actors['volunteer'],status='confirmed'))
+    db.session.commit()
+    response,data=screen(client,app,'/workspace/follow-up?period=all&finding_type=pending_attendance')
+    assert response.status_code==200 and data['total']==27 and len(data['items'])==5
+    assert sum(data['category_counts'].values())==data['tab_counts']['active']
+    exported=client.get('/workspace/follow-up?period=all&finding_type=pending_attendance&page=2&export=csv')
+    assert exported.status_code==200 and exported.mimetype=='text/csv'
+    rows=list(csv.reader(io.StringIO(exported.text)))
+    assert len(rows)==28
+    assert any(row[2].startswith("'=1+1") for row in rows[1:])
+    assert FindingReview.query.count()==FindingReviewEvent.query.count()==0
+    _,campus=screen(client,app,'/workspace/follow-up?period=all&campus_id=2')
+    assert all(row['snapshot']['campus_id']==2 for row in campus['items'])
+    assert client.get('/workspace/follow-up?sort=unlisted').status_code==400
+
+
+def test_reviewed_category_counts_and_export_follow_closure(client,app,review_case):
+    item=active(client,app)[0]
+    assert post(client,item).status_code==302
+    _,data=screen(client,app,'/workspace/follow-up?period=all&review_tab=reviewed&review_group=attendance')
+    assert data['tab_counts']['reviewed']==1 and data['category_counts']['attendance']==1
+    assert data['total']==1
+    exported=client.get('/workspace/follow-up?period=all&review_tab=reviewed&review_group=attendance&export=csv')
+    assert exported.status_code==200 and 'Reviewed' in exported.text
+
+
 def test_close_preserves_facts_and_history_permissions(client,app,actors,review_case):
     event,registration=review_case
     item=active(client,app)[0]
@@ -196,7 +232,7 @@ def test_review_history_is_database_paginated(client,app,actors,review_case):
             action='closed',content=dict(first.content,assessment=f'Historical assessment {i}')))
     db.session.commit()
     _,data=screen(client,app,'/workspace/follow-up?period=all&review_tab=reviewed&page=2')
-    assert data['total']==28 and len(data['items'])==3 and data['pages']==2
+    assert data['total']==28 and len(data['items'])==5 and data['pages']==6
     _,detail=screen(client,app,'/workspace/finding-reviews/'+item['key']+'?history_page=2')
     assert len(detail['history'])==3 and detail['history_pages']==2
 
@@ -230,7 +266,7 @@ def test_aggregation_adds_no_query_per_finding(client,app,review_case):
         db.session.add(Registration(event_id=another.id,user_id=registration.user_id,status='confirmed'))
     db.session.commit()
     with query_count(app) as large:rows=active(client,app)
-    assert len(rows)==25 and len(large)<=len(small)+2,(len(small),len(large))
+    assert len(rows)==5 and len(large)<=len(small)+2,(len(small),len(large))
 
 
 def test_ineligible_or_cosmetic_changes_do_not_reopen(client,app,actors,review_case):

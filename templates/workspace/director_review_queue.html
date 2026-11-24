@@ -1,0 +1,44 @@
+{% extends 'workspace/review_queue.html' %}
+{% block content %}
+<div class="needs-original">{{ super() }}</div>
+<div class="needs-desktop">
+  <a class="needs-back" href="{{ url_for('workspace.overview') }}">Back to Overview</a>
+  <header class="needs-heading"><div><h1>Needs Attention</h1><span class="needs-pending">{{ tab_counts.active }} {{ 'Action Pending' if tab_counts.active==1 else 'Actions Pending' }}</span></div><p>University Director Role</p></header>
+  {{ scope_controls(false) }}
+  <div class="needs-view-row"><nav aria-label="Director Review Views"><a href="{{ query_url(review_tab='active',page=1,export=none) }}" {{ 'aria-current=page' if review_tab=='active' }}>Active <span>{{ tab_counts.active }}</span></a><a href="{{ query_url(review_tab='reviewed',page=1,export=none) }}" {{ 'aria-current=page' if review_tab=='reviewed' }}>Reviewed <span>{{ tab_counts.reviewed }}</span></a></nav>
+  {% if review_tab=='active' %}<form method="get" class="needs-sort">{% from 'partials/filter_ui.html' import context_fields with context %}{{ context_fields(['sort','page','export']) }}<label for="needs-sort">Sort By</label><select id="needs-sort" name="sort"><option value="actionable" {{ 'selected' if sort=='actionable' }}>Actionable First</option><option value="campus" {{ 'selected' if sort=='campus' }}>Campus</option><option value="title" {{ 'selected' if sort=='title' }}>Finding Title</option></select><button class="btn btn--outline">Sort</button></form>{% endif %}</div>
+  <nav class="needs-categories" aria-label="Review Categories"><a href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}" {{ 'aria-current=page' if not review_group and not finding_type }}>All <span>{{ tab_counts[review_tab] }}</span></a>{% for key,(label,codes) in groups.items() %}<a href="{{ query_url(remove=['finding_type','export'],review_group=key,page=1) }}" {{ 'aria-current=page' if review_group==key }}>{{ label }} <span>{{ category_counts[key] }}</span></a>{% endfor %}<a class="needs-clear" href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}">Clear Filters</a></nav>
+  {% if finding_type %}<p class="needs-type">Finding Type · {{ finding_labels[finding_type] }} <a href="{{ query_url(remove=['finding_type'],page=1) }}">Clear Finding Type</a></p>{% endif %}
+  <aside class="needs-policy"><p><strong>Audit Policy.</strong> Review evidence covers the whole activity. Ended attendance remains locked.</p><strong>Baseline Locked</strong></aside>
+  <div class="needs-toolbar"><p>{{ total }} {{ 'Active Reviews' if review_tab=='active' else 'Completed Assessments' }}{% if review_tab=='active' %}<span>{{ reminder_count }} eligible for Coordinator reminders</span>{% endif %}</p><a class="btn btn--outline" href="{{ query_url(export='csv',page=1) }}">Export CSV</a></div>
+  {% if missing_coordinator_count %}<p class="needs-type">No active Coordinator is assigned for {{ missing_coordinator_count }} {{ 'finding' if missing_coordinator_count==1 else 'findings' }}. Open Review to assess the evidence.</p>{% endif %}
+  <ul class="needs-queue">{% for row in items %}
+    {% set snap=row.snapshot if review_tab=='active' else row.content.snapshot %}
+    {% set detail_url=url_for('finding_reviews.detail',key=row.key,source=row.token,return_to=request.full_path.rstrip('?')) if review_tab=='active' else url_for('finding_reviews.detail',key=review_keys[row.review_id],occurrence=row.id,return_to=request.full_path.rstrip('?')) %}
+    <li>
+      <div class="needs-evidence">
+        <h2><a href="{{ detail_url }}">{{ snap.title }}</a></h2>
+        <p class="needs-meta">
+          {% if snap.event_title %}{{ snap.event_title }} · {% endif %}{{ snap.campus }} ·
+          {% for key,(label,codes) in groups.items() if snap.code in codes %}{{ label }} · {% endfor %}
+          {% set activity_date=snap.activity_date|review_schedule %}
+          {{ activity_date.strftime('%d %b %Y, %I:%M %p PHT') if activity_date else snap.scope }}
+        </p>
+        <details class="needs-evidence-details">
+          <summary><strong>Evidence.</strong> {{ snap.evidence }}</summary>
+          <div>
+            <p>{{ snap.scope }}</p>
+            {{ snapshot_dates(snap) }}
+            {% if review_tab=='reviewed' %}
+              <p>{{ reasons.get(row.content.closure_reason) }} · {{ row.actor_name }} · {{ row.created_at|review_pht }}</p>
+            {% else %}
+              <p>Follow-up Sent remains active until a Director closes the review.</p>
+            {% endif %}
+          </div>
+        </details>
+      </div>
+    <div class="needs-row-actions">{% if review_tab=='active' %}<p class="needs-status {{ 'needs-status--changed' if row.changed else 'needs-status--sent' if row.status=='follow_up_sent' else '' }}">{{ 'Evidence Changed' if row.changed else 'Follow-up Sent' if row.status=='follow_up_sent' else 'Needs Review' }}{% if not row.detected %} · Finding No Longer Detected{% endif %}</p>{% else %}<p class="needs-status needs-status--sent">Reviewed</p>{% endif %}<div><a class="btn btn--primary" href="{{ detail_url }}">{{ 'Review' if review_tab=='active' else 'View Assessment' }}</a>{% if review_tab=='active' and row.detected and row.can_follow_up %}{{ reminder(row) }}{% endif %}</div></div></li>
+  {% else %}<li class="needs-empty">{{ 'No active reviews' if review_tab=='active' else 'No completed assessments' }} match this scope. Change the scope or clear the review filters.</li>{% endfor %}</ul>
+  <nav class="needs-pagination" aria-label="Director Review Pages"><p>{% if total %}Showing {{ (page-1)*page_size+1 }}–{{ [page*page_size,total]|min }} of {{ total }}{% else %}0 findings{% endif %} · {{ 'All campuses' if not campus_id else 'Selected campus' }}</p><div>{% if page>1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page<pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</div></nav>
+</div>
+{% endblock %}

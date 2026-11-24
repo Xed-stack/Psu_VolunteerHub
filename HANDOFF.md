@@ -1,5 +1,36 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+Publication authorization on 24 November 2026 covers the Director Needs Attention
+desktop queue and Overview commitment KPI destination on both configured
+`codex/ui-workflow-overhaul` remote branches. The separate generated-fallback
+page draft remains local. Earlier local-only statements are historical.
+
+## UI Follow-Up: Overview Commitment KPI Destination, 24 November 2026
+
+Director Overview's Campus Committed Activities KPI now opens the AOP report,
+retaining selected year and campus with Reports as the return destination.
+Rendered local navigation and its destination were verified with HTTP 200.
+The change is local and uncommitted.
+
+## Current Handoff: Director Needs Attention Desktop Reference, 24 November 2026
+
+Implemented the supplied desktop queue direction using the existing persistent
+review workflow. A Director-specific template provides pending/tab/category
+counts, scope controls, action/campus/title sorting, audit note, CSV export,
+five-row pagination, expandable evidence, status labels, Review links and
+eligible quick reminders. The original narrow presentation is retained, sharing
+five-row Director pagination. Other roles retain their queue and page size.
+Bulk selection/remind-all/close controls from the screenshot remain a limitation.
+Closure continues through the existing required per-finding assessment and reason.
+
+Browser checks passed in five groups at three desktop widths, with CSRF-enabled
+reminder and closure flows in disposable data. QA, critique, audit and limitations
+are in `docs/qa/DIRECTOR_NEEDS_ATTENTION_REFERENCE.md`. The local preview was
+reloaded. These changes are local and have no publication authorization.
+47 distinct focused Python cases passed across the final full run and the
+missing-Coordinator follow-up checks. A scope-wide notice keeps that exception
+visible when the affected finding is on a later page.
+
 Publication authorization on 24 November 2026 covers the completed AOP report,
 restored Director AOP Goals page, desktop deliverables removal and new-goal form
 updates on both `origin/codex/ui-workflow-overhaul` and
