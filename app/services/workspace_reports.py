@@ -309,13 +309,17 @@ def follow_up_items(data):
         'low_attendance':('Attendance Is Below the Existing 75% Review Guide','Review Participation'),
     }
     from flask import url_for
+    from flask_login import current_user
     items = []
     for row in data['rows']:
         for code in row['attention']:
             title, action = labels[code]
             event = row['event']
-            href = url_for('coordinator.attendance',event_id=event.id) if code == 'record_attendance' else url_for(
-                'workspace.report_results',event_id=event.id,period='all',year=data['year'])
+            if code == 'record_attendance':
+                href = url_for('coordinator.attendance',event_id=event.id)
+            else:
+                endpoint = 'workspace.activity_report' if current_user.role == 'coordinator' else 'workspace.report_results'
+                href = url_for(endpoint,event_id=event.id,period='all',year=data['year'])
             items.append(dict(code=code,event=event,campus=event.campus,title=title,action=action,url=href,
                 evidence=f"{row['metrics']['missing']} unrecorded; {row['metrics']['present']} recorded present / {row['metrics']['registrations']} registrations",
                 scope=data['period_label']))

@@ -6,7 +6,7 @@
 {% macro queue_row(item,hide_correction_action=false) %}
   <li><div><small>{{ item.campus.name if item.campus else 'Unassigned campus' }}</small><strong>{{ item.title }}</strong>{% if item.event %}<p><a
   class="text-psu font-medium underline"
-  href="{{ linked_url('workspace.activity',event_id=item.event.id) }}"
+  href="{{ item.url if current_user.role == 'coordinator' and item.code != 'record_attendance' else linked_url('workspace.activity',event_id=item.event.id) }}"
 >{{ item.event.title }}</a></p>{{ dates(item.event.date,item.event.end_date) }}{% endif %}<small>{{ item.scope }}</small><p>{{ item.evidence }}</p></div><div class="queue-actions">{% if hide_correction_action and item.code=='pending_attendance' %}<p class="scope-note">Attendance is locked. Historical unrecorded values remain unchanged.</p>{% elif not (current_user.role=='director' and item.code=='record_attendance') %}<a
   class="btn btn--outline"
   href="{{ item.url if current_user.role == 'coordinator' or item.code != 'record_attendance' else url_for('workspace.activity',event_id=item.event.id) }}"

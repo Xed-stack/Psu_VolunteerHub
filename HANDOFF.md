@@ -1,5 +1,28 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Coordinator Read-Only Finding Reports, 24 November 2026
+
+Coordinator activity findings other than Record Attendance now open the existing
+Combined Activity Report for that activity, with all recorded dates and the
+selected reporting year. This includes unrecorded attendance, missed participant
+targets, low attendance and missing-end-time schedule findings. Shared compact
+activity-name links use the same destination; desktop titles/buttons already
+consume the finding URL. Director actions, annual-plan links, reviewed-history
+navigation, report presentation and attendance permissions remain unchanged.
+
+Verification: 28 existing activity-journey/attendance-refinement tests passed.
+Isolated rendered-link checks passed for all four read-only finding types with
+reviews enabled/disabled, correct report/activity/campus/year, desktop titles
+and buttons, compact activity links, ongoing attendance, Director compatibility,
+cross-campus 404, and unchanged attendance/review row counts after GETs. Source
+review against current Vercel Web Interface Guidelines found no in-scope link
+issues; existing native links, focus styles and layout are retained. Required
+local design skills were unavailable; no skills installed and no browser visual
+audit claimed. The user authorized committing and pushing this change to the
+Railway-connected `arlrom003/PSU-Volunteer-Hub` repository's
+`codex/ui-workflow-overhaul` branch. This publication excludes unrelated
+untracked scripts/uploads and requires no database migration.
+
 Publication authorized on 24 November 2026 for the local Needs Attention phase
 queue and five-row pagination: commit the route, templates, source/generated CSS,
 adjusted pagination tests and this entry to both
