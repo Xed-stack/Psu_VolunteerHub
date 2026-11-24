@@ -29,7 +29,7 @@
         <ul class="aop-breakdown">{% for row in breakdown %}<li><strong>{{ row.name }}</strong><span>{{ row.committed }} committed · {{ row.completed }} completed contributions</span></li>{% else %}<li>No submitted campus commitments in this scope.</li>{% endfor %}</ul>
       </details>
     </div>
-    <ul class="aop-campus-tiles" aria-label="Campus Commitments and Completed Contributions">{% for row in campus_tiles %}<li><a href="{{ url_for('goals.workspace',year=year,campus=row.id) }}"><strong>{{ row.name }}</strong><span>{{ row.committed ~ ' Committed' if row.submitted else 'Not Submitted' }}</span><small>{{ row.completed }} completed contributions</small></a></li>{% endfor %}</ul>
+    <ul class="aop-campus-tiles" aria-label="Campus Commitments and Completed Contributions">{% for row in campus_tiles %}<li><a href="{{ url_for('workspace.aop',year=year,campus_id=row.id) }}"><strong>{{ row.name }}</strong><span>{{ row.committed ~ ' Committed' if row.submitted else 'Not Submitted' }}</span><small>{{ row.completed }} completed contributions</small></a></li>{% endfor %}</ul>
   </section>
   <section class="aop-director-deliverables" aria-labelledby="deliverables-title">
     <header><div><h2 id="deliverables-title">AOP Extension Deliverables</h2><p>{{ row_count }} matching goal{{ '' if row_count == 1 else 's' }}{% if q %} for “{{ q }}”{% endif %}{% if progress_status %} · {{ statuses[progress_status] }}{% endif %}</p></div>

@@ -406,6 +406,22 @@ DOCX, JPGs, output/tmp files and private data remain intact. Source rollback mus
 retain data; an operational downgrade requires matching DB recovery with retention
 of post-upgrade commitments, mappings, history and archive, rather than code alone.
 
+## Director AOP Campus Navigation, 24 November 2026
+
+AOP Goals campus cards now open Reports → Annual Achievement → Annual
+Operational Plan (`workspace.aop`) with the selected year and clicked
+`campus_id`, so the report displays that campus's commitments and targets.
+Existing card presentation and report calculations are retained.
+
+Verification: 11 existing Director AOP tests passed; an isolated rendered-link
+check followed all nine campus cards and verified HTTP 200, reporting year,
+campus filter and target scope. Whitespace checks passed. Reviewed the link
+against current Vercel Web Interface Guidelines (native navigation and URL
+scope). Required local design skills were unavailable; no skills installed.
+No browser visual audit performed. The user authorized committing and pushing
+this navigation change and handoff to `origin/codex/ui-workflow-overhaul`.
+Unrelated untracked scripts and uploaded images are excluded.
+
 ## Publication Authorization: 23 November 2026
 
 The user authorized committing and pushing this chat's attendance/queue,
