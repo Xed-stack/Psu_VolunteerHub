@@ -80,6 +80,45 @@ def test_coordinator_and_legacy_links_keep_existing_behavior(client, actors, lis
     assert 'aop-director-summary' not in response.text
 
 
+@pytest.mark.parametrize('role', ['director', 'coordinator'])
+def test_report_management_link_preserves_scope_and_permissions(client, actors, role):
+    sign_in(client, actors, role)
+    page = parse_html(client.get('/workspace/reports/aop?year=2025&campus_id=2').text)
+    link = next(a for a in page.all('a') if a.text == 'Manage AOP Goals')
+    query = parse_qs(urlsplit(link.attrs['href']).query)
+    assert query['year'] == ['2025']
+    assert query['campus'] == (['1'] if role == 'coordinator' else ['2'])
+    response = client.get(link.attrs['href'])
+    assert response.status_code == 200
+    management = parse_html(response.text)
+    back = next(a for a in management.all('a') if a.text == 'Back to Annual Operational Plan')
+    assert parse_qs(urlsplit(back.attrs['href']).query)['campus_id'] == query['campus']
+
+
+def test_director_reference_summary_and_official_campus_tiles(client, app, actors):
+    sign_in(client, actors, 'director')
+    events = [Event(title=f'Synthetic Contribution {index}', description='Synthetic', campus_id=1,
+        date=datetime(2025, 6, 1), end_date=datetime(2025, 6, 2), lifecycle_status='approved')
+        for index in range(13)]
+    db.session.add_all(events)
+    db.session.flush()
+    seed_aop_commitments(2025, Campus.query.all(), events)
+    db.session.commit()
+    response, data = screen(client, app, '/annual-goals/workspace?year=2025')
+    assert response.status_code == 200
+    assert '130% Achieved' in response.text and 'Target Met' in response.text
+    assert len(data['campus_tiles']) == len(data['campuses'])
+    assert any(row['submitted'] and row['completed'] == 13 for row in data['campus_tiles'])
+    assert any(not row['submitted'] for row in data['campus_tiles'])
+    _, selected = screen(client, app, '/annual-goals/workspace?year=2025&campus=2')
+    assert len(selected['campus_tiles']) == 1
+    assert selected['campus_tiles'][0]['id'] == 2
+    assert selected['summary']['target'] == 10 and selected['summary']['completed'] == 0
+    response, empty = screen(client, app, '/annual-goals/workspace?year=2099')
+    assert empty['summary']['target'] == 0 and '0% Achieved' not in response.text
+    assert all(not row['submitted'] for row in empty['campus_tiles'])
+
+
 def test_progress_statuses_use_counts_and_remaining_cannot_cancel_other_goals():
     from datetime import date
     goals = [NS(id=i,target_value=2,start_date=date(2025,1,1),end_date=date(2025,12,31)) for i in range(4)]

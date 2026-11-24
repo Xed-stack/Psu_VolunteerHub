@@ -3,11 +3,12 @@
 {% from 'workspace/report_ui.html' import exports with context %}
 {% from 'partials/info_tip.html' import info_tip with context %}
 {% block title %}Annual Operational Plan · PSU Volunteer Hub{% endblock %}
-{% block content %}<div class="report-page journey-page">
+{% block content %}<div class="report-page journey-page aop-report">
 <a class="activity-back" href="{{ back_url('workspace.reports') }}">Back to Reports</a>
-<header class="journey-heading"><div><h1>Annual Operational Plan</h1><p>Review annual achievement, then open the indicator and its supporting evidence.</p></div><a class="text-link" href="{{ linked_url('goals.details',year=year,campus=campus_id) }}">Browse AOP Indicators</a></header>
+<header class="journey-heading"><div><h1>Annual Operational Plan</h1><p>Review annual achievement, campus obligations, and supporting evidence.</p></div><a class="btn btn--primary" href="{{ linked_url('goals.workspace',year=year,campus=campus_id,sample=request.args.get('sample')) }}">{{ 'View AOP Goals' if current_user.role == 'admin' else 'Manage AOP Goals' }}</a></header>
 {{ filters(year,'annual',1,campuses,campus_id) }}
 <div class="report-toolbar"><p>{{ year }} · {{ 'Campus targets' if campus_id else 'University targets, separate from campus obligations' }}<br>Exports include the selected target scope, its verified comparisons, and the campus comparison shown below.</p>{{ exports(request.args.to_dict(flat=False),true) }}</div>
+<nav class="aop-evidence-links" aria-label="AOP Evidence"><a class="text-link" href="{{ linked_url('goals.details',year=year,campus=campus_id) }}">Browse AOP Indicators</a><a class="text-link" href="{{ linked_url('goals.details',year=year,campus=campus_id,history=1) }}">AOP History</a></nav>
 <section class="annual-summary-strip" aria-label="Annual Achievement">
 {% if campus_goals %}<div><h2>Campus Obligations</h2><strong>{{ campus_rollup.met }} / {{ campus_rollup.total }}</strong><p>Submitted campus goals achieved across campuses. Commitments and completed work are counted separately.</p><p>{{ campus_rollup.pending }} awaiting evidence.</p></div>{% endif %}
 <div><h2>{{ 'Campus AOP Targets' if campus_id else 'University AOP Targets' }}</h2><strong>{{ goals.plans.AOP.met }} / {{ goals.plans.AOP.total }}</strong><p>Targets achieved for {{ year }} in the selected target scope.</p><p>Missing evidence remains unknown.</p></div>

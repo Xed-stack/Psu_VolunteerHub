@@ -90,9 +90,17 @@ def index():
     page = max(1, request.args.get('page', 1, type=int))
     pages = max(1, (len(cards)+9)//10)
     page = min(page, pages)
+    campuses = campus_query().order_by(Campus.name).all()
+    if current_user.role == 'director':
+        submitted = {row['id']: row for row in breakdown}
+        presentation['campus_tiles'] = [dict(id=campus.id, name=campus.name,
+            committed=submitted.get(campus.id, {}).get('committed', 0),
+            completed=submitted.get(campus.id, {}).get('completed', 0),
+            submitted=campus.id in submitted)
+            for campus in campuses if campus_id is None or campus.id == campus_id]
     return render_template('goals/director_aop_index.html' if current_user.role == 'director' else 'goals/aop_index.html', cards=cards[(page-1)*10:page*10], year=year,
                            page=page, pages=pages, campus_id=campus_id, drafts=drafts, today=local_now().date(),
-                           campuses=campus_query().order_by(Campus.name).all(),
+                           campuses=campuses,
                            campus_name=db.session.get(Campus,campus_id).name if campus_id else None,
                            **presentation)
 
@@ -186,7 +194,8 @@ def edit_goal(proposal_id=None):
             error = str(exc) if isinstance(exc, ReportError) else 'The goal could not be saved. No changes were saved; reload and try again.'
             failure_status = 400 if isinstance(exc, (ReportError, IntegrityError)) else 503
     return render_template('goals/aop_edit.html', values=values, proposal=proposal,
-                           target=target, error=error, impact=impact), failure_status if error else 200
+                           target=target, error=error, impact=impact,
+                           campus_count=campus_query().count()), failure_status if error else 200
 
 
 def detail(target_id):

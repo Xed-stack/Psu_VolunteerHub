@@ -1,20 +1,27 @@
 {% extends 'layouts/role_base.html' %}
 {% from 'goals/aop_components.html' import period %}
 {% block title %}AOP Goals · PSU Volunteer Hub{% endblock %}
+{% block header_context %}
+<div class="role-topbar__title aop-mobile-context"><strong>AOP Goals</strong><span>University Office</span></div>
+<nav class="aop-desktop-context" aria-label="AOP Context"><a href="{{ url_for('workspace.aop',year=year,campus_id=campus_id) }}">Back to Annual Operational Plan</a><span aria-hidden="true">/</span><strong>AOP Goals</strong><span class="aop-context-scope">{{ campus_name or 'University Office View' }} · Year {{ year }}</span></nav>
+{% endblock %}
+{% block header_actions %}<span class="aop-year-context">AOP Year {{ year }}</span>{% endblock %}
 {% block content %}
 <div class="journey-page aop-page aop-director">
-  <header class="journey-heading"><div><h1>AOP Goals</h1><p>Director goals are shared across PSU campuses. Campus commitments become active upon submission; only completed eligible activities reduce remaining work.</p></div><a class="btn btn--primary" href="{{ url_for('goals.edit') }}">Create Goal</a></header>
+  <a class="activity-back" href="{{ url_for('workspace.aop',year=year,campus_id=campus_id) }}">Back to Annual Operational Plan</a>
+  <header class="journey-heading"><div><h1>AOP Goals</h1><p class="aop-mobile-context">Director goals are shared across PSU campuses. Campus commitments become active upon submission; only completed eligible activities reduce remaining work.</p><p class="aop-reference-copy">Establish university goals, inspect campus commitments, and track validated extension deliverables.</p></div><a class="btn btn--primary" href="{{ url_for('goals.edit') }}"><span class="aop-create-symbol" aria-hidden="true">+</span>Create Goal</a></header>
   <form method="get" class="aop-director-scope">
     <label class="field" for="aop-year">AOP Year *<input id="aop-year" name="year" type="number" min="1900" max="2100" required value="{{ year }}"></label>
     <label class="field" for="aop-campus">Campus Scope<select id="aop-campus" name="campus"><option value="">All Campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if campus_id==campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>
     <input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="progress_status" value="{{ progress_status }}">
     <button class="btn btn--primary">Apply Scope</button>
+    <p class="aop-scope-caption">01 Jan {{ year }} – 31 Dec {{ year }} · Philippine time. Annual plans use {{ year }}. {{ 'Viewing ' ~ campus_name ~ ' contributions toward university targets.' if campus_id else 'Viewing consolidated university contributions.' }}</p>
   </form>
   <section class="aop-director-summary" aria-labelledby="aop-summary-title">
-    <header><h2 id="aop-summary-title">Annual Operational Plan</h2><p>{{ year }} · {{ campus_name ~ ' contributions toward university Director targets' if campus_id else 'Consolidated results across PSU campuses' }}. Full annual scope, independent of table filters.</p></header>
+    <header><div><span class="aop-directive-label">Official Directive</span><h2 id="aop-summary-title"><span class="aop-mobile-context">Annual Operational Plan</span><span class="aop-reference-copy">Official Annual Operational Plan Summary</span></h2><p>{{ year }} · {{ campus_name ~ ' contributions toward university Director targets' if campus_id else 'Consolidated results across PSU campuses' }}. Full annual scope, independent of table filters.</p></div><span class="aop-active-scope">{{ campus_name or 'All Campuses' }} · {{ year }}</span></header>
     <dl class="aop-director-totals">
       {% for label,value,caption in [('Director Target',summary.target,'University baseline activity contributions'),('Completed Activities',summary.completed,'Completed eligible activity contributions'),('Remaining Activities',summary.remaining,'Remaining work summed separately for each goal'),('Campus Commitments',summary.committed,'Submitted activity quantities across ' ~ summary.campuses|string ~ (' campus' if summary.campuses == 1 else ' campuses'))] %}
-      <div><dt>{{ label }}</dt><dd><strong>{{ value|goal_number }}</strong><span>{{ caption }}</span></dd></div>
+      <div><dt>{{ label }}</dt><dd><div class="aop-metric-value"><strong>{{ value|goal_number }}</strong>{% if loop.index == 2 and summary.target %}<small class="aop-metric-status">{{ '%g'|format((summary.completed / summary.target * 100)|round(1)) }}% Achieved</small>{% elif loop.index == 3 and summary.target %}<small class="aop-metric-status">{{ 'Target Met' if not summary.remaining else 'Remaining' }}</small>{% elif loop.index == 4 %}<small class="aop-metric-status">Across {{ summary.campuses }} {{ 'Campus' if summary.campuses == 1 else 'Campuses' }}</small>{% endif %}</div><span>{{ caption }}</span></dd></div>
       {% endfor %}
     </dl>
     <div class="aop-director-note"><p>Campus commitments are tracked separately from completed work. An eligible activity earns credit once per linked goal.</p>
@@ -22,6 +29,7 @@
         <ul class="aop-breakdown">{% for row in breakdown %}<li><strong>{{ row.name }}</strong><span>{{ row.committed }} committed · {{ row.completed }} completed contributions</span></li>{% else %}<li>No submitted campus commitments in this scope.</li>{% endfor %}</ul>
       </details>
     </div>
+    <ul class="aop-campus-tiles" aria-label="Campus Commitments and Completed Contributions">{% for row in campus_tiles %}<li><a href="{{ url_for('goals.workspace',year=year,campus=row.id) }}"><strong>{{ row.name }}</strong><span>{{ row.committed ~ ' Committed' if row.submitted else 'Not Submitted' }}</span><small>{{ row.completed }} completed contributions</small></a></li>{% endfor %}</ul>
   </section>
   <section class="aop-director-deliverables" aria-labelledby="deliverables-title">
     <header><div><h2 id="deliverables-title">AOP Extension Deliverables</h2><p>{{ row_count }} matching goal{{ '' if row_count == 1 else 's' }}{% if q %} for “{{ q }}”{% endif %}{% if progress_status %} · {{ statuses[progress_status] }}{% endif %}</p></div>
@@ -49,3 +57,4 @@
   {% if drafts %}<section class="journey-surface"><h2>Saved Drafts</h2><ul class="attention-list">{% for item in drafts %}<li><div>{{ item.payload.title or 'Untitled goal' }}{% if item.published_target_id %}<p>The current published target remains active.</p>{% endif %}</div><a class="btn btn--outline" href="{{ url_for('goals.edit',proposal_id=item.id) }}">Continue Draft</a></li>{% endfor %}</ul></section>{% endif %}
 </div>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='scripts/aop-desktop.js') }}" defer></script>{% endblock %}

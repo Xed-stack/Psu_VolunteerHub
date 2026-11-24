@@ -50,7 +50,7 @@
         >
           <span class="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
-        <div class="role-topbar__title"><strong>{% block header_title %}{{ ui_page_title }}{% endblock %}</strong><span>{% block header_subtitle %}{{ 'University Office' if current_user.role in ['director','admin'] else current_user.campus.name if current_user.campus else 'Campus Not Assigned' }}{% endblock %}</span></div>
+        {% block header_context %}<div class="role-topbar__title"><strong>{% block header_title %}{{ ui_page_title }}{% endblock %}</strong><span>{% block header_subtitle %}{{ 'University Office' if current_user.role in ['director','admin'] else current_user.campus.name if current_user.campus else 'Campus Not Assigned' }}{% endblock %}</span></div>{% endblock %}
         <div class="role-topbar__actions">
           <a
             class="icon-button notification-bell"

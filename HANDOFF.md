@@ -1,5 +1,129 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+Publication authorization on 24 November 2026 covers the completed AOP report,
+restored Director AOP Goals page, desktop deliverables removal and new-goal form
+updates on both `origin/codex/ui-workflow-overhaul` and
+`thesis/codex/ui-workflow-overhaul`. The separate pending Needs Attention edits
+remain in the working tree. Earlier local-only statements below are historical.
+
+## UI Follow-Up: Director Create Goal Reference, 24 November 2026
+
+Implemented the supplied Post AOP Goal reference for the Director's unpublished
+goal form on desktop. New notice, form hierarchy, counters, truthful calendar
+coverage, date guidance, cancel and gold publish styling reuse existing form
+names, date picker, draft validation and publication workflow. Revision styling
+and mobile-specific styling are retained. The official campus count is supplied
+through the creation-form route context.
+
+22 workflow tests passed. Four browser groups cover save/resume/publish/revise,
+cancel warning, three desktop widths/enlarged text, and JavaScript-disabled date
+fallbacks. Build, template parsing, JavaScript syntax and whitespace checks passed.
+The isolated port-5000 preview was restarted. QA, critique, audit and limitations
+are in `docs/qa/AOP_CREATE_REFERENCE.md`. Work remains local and uncommitted.
+
+## UI Follow-Up: AOP Deliverables Removal, 24 November 2026
+
+The user requested removing the pictured deliverables section from Director AOP
+Goals. Desktop CSS now hides the table, its search/status filters, pagination and
+AOP Records history/export links from 1024px. Summary, campus tiles, goal creation
+and drafts remain visible. Mobile-specific styling is retained. Browser checks
+passed at 1440/1280/1024px, along with CSS build and whitespace checks. Evidence
+is recorded in `docs/qa/AOP_RESTORED_DESKTOP_REFERENCE.md`. Work remains local.
+
+## Current Handoff: New Railway 2026 Seed, 24 November 2026
+
+Implemented `seed-railway-year` for a separate **empty** Railway MySQL database.
+The selected source is the existing Railway demo's four default accounts; passwords,
+IDs, roles, profiles, campus identity and existing policy acceptances transfer
+privately without source writes. No default password is introduced. No Railway
+provisioning, account transfer, operational migration, deployment, commit or push
+was performed. Existing and concurrently changing UI work remains separate.
+
+The 2026 year contains 25 published Director goals and 25 submitted campus
+commitments, allocated 3/3/3/3/3/3/3/2/2 across the nine campuses. Initial goal
+states are five not started, ten in progress, seven met and three above target.
+There are 90 activities (65 ended, two ongoing, 15 future, four drafts, four
+cancelled), 180 volunteers, nine coordinators, two retained Directors and 90
+external participants. Normal generated names/references/documents carry no
+visible demo markers; provenance remains in the private seed audit.
+
+Includes independently assigned recorded sex and actual sex-disaggregated report
+totals, participant/attendance outcomes, agencies/MOAs, validated proposal records,
+135 PDFs, drafts, cancellation requests, notifications, AOP histories and real
+Needs Attention findings with assessments/follow-ups/closed reviews. No attendance
+or completion is assigned to future activities. Current calculation services and
+feature flags are unchanged. Dates follow Philippine time at execution; the
+reviewed seed window is 1 November through 20 December 2026.
+
+Dry run writes nothing. Exact destination app/host/name checks, source read-only
+transactions, suppressed mail, empty-target enforcement, transactional inserts,
+exclusive upload copies, failure cleanup and strict repeat verification protect
+existing data. MySQL DDL can remain after rollback; there is deliberately no
+automatic reset/recovery that deletes a populated or partially provisioned target.
+
+Implementation/CLI: `app/railway_year_dataset.py`, registered in `app/commands.py`.
+Operator instructions: `docs/operations/RAILWAY_YEAR_DATASET.md` (linked in README).
+Verification: 62 focused seed/Railway/AOP/review cases passed, followed by a final
+14-case seed rerun and one separate MariaDB integration. Focused tests include
+retained photos/policies, omitted reset tokens, row/file
+rollback, collision preservation, wrong targets, dry run and changed-data refusal.
+Local MariaDB 10.4 integration passed on a newly initialized, isolated server at
+port 33319 with unique disposable source/target schemas; original local databases
+were never opened. Headless Chromium runner `scripts/qa_railway_year.py` passed
+30 checks using CSRF and four synthetic-source login passwords, annual reports,
+CSV/PDF exports and protected document download. Representative generated PDF was
+rendered with Poppler and inspected. Evidence is ignored under
+`.qa-railway-year-browser-temp/77f3542df9/` and `.qa-railway-mysql-temp/`.
+Skills used: Antislop core (no UI changes), Ponytail full, PDF and Webapp Testing.
+
+Next: publish the reviewed seed implementation together with the intended app
+revision, provision the separate empty Railway destination, supply private demo
+source credentials/photos, review dry run, seed once while private, verify uploads
+and logins, remove source credentials and enable presentation access. Do not run
+`init-production`, old reset commands or migrations before this fresh provisioning.
+Railway-specific networking/volumes, actual retained accounts and restore checks
+remain operational verification, not claims from local QA.
+
+## Current Handoff: Restored AOP Goals Desktop Reference, 24 November 2026
+
+Implemented the approved restoration of the AOP Goals sidebar destination and
+goal-route selection. The Director desktop page now follows the latest reference
+with compact context, scope/date panel, official navy summary, uncapped percentage,
+per-goal remaining work, submitted-campus detail disclosure and official campus
+tiles. The summary, tiles and list share campus scope. New styles apply from
+1024px, with additional desktop elements hidden at narrower widths. Other page
+headers use the base layout's original default through a new header-context block.
+The prior Reports upgrade remains available and links to goal management.
+
+33 focused Python tests and 13 existing Director browser groups passed. Additional
+prepared-preview checks passed at three desktop widths for both staff roles.
+All 142 templates parsed, CSS build/syntax/whitespace passed, and the isolated
+port-5000 preview was restarted. Evidence, critique, current guideline review,
+Antislop gate and limitations are in `docs/qa/AOP_RESTORED_DESKTOP_REFERENCE.md`.
+No commit or publication was requested for this task. Preserve unrelated queue,
+Railway dataset, documentation and other working changes.
+
+## Current Handoff: AOP Desktop Report Upgrade, 24 November 2026
+
+Implemented the approved AOP report and management navigation upgrade locally,
+with the user's desktop-only styling override. The AOP report has a prominent
+Manage AOP Goals link, navy achievement panel, compact desktop scope controls,
+grouped exports and aligned evidence tables. Admins receive View AOP Goals.
+The report directory now has one annual-plan entry. Desktop hides the separate
+AOP Goals sidebar entry from 1024px. Reports is selected throughout goal routes.
+Management provides a scoped return link. Existing role enforcement supplies
+the effective Coordinator campus before generating navigation URLs.
+
+Desktop saved drafts move above the management list through a small script that
+keeps DOM and keyboard order aligned and restores the original narrow layout.
+Mobile-specific styles are untouched. Shared navigation content and links apply
+across widths. Existing routes, calculation services, forms and exports are reused.
+
+Verification and limitations are in `docs/qa/AOP_DESKTOP_REPORT_UPGRADE.md`.
+The isolated port-5000 preview was restarted using the existing database launcher.
+Pre-existing Needs Attention changes and unrelated untracked work were preserved.
+This task is local and has no publication authorization.
+
 ## Current Handoff: Director AOP Goals Reference Layout, 24 November 2026
 
 Publication authorization: the user subsequently requested committing these
