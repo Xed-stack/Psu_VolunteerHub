@@ -1,12 +1,40 @@
 {% extends 'layouts/role_base.html' %}
-{% from 'partials/search_ui.html' import search_input,results,empty,chips with context %}
-{% from 'partials/filter_ui.html' import actions with context %}
-{% from 'partials/pagination.html' import pages with context %}
+{% from 'partials/search_ui.html' import empty with context %}
 {% block title %}Partner Agencies · PSU Volunteer Hub{% endblock %}
-{% block content %}
+{% block content %}<div class="partners-reference">
 {% if request.args.get('activity_context') == 'create' %}<a class="activity-back mb-4" href="{{ url_for('workspace.create_activity',step=3) }}">Back to Activity Draft</a>{% endif %}
-<header class="page-heading"><div><h1>Partner Agencies</h1><p>{{ current_user.campus.name }} · Open an agency to review its agreements.</p></div><a class="btn btn--primary" href="{{ partner_url('workspace.partner_new') }}">Add Agency</a></header>
-<form method="get" class="filter-form panel mb-5">{% if request.args.get('activity_context') == 'create' %}<input type="hidden" name="activity_context" value="create">{% endif %}<div class="filter-grid">{{ search_input('q','Search Agencies','Agency name or contact person') }}</div>{{ actions(url_for('workspace.partners',activity_context='create') if request.args.get('activity_context') == 'create' else url_for('workspace.partners')) }}</form>
-{{ chips() }}{{ results(pagination.total,request.args.get('q',''),'agency name, A–Z') }}
-<section class="panel"><div class="table-scroll table-scroll--record" tabindex="0" aria-label="Partner Agencies"><table class="data-table data-table--record"><thead><tr><th>Agency</th><th>Contact Person</th><th>MOAs</th><th>Record</th></tr></thead><tbody>{% for agency in agencies %}<tr><td data-label="Agency"><strong>{{ highlight(agency.name,request.args.get('q','')) }}</strong>{% if agency.email %}<br><small>{{ agency.email }}</small>{% endif %}</td><td data-label="Contact Person">{{ highlight(agency.contact_name,request.args.get('q','')) }}</td><td data-label="MOAs">{{ agency.agreement_count }}</td><td data-label="Record"><a class="btn btn--outline" href="{{ partner_url('workspace.partner',agency_id=agency.id) }}" aria-label="View Agency: {{ agency.name }}">View Agency</a></td></tr>{% else %}<tr><td colspan="4">{{ empty(request.args.get('q',''),'partner agencies') }}</td></tr>{% endfor %}</tbody></table></div>{{ pages(pagination) }}</section>
-{% endblock %}
+<header class="partners-reference__heading"><div><h1>Partner Agencies</h1><span class="partners-reference__campus">{{ current_user.campus.name }} Campus</span><p>Manage accredited partner organizations, liaison contacts, and memorandum agreements.</p></div><a class="btn btn--primary" href="{{ partner_url('workspace.partner_new') }}">Add Agency</a></header>
+<form method="get" class="partners-filters">
+  {% if request.args.get('activity_context') == 'create' %}<input type="hidden" name="activity_context" value="create">{% endif %}
+  <label class="partners-search"><span class="sr-only">Search agencies</span><span class="material-symbols-outlined" aria-hidden="true">search</span><input
+    type="search"
+    name="q"
+    value="{{ search }}"
+    placeholder="Search by agency name, contact person, or email..."
+    autocomplete="off"
+  ></label>
+  <label class="partners-select"><span class="sr-only">MOA status</span><select name="moa_status"><option value="">All MOA Statuses</option><option value="active" {{ 'selected' if moa_status == 'active' }}>Active Valid</option><option value="pending" {{ 'selected' if moa_status == 'pending' }}>Pending / Renewal</option><option value="none" {{ 'selected' if moa_status == 'none' }}>No MOA on File</option></select></label>
+  <div class="partners-filters__actions"><button class="btn btn--primary" type="submit">Apply Filters</button><a class="btn btn--outline" href="{{ partner_url('workspace.partners') }}">Reset</a></div>
+</form>
+<section class="partners-summary" aria-label="Partner overview"><span class="partners-summary__label">Quick Summary:</span><div class="partners-summary__chips"><span class="partners-chip partners-chip--blue">{{ summary.total }} Total Agencies</span><span class="partners-chip partners-chip--green">{{ summary.active }} Active MOAs</span><span class="partners-chip partners-chip--amber">{{ summary.pending }} Pending / Unassigned</span></div><p class="partners-summary__note"><span class="material-symbols-outlined" aria-hidden="true">verified</span>Campus directory · {{ year }}</p></section>
+<div class="partners-results" role="status"><p>Showing {{ pagination.total }} accredited partner agencies</p><p><span class="material-symbols-outlined" aria-hidden="true">sort_by_alpha</span>Sorted by Agency Name (A–Z)</p></div>
+<section class="partners-table" aria-label="Partner Agencies">
+  <div class="partners-row partners-row--head"><span>Agency / Organization</span><span>Contact Person</span><span>MOA Agreements</span><span>Status</span><span>Record Action</span></div>
+  {% for agency in agencies %}
+  <div class="partners-row">
+    <div class="partners-cell partners-cell--agency"><span class="partners-avatar" aria-hidden="true">{{ agency.name[:1]|upper }}</span><div><a class="partners-name" href="{{ partner_url('workspace.partner',agency_id=agency.id) }}">{{ highlight(agency.name,search) }}</a>{% if agency.email %}<span class="partners-email"><span class="material-symbols-outlined" aria-hidden="true">mail</span>{{ agency.email }}</span>{% endif %}</div></div>
+    <div class="partners-cell"><strong>{{ highlight(agency.contact_name,search) }}</strong>{% if agency.phone %}<span class="partners-sub">{{ agency.phone }}</span>{% endif %}</div>
+    <div class="partners-cell"><strong>{{ agency.agreement_count }} {{ 'Active MOA' if agency.moa_status == 'active' and agency.agreement_count == 1 else 'Agreement' if agency.agreement_count == 1 else 'Agreements' }}</strong>{% if agency.active_reference %}<span class="partners-sub">{{ agency.active_reference }}</span>{% endif %}</div>
+    <div class="partners-cell"><span class="partners-status partners-status--{{ agency.moa_status }}"><span aria-hidden="true"></span>{{ agency.status_label }}</span></div>
+    <div class="partners-cell partners-cell--action"><a class="btn btn--outline" href="{{ partner_url('workspace.partner',agency_id=agency.id) }}">View Agency</a></div>
+  </div>
+  {% else %}
+  <div class="partners-row partners-row--empty"><div>{{ empty(search,'partner agencies') }}</div></div>
+  {% endfor %}
+</section>
+<div class="partners-pagination"><p>Showing {{ (pagination.page-1)*pagination.per_page + (1 if pagination.items else 0) }} to {{ (pagination.page-1)*pagination.per_page + pagination.items|length }} of {{ pagination.total }} entries</p><span class="partners-pagination__count">Page {{ pagination.page }} of {{ pagination.pages }}</span><nav aria-label="Partner pages">{% if pagination.has_prev %}<a class="btn btn--outline" href="{{ page_url(pagination.prev_num) }}">Previous</a>{% endif %}{% for number in range(1,pagination.pages + 1) %}<a
+  class="partners-page{{ ' is-current' if number == pagination.page }}"
+  href="{{ page_url(number) }}"
+  {% if number == pagination.page %}aria-current="page"{% endif %}
+>{{ number }}</a>{% endfor %}{% if pagination.has_next %}<a class="btn btn--outline" href="{{ page_url(pagination.next_num) }}">Next</a>{% endif %}</nav></div>
+</div>{% endblock %}

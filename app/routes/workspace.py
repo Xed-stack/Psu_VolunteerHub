@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import uuid
+from types import SimpleNamespace
 from calendar import monthrange
 from datetime import date, datetime
 from pathlib import Path
@@ -621,17 +622,53 @@ def partners():
         abort(403)
     if request.method == 'POST':
         return partner_new()
-    query = db.session.query(PartnerAgency.id, PartnerAgency.name, PartnerAgency.contact_name,
-        PartnerAgency.email, func.count(PartnerAgreement.id).label('agreement_count')).outerjoin(
-        PartnerAgreement).filter(PartnerAgency.campus_id == current_user.campus_id).group_by(
-        PartnerAgency.id, PartnerAgency.name, PartnerAgency.contact_name, PartnerAgency.email)
+    today = local_now().date()
+    moa_status = request.args.get('moa_status', '').strip()
+    if moa_status not in ('', 'active', 'pending', 'none'):
+        abort(400, description='Choose a listed MOA status.')
+
+    def describe(agency):
+        agreements = agency.agreements or []
+        if not agreements:
+            agency.moa_status, agency.status_label, agency.active_reference = 'none', 'No MOA on file', None
+        else:
+            active = [agreement for agreement in agreements
+                      if agreement.valid_from <= today <= agreement.valid_until]
+            if active:
+                agency.moa_status, agency.status_label = 'active', 'Active Valid'
+                agency.active_reference = active[0].reference
+            else:
+                future = [agreement for agreement in agreements if agreement.valid_from > today]
+                agency.moa_status = 'pending'
+                agency.status_label = 'Upcoming MOA' if future else 'Pending Renewal'
+                agency.active_reference = (future or agreements)[-1].reference
+        agency.agreement_count = len(agreements)
+        return agency
+
+    directory = [describe(agency) for agency in PartnerAgency.query.filter_by(
+        campus_id=current_user.campus_id).all()]
+    summary = dict(total=len(directory),
+                   active=sum(agency.moa_status == 'active' for agency in directory),
+                   pending=sum(agency.moa_status != 'active' for agency in directory))
     search = request.args.get('q', '').strip()[:200]
+    query = PartnerAgency.query.filter_by(campus_id=current_user.campus_id)
     if search:
         query = query.filter(or_(PartnerAgency.name.icontains(search, autoescape=True),
-                                 PartnerAgency.contact_name.icontains(search, autoescape=True)))
-    pagination = query.order_by(PartnerAgency.name, PartnerAgency.id).paginate(
-        per_page=25, max_per_page=25, error_out=False)
-    return render_template('workspace/partners.html', agencies=pagination.items, pagination=pagination)
+                                 PartnerAgency.contact_name.icontains(search, autoescape=True),
+                                 PartnerAgency.email.icontains(search, autoescape=True)))
+    rows = [describe(agency) for agency in query.order_by(PartnerAgency.name, PartnerAgency.id).all()]
+    if moa_status:
+        rows = [agency for agency in rows if agency.moa_status == moa_status]
+    per_page = 25
+    total = len(rows)
+    pages = max(1, (total + per_page - 1) // per_page)
+    number = min(max(1, request.args.get('page', 1, type=int)), pages)
+    pagination = SimpleNamespace(items=rows[(number-1)*per_page:number*per_page], total=total,
+        pages=pages, page=number, per_page=per_page, has_prev=number > 1, has_next=number < pages,
+        prev_num=number-1, next_num=number+1)
+    return render_template('workspace/partners.html', agencies=pagination.items, pagination=pagination,
+                           search=search, moa_status=moa_status, summary=summary, today=today,
+                           year=local_now().year)
 
 
 @workspace_bp.route('/partners/<int:agency_id>', methods=['GET', 'POST'])
