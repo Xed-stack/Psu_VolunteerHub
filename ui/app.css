@@ -1498,6 +1498,63 @@ html[data-js] [data-period-inactive] { display:none !important; }
   .aop-create .aop-cancel { min-height:48px; align-content:center; font-size:.8125rem; color:var(--color-psu-deep); text-decoration:underline; text-underline-offset:3px; }
   .aop-cancel span { display:block; font-size:.6875rem; text-decoration:none; color:#475569; }
 }
+  .coordinator-aop { @apply space-y-4; }
+  .aop-coordinator-heading { @apply items-center gap-3 border-b-slate-200 pb-4; }
+  .aop-coordinator-heading > div { @apply min-w-0 flex-1; }
+  .aop-coordinator-heading h1 { @apply text-2xl; }
+  .aop-coordinator-heading p { @apply mt-1 max-w-3xl text-sm leading-6; }
+  .aop-coordinator-links { @apply flex flex-wrap items-center gap-x-4 gap-y-2; }
+  .aop-coordinator-links a { @apply gap-1 text-sm font-semibold text-psu no-underline underline-offset-4 hover:underline; }
+  .aop-coordinator-back { @apply text-xs font-normal text-slate-600; }
+  .aop-coordinator-links .material-symbols-outlined { @apply text-base; }
+  .aop-coordinator-scope { @apply flex flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-white p-3; }
+  .aop-coordinator-scope .field, .aop-coordinator-label { @apply whitespace-nowrap text-sm font-semibold text-slate-600; }
+  .aop-coordinator-scope input[type=number] { @apply w-24; }
+  .aop-coordinator-fixed { @apply inline-flex min-h-11 items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-3 text-sm font-medium text-psu-deep sm:ml-auto; }
+  .aop-coordinator-fixed .material-symbols-outlined { @apply text-base; }
+  .aop-coordinator-draft { @apply flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3; }
+  .aop-coordinator-draft p { @apply min-w-0 text-sm leading-6 text-psu-deep; }
+  .aop-coordinator-draft strong { @apply font-bold tracking-wide; }
+  .aop-coordinator-draft span { @apply text-slate-600; }
+  .aop-coordinator-list { @apply grid min-w-0 gap-4; }
+  .aop-coordinator-card { @apply border border-slate-200 px-4 py-4 sm:px-5; }
+  .aop-coordinator-card__head { @apply flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2; }
+  .aop-coordinator-card__title { @apply flex min-w-0 flex-wrap items-center gap-2; }
+  .aop-coordinator-card__title a { @apply text-lg font-semibold text-psu no-underline underline-offset-4 hover:underline; }
+  .aop-coordinator-chip { @apply inline-flex min-h-0 min-w-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .aop-coordinator-chip--neutral { @apply border border-slate-300 bg-slate-100 text-slate-700; }
+  .aop-coordinator-chip--blue { @apply bg-blue-100 text-blue-800; }
+  .aop-coordinator-chip--gold { @apply bg-amber-100 text-amber-900; }
+  .aop-coordinator-chip--red { @apply bg-red-100 text-red-800; }
+  .aop-coordinator-chip--green { @apply bg-emerald-100 text-emerald-800; }
+  .aop-coordinator-chip .material-symbols-outlined { font-size:1rem; font-variation-settings:'FILL' 1; }
+  .aop-coordinator-date { @apply inline-flex min-h-0 items-center gap-1 text-sm text-slate-600; }
+  .aop-coordinator-date .material-symbols-outlined { @apply text-base; }
+  .aop-coordinator-desc { @apply mt-2 max-w-prose text-sm leading-6 text-slate-600; }
+  .aop-coordinator-band { @apply mt-3 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2; }
+  .aop-coordinator-band__copy { @apply min-w-0 flex-1; }
+  .aop-coordinator-band p { @apply text-sm leading-6 text-slate-700; }
+  .aop-coordinator-band strong { @apply font-semibold uppercase tracking-wide text-psu-deep; }
+  .aop-coordinator-univ { @apply text-slate-600; }
+  .aop-coordinator-meter { @apply flex min-w-0 flex-1 items-center gap-2; }
+  .aop-coordinator-track { @apply block h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200; }
+  .aop-coordinator-track > span { @apply block h-full rounded-full bg-psu; }
+  .aop-coordinator-meter strong { @apply w-11 shrink-0 text-right text-sm font-semibold tabular-nums text-psu-deep; }
+  .aop-coordinator-band--gold .aop-coordinator-track > span { @apply bg-gold; }
+  .aop-coordinator-band--gold .aop-coordinator-meter strong { @apply text-amber-900; }
+  .aop-coordinator-band--green .aop-coordinator-track > span { @apply bg-emerald-600; }
+  .aop-coordinator-actions { @apply mt-4 flex min-w-0 flex-wrap items-center gap-2; }
+  .aop-coordinator-actions .btn { @apply text-sm; }
+  .aop-coordinator-details { @apply gap-1 text-sm font-semibold text-psu no-underline underline-offset-4 hover:underline sm:ml-auto; }
+  .aop-coordinator-empty { @apply py-6; }
+  .aop-coordinator-pagination { @apply flex flex-wrap items-center justify-center gap-3 pt-2 text-sm text-slate-600; }
+  @media (min-width:768px) {
+    .aop-coordinator-scope input[type=number] { @apply w-32; }
+    .aop-coordinator-meter { @apply flex-none basis-52; }
+  }
+  @media (max-width:479px) {
+    .aop-coordinator-fixed, .aop-coordinator-details { @apply ml-0; }
+  }
 @media (min-width:1024px) {
   .aop-director > .aop-director-deliverables,
   .aop-director > nav[aria-label="AOP Records"] { display:none; }

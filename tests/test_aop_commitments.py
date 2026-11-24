@@ -101,6 +101,28 @@ def test_immediate_commitments_exceed_target_and_no_attendance_gate(app, client)
     assert 'AOP Commitment Updated' in client.get('/notifications').get_data(as_text=True)
 
 
+def test_coordinator_workspace_reference_layout(app, client):
+    director = _create_user(app, email='director-layout@test.com', role='director', campus_id=1)
+    coordinator = _create_user(app, email='coordinator-layout@test.com', role='coordinator', campus_id=1)
+    _login_as(client, director)
+    goal = publish(client, title='Community Digital Literacy & Livelihood Training', end_date='2026-12-31')
+    _login_as(client, coordinator)
+    body = client.get('/annual-goals/workspace?year=2026').get_data(as_text=True)
+    assert 'coordinator-aop' in body and 'aop-coordinator-heading' in body
+    assert 'No Commitment Yet' in body and 'Submit Commitment' in body
+    assert 'Campus: Lingayen (fixed)' in body and 'Univ:' in body and 'View details' in body
+    assert 'name="year"' in body and 'name="campus"' not in body
+    assert submit(client, goal, '2', 'save').status_code == 302
+    body = client.get('/annual-goals/workspace?year=2026').get_data(as_text=True)
+    assert 'DRAFT:' in body and 'Continue Draft' in body
+    assert submit(client, goal, '2').status_code == 302
+    body = client.get('/annual-goals/workspace?year=2026').get_data(as_text=True)
+    assert 'In Progress' in body and 'Revise Commitment' in body and 'Link Activities' in body
+    assert 'aop-coordinator-meter' in body and '0%' in body
+    _login_as(client, director)
+    assert 'aop-director' in client.get('/annual-goals/workspace?year=2026').get_data(as_text=True)
+
+
 def test_drafts_revisions_and_stale_commitments(app, client):
     director = _create_user(app, email='director-draft@test.com', role='director', campus_id=1)
     coordinator = _create_user(app, role='coordinator', campus_id=1)

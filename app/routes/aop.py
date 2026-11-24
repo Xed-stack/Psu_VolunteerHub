@@ -98,7 +98,10 @@ def index():
             completed=submitted.get(campus.id, {}).get('completed', 0),
             submitted=campus.id in submitted)
             for campus in campuses if campus_id is None or campus.id == campus_id]
-    return render_template('goals/director_aop_index.html' if current_user.role == 'director' else 'goals/aop_index.html', cards=cards[(page-1)*10:page*10], year=year,
+    template = ('goals/director_aop_index.html' if current_user.role == 'director'
+                else 'goals/coordinator_aop_index.html' if current_user.role == 'coordinator'
+                else 'goals/aop_index.html')
+    return render_template(template, cards=cards[(page-1)*10:page*10], year=year,
                            page=page, pages=pages, campus_id=campus_id, drafts=drafts, today=local_now().date(),
                            campuses=campuses,
                            campus_name=db.session.get(Campus,campus_id).name if campus_id else None,

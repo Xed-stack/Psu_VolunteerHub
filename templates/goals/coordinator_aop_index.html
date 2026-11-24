@@ -1,0 +1,64 @@
+{% extends 'layouts/role_base.html' %}
+{% block title %}AOP Goals · PSU Volunteer Hub{% endblock %}
+{% macro chip(text, tone='neutral', icon='') %}<span class="aop-coordinator-chip aop-coordinator-chip--{{ tone }}">{% if icon %}<span class="material-symbols-outlined" aria-hidden="true">{{ icon }}</span>{% endif %}{{ text }}</span>{% endmacro %}
+{% block content %}<div class="journey-page aop-page report-page coordinator-aop">
+<header class="journey-heading aop-coordinator-heading">
+  <div><h1>AOP Goals</h1><p>Commitments become active on submission; only completed eligible activities reduce remaining work.</p></div>
+  <nav class="aop-coordinator-links" aria-label="AOP Records">
+    <a class="aop-coordinator-back" href="{{ url_for('workspace.aop', year=year, campus_id=campus_id) }}">Back to Annual Operational Plan</a>
+    <a href="{{ url_for('goals.details', history=1, year=year, campus=campus_id) }}" aria-label="View {{ campus_name }} Annual Evidence"><span class="material-symbols-outlined" aria-hidden="true">history</span>History</a>
+    <a href="{{ url_for('goals.details', year=year, campus=campus_id, export='csv') }}"><span class="material-symbols-outlined" aria-hidden="true">download</span>CSV</a>
+    <a href="{{ url_for('goals.details', year=year, campus=campus_id, export='pdf') }}"><span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>PDF</a>
+  </nav>
+</header>
+<form method="get" class="aop-coordinator-scope">
+  <label class="aop-coordinator-label" for="aop-year">AOP Year <span aria-hidden="true">*</span></label>
+  <input id="aop-year" name="year" type="number" min="1900" max="2100" required autocomplete="off" value="{{ year }}">
+  <button class="btn btn--primary" type="submit">Apply</button>
+  <span class="aop-coordinator-fixed"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Campus: {{ campus_name }} (fixed)</span>
+</form>
+{% for item in drafts %}
+<section class="aop-coordinator-draft" aria-label="Saved commitment draft">
+  <p><strong>DRAFT:</strong> {{ item.payload.title or 'Campus commitment revision' }} <span>(Target: {{ item.payload.target_value|goal_number }})</span></p>
+  <a class="btn btn--outline" href="{{ url_for('goals.commitment', target_id=item.director_target_id) }}">Continue Draft</a>
+</section>
+{% endfor %}
+<div class="aop-coordinator-list">
+{% for card in cards %}
+{% set goal = card.goal %}{% set university = card.university %}{% set campus_progress = card.campus %}
+{% set submitted = campus_progress is not none and campus_progress.commitments|length > 0 %}
+{% set remaining = campus_progress.remaining if campus_progress else 0 %}
+{% set exceeded = campus_progress.exceeded if campus_progress else 0 %}
+{% set overdue = goal.end_date < today and remaining > 0 %}
+{% set percent = ((campus_progress.completed / campus_progress.target) * 100)|round|int if campus_progress and campus_progress.target else 0 %}
+<section class="journey-surface aop-coordinator-card">
+  <div class="aop-coordinator-card__head">
+    <div class="aop-coordinator-card__title"><a href="{{ url_for('goals.target_detail', target_id=goal.id) }}">{{ goal.indicator.name }}</a>
+      {% if not submitted %}{{ chip('No Commitment Yet') }}
+      {% elif exceeded %}{{ chip('Above Target', 'gold', 'star') }}
+      {% elif overdue %}{{ chip('Overdue · Work Remaining', 'red', 'warning') }}
+      {% elif not remaining %}{{ chip('Target Met', 'green', 'check_circle') }}
+      {% else %}{{ chip('In Progress') }}{% endif %}
+    </div>
+    <p class="aop-coordinator-date" aria-label="Start Date {{ goal.start_date.strftime('%d %b %Y') }}, End Date {{ goal.end_date.strftime('%d %b %Y') }}, Philippine time"><span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>{{ goal.start_date.strftime('%d %b %Y') }} – {{ goal.end_date.strftime('%d %b %Y') }}</p>
+  </div>
+  {% if goal.indicator.definition %}<p class="aop-coordinator-desc">{{ goal.indicator.definition }}</p>{% endif %}
+  <div class="aop-coordinator-band{% if exceeded %} aop-coordinator-band--gold{% elif submitted and not remaining %} aop-coordinator-band--green{% endif %}">
+    <div class="aop-coordinator-band__copy">
+      {% if campus_progress %}<p><strong>{{ campus_name|upper }}:</strong> {% if submitted %}Goal: {{ campus_progress.target|goal_number }} <span aria-hidden="true">|</span> Completed: {{ campus_progress.completed }} <span aria-hidden="true">|</span> Remaining: {{ campus_progress.remaining }}{% if exceeded %} <span aria-hidden="true">|</span> +{{ exceeded }} Over Target{% endif %}{% else %}No commitment submitted yet{% endif %}</p>{% endif %}
+      <p class="aop-coordinator-univ">Univ: {{ university.completed }} of {{ university.target|goal_number }} done ({{ university.commitments|length }} {{ 'campus' if university.commitments|length == 1 else 'campuses' }}{% if not submitted %} committed{% endif %})</p>
+    </div>
+    {% if submitted %}<div class="aop-coordinator-meter"><span class="aop-coordinator-track" role="presentation"><span style="width: {{ 100 if percent > 100 else percent }}%"></span></span><strong>{{ percent }}%</strong></div>{% endif %}
+  </div>
+  <div class="aop-coordinator-actions">
+    {% if submitted %}<a class="btn btn--outline" href="{{ url_for('goals.commitment', target_id=goal.id) }}">Revise Commitment</a><a class="btn btn--outline" href="{{ url_for('goals.link_activities', target_id=goal.id) }}">Link Activities</a>
+    {% else %}<a class="btn btn--primary" href="{{ url_for('goals.commitment', target_id=goal.id) }}">Submit Commitment</a>{% endif %}
+    <a class="aop-coordinator-details" href="{{ url_for('goals.target_detail', target_id=goal.id) }}">View details <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+{% else %}
+<section class="journey-surface aop-coordinator-empty"><h2>No AOP Goals for {{ year }}</h2><p>Director goals will appear here after publication. You will receive an in-app notification.</p></section>
+{% endfor %}
+</div>
+<nav class="pagination aop-coordinator-pagination" aria-label="AOP Goal Pages">{% if page > 1 %}<a class="btn btn--outline" href="{{ url_for('goals.workspace', year=year, page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a class="btn btn--outline" href="{{ url_for('goals.workspace', year=year, page=page+1) }}">Next</a>{% endif %}</nav>
+</div>{% endblock %}
