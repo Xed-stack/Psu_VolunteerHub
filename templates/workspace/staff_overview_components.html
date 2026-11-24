@@ -17,7 +17,7 @@
 {% macro metrics(detail_views=false, director_headlines=false) %}
 <section class="kpi-strip" data-tour-id="metrics" aria-label="Key Performance Indicators">
 {% set metric_rows = [
-  ('Approved Activities',approved,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='approved',page=1,view='activities' if detail_views else request.args.get('view'))),'Starts in period','Approved activities with a start date in the selected activity scope.','approved'),
+  ('Approved Activities',approved,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='approved',page=1,view='activities' if detail_views else request.args.get('view'))),'Not yet conducted','Approved activities that have not finished within the selected activity scope. Missing end times remain schedule limitations.','approved'),
   ('Conducted Activities',conducted,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),delivery='conducted',page=1,view='activities' if detail_views else request.args.get('view'))),'Recorded end passed','Approved activities with a known end time that has passed.','conducted'),
   ('Volunteer Accounts',accounts,url_for('workspace.volunteers',campus_id=campus_id),'All time · includes inactive','All-time volunteer accounts in the selected campus scope, including inactive accounts.','accounts'),
   ('Verified Attendees',attendees,url_for('workspace.report_results',**dict(request.args.to_dict(flat=False),view='participation' if detail_views else request.args.get('view'))),'Present records · repeats included','Recorded presences at conducted activities. A person attending two activities counts twice.','attendees'),

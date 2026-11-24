@@ -23,6 +23,52 @@ Railway-connected `arlrom003/PSU-Volunteer-Hub` repository's
 `codex/ui-workflow-overhaul` branch. This publication excludes unrelated
 untracked scripts/uploads and requires no database migration.
 
+## Current Handoff: Report Filter and Ended Outcome Fixes, 24 November 2026
+
+Publication is now authorized by the user's request to push these report fixes
+to both configured `codex/ui-workflow-overhaul` remote branches. Earlier
+local-only statements in this entry describe the implementation stage.
+
+Implemented the approved shared Coordinator/Director report corrections locally.
+Approved and Conducted are disjoint delivery selections. SDGs are shown beneath
+activity titles. Participant filters remove activities without matching eligible
+registrations and scope named report rosters. Ended rates include unrecorded
+registrations as non-attendees. Target outcomes use whole-activity recorded
+presence, following the user's explicit choice, with that scope labelled.
+
+New `row.participation` outcomes drive report tables, combined reports and
+CSV/PDF/Excel. Raw recording metrics remain unchanged for review evidence and
+fingerprints. No Attendance rows, activation settings, review decisions or
+operational database state were changed. Desktop wrapping was adjusted for
+enlarged text, with mobile-specific styling retained.
+
+36 distinct focused Python cases and five browser groups passed. Three existing
+legacy AOP/ASP tests remain failing outside this change. QA details, commands,
+critique, audit, evidence locations and limitations are recorded in
+`docs/qa/REPORT_FILTER_OUTCOMES.md`. The authenticated local participation report
+returned HTTP 200 after starting the isolated preview. Work is local and has
+no publication authorization.
+
+## Live activation: Director review queue on Demo, 24 November 2026
+
+The user reported that the local Director Needs Attention desktop review queue
+was not appearing on the live Demo. Diagnosis: the code was published and
+deployed automatically (commit `c49c150`; live CSS contained the new
+selectors), but the persisted review workflow was still inactive.
+`FINDING_REVIEWS_ENABLED` defaults to false in `config.py` and the two review
+tables were absent, so `finding_reviews.available()` routed
+`/workspace/follow-up` to the generated-findings fallback.
+
+The user confirmed the exact Demo database name `railway` from the app console,
+then performed the documented activation: the guarded
+`migrate-finding-reviews --database railway` migration and
+`FINDING_REVIEWS_ENABLED=true` in Railway Variables. The user confirmed the
+live Director Needs Attention page now matches the local screenshot: Actions
+Pending badge, Active/Reviewed tabs, Sort By, category counts, Audit Policy,
+Export CSV and five-row review cards. The agent did not access live data,
+change configuration or run the migration. Rollback: set the flag to false and
+restart; retain both tables and their history.
+
 Publication authorized on 24 November 2026 for the local Needs Attention phase
 queue and five-row pagination: commit the route, templates, source/generated CSS,
 adjusted pagination tests and this entry to both

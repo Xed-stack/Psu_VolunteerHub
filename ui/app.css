@@ -1387,6 +1387,10 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .aop-goal-actions > div { display:contents; }
 .needs-desktop { display:none; }
 @media (min-width:1024px) {
+  .report-page .sex-breakdown-table { table-layout:fixed; }
+  .report-page .sex-breakdown-table th { white-space:normal; overflow-wrap:anywhere; }
+}
+@media (min-width:1024px) {
   body:has(.needs-desktop) .breadcrumbs { display:none; }
   .needs-original { display:none; }
   .needs-desktop { display:block; min-width:0; }

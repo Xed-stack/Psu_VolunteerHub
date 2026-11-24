@@ -1061,6 +1061,8 @@ def activity_report(event_id):
         query = Registration.query.filter_by(event_id=event.id).options(
             joinedload(Registration.user), joinedload(Registration.external_participant),
             joinedload(Registration.attendance_record)).order_by(Registration.id)
+        from app.services.workspace_reports import report_roster
+        query = report_roster(query,args)
         roster = db.paginate(query.statement, page=max(1, request.args.get('roster_page', 1, type=int)),
                              per_page=25, error_out=False)
     return render_template('workspace/activity_report.html', **data, row=row, event=event,
@@ -1100,10 +1102,9 @@ def export(format):
                'Yes' if r['conducted'] else 'No', r['attendees']] for r in data['rows']]
     supplemental_headers = ['Registrations','Internal','External','Recorded present','Completed participation','Attendance rate (%)','Total participant target','Target outcome','Attendance recording','Not Attended (System Default)']
     supplemental_values = [[r['metrics']['registrations'],r['metrics']['internal'],r['metrics']['external'],
-        r['metrics']['present'],r['metrics']['completed'],r['metrics']['rate'] if r['metrics']['rate'] is not None else 'Pending / unavailable',
+        r['metrics']['present'],r['metrics']['completed'],r['participation']['rate'] if r['participation']['rate'] is not None else r['participation']['rate_label'],
         r['event'].target_participants if r['event'].target_participants is not None else 'Not set',
-        'Met' if r['metrics']['target_met'] is True else 'Not reached' if r['metrics']['target_met'] is False else 'Pending / unavailable',
-        'Complete (includes system defaults)' if r['metrics']['complete'] and r['metrics']['defaulted'] else 'Complete' if r['metrics']['complete'] else 'End time not recorded' if not r['event'].end_date else 'Incomplete' if r['conducted'] else 'Upcoming / ongoing',r['metrics']['defaulted']] for r in data['rows']]
+        r['participation']['target_label'],r['participation']['recording'],r['metrics']['defaulted']] for r in data['rows']]
     headers += supplemental_headers
     for row,extra in zip(values,supplemental_values):
         row.extend(extra)
@@ -1112,11 +1113,17 @@ def export(format):
     headers += sex_headers
     for row, report_row in zip(values, data['rows']):
         row.extend(sum(report_row['sex_counts'][key].values()) for key in SEX_LABELS)
+    headers += ['Target assessment scope','Whole-activity recorded present']
+    for row,report_row in zip(values,data['rows']):
+        row.extend(['Whole Activity',report_row['participation']['whole_present']])
     from app.services.attendance_state import label as attendance_label,state as attendance_state
     roster_headers = ['Volunteer', 'Participant type', 'Registration', 'Attendance','Attendance Basis']
     roster = []
     if data['event_id'] and data['rows'] and data['rows'][0]['event'].date <= local_now():
-        for reg in data['rows'][0]['event'].registrations:
+        from app.services.workspace_reports import report_roster
+        query=report_roster(Registration.query.filter_by(event_id=data['event_id']),request.args).options(
+            joinedload(Registration.user),joinedload(Registration.external_participant),joinedload(Registration.attendance_record)).order_by(Registration.id)
+        for reg in query:
             roster.append([reg.participant.name if reg.participant else 'Not recorded',
                 'External' if reg.is_external else 'Account', reg.status,
                 attendance_label(reg), attendance_state(reg)['basis']])
@@ -1170,7 +1177,7 @@ def export(format):
             line=LineChart(); line.title='Activity delivery over time'
             line.add_data(Reference(trend,min_col=2,min_row=1,max_row=trend.max_row),titles_from_data=True)
             line.set_categories(Reference(trend,min_col=1,min_row=2,max_row=trend.max_row)); trend.add_chart(line,'D2')
-        scope_sheet=book.create_sheet('Scope'); scope_sheet.append([data['period_label']]); scope_sheet.append([csv_safe(data['scope_label'])]); scope_sheet.append(['Participant filters affect participant counts; pending recording is not absence.'])
+        scope_sheet=book.create_sheet('Scope'); scope_sheet.append([data['period_label']]); scope_sheet.append([csv_safe(data['scope_label'])]); scope_sheet.append(['Ended-activity rates include unrecorded registrations as non-attendees. Numeric target outcomes use whole-activity recorded presence.'])
         sex_sheet = book.create_sheet('Verified Attendance by Sex')
         sex_sheet.append(['Recorded Sex', 'PSU', 'External', 'Total', 'Share (%)'])
         for group in data['sex_breakdown']['groups']:
@@ -1213,7 +1220,7 @@ def export(format):
         table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e8eff8')), ('VALIGN', (0, 0), (-1, -1), 'TOP'), ('BOTTOMPADDING', (0, 0), (-1, -1), 8)]))
         content.append(table)
         content.extend([Spacer(1,16),Paragraph('Registrations, attendance, and numeric targets',styles['Heading2']),
-            Paragraph('Rates and target outcomes remain pending until attendance recording is complete. Completed participation derives from recorded presence after the event ends.',styles['Normal'])])
+            Paragraph('Ended-activity rates include unrecorded registrations as non-attendees. Numeric target outcomes use whole-activity recorded presence, independently of participant filters. Original attendance evidence is preserved.',styles['Normal'])])
         supplemental=Table([[Paragraph(escape(str(v)),styles['Normal']) for v in row] for row in
             [['Activity',*supplemental_headers],*[[r['event'].title,*extra] for r,extra in zip(data['rows'],supplemental_values)]]],
             repeatRows=1,colWidths=[120,50,45,45,55,60,65,65,65,85,85])

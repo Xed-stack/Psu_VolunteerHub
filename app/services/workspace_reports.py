@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 
 from flask import abort
 from sqlalchemy import String, case, cast, func, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.models import db
 from app.models.event import Event, Registration, Attendance, Campus, SdgGoal, ExternalParticipant
@@ -95,26 +95,68 @@ def legacy_report_url(dashboard=False):
     return url_for('workspace.overview' if dashboard else 'workspace.report_results', **values)
 
 
-def _activity_rows(query, args, now):
-    """Aggregate registrations once per activity, avoiding roster multiplication."""
+def participant_condition(args):
+    """Use the same participant scope in aggregates and named report rosters."""
     if args.get('sex','') not in ('','male','female','prefer_not_to_say','unrecorded'):
         abort(400,description='Choose a listed recorded-sex filter.')
-    events = query.options(joinedload(Event.campus)).order_by(Event.date, Event.id).all()
-    if not events:
-        return []
-    event_ids = query.with_entities(Event.id).statement
-    eligible = Registration.status != 'cancelled'
     selected = db.true()
     recorded_sex = case((Registration.user_id.isnot(None), cast(User.sex, String)),
                         else_=cast(ExternalParticipant.sex, String))
     sex_group = case((recorded_sex.in_(SEX_LABELS), recorded_sex), else_='unrecorded')
     sex, affiliation = args.get('sex', ''), args.get('affiliation', args.get('college_affiliation', ''))
     if sex:
-        if sex not in ('male', 'female', 'prefer_not_to_say', 'unrecorded'):
-            abort(400, description='Choose a listed recorded-sex filter.')
         selected &= sex_group == sex
     if affiliation:
         selected &= User.college_affiliation == affiliation
+    return selected
+
+
+def report_roster(query, args):
+    return query.outerjoin(User, User.id == Registration.user_id).outerjoin(
+        ExternalParticipant, ExternalParticipant.id == Registration.external_participant_id).filter(
+        Registration.status != 'cancelled', participant_condition(args))
+
+
+def participation_outcome(event, metrics, conducted, whole_present, unrecorded):
+    """Finalize report outcomes without altering raw recording-completeness facts."""
+    rate = None
+    target_met = None
+    if conducted:
+        recording = f'Ended · {unrecorded} Unrecorded' if unrecorded else 'Complete'
+        rate_label = 'No Registrations'
+        if metrics['registrations']:
+            rate = round(metrics['present'] / metrics['registrations'] * 100,1)
+            rate_label = str(rate)+'%'
+    else:
+        if event.lifecycle_status != 'approved':
+            recording = 'Activity Not Approved'
+        elif not event.end_date:
+            recording = 'End Time Not Recorded'
+        else:
+            recording = 'Upcoming / Ongoing'
+        rate_label = 'Awaiting Activity End' if recording == 'Upcoming / Ongoing' else recording
+    target_label = 'Target Not Set'
+    if event.target_participants and event.target_participants > 0:
+        target_label = rate_label
+        if conducted:
+            target_met = whole_present >= event.target_participants
+            target_label = 'Target Met' if target_met else 'Target Not Met'
+    return dict(rate=rate,rate_label=rate_label,whole_present=whole_present,
+                target_met=target_met,target_label=target_label,recording=recording,unrecorded=unrecorded)
+
+
+def _activity_rows(query, args, now):
+    """Aggregate registrations once per activity, avoiding roster multiplication."""
+    selected = participant_condition(args)
+    sex, affiliation = args.get('sex',''), args.get('affiliation',args.get('college_affiliation',''))
+    events = query.options(joinedload(Event.campus),selectinload(Event.sdgs)).order_by(Event.date, Event.id).all()
+    if not events:
+        return []
+    event_ids = query.with_entities(Event.id).statement
+    eligible = Registration.status != 'cancelled'
+    recorded_sex = case((Registration.user_id.isnot(None), cast(User.sex, String)),
+                        else_=cast(ExternalParticipant.sex, String))
+    sex_group = case((recorded_sex.in_(SEX_LABELS), recorded_sex), else_='unrecorded')
     valid = eligible & selected
     present = Attendance.status == 'present'
     from app.services.attendance_state import default_condition
@@ -134,6 +176,8 @@ def _activity_rows(query, args, now):
         count(verified).label('verified'),
         count(eligible & Attendance.id.is_(None) & ~defaulted).label('missing'),
         count(defaulted & selected).label('defaulted'),
+        count(eligible & present).label('whole_present'),
+        count(valid & Attendance.id.is_(None)).label('report_unrecorded'),
         *sex_columns,
     ).join(Event,Registration.event_id==Event.id).outerjoin(User, User.id == Registration.user_id).outerjoin(
         ExternalParticipant, ExternalParticipant.id == Registration.external_participant_id).outerjoin(
@@ -143,6 +187,10 @@ def _activity_rows(query, args, now):
     rows = []
     for event in events:
         metrics = by_id.get(event.id, dict(registrations=0, internal=0, external=0, present=0, verified=0, missing=0, defaulted=0)).copy()
+        whole_present = metrics.pop('whole_present',0)
+        report_unrecorded = metrics.pop('report_unrecorded',0)
+        if (sex or affiliation) and not metrics['registrations']:
+            continue
         conducted = event.lifecycle_status == 'approved' and event.end_date is not None and event.end_date <= now
         complete = conducted and metrics['missing'] == 0
         metrics.update(complete=complete, completed=metrics['present'] if conducted else 0,
@@ -167,8 +215,9 @@ def _activity_rows(query, args, now):
             continue
         sex_counts = {key: {kind: metrics.pop(f'{key}_{kind}', 0) if conducted else 0
                             for kind in ('psu', 'external')} for key in SEX_LABELS}
+        participation = participation_outcome(event,metrics,conducted,whole_present,report_unrecorded)
         rows.append(dict(event=event, conducted=conducted, attendees=metrics['verified'], metrics=metrics,
-                         attention=attention, sex_counts=sex_counts))
+                         attention=attention, sex_counts=sex_counts, participation=participation))
     return rows
 
 
@@ -176,6 +225,11 @@ def workspace_report(base, args, user, now, forced_campus=None):
     from app.annual_goals import summary, comparisons
     scope = reporting_period(args, now)
     campuses = Campus.query.order_by(Campus.name).all()
+    for key in ('event_id','campus_id'):
+        if key == 'campus_id' and user.role == 'coordinator':
+            continue
+        if args.get(key) and args.get(key,type=int) is None:
+            abort(400,description='Choose a valid activity and campus scope.')
     campus_id = user.campus_id if user.role == 'coordinator' else forced_campus or args.get('campus_id', type=int)
     query = base
     if campus_id:
@@ -215,11 +269,13 @@ def workspace_report(base, args, user, now, forced_campus=None):
         query = query.filter(Event.lifecycle_status == 'approved')
         if delivery == 'conducted':
             query = query.filter(Event.end_date.isnot(None),Event.end_date <= now)
+        else:
+            query = query.filter(or_(Event.end_date.is_(None),Event.end_date > now))
     elif delivery:
         abort(400, description='Choose approved or conducted activities.')
     rows = _activity_rows(in_period(query,scope['start'],scope['end']),args,now)
     def totals(rows):
-        return dict(approved=sum(r['event'].lifecycle_status == 'approved' for r in rows),
+        return dict(approved=sum(r['event'].lifecycle_status == 'approved' and not r['conducted'] for r in rows),
                     conducted=sum(r['conducted'] for r in rows), attendees=sum(r['attendees'] for r in rows if r['conducted']))
     current = totals(rows)
     deltas = {}

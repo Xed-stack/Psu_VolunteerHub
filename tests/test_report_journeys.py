@@ -36,20 +36,21 @@ def test_views_preserve_scope_and_export_dataset(client,app,actors):
     assert parse_qs(urlsplit(redirect.location).query)['view']==['participation']
 
 
-def test_combined_report_forces_event_and_keeps_full_roster(client,app,actors):
+def test_combined_report_forces_event_and_keeps_scoped_roster(client,app,actors):
     sign_in(client,actors)
     event=Event.query.first();event.date=local_now()-timedelta(days=2);event.end_date=event.date+timedelta(hours=1)
     reg=Registration(event_id=event.id,user_id=actors['volunteer'],status='confirmed');db.session.add(reg);db.session.flush();db.session.add(Attendance(event_id=event.id,registration_id=reg.id,status='present'));db.session.commit()
     origin='/workspace/reports/results?period=all&view=participation&campus=1&campus=2&page=1'
-    query='?'+urlencode({'return_to':origin,'event_id':'999','sex':'female'})
+    query='?'+urlencode({'return_to':origin,'event_id':'999','sex':'prefer_not_to_say'})
     response,data=screen(client,app,f'/workspace/reports/activities/{event.id}'+query)
-    assert data['event_id']==event.id and data['row']['metrics']['present']==0
+    assert data['event_id']==event.id and data['row']['metrics']['present']==1
     assert data['roster'].total==1 and b'volunteer' in response.data
     assert 'href="'+origin+'"' in unescape(response.text)
     assert data['export_query']['event_id']==[str(event.id)]
     export=client.get('/workspace/reports/export/xlsx',query_string=[(key,value) for key,values in data['export_query'].items() for value in values])
     book=load_workbook(io.BytesIO(export.data))
     assert book['Named attendance'].max_row==2 and book['Activities'].max_row==2
+    assert client.get(f'/workspace/reports/activities/{event.id}?period=all&sex=female').status_code==404
     sign_in(client,actors,'other');assert client.get(f'/workspace/reports/activities/{event.id}').status_code==404
     sign_in(client,actors,'volunteer');assert client.get(f'/workspace/reports/activities/{event.id}').status_code==403
 

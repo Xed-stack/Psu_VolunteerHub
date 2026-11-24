@@ -132,15 +132,14 @@ def test_screen_totals_precede_pagination_and_match_exports(client,app,actors,ev
     assert '30.0%' not in text and '83.3%' in text
 
 
-def test_combined_activity_and_native_disclosure(client,app,actors,evidence):
+def test_combined_activity_scope_and_overview_commitments(client,app,actors,evidence):
     sign_in(client,actors,'director')
     response,data=screen(client,app,'/workspace/overview?period=all')
     from tests.html_helpers import parse_html
-    disclosure=parse_html(response.text).one('details',**{'class':'campus-details'})
-    assert 'open' not in disclosure.attrs
-    assert 'Expand Campus Details' in disclosure.text and len(disclosure.all('tr'))==10
+    commitments=parse_html(response.text).one('table',**{'class':'director-commitments-table'})
+    assert len(commitments.all('tr'))==10
     response,data=screen(client,app,f'/workspace/reports/activities/{evidence["primary"].id}?period=all&sex=female')
-    assert data['sex_breakdown']['total']==2 and data['roster'].total==12
+    assert data['sex_breakdown']['total']==2 and data['roster'].total==5
     assert b'Sex-Disaggregated Verified Attendance' in response.data
     sign_in(client,actors,'other')
     assert client.get(f'/workspace/reports/activities/{evidence["primary"].id}').status_code==404
@@ -155,4 +154,4 @@ def test_aggregation_query_count_stays_constant(app,actors,evidence):
     db.session.commit();db.session.expire_all()
     with query_count(app) as large:
         _activity_rows(Event.query,args,local_now())
-    assert len(large)==len(small)==2
+    assert len(large)==len(small)==3
