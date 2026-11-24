@@ -4,6 +4,10 @@ PSU Volunteer Hub is a centralized volunteer-management platform for Pangasinan 
 
 ## Current Documentation
 
+For a new Railway presentation database with the existing four logins, 25 AOP
+goals and a full 2026 activity year, use the
+[Railway year dataset runbook](docs/operations/RAILWAY_YEAR_DATASET.md).
+
 Start with [HANDOFF.md](HANDOFF.md#current-handoff-31-october-2026) for current
 workspace state, decisions, verification, and handoff rules. The complete
 developer/operator/user reference is [System Documentation](docs/SYSTEM_DOCUMENTATION.md).

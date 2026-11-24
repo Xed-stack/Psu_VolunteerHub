@@ -316,6 +316,7 @@ def migrate_finding_reviews_command(database, dry_run):
 def register_commands(app):
     from app.demo_dataset import reset_and_seed_demo
     from app.presentation_dataset import reset_and_seed_presentation
+    from app.railway_year_dataset import seed_railway_year
     from app.performance_indexes import migrate_performance_indexes
 
     app.cli.add_command(init_production)
@@ -324,6 +325,7 @@ def register_commands(app):
     app.cli.add_command(seed_demo_analytics)
     app.cli.add_command(reset_and_seed_demo)
     app.cli.add_command(reset_and_seed_presentation)
+    app.cli.add_command(seed_railway_year)
     app.cli.add_command(migrate_performance_indexes)
     app.cli.add_command(migrate_annual_goals_command)
     app.cli.add_command(migrate_aop_command)
