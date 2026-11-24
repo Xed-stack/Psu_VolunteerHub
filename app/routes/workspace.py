@@ -282,32 +282,72 @@ def draft_list():
 @login_required
 @roles_required('coordinator', 'director', 'admin')
 def activities():
-    query = scoped_events()
+    base = scoped_events()
     state = request.args.get('state', 'upcoming')
     now = local_now()
-    if state == 'upcoming':
-        query = query.filter(Event.date > now, Event.lifecycle_status == 'approved')
-    elif state == 'ongoing':
-        query = query.filter(Event.date <= now, Event.end_date > now, Event.lifecycle_status == 'approved')
-    elif state == 'past':
-        query = query.filter(func.coalesce(Event.end_date, Event.date) <= now)
-    elif state == 'cancelled':
-        query = query.filter(Event.lifecycle_status == 'cancelled')
-    elif state != 'all':
+    conditions = {
+        'upcoming': (Event.date > now) & (Event.lifecycle_status == 'approved'),
+        'ongoing': (Event.date <= now) & (Event.end_date > now) & (Event.lifecycle_status == 'approved'),
+        'past': func.coalesce(Event.end_date, Event.date) <= now,
+        'cancelled': Event.lifecycle_status == 'cancelled',
+    }
+    if state == 'all':
+        query = base
+    elif state in conditions:
+        query = base.filter(conditions[state])
+    else:
         abort(400)
     search = request.args.get('q', '').strip()[:200]
     if search:
-        query = query.filter(or_(Event.title.icontains(search, autoescape=True),
-                                 Event.description.icontains(search, autoescape=True)))
+        search_filter = or_(Event.title.icontains(search, autoescape=True),
+                            Event.description.icontains(search, autoescape=True),
+                            Event.conducting_department.icontains(search, autoescape=True))
+        query = query.filter(search_filter)
     category = request.args.get('category', '').strip()
     if category:
         query = query.filter_by(category=category)
     campus = request.args.get('campus_id', type=int)
-    if campus and current_user.role != 'coordinator':
+    coordinator = current_user.role == 'coordinator'
+    if campus and not coordinator:
         query = query.filter_by(campus_id=campus)
+    counts = {}
+    if coordinator:
+        scoped = base
+        if search:
+            scoped = scoped.filter(search_filter)
+        if category:
+            scoped = scoped.filter_by(category=category)
+        counts = {key: scoped.filter(condition).count() for key, condition in conditions.items() if key != 'all'}
+        counts['all'] = scoped.count()
+    per_page = 5 if coordinator else 15
     pagination = db.paginate(query.order_by(Event.date.asc() if state in ('upcoming', 'ongoing') else Event.date.desc(), Event.id).statement,
-                             per_page=15, max_per_page=15, error_out=False)
-    categories = [row[0] for row in scoped_events().with_entities(Event.category).filter(Event.category.isnot(None)).distinct().order_by(Event.category)]
+                             per_page=per_page, max_per_page=per_page, error_out=False)
+    categories = [row[0] for row in base.with_entities(Event.category).filter(Event.category.isnot(None)).distinct().order_by(Event.category)]
+    if coordinator:
+        ids = [event.id for event in pagination.items]
+        registered = dict(db.session.query(Registration.event_id, func.count(Registration.id)).filter(
+            Registration.event_id.in_(ids), Registration.status.in_(('confirmed', 'completed'))).group_by(Registration.event_id).all()) if ids else {}
+        cards = []
+        for event in pagination.items:
+            target = int(event.target_participants or 0)
+            count = registered.get(event.id, 0)
+            percent = round(count * 100 / target) if target else None
+            if event.lifecycle_status == 'cancelled':
+                status, tone = 'Cancelled', 'neutral'
+            elif event.date > now:
+                status, tone = 'Upcoming', 'blue'
+            elif event.end_date and event.end_date > now:
+                status, tone = 'Ongoing', 'green'
+            elif event.end_date and event.end_date <= now:
+                status, tone = 'Completed', 'neutral'
+            else:
+                status, tone = 'Scheduled', 'neutral'
+            cards.append(dict(event=event, registered=count, target=target, percent=percent,
+                              status=status, tone=tone,
+                              low=state == 'upcoming' and percent is not None and percent < 50))
+        return render_template('workspace/coordinator_activities.html', cards=cards, pagination=pagination,
+                               state=state, search=search, now=now, categories=categories, counts=counts,
+                               campus_name=current_user.campus.name if current_user.campus else 'Campus Not Assigned')
     return render_template('workspace/activities.html', pagination=pagination, state=state, search=search, now=now,
                            categories=categories, campuses=Campus.query.order_by(Campus.name).all())
 
