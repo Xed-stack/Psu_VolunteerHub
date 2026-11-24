@@ -111,9 +111,12 @@ def _source_accounts():
             require({u['email'] for u in users} == set(DEFAULT_EMAILS), 'Source must contain all four default accounts.')
             ids = [u['id'] for u in users]
             require(all(u['is_active'] and u['password_hash'] for u in users), 'Default accounts must be active with existing password hashes.')
-            roles = {'admin@psu.edu': 'director', 'director@psu.edu': 'director',
-                     'coordinator@psu.edu': 'coordinator', 'student@psu.edu': 'volunteer'}
-            require(all(u['role'] == roles[u['email']] for u in users),
+            # Older demo snapshots used an ``admin`` role.  The destination
+            # schema intentionally has only director/coordinator/volunteer;
+            # translate that one legacy role while leaving the source read-only.
+            roles = {'admin@psu.edu': {'admin', 'director'}, 'director@psu.edu': {'director'},
+                     'coordinator@psu.edu': {'coordinator'}, 'student@psu.edu': {'volunteer'}}
+            require(all(u['role'] in roles[u['email']] for u in users),
                     'Default roles do not match the current three-role schema. Review source upgrades first; no roles were changed.')
             snapshot = {'users': users, 'campuses': rows('campuses')}
             for model in COPY_MODELS[1:]:
@@ -139,6 +142,8 @@ def _copy_accounts(snapshot, campuses):
     users = {}
     for record in snapshot['users']:
         values = {c.name: record[c.name] for c in User.__table__.columns if c.name in record}
+        if values['email'] == 'admin@psu.edu' and values.get('role') == 'admin':
+            values['role'] = 'director'
         if values['campus_id'] is not None:
             values['campus_id'] = campuses[source_campuses[values['campus_id']]].id
         # Column name is is_active; the mapped Python attribute is _is_active.
