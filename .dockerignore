@@ -3,6 +3,10 @@
 !requirements.txt
 !config.py
 !wsgi.py
+!package.json
+!package-lock.json
+!ui/
+!ui/app.css
 !app/
 !app/**
 !templates/

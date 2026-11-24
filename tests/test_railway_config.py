@@ -21,6 +21,8 @@ def test_build_context_excludes_real_data_and_history():
     for path in ('static/uploads/', '.env', '.git/', 'Database/', 'instance/'):
         assert path in ignores
     assert '!migrations/' in ignores and '!migrations/*.sql' in ignores
+    for source in ('!package.json', '!package-lock.json', '!ui/', '!ui/app.css'):
+        assert source in ignores
     assert 'COPY migrations ./migrations' in (ROOT / 'Dockerfile').read_text()
     for line in (ROOT / 'Dockerfile').read_text().splitlines():
         if line.startswith('COPY '):
