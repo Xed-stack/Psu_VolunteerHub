@@ -1682,6 +1682,41 @@ html[data-js] [data-period-inactive] { display:none !important; }
     .partners-summary__note { @apply ml-0; }
     .partners-pagination { @apply justify-center; }
   }
+  .agency-reference { @apply space-y-4; }
+  .agency-reference__back { @apply text-sm; }
+  .agency-reference__hero { @apply flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-5; }
+  .agency-reference__identity { @apply flex min-w-0 items-start gap-4; }
+  .agency-reference__avatar { @apply flex size-14 shrink-0 items-center justify-center rounded-md bg-psu text-xl font-bold text-white; }
+  .agency-reference__title { @apply flex min-w-0 flex-wrap items-center gap-3; }
+  .agency-reference__title h1 { @apply text-2xl font-bold text-ink; }
+  .agency-status { @apply inline-flex min-h-0 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold; }
+  .agency-status > span { @apply size-2 rounded-full bg-current; }
+  .agency-status--active { @apply border-emerald-300 bg-emerald-50 text-emerald-800; }
+  .agency-status--pending { @apply border-amber-300 bg-amber-50 text-amber-900; }
+  .agency-status--none { @apply border-slate-300 bg-slate-50 text-slate-700; }
+  .agency-reference__meta { @apply mt-1 flex flex-wrap items-center gap-2 text-sm leading-6 text-slate-600; }
+  .agency-card { @apply min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-5; }
+  .agency-card__head { @apply mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3; }
+  .agency-card__head h2 { @apply flex min-w-0 items-center gap-2 text-lg font-semibold text-psu-deep; }
+  .agency-card__head .material-symbols-outlined { @apply text-psu; }
+  .agency-card__count { @apply font-normal text-slate-600; }
+  .agency-card__grid { @apply grid min-w-0 gap-3 sm:grid-cols-3; }
+  .agency-field { @apply min-w-0 rounded-md border border-slate-200 bg-slate-50 p-4; }
+  .agency-field__label { @apply text-xs font-semibold uppercase tracking-wide text-slate-600; }
+  .agency-field__value { @apply mt-2 flex min-w-0 flex-wrap items-center gap-2 break-words text-base font-semibold text-psu-deep; }
+  .agency-field__value .material-symbols-outlined { @apply text-psu; }
+  .agency-field__hint { @apply mt-1 text-sm leading-6 text-slate-600; }
+  .agency-card__foot { @apply mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-3 text-sm text-slate-600; }
+  .agency-card__foot span { @apply inline-flex min-w-0 items-center gap-2; }
+  .agency-card__foot .material-symbols-outlined { @apply text-psu; }
+  .agency-card__note { @apply mb-3 text-sm leading-6 text-slate-600; }
+  .agency-card--action form { @apply flex flex-wrap items-center gap-3; }
+  .agency-card--agreements .data-table { @apply text-sm; }
+  @media (max-width:639px) {
+    .agency-reference__hero { @apply items-start; }
+    .agency-reference__hero > .btn { @apply w-full justify-center; }
+    .agency-card__foot { @apply items-start; }
+  }
 @media (min-width:1024px) {
   .aop-director > .aop-director-deliverables,
   .aop-director > nav[aria-label="AOP Records"] { display:none; }

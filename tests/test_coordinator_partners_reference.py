@@ -1,5 +1,6 @@
 """Coordinator Partner Agencies reference layout and MOA-derived states."""
 from datetime import date, timedelta
+from urllib.parse import quote
 
 from app.models import db
 from app.models.workspace import PartnerAgency, PartnerAgreement
@@ -50,3 +51,19 @@ def test_partners_reference_layout_and_moa_statuses(app, client, actors, records
     assert 'Active Partner Agency' in by_email
     context = client.get('/workspace/partners?activity_context=create').get_data(as_text=True)
     assert 'Back to Activity Draft' in context and 'name="activity_context" value="create"' in context
+
+
+def test_partner_detail_reference_layout(client, actors, records):
+    agency_id = records[0]
+    sign_in(client, actors)
+    destination = quote('/workspace/partners?q=%25_&page=2', safe='')
+    response = client.get(f'/workspace/partners/{agency_id}?return_to={destination}')
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert 'agency-reference' in body and 'agency-reference__hero' in body
+    assert 'Back to Agencies' in body and 'Add MOA' in body and 'Edit Agency Details' in body
+    assert 'Contact Details' in body and 'Authorized Agency Liaison' in body
+    assert 'Campus: Lingayen Campus' in body and 'Agency record in campus directory' in body
+    assert 'Upcoming MOA' in body and 'MOA-BOUNDARY' in body
+    assert 'name="document"' not in body
+    assert '/workspace/partners?q=%25_&amp;page=2' in body

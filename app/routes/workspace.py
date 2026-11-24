@@ -614,6 +614,26 @@ def private_document(document):
     return send_file(path, as_attachment=True, download_name=document['name'])
 
 
+def describe_agency(agency, today):
+    """Derive MOA status from real agreement dates for campus partner views."""
+    agreements = agency.agreements or []
+    if not agreements:
+        agency.moa_status, agency.status_label, agency.active_reference = 'none', 'No MOA on file', None
+    else:
+        active = [agreement for agreement in agreements
+                  if agreement.valid_from <= today <= agreement.valid_until]
+        if active:
+            agency.moa_status, agency.status_label = 'active', 'Active Valid'
+            agency.active_reference = active[0].reference
+        else:
+            future = [agreement for agreement in agreements if agreement.valid_from > today]
+            agency.moa_status = 'pending'
+            agency.status_label = 'Upcoming MOA' if future else 'Pending Renewal'
+            agency.active_reference = (future or agreements)[-1].reference
+    agency.agreement_count = len(agreements)
+    return agency
+
+
 @workspace_bp.route('/partners', methods=['GET', 'POST'])
 @login_required
 @role_required('coordinator')
@@ -627,25 +647,7 @@ def partners():
     if moa_status not in ('', 'active', 'pending', 'none'):
         abort(400, description='Choose a listed MOA status.')
 
-    def describe(agency):
-        agreements = agency.agreements or []
-        if not agreements:
-            agency.moa_status, agency.status_label, agency.active_reference = 'none', 'No MOA on file', None
-        else:
-            active = [agreement for agreement in agreements
-                      if agreement.valid_from <= today <= agreement.valid_until]
-            if active:
-                agency.moa_status, agency.status_label = 'active', 'Active Valid'
-                agency.active_reference = active[0].reference
-            else:
-                future = [agreement for agreement in agreements if agreement.valid_from > today]
-                agency.moa_status = 'pending'
-                agency.status_label = 'Upcoming MOA' if future else 'Pending Renewal'
-                agency.active_reference = (future or agreements)[-1].reference
-        agency.agreement_count = len(agreements)
-        return agency
-
-    directory = [describe(agency) for agency in PartnerAgency.query.filter_by(
+    directory = [describe_agency(agency, today) for agency in PartnerAgency.query.filter_by(
         campus_id=current_user.campus_id).all()]
     summary = dict(total=len(directory),
                    active=sum(agency.moa_status == 'active' for agency in directory),
@@ -656,7 +658,7 @@ def partners():
         query = query.filter(or_(PartnerAgency.name.icontains(search, autoescape=True),
                                  PartnerAgency.contact_name.icontains(search, autoescape=True),
                                  PartnerAgency.email.icontains(search, autoescape=True)))
-    rows = [describe(agency) for agency in query.order_by(PartnerAgency.name, PartnerAgency.id).all()]
+    rows = [describe_agency(agency, today) for agency in query.order_by(PartnerAgency.name, PartnerAgency.id).all()]
     if moa_status:
         rows = [agency for agency in rows if agency.moa_status == moa_status]
     per_page = 25
@@ -678,12 +680,15 @@ def partner(agency_id):
     if request.method == 'POST':
         return agreement_new(agency_id)
     agency = partner_agency(agency_id)
+    today = local_now().date()
+    describe_agency(agency, today)
     pagination = db.paginate(PartnerAgreement.query.filter_by(agency_id=agency.id).order_by(
         PartnerAgreement.valid_until.desc(), PartnerAgreement.id.desc()).statement,
         per_page=25, max_per_page=25, error_out=False)
     activity_draft = draft_for('activity:new') if request.args.get('activity_context') == 'create' else None
     return render_template('workspace/partner.html', agency=agency, pagination=pagination,
-                           full_proposal_context=bool(activity_draft and activity_draft.payload.get('_full_proposal')==1),today=local_now().date())
+                           full_proposal_context=bool(activity_draft and activity_draft.payload.get('_full_proposal')==1),
+                           today=today, campus_name=current_user.campus.name)
 
 
 def partner_agency(agency_id):
