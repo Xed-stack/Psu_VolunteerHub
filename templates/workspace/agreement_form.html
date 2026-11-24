@@ -1,13 +1,39 @@
 {% extends 'layouts/role_base.html' %}
-{% from 'workspace/partner_components.html' import field with context %}
 {% from 'partials/info_tip.html' import info_tip with context %}
 {% from 'partials/moa_dates.html' import moa_dates with context %}
 {% block title %}Add MOA · PSU Volunteer Hub{% endblock %}
-{% block content %}<a class="activity-back mb-4" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) }}">Back to Agency</a><header class="page-heading"><div><h1>Add MOA</h1><p>{{ agency.name }} · Required fields are marked *.</p></div></header>
-{% if errors %}<section class="panel mb-5" role="alert" tabindex="-1" data-form-errors><h2>Check These Fields</h2><ul>{% for name,message in errors.items() %}<li><a class="underline" href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul></section>{% endif %}
-<form method="post" enctype="multipart/form-data" class="panel max-w-3xl" data-draft-key="{{ form_key }}">{% include 'partials/csrf_field.html' %}
+{% block content %}<div class="agreement-form-reference">
+<a class="activity-back agreement-form-reference__back" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) }}"><span aria-hidden="true">‹</span> Back to Agency</a>
+<header class="agreement-form-reference__heading"><h1>Add MOA</h1><p class="agreement-form-reference__meta"><span class="agreement-form-reference__chip">{{ agency.name }}</span><span>Required fields are marked <span class="text-red-700">*</span></span></p></header>
+<form method="post" enctype="multipart/form-data" class="agreement-form-reference__card" data-draft-key="{{ form_key }}">
+{% include 'partials/csrf_field.html' %}
 <input type="hidden" name="_draft_key" value="{{ form_key }}">
-<p class="mb-5 text-sm text-slate-600">Use the dates on the signed agreement. An activity must start within this range.</p>
-{{ field('reference','Agreement Reference',required=true,limit=150,errors=errors) }}<div class="heading-with-help mt-6"><h2>Validity Dates</h2>{{ info_tip('MOA Validity','The selected agreement must cover the activity start date, including either boundary. Current validity and activity applicability are shown separately.') }}</div><div class="form-grid mt-4">{{ moa_dates(errors) }}</div>
-<label class="field mt-6">Agreement Document *<input id="document" name="document" type="file" accept=".pdf,.docx" required {% if errors.document %}aria-invalid="true" aria-describedby="document-error"{% endif %}><small>PDF or DOCX, up to 10 MB. Your saved upload remains attached after refresh.</small>{% if errors.document %}<small id="document-error" class="text-red-700">{{ errors.document }}</small>{% endif %}</label><div class="form-actions"><a class="btn btn--ghost" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) }}">Cancel</a><button class="btn btn--primary">Save Agreement</button></div></form>{% endblock %}
+{% if errors %}<section class="panel mb-5" role="alert" tabindex="-1" data-form-errors><h2>Check These Fields</h2><ul>{% for name,message in errors.items() %}<li><a class="underline" href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul></section>{% endif %}
+<p class="agreement-form-reference__intro">Use the dates on the signed agreement. An activity must start within this range.</p>
+<label class="agreement-field" for="reference"><span>Agreement Reference <span class="text-red-700">*</span></span><input
+  id="reference"
+  name="reference"
+  type="text"
+  maxlength="150"
+  required
+  placeholder="e.g., MOA-2026-LG-001 or CHED-PSU-2026-08"
+  value="{{ request.form.get('reference','') }}"
+  {% if errors.reference %}aria-invalid="true" aria-describedby="reference-error"{% endif %}
+>{% if errors.reference %}<small class="text-red-700" id="reference-error">{{ errors.reference }}</small>{% endif %}</label>
+<div class="agreement-form-reference__section"><div class="agreement-form-reference__section-head"><h2>Validity Dates</h2>{{ info_tip('MOA Validity','The selected agreement must cover the activity start date, including either boundary. Current validity and activity applicability are shown separately.') }}</div>
+  <div class="agreement-dates">{{ moa_dates(errors) }}</div>
+  <p class="agreement-note">Activities must fall completely between Valid From and Valid Until to qualify for AOP credit.</p>
+</div>
+<div class="agreement-form-reference__section"><label class="agreement-field" for="document"><span>Agreement Document <span class="text-red-700">*</span></span><input
+  id="document"
+  name="document"
+  class="agreement-file"
+  type="file"
+  accept=".pdf,.docx"
+  required
+  {% if errors.document %}aria-invalid="true" aria-describedby="document-error"{% endif %}
+></label>{% if errors.document %}<small class="text-red-700" id="document-error">{{ errors.document }}</small>{% endif %}<p class="agreement-note">PDF or DOCX, up to 10 MB. Your saved upload remains attached after refresh.</p></div>
+<div class="agreement-form-reference__actions"><a class="btn btn--ghost" href="{{ back_url('workspace.partner',agency_id=agency.id,activity_context=request.args.get('activity_context')) }}">Cancel</a><button class="btn btn--primary">Save Agreement</button></div>
+</form>
+</div>{% endblock %}
 {% block scripts %}<script src="{{ url_for('static',filename='scripts/moa-date-picker.js') }}"></script>{% endblock %}

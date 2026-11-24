@@ -53,6 +53,28 @@ def test_partners_reference_layout_and_moa_statuses(app, client, actors, records
     assert 'Back to Activity Draft' in context and 'name="activity_context" value="create"' in context
 
 
+def test_agreement_form_reference_layout(client, actors, records):
+    agency_id = records[0]
+    sign_in(client, actors)
+    body = client.get(f'/workspace/partners/{agency_id}/agreements/new').get_data(as_text=True)
+    assert 'agreement-form-reference' in body and 'Back to Agency' in body
+    assert 'Required fields are marked' in body and 'Agreement Reference' in body
+    assert 'e.g., MOA-2026-LG-001 or CHED-PSU-2026-08' in body
+    assert 'Validity Dates' in body and 'Activities must fall completely' in body
+    assert 'Agreement Document' in body and 'PDF or DOCX, up to 10 MB' in body
+    assert 'Save Agreement' in body and 'Cancel' in body
+    for name in ('reference', 'valid_from', 'valid_until', 'document', '_draft_key'):
+        assert f'name="{name}"' in body
+    assert 'data-draft-key=' in body and 'moa-date-picker.js' in body
+
+    invalid = client.post(f'/workspace/partners/{agency_id}/agreements/new',
+                          data=dict(reference='Authored reference', valid_from='2027-12-31',
+                                    valid_until='2027-01-01'))
+    body = invalid.get_data(as_text=True)
+    assert invalid.status_code == 200 and 'data-form-errors' in body
+    assert 'value="Authored reference"' in body and 'value="2027-12-31"' in body
+
+
 def test_partner_detail_reference_layout(client, actors, records):
     agency_id = records[0]
     sign_in(client, actors)

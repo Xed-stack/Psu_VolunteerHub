@@ -1682,6 +1682,33 @@ html[data-js] [data-period-inactive] { display:none !important; }
     .partners-summary__note { @apply ml-0; }
     .partners-pagination { @apply justify-center; }
   }
+  .agreement-form-reference { @apply mx-auto max-w-3xl; }
+  .agreement-form-reference__back { @apply text-sm; }
+  .agreement-form-reference__heading { @apply mb-5; }
+  .agreement-form-reference__heading h1 { @apply text-3xl; }
+  .agreement-form-reference__meta { @apply mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600; }
+  .agreement-form-reference__chip { @apply rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-psu-deep; }
+  .agreement-form-reference__card { @apply rounded-lg border border-slate-300 bg-white p-4 sm:p-6; }
+  .agreement-form-reference .draft-status { @apply mb-5 flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm; }
+  .agreement-form-reference .draft-status > span { @apply inline-flex items-center gap-2 text-slate-700; }
+  .agreement-form-reference .draft-status > span::before { content:""; @apply inline-block size-2 rounded-full bg-emerald-600; }
+  .agreement-form-reference .draft-status button { @apply min-h-11 text-red-700 underline; }
+  .agreement-form-reference__intro { @apply mb-5 text-sm leading-6 text-slate-600; }
+  .agreement-form-reference__section { @apply mt-6; }
+  .agreement-form-reference__section-head { @apply flex flex-wrap items-center gap-2; }
+  .agreement-form-reference__section-head h2 { @apply text-lg font-semibold text-psu-deep; }
+  .agreement-field { @apply mt-2 flex min-w-0 flex-col gap-2; }
+  .agreement-field > span { @apply text-sm font-semibold text-ink; }
+  .agreement-field input[type=text] { @apply min-h-11 w-full rounded-md border border-slate-400 bg-white px-3 text-base; }
+  .agreement-field input::placeholder { @apply text-slate-500; }
+  .agreement-dates { @apply mt-3 grid min-w-0 gap-4 sm:grid-cols-2; }
+  .agreement-dates .field { @apply min-w-0; }
+  .agreement-note { @apply mt-2 text-sm leading-6 text-slate-600; }
+  .agreement-file { @apply mt-2 block w-full rounded-md border border-dashed border-slate-400 bg-white p-3; }
+  .agreement-file::file-selector-button { @apply mr-3 min-h-11 cursor-pointer rounded-md border border-slate-400 bg-white px-4 text-sm font-semibold text-psu-deep; }
+  .agreement-form-reference__actions { @apply mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5; }
+  .agreement-form-reference__actions .btn { @apply min-h-11; }
+  @media (max-width:639px) { .agreement-dates { @apply grid-cols-1; } }
   .agency-reference { @apply space-y-4; }
   .agency-reference__back { @apply text-sm; }
   .agency-reference__hero { @apply flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-5; }
