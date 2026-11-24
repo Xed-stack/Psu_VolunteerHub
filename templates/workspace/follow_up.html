@@ -1,10 +1,35 @@
 {% extends 'layouts/role_base.html' %}{% from 'workspace/components.html' import heading with context %}{% from 'workspace/reimagined_components.html' import follow_up_list with context %}
 {% from 'workspace/staff_overview_components.html' import scope_controls with context %}
 {% from 'workspace/finding_controls.html' import categories with context %}
-{% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}{% block content %}{{ heading('Needs Attention','Review evidence, open the relevant workspace, and follow up without changing locked attendance.',url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)),'Back to Overview') }}{{ scope_controls(false) }}{% if reviews_ready and current_user.role=='coordinator' %}<nav class="report-tabs" aria-label="Finding Views"><a aria-current="page" href="{{ query_url(remove=['review_tab'],page=1) }}">Needs Attention</a><a href="{{ query_url(review_tab='reviewed',page=1) }}">Reviewed Recommendations</a></nav>{% elif current_user.role=='director' %}<p class="scope-note">Review management is unavailable. Generated findings are shown.</p>{% endif %}{{ categories() }}<section class="workspace-section"><header class="section-top"><h2>{{ total }} Follow-up Findings</h2><p class="text-sm text-slate-600">{{ period_label }}</p></header><p class="mb-5 text-sm text-slate-600">Activity findings use the selected report scope. Annual-plan findings use the full reporting year, labelled on each record. Reminders are available where an active Coordinator is assigned; equivalent unread reminders are not resent.</p>{{ follow_up_list(items) }}</section><nav class="pagination" aria-label="Follow-up Pages">{% if page > 1 %}<a
-  class="btn btn--outline"
-  href="{{ query_url(page=page-1) }}"
->Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a
-  class="btn btn--outline"
-  href="{{ query_url(page=page+1) }}"
->Next</a>{% endif %}</nav>{% endblock %}
+{% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}
+{% block content %}
+<div class="attention-v2">
+{{ heading('Needs Attention','Review evidence, open the relevant workspace, and follow up without changing locked attendance.',url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)),'Back to Overview') }}
+{{ scope_controls(false, true) }}
+{% if reviews_ready and current_user.role=='coordinator' %}
+<nav class="report-tabs" aria-label="Finding Views">
+<a aria-current="page" href="{{ query_url(remove=['review_tab'],page=1) }}">Needs Attention{% if total %} <span class="badge">{{ total }}</span>{% endif %}</a>
+<a href="{{ query_url(review_tab='reviewed',page=1) }}">Reviewed Recommendations</a>
+</nav>
+{% elif current_user.role=='director' %}
+<p class="scope-note">Review management is unavailable. Generated findings are shown.</p>
+{% endif %}
+{{ categories() }}
+<section class="attention-v2-summary" aria-label="Finding summary">
+  <article class="attention-v2-tile"><span>Total Findings</span><strong>{{ total }}</strong></article>
+  <article class="attention-v2-tile"><span>Current</span><strong>{{ phases.current if phases is defined else 0 }}</strong></article>
+  <article class="attention-v2-tile"><span>Past</span><strong>{{ phases.past if phases is defined else 0 }}</strong></article>
+  <article class="attention-v2-tile"><span>Reviewed</span><strong>{{ phases.annual if phases is defined else 0 }}</strong></article>
+</section>
+<section class="attention-v2-segments" aria-label="Finding phases">
+  <a href="#current-findings" class="is-active">Current &amp; Ongoing <span>{{ phases.current if phases is defined else 0 }}</span></a>
+  <a href="#past-findings">Past &amp; Completed <span>{{ phases.past if phases is defined else 0 }}</span></a>
+</section>
+<section class="workspace-section attention-v2-queue" id="current-findings" aria-labelledby="current-title">
+  <header class="section-top"><h2 id="current-title">Current &amp; Ongoing Activities</h2><p class="text-sm text-slate-600">{{ period_label }}</p></header>
+  <p class="mb-4 text-sm text-slate-600">Activity findings use the selected report scope. Annual-plan findings use the full reporting year, labelled on each record. Reminders are available where an active Coordinator is assigned; equivalent unread reminders are not resent.</p>
+  {{ follow_up_list(items) }}
+</section>
+<nav class="pagination attention-v2-footer" aria-label="Follow-up Pages">{% if page > 1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}{% if total %} · Showing {{ first_row }}-{{ last_row }} of {{ total }}{% endif %}</span>{% if page < pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</nav>
+</div>
+{% endblock %}

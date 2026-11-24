@@ -91,7 +91,7 @@ def test_queue_filters_before_pagination_and_does_not_change_facts(client,app,ac
     url='/workspace/follow-up?period=all&activity_name=Queue+fixture&finding_type=pending_attendance'
     _,first=screen(client,app,url)
     response,second=screen(client,app,url+'&page=2')
-    assert first['total']==second['total']==28 and len(first['items'])==25 and len(second['items'])==3
+    assert first['total']==second['total']==28 and len(first['items'])==5 and len(second['items'])==5
     previous=next(a for a in parse_html(response.text).all('a') if a.text=='Previous')
     assert parse_qs(urlsplit(previous.attrs['href']).query)['finding_type']==['pending_attendance']
     assert before==(Event.query.count(),Registration.query.count(),Attendance.query.count())

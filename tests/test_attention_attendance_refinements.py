@@ -160,7 +160,7 @@ def test_category_filters_before_pagination_and_replaces_legacy_scope(client,app
     if enabled:
         assert context['total']==28 and len(context['items'])==5
     else:
-        assert context['total']==28 and len(context['items'])==3
+        assert context['total']==28 and len(context['items'])==5
     page=parse_html(client.get('/workspace/follow-up?period=all&finding_type=record_attendance').text)
     assert 'Clear Finding Type' in page.text
     category=next(f for f in page.all('form') if f.all('select',name='review_group'))

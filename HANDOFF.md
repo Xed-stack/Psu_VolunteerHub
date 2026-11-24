@@ -1,6 +1,15 @@
 # PSU Volunteer Hub — Continuation Handoff
 
-Publication authorization on 24 November 2026 covers the Director Needs Attention
+Publication authorized on 24 November 2026 for the local Needs Attention phase
+queue and five-row pagination: commit the route, templates, source/generated CSS,
+adjusted pagination tests and this entry to both
+`origin/codex/ui-workflow-overhaul` and `thesis/codex/ui-workflow-overhaul`.
+Both remote heads were verified at `8d2fc8e` before publication. Focused tests
+passed (36 cases) and the CSS build was rerun. Railway deployment of
+`PSU-Volunteer-Hub-Demo` remains a separate user-operated step; verify the live
+revision contains the new UI after redeploy.
+
+The earlier publication authorization on 24 November 2026 covers the Director Needs Attention
 desktop queue and Overview commitment KPI destination on both configured
 `codex/ui-workflow-overhaul` remote branches. The separate generated-fallback
 page draft remains local. Earlier local-only statements are historical.

@@ -936,7 +936,19 @@ def follow_up():
     if len(request.args.getlist('review_group'))>1 or review_group not in ('',*finding_reviews.GROUPS):
         abort(400,description='Choose a listed review category.')
     data = report_data()
+    now = data['now']
     items = follow_up_items(data)
+    for item in items:
+        code = item['code']
+        event = item.get('event')
+        if code in ('no_targets','remaining_goals'):
+            item['phase'] = 'annual'
+        elif event is not None and getattr(event,'end_date',None) is not None:
+            item['phase'] = 'current' if event.end_date >= now else 'past'
+        elif event is not None:
+            item['phase'] = 'current' if event.date >= now else 'past'
+        else:
+            item['phase'] = 'current'
     if finding_type:
         items = [item for item in items if item['code'] == finding_type]
     if review_group:
@@ -945,10 +957,20 @@ def follow_up():
     page = request.args.get('page',1,type=int)
     if page is None or page < 1:
         abort(400)
-    return render_template('workspace/follow_up.html', **data, items=items[(page-1)*25:page*25],
+    phases = {'current':sum(1 for i in items if i['phase']=='current'),
+              'past':sum(1 for i in items if i['phase']=='past'),
+              'annual':sum(1 for i in items if i['phase']=='annual')}
+    pages = max(1,(len(items)+4)//5)
+    if page > pages:
+        page = pages
+    page_items = items[(page-1)*5:page*5]
+    first_row = (page-1)*5+1 if items else 0
+    last_row = min(page*5,len(items))
+    return render_template('workspace/follow_up.html', **data, items=page_items,
                            finding_type=finding_type,finding_label=FINDING_LABELS.get(finding_type),reviews_ready=finding_reviews.available(),
                            review_group=review_group,groups=finding_reviews.GROUPS,finding_labels=FINDING_LABELS,
-                           total=len(items), page=page, pages=max(1,(len(items)+24)//25))
+                           total=len(items), page=page, pages=pages, phases=phases,
+                           first_row=first_row, last_row=last_row)
 
 
 @workspace_bp.route('/campuses/<int:campus_id>')

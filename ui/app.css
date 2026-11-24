@@ -1317,6 +1317,35 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .schedule-time-options button:hover, .schedule-time-options button[aria-selected="true"] { background:#dbeafe; }
 @media(max-width:420px) { .schedule-time-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .schedule-time-colon { display:none; } .schedule-time-period { grid-column:1 / -1; } }
 
+.attention-page .attention-segments { @apply my-4 flex flex-wrap gap-2; }
+.attention-page .attention-segments a { @apply inline-flex min-h-11 items-center rounded-md border border-slate-500 px-4 py-2 font-semibold text-psu hover:bg-blue-50; }
+
+
+.attention-page .work-queue { @apply space-y-3; }
+.attention-page .work-queue > li { @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300; }
+.attention-page .work-queue > li > div:first-child { @apply space-y-2; }
+.attention-page .work-queue small { @apply inline-flex items-center rounded border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-900; }
+.attention-page .work-queue strong { @apply text-base font-bold text-psu; }
+.attention-page .work-queue p { @apply text-sm text-slate-700; }
+.attention-page .finding-schedule { @apply rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs; }
+.attention-page .finding-schedule p { @apply flex items-center gap-2; }
+.attention-page .finding-schedule strong { @apply text-slate-700; }
+.attention-page .queue-actions .btn { @apply min-w-[90px] bg-psu text-white hover:bg-psu-deep; }
+.attention-page .review-status { @apply inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800; }
+
+.attention-v2 .attention-v2-summary { @apply grid grid-cols-2 gap-3 md:grid-cols-4; }
+.attention-v2 .attention-v2-tile { @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm; }
+.attention-v2 .attention-v2-tile span { @apply block text-xs font-semibold uppercase tracking-wide text-slate-500; }
+.attention-v2 .attention-v2-tile strong { @apply mt-1 block text-2xl font-bold text-psu; }
+.attention-v2 .attention-v2-segments { @apply my-4 flex flex-wrap gap-2; }
+.attention-v2 .attention-v2-segments a { @apply inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50; }
+.attention-v2 .attention-v2-segments a.is-active { @apply border-psu bg-psu text-white hover:bg-psu-deep; }
+.attention-v2 .attention-v2-segments span { @apply rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700; }
+.attention-v2 .attention-v2-segments a.is-active span { @apply bg-white/20 text-white; }
+.attention-v2 .work-queue { @apply grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3; }
+.attention-v2 .work-queue > li { @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md; }
+.attention-v2 .attention-v2-footer { @apply mt-6; }
+
 /* Desktop AOP reporting and management share the established PSU report shell. */
 @media (min-width:1024px) {
   .aop-report { gap:1.5rem; }
