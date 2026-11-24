@@ -1504,10 +1504,10 @@ html[data-js] [data-period-inactive] { display:none !important; }
   body:has(.aop-director) .role-content { padding-top:2rem; }
   body:has(.aop-director) .breadcrumbs,
   .aop-director > .activity-back, .aop-mobile-context { display:none; }
-  .aop-desktop-context { display:flex; min-width:0; align-items:center; flex-wrap:wrap; gap:.75rem; font-size:.8125rem; color:var(--color-psu-deep); }
+  .aop-desktop-context { display:flex; min-width:0; align-items:center; flex-wrap:wrap; gap:.75rem; font-size:.875rem; color:var(--color-psu-deep); }
   .aop-desktop-context > a { display:inline-flex; min-height:44px; align-items:center; text-decoration:underline; text-underline-offset:3px; }
   .aop-context-scope { background:#eff6ff; border:1px solid #dbe3ee; border-radius:1rem; padding:.2rem .65rem; }
-  .aop-year-context { display:block; white-space:nowrap; border:1px solid #dbe3ee; border-radius:.5rem; background:#f8fafc; padding:.5rem .75rem; font-size:.8125rem; color:var(--color-psu-deep); }
+  .aop-year-context { display:block; white-space:nowrap; border:1px solid #dbe3ee; border-radius:.5rem; background:#f8fafc; padding:.5rem .75rem; font-size:.875rem; color:var(--color-psu-deep); }
   body:has(.aop-director) .role-topbar { gap:1rem; }
   body:has(.aop-director) .role-topbar__notification-label { display:none; }
   .aop-director { gap:1.5rem; }
@@ -1515,36 +1515,36 @@ html[data-js] [data-period-inactive] { display:none !important; }
   .aop-director .journey-heading { align-items:center; border:0; padding:0; }
   .aop-director .journey-heading h1 { font-size:2rem; font-weight:800; }
   .aop-reference-copy { display:inline; }
-  .aop-director .journey-heading p { font-size:.875rem; margin-top:.25rem; }
+  .aop-director .journey-heading p { font-size:1rem; margin-top:.25rem; }
   .aop-director .btn--primary { background:#0c213d; border-color:#0c213d; }
   .aop-director .btn--primary:hover { background:var(--color-psu); }
   .aop-create-symbol { display:inline; color:var(--color-gold); font-size:1.25rem; margin-right:.5rem; }
   .aop-director-scope { grid-template-columns:minmax(8rem,1fr) minmax(14rem,2.1fr) minmax(10rem,1fr); gap:1rem; border-color:#dbe3ee; border-radius:.75rem; padding:1.25rem; }
-  .aop-director-scope .field { font-size:.8125rem; }
-  .aop-director-scope .field input, .aop-director-scope .field select { margin-top:.375rem; }
-  .aop-scope-caption { display:block; grid-column:1/-1; border-top:1px solid #edf2f7; padding-top:.5rem; font-size:.75rem; line-height:1.6; color:#475569; }
+  .aop-director-scope .field { font-size:.875rem; }
+  .aop-director-scope .field input, .aop-director-scope .field select { margin-top:.375rem; font-size:.9375rem; }
+  .aop-scope-caption { display:block; grid-column:1/-1; border-top:1px solid #edf2f7; padding-top:.5rem; font-size:.875rem; line-height:1.6; color:#475569; }
   .aop-director-summary { border-color:#dbe3ee; border-radius:.75rem; }
-  .aop-director-summary > header { display:flex; align-items:center; justify-content:space-between; gap:1rem; background:linear-gradient(100deg,#0c213d,#143459); padding:1rem 1.5rem; }
-  .aop-director-summary > header h2 { display:inline; font-size:1rem; }
-  .aop-director-summary > header p { font-size:.75rem; line-height:1.6; }
-  .aop-directive-label { display:inline-block; margin-right:.5rem; padding:.2rem .45rem; border-radius:.2rem; background:var(--color-gold); color:#0c213d; font-size:.6875rem; font-weight:700; }
-  .aop-active-scope { display:block; flex-shrink:0; max-width:35%; border:1px solid #60758f; background:#2c486b; padding:.3rem .65rem; border-radius:1rem; color:white; font-size:.75rem; }
+  .aop-director-summary > header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; background:linear-gradient(100deg,#0c213d,#143459); padding:1rem 1.5rem; }
+  .aop-director-summary > header h2 { display:inline; font-size:1.125rem; }
+  .aop-director-summary > header p { font-size:.875rem; line-height:1.6; }
+  .aop-directive-label { display:inline-block; margin-right:.5rem; padding:.2rem .45rem; border-radius:.2rem; background:var(--color-gold); color:#0c213d; font-size:.8125rem; font-weight:700; }
+  .aop-active-scope { display:block; flex-shrink:0; max-width:35%; border:1px solid #60758f; background:#2c486b; padding:.3rem .65rem; border-radius:1rem; color:white; font-size:.8125rem; }
   .aop-director-totals { grid-template-columns:repeat(4,minmax(0,1fr)); padding:1.5rem; gap:1.5rem; }
   .aop-director-totals > div + div { border-left:1px solid #dbe3ee; padding-left:1.5rem; }
-  .aop-director-totals dt { font-size:.75rem; }
+  .aop-director-totals dt { font-size:.875rem; }
   .aop-metric-value { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; margin:.75rem 0 .25rem; }
   .aop-director-totals .aop-metric-value strong { margin:0; font-size:2.25rem; line-height:1.1; color:#0c213d; }
-  .aop-director-totals dd > span { font-size:.75rem; line-height:1.5; }
+  .aop-director-totals dd > span { font-size:.875rem; line-height:1.55; }
   .aop-director-totals > div:nth-child(2) strong { color:#047857; }
   .aop-director-totals > div:nth-child(4) strong { color:#1d4ed8; }
-  .aop-metric-status { display:inline-block; border:1px solid #94a3b8; border-radius:.2rem; padding:.15rem .35rem; background:#f8fafc; color:#334155; font-size:.6875rem; }
-  .aop-director-note { margin:0 1.5rem; padding:.875rem 1rem; }
-  .aop-director-note p { font-size:.75rem; line-height:1.65; }
-  .aop-director-note details > summary { font-size:.75rem; min-height:44px; align-content:center; }
-  .aop-campus-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(5.75rem,1fr)); gap:.5rem; list-style:none; margin:1rem 1.5rem 1.5rem; padding-top:.75rem; border-top:1px solid #edf2f7; }
-  .aop-campus-tiles a { display:flex; min-width:0; min-height:72px; height:100%; flex-direction:column; justify-content:center; gap:.25rem; border:1px solid #dbe3ee; border-radius:.25rem; padding:.5rem .25rem; background:#f8fafc; text-align:center; font-size:.75rem; color:var(--color-psu-deep); }
+  .aop-metric-status { display:inline-block; border:1px solid #94a3b8; border-radius:.2rem; padding:.15rem .4rem; background:#f8fafc; color:#334155; font-size:.8125rem; }
+  .aop-director-note { margin:0 1.5rem; padding:1rem; }
+  .aop-director-note p { font-size:.875rem; line-height:1.65; }
+  .aop-director-note details > summary { font-size:.875rem; min-height:44px; align-content:center; }
+  .aop-campus-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr)); gap:.5rem; list-style:none; margin:1rem 1.5rem 1.5rem; padding-top:.75rem; border-top:1px solid #edf2f7; }
+  .aop-campus-tiles a { display:flex; min-width:0; min-height:80px; height:100%; flex-direction:column; justify-content:center; gap:.25rem; border:1px solid #dbe3ee; border-radius:.25rem; padding:.625rem .35rem; background:#f8fafc; text-align:center; font-size:.875rem; color:var(--color-psu-deep); }
   .aop-campus-tiles a:hover { background:#eff6ff; border-color:var(--color-psu); }
   .aop-campus-tiles strong { font-weight:500; }
   .aop-campus-tiles span { color:#1d4ed8; font-weight:600; }
-  .aop-campus-tiles small { font-size:.6875rem; color:#047857; }
+  .aop-campus-tiles small { font-size:.8125rem; color:#047857; }
 }
