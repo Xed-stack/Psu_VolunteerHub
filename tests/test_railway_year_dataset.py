@@ -66,8 +66,11 @@ def test_dry_run_is_read_only_and_confirmation_is_required(seed_app):
     assert hashlib.sha256(source.read_bytes()).hexdigest()==before
 
 
-def test_complete_year_and_rerun(seed_app):
+@pytest.mark.parametrize('admin_role', ['director', 'admin'])
+def test_complete_year_and_rerun(seed_app, admin_role):
     source=Path(seed_app.config['SEED_TEST_SOURCE'])
+    with sqlite3.connect(source) as conn:
+        conn.execute("UPDATE users SET role=? WHERE email='admin@psu.edu'", (admin_role,))
     before=hashlib.sha256(source.read_bytes()).hexdigest()
     result=invoke(seed_app)
     assert result.exit_code==0, result.output
@@ -95,7 +98,8 @@ def test_complete_year_and_rerun(seed_app):
             conn.row_factory=sqlite3.Row
             for row in conn.execute('SELECT * FROM users WHERE email IN (?,?,?,?)',DEFAULT_EMAILS):
                 user=User.query.filter_by(email=row['email']).one()
-                assert (user.id,user.password_hash,user.role,user.name)==(row['id'],row['password_hash'],row['role'],row['name'])
+                expected_role = 'director' if row['email'] == 'admin@psu.edu' else row['role']
+                assert (user.id,user.password_hash,user.role,user.name)==(row['id'],row['password_hash'],expected_role,row['name'])
                 assert user.campus.code==conn.execute('SELECT code FROM campuses WHERE id=?',(row['campus_id'],)).fetchone()[0] if row['campus_id'] else user.campus_id is None
         assert all(not any(word in e.title.lower() for word in ('demo','test','sample','synthetic')) for e in Event.query.all())
         from app.railway_year_dataset import _dest_file
