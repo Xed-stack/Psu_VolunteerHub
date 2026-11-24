@@ -98,6 +98,22 @@
       annotations:[{text:numbers.format(total),showarrow:false,x:.5,y:.5,xref:'paper',yref:'paper',
         font:{color:'#00408b',size:size['annotations[0].font.size']}}]});
   });
+  document.querySelectorAll('[data-sdg-chart]').forEach(el => {
+    if (!el.parentElement.clientWidth) return;
+    const rows = JSON.parse(el.dataset.chartValues);
+    const total = rows.reduce((sum,row) => sum + row.total,0);
+    const sizing = () => ({width:el.parentElement.clientWidth,height:300});
+    responsiveLayouts.set(el,sizing);
+    draw(el,[{type:'pie',hole:.62,sort:false,direction:'clockwise',
+      labels:rows.map(row=>row.label),values:rows.map(row=>row.total),
+      marker:{colors:['#00408b','#f4bd27','#475569','#83baff','#cbd5e1'],line:{color:'#111c2c',width:1.5}},
+      textinfo:'label+percent',textposition:'inside',insidetextorientation:'horizontal',
+      textfont:{size:12,color:['#ffffff','#111c2c','#ffffff','#111c2c','#111c2c']},
+      hovertemplate:'%{label}: %{value:,d} activity-to-SDG links (%{percent})<extra></extra>'
+    }],{font:layout.font,paper_bgcolor:'#fff',showlegend:false,...sizing(),margin:{t:16,r:16,b:16,l:16},
+      uniformtext:{minsize:12,mode:'hide'},
+      annotations:[{text:numbers.format(total)+'<br>SDG links',showarrow:false,x:.5,y:.5,xref:'paper',yref:'paper',font:{color:'#00408b',size:18}}]});
+  });
   document.querySelectorAll('[data-month-chart]').forEach(el => {
     const labels = JSON.parse(el.dataset.chartLabels);
     const singleYear = new Set(labels.filter(label=>label.includes(' ')).map(label=>label.split(' ').at(-1))).size === 1;
@@ -151,7 +167,7 @@
       hovertemplate:'%{y}: %{x} known reported participations<extra></extra>'}],structuredClone(layout),config);
   });
   if (window.ResizeObserver) {
-    document.querySelectorAll('[data-campus-chart], [data-review-chart], [data-sex-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
+    document.querySelectorAll('[data-campus-chart], [data-review-chart], [data-sex-chart], [data-sdg-chart], [data-month-chart], [data-target-chart], [data-target-group], [data-historical-chart]').forEach(el => {
       let previousWidth = 0;
       new ResizeObserver(() => requestAnimationFrame(() => {
         if (el.isConnected && el.data && el.clientWidth && el.clientWidth !== previousWidth) {

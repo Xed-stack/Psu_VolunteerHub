@@ -1,5 +1,26 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Activity Accomplishments SDG Donut, 24 November 2026
+
+Added desktop SDG Alignment beside Sex-Disaggregated Verified Attendance in
+Summary and Participation Records for the shared staff report. Uses full
+filtered activity-to-SDG links before pagination; deduplicates per activity,
+groups smaller donut segments, lists every goal and reports unassigned counts.
+Existing data loading, filters, permissions and mobile presentation are retained.
+No schema, dependencies, exports or stored records were changed.
+
+23 focused Python tests and six Chromium groups passed, including three desktop
+widths, empty states, no-JavaScript/chart failures, enlarged text and narrow-layout
+preservation. Build, template parsing, JavaScript syntax, contrast checks, Design
+Critique, current Web Design Guidelines audit and Antislop gate passed. Skills
+used: UI/UX Pro Max, Frontend Design, Design Critique, Ponytail full, Antislop
+core/UI/Human during work, Web Design Guidelines and Webapp Testing. Evidence,
+limits and rollback are in `docs/qa/REPORT_SDG_DONUT.md`. The port-5000 preview was
+restarted without database seeding/migrations. The user authorized committing and
+pushing this SDG addition to both configured `codex/ui-workflow-overhaul` remotes.
+Preserve concurrent unrelated Activities-page changes in shared
+route/styles and other working files.
+
 ## Coordinator Read-Only Finding Reports, 24 November 2026
 
 Coordinator activity findings other than Record Attendance now open the existing

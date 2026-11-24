@@ -19,6 +19,22 @@
 {% macro report_tabs(view) %}
 <nav class="workspace-tabs" aria-label="Report Views">{% for value,label in [('summary','Summary'),('activities','Activity Records'),('participation','Participation Records')] %}<a href="{{ query_url(view=value) }}" {% if view == value %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
 {% endmacro %}
+{% macro sdg_alignment_panel(alignment) %}
+<section class="staff-section report-sdg-alignment" aria-labelledby="sdg-alignment-title">
+  <header class="staff-section-heading"><h2 id="sdg-alignment-title">SDG Alignment</h2></header>
+  <p class="staff-note">{{ period_label }}. {{ scope_label }}.</p>
+  <p class="staff-note">Linked Sustainable Development Goals across all {{ alignment.activities }} matching activities. Each activity counts once per linked SDG, so an activity can contribute to multiple goals.</p>
+  <p class="attendance-total"><strong>{{ alignment.total }}</strong> activity-to-SDG links</p>
+  {% if alignment.total %}
+  <div class="report-chart"><p data-chart-status class="staff-note">Chart unavailable? Exact values are listed below.</p><div hidden data-sdg-chart data-chart-values='{{ alignment.chart|tojson }}' aria-hidden="true"></div></div>
+  <table class="sdg-alignment-table"><caption class="sr-only">Activities linked to each Sustainable Development Goal and share of all activity-to-SDG links</caption><thead><tr><th scope="col">SDG</th><th scope="col">Activities</th><th scope="col">Share of Links</th></tr></thead><tbody>
+  {% for group in alignment.groups %}<tr><th scope="row">SDG {{ group.number }}: {{ group.name }}</th><td>{{ group.total }}</td><td>{{ group.share }}%</td></tr>{% endfor %}
+  </tbody></table>
+  <p class="staff-note">Shares use activity-to-SDG links, not attendees or unique activities. {% if alignment.groups|length > 5 %}Other SDGs combines the remaining goals in the donut; all goals are listed above. {% endif %}Rounded shares may not sum to 100%.</p>
+  {% else %}<p class="staff-empty">{% if alignment.activities %}No SDGs are assigned to these activities. Open Activity Records to inspect the source activities.{% else %}No activities match this scope. Remove a filter or choose another period.{% endif %}</p>{% endif %}
+  <p class="staff-note">{{ alignment.unassigned }} of {{ alignment.activities }} matching activities have no SDGs assigned and are excluded from the donut.</p>
+</section>
+{% endmacro %}
 {% macro participation_facts(row) %}
 <dl class="report-facts">
 {% for label,value in [('Registrations',row.metrics.registrations),('Internal Participants',row.metrics.internal),('External Participants',row.metrics.external),('Recorded Present',row.metrics.present),('Completed Participation',row.metrics.completed),('Attendance Rate',row.participation.rate_label),('Total Participant Target',row.event.target_participants if row.event.target_participants is not none else 'Not set'),('Whole-Activity Target Outcome',row.participation.target_label),('Recording',row.participation.recording),('Not Attended (System Default)',row.metrics.defaulted|default(0))] %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}

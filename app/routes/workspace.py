@@ -1029,7 +1029,9 @@ def people_insights():
 @login_required
 @roles_required('director', 'admin', 'coordinator')
 def report_results():
+    from app.services.workspace_reports import sdg_alignment_summary
     data = report_data()
+    data['sdg_alignment'] = sdg_alignment_summary(data['rows'])
     view = request.args.get('view', 'summary')
     if view not in ('summary', 'activities', 'participation'):
         view = 'summary'

@@ -28,6 +28,27 @@ def verified_sex_summary(rows):
     return dict(groups=groups, total=total)
 
 
+def sdg_alignment_summary(rows):
+    """Count activity-to-goal links across the complete filtered report."""
+    goals = {}
+    unassigned = 0
+    for row in rows:
+        linked = {goal.id: goal for goal in row['event'].sdgs}
+        if not linked:
+            unassigned += 1
+        for goal in linked.values():
+            group = goals.setdefault(goal.id, dict(number=goal.number, name=goal.name, total=0))
+            group['total'] += 1
+    groups = sorted(goals.values(), key=lambda group: (-group['total'], group['number']))
+    total = sum(group['total'] for group in groups)
+    for group in groups:
+        group['share'] = round(group['total'] / total * 100, 1)
+    chart = [dict(label=f"SDG {group['number']}", total=group['total']) for group in groups]
+    if len(chart) > 5:
+        chart = chart[:4] + [dict(label='Other SDGs', total=sum(group['total'] for group in chart[4:]))]
+    return dict(groups=groups, chart=chart, total=total, activities=len(rows), unassigned=unassigned)
+
+
 def reporting_period(args, now):
     year = args.get('year', type=int) if 'year' in args else args.get('goal_year', now.year, type=int)
     if year is None or not 1900 <= year <= 9998:

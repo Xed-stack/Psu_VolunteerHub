@@ -1386,9 +1386,23 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .aop-form-desktop { display:none; }
 .aop-goal-actions > div { display:contents; }
 .needs-desktop { display:none; }
+.report-sdg-alignment { display:none; }
 @media (min-width:1024px) {
+  .report-attendance-sdg { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; align-items:start; }
+  .report-sdg-alignment { display:block; }
+  .sdg-alignment-table { margin-top:1rem; width:100%; table-layout:fixed; font-size:.875rem; font-variant-numeric:tabular-nums; }
+  .sdg-alignment-table :is(th,td) { padding:.75rem .25rem; overflow-wrap:anywhere; }
+  .sdg-alignment-table thead th { background:#f8fafc; color:#475569; font-size:.75rem; }
+  .sdg-alignment-table th:first-child { width:55%; }
+  .sdg-alignment-table td { text-align:right; white-space:nowrap; }
+  .report-sdg-alignment > .staff-note:last-child { margin-top:1rem; }
+  .report-attendance-sdg [data-sdg-chart] { min-height:300px; }
   .report-page .sex-breakdown-table { table-layout:fixed; }
   .report-page .sex-breakdown-table th { white-space:normal; overflow-wrap:anywhere; }
+  .report-attendance-sdg .sex-breakdown-table { table-layout:auto; }
+  .report-attendance-sdg .sex-breakdown-table :is(th,td) { padding-right:.25rem; padding-left:.25rem; }
+  .report-attendance-sdg .sex-breakdown-table th:first-child { width:36%; overflow-wrap:normal; }
+  .report-attendance-sdg .sex-breakdown-table td { white-space:nowrap; }
 }
 @media (min-width:1024px) {
   body:has(.needs-desktop) .breadcrumbs { display:none; }

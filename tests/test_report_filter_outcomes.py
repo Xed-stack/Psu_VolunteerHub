@@ -11,10 +11,50 @@ from app.models import db
 from app.models.event import Event,Registration,Attendance,ExternalParticipant,SdgGoal
 from app.models.user import User
 from app.services.activity_workflow import local_now
-from app.services.workspace_reports import participation_outcome,workspace_report
+from app.services.workspace_reports import participation_outcome,workspace_report,sdg_alignment_summary
 from werkzeug.datastructures import MultiDict
 from tests.test_workspace_overhaul import app,client,actors,sign_in
 from tests.test_ui_reimagining import screen
+
+
+def test_sdg_alignment_counts_links_and_groups_small_slices():
+    goals=[SimpleNamespace(id=i,number=i,name=f'Goal {i}') for i in range(1,8)]
+    rows=[dict(event=SimpleNamespace(sdgs=goals+[goals[0]])),
+          dict(event=SimpleNamespace(sdgs=[goals[0]])),dict(event=SimpleNamespace(sdgs=[]))]
+    result=sdg_alignment_summary(rows)
+    assert result['total']==8 and result['activities']==3 and result['unassigned']==1
+    assert len(result['groups'])==7 and result['groups'][0]['total']==2
+    assert result['groups'][0]['share']==25
+    assert len(result['chart'])==5 and result['chart'][-1]==dict(label='Other SDGs',total=3)
+    assert sum(row['total'] for row in result['chart'])==result['total']
+    assert sdg_alignment_summary([])==dict(groups=[],chart=[],total=0,activities=0,unassigned=0)
+
+
+@pytest.mark.parametrize('role',['director','coordinator'])
+def test_sdg_panel_uses_complete_filtered_scope(client,app,actors,report_case,role):
+    events,now,sdgs=report_case
+    for index in range(26):
+        event=Event(title=f'SDG Scope {index}',description='Synthetic',date=now-timedelta(days=2),
+            end_date=now-timedelta(days=1),lifecycle_status='approved',campus_id=1)
+        event.sdgs=[sdgs[0]];db.session.add(event)
+    db.session.commit()
+    sign_in(client,actors,role)
+    response,data=screen(client,app,'/workspace/reports/results?period=all&activity_name=SDG+Scope&view=participation&page=2')
+    assert len(data['rows'])==1
+    assert data['sdg_alignment']['total']==26 and data['sdg_alignment']['activities']==26
+    assert 'SDG Alignment' in response.text and 'Share of Links' in response.text
+    _,filtered=screen(client,app,f'/workspace/reports/results?period=all&delivery=conducted&sex=female&sdg_id={sdgs[1].id}')
+    assert filtered['sdg_alignment']['activities']==1 and filtered['sdg_alignment']['total']==2
+    assert filtered['sdg_alignment']['groups'][0]['share']==50
+    response,empty=screen(client,app,'/workspace/reports/results?period=all&activity_name=No+Such+SDG+Activity')
+    assert empty['sdg_alignment']['total']==0 and 'No activities match this scope.' in response.text
+    _,approved=screen(client,app,'/workspace/reports/results?period=all&activity_name=Report+Fix&delivery=approved')
+    assert approved['sdg_alignment']['total']==0 and approved['sdg_alignment']['unassigned']==3
+    _,year=screen(client,app,'/workspace/reports/results?year=1901')
+    assert year['sdg_alignment']['total']==0
+    if role=='coordinator':
+        _,locked=screen(client,app,'/workspace/reports/results?period=all&campus_id=2&activity_name=SDG+Scope')
+        assert locked['sdg_alignment']['activities']==26
 
 
 @pytest.mark.parametrize('present,registrations,target,unrecorded,rate,outcome',[
