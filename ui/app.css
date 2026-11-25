@@ -1842,3 +1842,79 @@ html[data-js] [data-period-inactive] { display:none !important; }
   .aop-director-pagination { padding:.625rem 1rem; font-size:.75rem; }
   .aop-director-pagination .btn { min-height:44px; font-size:.75rem; }
 }
+body:has(.unical) .breadcrumbs { display:none; }
+.unical { @apply mx-auto flex w-full max-w-[76rem] min-w-0 flex-col gap-4; }
+.unical__intro { @apply pt-2; }
+.unical__eyebrow { @apply flex items-center gap-2 text-xs font-semibold text-slate-600; }
+.unical__intro h1 { @apply mt-1 text-3xl font-bold tracking-tight text-ink; }
+.unical__intro > p:last-child { @apply mt-2 max-w-3xl text-base leading-7 text-slate-600; }
+.unical-panel { @apply min-w-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm; }
+.unical-toolbar { @apply flex flex-wrap items-center justify-between gap-4; }
+.unical-toolbar__month { @apply flex min-w-0 flex-wrap items-center gap-3; }
+.unical-month-nav { @apply inline-flex items-center gap-1; }
+.unical-icon { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded border border-slate-300 bg-blue-50 px-3 text-base font-semibold text-psu no-underline hover:bg-blue-100; }
+.unical-icon--today { @apply min-w-0 px-4 text-sm; }
+.unical-icon.is-disabled { @apply pointer-events-none opacity-40; }
+.unical-toolbar__title { @apply m-0 text-2xl font-bold text-ink; }
+.unical-chip { @apply inline-flex min-h-0 items-center rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-psu; }
+.unical-chip--term { @apply bg-blue-100 text-blue-800; }
+.unical-chip--active { @apply ml-auto bg-blue-100 text-blue-800; }
+.unical-jump { @apply flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600; }
+.unical-jump select { @apply min-h-11 w-auto rounded border border-slate-300 bg-white px-2 text-sm; }
+.unical-jump .btn { @apply min-h-11; }
+.unical-filters { @apply mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4; }
+.unical-filters .field { @apply min-w-0 flex-1; }
+.unical-filters .field select { @apply min-h-11 w-full; }
+.unical-filters .btn { @apply min-h-11; }
+.unical-criteria { @apply mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3; }
+.unical-criteria__label { @apply text-xs font-bold uppercase tracking-wide text-slate-500; }
+.unical-summary { @apply mt-3 flex items-center gap-2 text-xs text-slate-600; }
+.unical-summary__dot { @apply size-2 rounded-full bg-amber-500; }
+.unical-panel--grid { @apply p-2; }
+.unical-grid { @apply flex min-w-0 flex-col overflow-hidden rounded border border-slate-200; }
+.unical-week { @apply grid min-w-0 grid-cols-7 border-b border-slate-200 last:border-b-0; }
+.unical-week--head { @apply bg-slate-100; }
+.unical-weekday { @apply px-2 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-600; }
+.unical-day { @apply flex min-h-[7rem] min-w-0 flex-col gap-1 border-r border-slate-200 p-2 last:border-r-0; }
+.unical-day--empty { @apply bg-slate-50; }
+.unical-day--selected { @apply bg-blue-50 ring-2 ring-inset ring-psu; }
+.unical-day__head { @apply flex min-w-0 flex-wrap items-center gap-1; }
+.unical-daynum { @apply inline-flex min-h-6 min-w-6 items-center justify-center text-xs font-bold text-slate-700 no-underline hover:text-psu; }
+.unical-today { @apply rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900; }
+.unical-selected { @apply rounded bg-psu px-1.5 py-0.5 text-[10px] font-bold uppercase text-white; }
+.unical-day__empty { @apply text-[11px] italic text-slate-400; }
+.unical-event { @apply block min-w-0 rounded border-l-2 border-psu bg-blue-50 px-1.5 py-1 no-underline hover:bg-blue-100; }
+.unical-event--cancelled { @apply border-red-600 bg-red-50 text-red-800 hover:bg-red-100; }
+.unical-event__title { @apply block truncate text-[11px] font-semibold text-psu-deep; }
+.unical-event--cancelled .unical-event__title { @apply text-red-800; }
+.unical-event__meta { @apply block truncate text-[10px] text-slate-600; }
+.unical-more { @apply text-[10px] font-semibold text-psu underline; }
+.unical-detail__head { @apply flex flex-wrap items-center gap-3 border-b border-slate-200 pb-4; }
+.unical-calendar-icon { @apply flex size-10 shrink-0 items-center justify-center rounded-md bg-blue-100 text-psu; font-family:'Material Symbols Outlined'; }
+.unical-detail__head h2 { @apply m-0 text-lg font-bold text-ink; }
+.unical-detail__head p { @apply mt-1 text-sm text-slate-600; }
+.unical-focus { @apply w-full text-xs font-semibold text-slate-500; }
+.unical-cards { @apply mt-4 grid min-w-0 gap-4 md:grid-cols-2; }
+.unical-card { @apply flex min-w-0 flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4; }
+.unical-card__top { @apply flex flex-wrap items-center gap-2; }
+.unical-campus { @apply rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800; }
+.unical-status { @apply rounded-full px-2.5 py-1 text-xs font-semibold; }
+.unical-status--approved, .unical-status--upcoming { @apply bg-amber-100 text-amber-900; }
+.unical-status--ongoing { @apply bg-emerald-100 text-emerald-800; }
+.unical-status--completed { @apply bg-slate-200 text-slate-700; }
+.unical-status--cancelled { @apply bg-red-100 text-red-800; }
+.unical-card h3 { @apply m-0 text-base font-bold text-ink; }
+.unical-card__desc { @apply text-sm leading-6 text-slate-600; }
+.unical-facts { @apply flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600; }
+.unical-capacity { @apply flex items-center gap-2 text-xs text-slate-600; }
+.unical-track { @apply h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-300; }
+.unical-track > span { @apply block h-full rounded-full bg-psu; }
+.unical-sdgs { @apply flex flex-wrap gap-2; }
+.unical-sdgs span { @apply rounded bg-blue-50 px-2 py-1 text-[11px] font-semibold text-psu; }
+.unical-card__action { @apply mt-auto; }
+@media (max-width:767px) {
+  .unical-grid { @apply overflow-x-auto; }
+  .unical-week { @apply min-w-[48rem]; }
+  .unical-filters .field { @apply w-full flex-none; }
+  .unical-filters .btn { @apply flex-1 justify-center; }
+}

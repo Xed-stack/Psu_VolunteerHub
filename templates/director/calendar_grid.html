@@ -1,0 +1,117 @@
+<section class="unical" aria-labelledby="unical-title">
+  <header class="unical__intro">
+    <p class="unical__eyebrow">System Overview · Executive Operations</p>
+    <h1 id="unical-title">University Calendar</h1>
+    <p>Read-only multi-campus schedule coordination and timing oversight across Pangasinan State University.</p>
+  </header>
+
+  <section class="unical-panel" aria-label="Calendar Controls">
+    <div class="unical-toolbar">
+      <div class="unical-toolbar__month">
+        <nav class="unical-month-nav" aria-label="Calendar Month">
+          {% if previous_calendar_url %}<a class="unical-icon" href="{{ previous_calendar_url }}" aria-label="Previous month"><span aria-hidden="true">‹</span></a>{% else %}<span class="unical-icon is-disabled" aria-hidden="true">‹</span>{% endif %}
+          <a class="unical-icon unical-icon--today" href="{{ calendar_today_url }}">Today</a>
+          {% if next_calendar_url %}<a class="unical-icon" href="{{ next_calendar_url }}" aria-label="Next month"><span aria-hidden="true">›</span></a>{% else %}<span class="unical-icon is-disabled" aria-hidden="true">›</span>{% endif %}
+        </nav>
+        <h2 class="unical-toolbar__title">{{ calendar_month }}</h2>
+        <span class="unical-chip unical-chip--term">University Calendar</span>
+      </div>
+      <form class="unical-jump" method="get" role="search" aria-label="Jump to Month">
+        <input type="hidden" name="campus_id" value="{{ selected_campus or '' }}">
+        <input type="hidden" name="category" value="{{ selected_category or '' }}">
+        <label class="sr-only" for="unical-month">Jump to month</label>
+        <select id="unical-month" name="month">{% for number in range(1, 13) %}<option value="{{ number }}" {{ 'selected' if number == calendar_number }}>{{ '%02d'|format(number) }}</option>{% endfor %}</select>
+        <label class="sr-only" for="unical-year">Jump to year</label>
+        <select id="unical-year" name="year">{% for value in range(calendar_year - 2, calendar_year + 3) %}<option value="{{ value }}" {{ 'selected' if value == calendar_year }}>{{ value }}</option>{% endfor %}</select>
+        <button class="btn btn--outline" type="submit">Jump</button>
+      </form>
+    </div>
+
+    <form class="unical-filters" method="get" role="search" aria-label="Filter University Calendar">
+      <input type="hidden" name="year" value="{{ calendar_year }}"><input type="hidden" name="month" value="{{ calendar_number }}">
+      <label class="field">Campus Scope<select name="campus_id"><option value="">All Campuses ({{ campuses|length }} Active)</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if selected_campus == campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>
+      <label class="field">Category<select name="category"><option value="">All Categories</option>{% for category in categories %}<option value="{{ category }}" {{ 'selected' if selected_category == category }}>{{ category }}</option>{% endfor %}</select></label>
+      <button class="btn btn--primary" type="submit">Apply Filters</button>
+      <a class="btn btn--outline" href="{{ url_for('director.activity_calendar') }}">Reset</a>
+    </form>
+
+    <div class="unical-criteria" aria-label="Active criteria">
+      <span class="unical-criteria__label">Active Criteria:</span>
+      <span class="unical-chip">{{ 'Campus: ' ~ (campuses|selectattr('id','equalto',selected_campus)|map(attribute='name')|first if selected_campus else 'All Campuses (' ~ campuses|length ~ ')') }}</span>
+      <span class="unical-chip">Month: {{ calendar_month_short }}</span>
+      <span class="unical-chip">Scope: All Activities</span>
+    </div>
+    <p class="unical-summary"><span class="unical-summary__dot" aria-hidden="true"></span>Showing {{ calendar_event_total }} active schedules across {{ calendar_event_days }} days</p>
+  </section>
+
+  <section class="unical-panel unical-panel--grid" aria-label="{{ calendar_month }} activity grid">
+    <div class="unical-grid" role="grid" tabindex="0" aria-label="{{ calendar_month }} University Calendar">
+      <div class="unical-week unical-week--head" role="row">{% for day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<span class="unical-weekday" role="columnheader">{{ day }}</span>{% endfor %}</div>
+      {% for week in calendar_weeks %}
+      <div class="unical-week" role="row">
+        {% for day in week %}
+        <div class="unical-day{{ ' unical-day--empty' if not day }}{{ ' unical-day--selected' if calendar_selected_day and day == calendar_selected_day }}" role="gridcell">
+          {% if day %}
+          <div class="unical-day__head">
+            <a class="unical-daynum" href="{{ url_for('director.activity_calendar', year=calendar_year, month=calendar_number, campus_id=selected_campus, category=selected_category, day=day) }}">{{ day }}</a>
+            {% if calendar_today_day == day %}<span class="unical-today">Today · {{ calendar_month_short[:3] }} {{ day }}</span>{% endif %}
+            {% if calendar_selected_day == day %}<span class="unical-selected">Selected</span>{% endif %}
+          </div>
+          {% set day_events = calendar_events.get(day, []) %}
+          {% if day_events %}
+            {% for event in day_events[:3] %}
+            <a class="unical-event {{ 'unical-event--cancelled' if event.lifecycle_status == 'cancelled' else 'unical-event--approved' }}" href="{{ calendar_event_links[event.id] }}" title="{{ event.title }}">
+              <span class="unical-event__title">{{ event.title|truncate(28, True) }}</span>
+              <span class="unical-event__meta">{{ event.date.strftime('%I:%M %p') }} · {{ event.campus.name if event.campus else 'Unassigned' }}</span>
+            </a>
+            {% endfor %}
+            {% if day_events|length > 3 %}<a class="unical-more" href="{{ url_for('director.activity_calendar', year=calendar_year, month=calendar_number, campus_id=selected_campus, category=selected_category, day=day) }}">+{{ day_events|length - 3 }} more activities</a>{% endif %}
+          {% else %}<span class="unical-day__empty">No scheduled activities</span>{% endif %}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if calendar_selected_day %}
+  <section class="unical-panel unical-detail" aria-labelledby="unical-selected-title">
+    <header class="unical-detail__head">
+      <span class="unical-calendar-icon" aria-hidden="true">calendar_month</span>
+      <div><h2 id="unical-selected-title">Selected Day Schedule: {{ calendar_selected_label }}</h2><p>{{ calendar_selected_events|length }} schedule{{ '' if calendar_selected_events|length == 1 else 's' }} on this day. Inspect timing, campus scope and readiness, then open the activity workspace.</p></div>
+      {% if calendar_selected_events %}<span class="unical-chip unical-chip--active">{{ calendar_selected_events|length }} Delivery{{ '' if calendar_selected_events|length == 1 else 'ies' }} Active</span>{% endif %}
+      <span class="unical-focus">Calendar Focus Mode</span>
+    </header>
+    <div class="unical-cards">
+      {% for event in calendar_selected_events %}
+      {% set registered = event.active_registration_count or 0 %}
+      {% set capacity = (100 * registered / event.slots)|round|int if event.slots else 0 %}
+      {% set status = 'cancelled' if event.lifecycle_status == 'cancelled' else 'completed' if event.end_date and event.end_date < calendar_now else 'ongoing' if event.date <= calendar_now else 'upcoming' %}
+      <article class="unical-card">
+        <div class="unical-card__top">
+          <span class="unical-campus">{{ event.campus.name if event.campus else 'Unassigned Campus' }}</span>
+          <span class="unical-status unical-status--{{ status }}">{{ event.lifecycle_status|title }}{% if status != 'cancelled' %} · {{ status|title }}{% endif %}</span>
+        </div>
+        <h3>{{ event.title }}</h3>
+        <p class="unical-card__desc">{{ event.description|truncate(150, True) }}</p>
+        <div class="unical-facts">
+          <span>{{ event.date.strftime('%I:%M %p') }}{% if event.end_date %} – {{ event.end_date.strftime('%I:%M %p') }}{% endif %}</span>
+          {% if event.end_date %}<span>{{ ((event.end_date - event.date).total_seconds() / 3600)|round|int }} hrs duration</span>{% endif %}
+          <span>{{ event.location or 'Location not recorded' }}</span>
+          {% if event.created_by %}<span>Posted by {{ event.created_by.name }}</span>{% endif %}
+          <span>{{ registered }} / {{ event.slots if event.slots else 'No limit' }} Registered</span>
+        </div>
+        {% if event.slots %}
+        <div class="unical-capacity"><span>Capacity</span><span class="unical-track"><span style="width:{{ [capacity, 100]|min }}%"></span></span><strong>{{ capacity }}%</strong></div>
+        {% endif %}
+        {% if event.sdgs %}<div class="unical-sdgs">{% for goal in event.sdgs %}<span>SDG {{ goal.number }}: {{ goal.name }}</span>{% endfor %}</div>{% endif %}
+        <a class="btn btn--primary unical-card__action" href="{{ calendar_event_links[event.id] }}">Open Activity Workspace <span aria-hidden="true">→</span></a>
+      </article>
+      {% else %}
+      <p class="empty-state">No activities are scheduled on this day.</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</section>

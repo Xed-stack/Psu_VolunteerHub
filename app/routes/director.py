@@ -9,14 +9,14 @@ import io
 import json
 from collections import Counter
 from collections import defaultdict
-from calendar import Calendar
+from calendar import Calendar, monthrange
 from datetime import datetime
 from flask import Blueprint, render_template, Response, current_app, request, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 from app.utils.decorators import roles_required
 from app.recommendation.analytics import AnalyticsAggregator
 from app.models import db
-from app.models.event import Event, Campus, SdgGoal
+from app.models.event import Event, Campus, SdgGoal, capacity_query
 from app.campuses import campus_query, campus_rows
 from app.models.user import User
 from app.models.notification import Notification
@@ -151,7 +151,7 @@ def _live_report_context(period):
         selected_department=request.args.get('department', '').strip())
 
 
-def _director_calendar(year, month, campus_id=None, category='', dashboard=False):
+def _director_calendar(year, month, campus_id=None, category='', dashboard=False, day=None):
     from app.services.activity_workflow import local_now
     now = local_now()
     year, month = year or now.year, month or now.month
@@ -159,8 +159,8 @@ def _director_calendar(year, month, campus_id=None, category='', dashboard=False
         year, month = now.year, now.month
     end = datetime.max if (year, month) == (9999, 12) else (
         datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1))
-    query = Event.query.options(joinedload(Event.campus), selectinload(Event.sdgs)).filter(
-        Event.date >= datetime(year, month, 1), Event.date <= end if end == datetime.max else Event.date < end)
+    query = capacity_query(Event.query.options(joinedload(Event.campus), selectinload(Event.sdgs)).filter(
+        Event.date >= datetime(year, month, 1), Event.date <= end if end == datetime.max else Event.date < end))
     if campus_id:
         query = query.filter(Event.campus_id == campus_id)
     if category:
@@ -183,11 +183,22 @@ def _director_calendar(year, month, campus_id=None, category='', dashboard=False
         return url_for('director.activity_calendar', year=value[0], month=value[1],
                        campus_id=campus_id, category=category)
 
+    selected = day if day and 1 <= day <= monthrange(year, month)[1] else None
     return dict(calendar_weeks=Calendar(firstweekday=0).monthdayscalendar(year, month),
         calendar_events=by_day, calendar_month=datetime(year, month, 1).strftime('%B %Y'),
         calendar_year=year, calendar_number=month, previous_calendar_url=month_url(previous),
         next_calendar_url=month_url(following), calendar_event_links=links,
-        calendar_scope='University Activities', calendar_show_campus=True)
+        calendar_scope='University Activities', calendar_show_campus=True,
+        calendar_selected_day=selected,
+        calendar_selected_events=by_day.get(selected, []) if selected else [],
+        calendar_today_day=now.day if (year, month) == (now.year, now.month) else None,
+        calendar_today_url=url_for('director.activity_calendar', year=now.year, month=now.month,
+                                   campus_id=campus_id, category=category),
+        calendar_now=now,
+        calendar_month_short=datetime(year, month, 1).strftime('%b %Y'),
+        calendar_selected_label=datetime(year, month, selected).strftime('%A, %B %d, %Y') if selected else '',
+        calendar_event_total=sum(len(items) for items in by_day.values()),
+        calendar_event_days=len(by_day))
 
 
 @director_bp.route('/director_dash')
@@ -320,7 +331,8 @@ def activity_calendar():
         Event.category.isnot(None)).distinct().order_by(Event.category).all()]
     return render_template('director/activity_calendar.html',
                            **_director_calendar(request.args.get('year', type=int),
-                                                request.args.get('month', type=int), campus_id, category),
+                                                request.args.get('month', type=int), campus_id, category,
+                                                day=request.args.get('day', type=int)),
                            campuses=campus_query().order_by(Campus.name).all(), categories=categories,
                            selected_campus=campus_id, selected_category=category)
 
