@@ -1,6 +1,3 @@
 {% extends 'layouts/role_base.html' %}
-{% block title %}Activity Calendar · PSU Volunteer Hub{% endblock %}
-{% block content %}
-<header class="page-heading"><div><h1>Campus Calendar</h1><p>Plan delivery and open activity workspaces from the schedule.</p></div><a class="btn btn--primary" href="{{ url_for('workspace.create_activity',step=1) }}">Create Activity</a></header><a class="activity-back mb-4" href="{{ url_for('workspace.activities') }}">View Activity List</a>
-<section class="panel">{% include 'partials/campus_calendar.html' %}</section>
-{% endblock %}
+{% block title %}Campus Calendar · PSU Volunteer Hub{% endblock %}
+{% block content %}{% include 'coordinator/calendar_grid.html' %}{% endblock %}

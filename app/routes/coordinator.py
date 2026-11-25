@@ -6,7 +6,7 @@ Manages event creation, attendance tracking, and coordinator dashboard.
 import os
 import uuid
 import zipfile
-from calendar import Calendar
+from calendar import Calendar, monthrange
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, abort, send_from_directory
@@ -200,7 +200,7 @@ def _parse_event_schedule(form):
     return (start, end, deadline), None
 
 
-def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
+def _campus_calendar(campus_id, year=None, month=None, dashboard=False, day=None, category=''):
     """Group campus activities by start day in selected calendar month.
 
     Calendar scope is independent of performance-period selector. Invalid
@@ -213,12 +213,16 @@ def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
         year, month = now.year, now.month
     end = datetime.max if (year, month) == (9999, 12) else (
         datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1))
-    events = Event.query.filter_by(campus_id=campus_id).filter(
-        Event.date >= datetime(year, month, 1), Event.date <= end if end == datetime.max else Event.date < end
-    ).order_by(Event.date, Event.id).all()
-    by_day = {}
-    for event in events:
+    query = capacity_query(Event.query.options(joinedload(Event.campus), selectinload(Event.sdgs)).filter_by(
+        campus_id=campus_id).filter(
+        Event.date >= datetime(year, month, 1), Event.date <= end if end == datetime.max else Event.date < end))
+    if category:
+        query = query.filter(Event.category == category)
+    by_day, links = {}, {}
+    for event in query.order_by(Event.date, Event.id).all():
         by_day.setdefault(event.date.day, []).append(event)
+        links[event.id] = url_for('workspace.activity', event_id=event.id,
+                                  return_to=request.full_path.rstrip('?'))
     previous = ((year - 1, 12) if month == 1 else (year, month - 1)) if (year, month) != (1, 1) else None
     following = ((year + 1, 1) if month == 12 else (year, month + 1)) if (year, month) != (9999, 12) else None
 
@@ -229,14 +233,28 @@ def _campus_calendar(campus_id, year=None, month=None, dashboard=False):
         query = request.args.to_dict(flat=False) if dashboard else {}
         query.update({'calendar_year' if dashboard else 'year': value[0],
                       'calendar_month' if dashboard else 'month': value[1]})
+        if not dashboard and category:
+            query['category'] = category
         if dashboard:
             query['_anchor'] = 'activity-calendar'
         return url_for('coordinator.coordinator_dash' if dashboard else 'coordinator.activity_calendar', **query)
 
+    selected = day if day and 1 <= day <= monthrange(year, month)[1] else None
     return dict(calendar_weeks=Calendar(firstweekday=0).monthdayscalendar(year, month),
                 calendar_events=by_day, calendar_month=datetime(year, month, 1).strftime('%B %Y'),
                 calendar_year=year, calendar_number=month,
-                previous_calendar_url=month_url(previous), next_calendar_url=month_url(following))
+                previous_calendar_url=month_url(previous), next_calendar_url=month_url(following),
+                calendar_event_links=links,
+                calendar_selected_day=selected,
+                calendar_selected_events=by_day.get(selected, []) if selected else [],
+                calendar_today_day=now.day if (year, month) == (now.year, now.month) else None,
+                calendar_today_url=url_for('coordinator.activity_calendar', year=now.year, month=now.month,
+                                           category=category),
+                calendar_now=now,
+                calendar_month_short=datetime(year, month, 1).strftime('%b %Y'),
+                calendar_selected_label=datetime(year, month, selected).strftime('%A, %B %d, %Y') if selected else '',
+                calendar_event_total=sum(len(items) for items in by_day.values()),
+                calendar_event_days=len(by_day))
 
 
 @coordinator_bp.route('/coordinator_dash')
@@ -252,10 +270,16 @@ def coordinator_dash():
 @role_required('coordinator')
 def activity_calendar():
     """Render assigned-campus calendar through shared month-boundary rules."""
+    campus_id = _coordinator_campus_id()
+    category = request.args.get('category', '').strip()
+    categories = [row[0] for row in db.session.query(Event.category).filter(
+        Event.campus_id == campus_id, Event.category.isnot(None)).distinct().order_by(Event.category).all()]
     return render_template('coordinator/activity_calendar.html',
-                           **_campus_calendar(_coordinator_campus_id(),
-                                              request.args.get('year', type=int),
-                                              request.args.get('month', type=int)))
+                           **_campus_calendar(campus_id, request.args.get('year', type=int),
+                                              request.args.get('month', type=int),
+                                              day=request.args.get('day', type=int), category=category),
+                           selected_category=category, categories=categories,
+                           campus_name=db.session.get(Campus, campus_id).name if campus_id else 'Assigned Campus')
 
 
 @coordinator_bp.route('/coordinator/cancellation-requests', methods=['GET', 'POST'])
