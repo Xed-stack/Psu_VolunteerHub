@@ -156,3 +156,26 @@ def detail(key):
     history=history_query.order_by(FindingReviewEvent.id.desc()).offset((history_page-1)*25).limit(25).all() if saved else []
     return render_template('workspace/review_detail.html',item=item,occurrence=None,history=history,
         reasons=service.REASONS,recommendations=service.RECOMMENDATIONS,error=error,submitted=submitted,history_page=history_page,history_pages=history_pages,source_event_available=source_available(item['snapshot'])),status
+
+
+@finding_reviews_bp.route('/complete',methods=['POST'])
+@login_required
+@role_required('coordinator')
+def complete():
+    """A Coordinator marks an own-campus generated finding complete."""
+    if not service.available():abort(503,description='Review management is unavailable. Return to Needs Attention.')
+    key=request.form.get('key','')
+    item=service.resolve(key,request.form.get('token',''),completed=True)
+    snapshot=item['snapshot']
+    if snapshot.get('campus_id')!=current_user.campus_id or not item['detected']:abort(404)
+    try:
+        service.mutate(item,'complete',request.form)
+        db.session.commit()
+        flash('Needs Attention item marked complete.','success')
+    except ValueError as exc:
+        db.session.rollback();flash(str(exc),'error')
+    except IntegrityError:
+        db.session.rollback();flash('Another review saved this finding. Reload before completing it.','error')
+    except SQLAlchemyError:
+        db.session.rollback();flash('The completion could not be saved. Try again.','error')
+    return redirect(url_for('workspace.follow_up',**request.args.to_dict(flat=False)))

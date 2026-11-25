@@ -4,7 +4,7 @@
 {% block title %}Needs Attention · PSU Volunteer Hub{% endblock %}
 {% block content %}
 <div class="needs-original"><div class="attention-v2">
-{{ heading('Needs Attention','Review evidence, open the relevant workspace, and follow up without changing locked attendance.',url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)),'Back to Overview') }}
+{{ heading('Needs Attention','Review evidence, open the relevant workspace, and mark findings complete without changing locked attendance.',url_for('workspace.overview',**dict(request.args.to_dict(flat=False),finding_type=none,page=none)),'Back to Overview') }}
 {{ scope_controls(false, true) }}
 {% if reviews_ready and current_user.role=='coordinator' %}
 <nav class="report-tabs" aria-label="Finding Views">
@@ -24,7 +24,7 @@
 <section class="workspace-section attention-v2-queue" id="current-findings" aria-labelledby="current-title">
   <header class="section-top"><h2 id="current-title">Current &amp; Ongoing Activities</h2><p class="text-sm text-slate-600">{{ period_label }}</p></header>
   <p class="mb-4 text-sm text-slate-600">Activity findings use the selected report scope. Annual-plan findings use the full reporting year, labelled on each record. Reminders are available where an active Coordinator is assigned; equivalent unread reminders are not resent.</p>
-  {{ follow_up_list(items) }}
+  {{ follow_up_list(items, allow_complete=reviews_ready and current_user.role=='coordinator') }}
 </section>
 <nav class="pagination attention-v2-footer" aria-label="Follow-up Pages">{% if page > 1 %}<a class="btn btn--outline" href="{{ query_url(page=page-1) }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}{% if total %} · Showing {{ first_row }}-{{ last_row }} of {{ total }}{% endif %}</span>{% if page < pages %}<a class="btn btn--outline" href="{{ query_url(page=page+1) }}">Next</a>{% endif %}</nav>
 </div></div>
@@ -36,7 +36,7 @@
   <div class="needs-view-row"><nav aria-label="Coordinator Finding Views"><a aria-current="page" href="{{ query_url(remove=['review_tab'],page=1) }}">Needs Attention <span>{{ total }}</span></a>{% if reviews_ready %}<a href="{{ query_url(review_tab='reviewed',page=1) }}">Reviewed Recommendations{% if reviewed_count is not none %} <span>{{ reviewed_count }}</span>{% endif %}</a>{% endif %}</nav></div>
   <nav class="needs-categories" aria-label="Review Categories"><a href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}" {{ 'aria-current=page' if not review_group and not finding_type }}>All <span>{{ total }}</span></a>{% for key,(label,codes) in groups.items() %}<a href="{{ query_url(remove=['finding_type','export'],review_group=key,page=1) }}" {{ 'aria-current=page' if review_group==key }}>{{ label }} <span>{{ category_counts[key] }}</span></a>{% endfor %}<a class="needs-clear" href="{{ query_url(remove=['review_group','finding_type','export'],page=1) }}">Clear Filters</a></nav>
   {% if finding_type %}<p class="needs-type">Finding Type · {{ finding_label }} <a href="{{ query_url(remove=['finding_type'],page=1) }}">Clear Finding Type</a></p>{% endif %}
-  <aside class="needs-policy"><p><strong>Campus evidence.</strong> Findings use the selected report scope. Annual plans use {{ year }}. Attendance remains locked after an event ends.</p><strong>Read-Only Reviews</strong></aside>
+  <aside class="needs-policy"><p><strong>Campus evidence.</strong> Findings use the selected report scope. Annual plans use {{ year }}. Attendance remains locked after an event ends.</p><strong>Coordinator Completion</strong> — record a note and reason to mark a finding complete. The original evidence is unchanged.</aside>
   <div class="needs-toolbar"><p>{{ total }} {{ 'Finding' if total==1 else 'Findings' }}<span>{{ period_label }}</span></p></div>
   <ul class="needs-queue">{% for item in items %}
     <li>
@@ -53,6 +53,20 @@
       <div class="needs-row-actions">
         <p class="needs-status{% if item.phase!='current' %} needs-status--sent{% endif %}">{{ 'Annual Plan' if item.phase=='annual' else 'Past' if item.phase=='past' else 'Current' }}</p>
         <div><a class="btn btn--primary" href="{{ item.url }}">{{ item.action }}</a></div>
+        {% if reviews_ready and item.key is defined %}
+        <details class="needs-complete"><summary>Complete Finding</summary>
+          <form method="post" action="{{ url_for('finding_reviews.complete') }}{{ '?' ~ request.query_string.decode() if request.query_string else '' }}">
+            {% include 'partials/csrf_field.html' %}
+            <input type="hidden" name="key" value="{{ item.key }}"><input type="hidden" name="token" value="{{ item.token }}">
+            <input type="hidden" name="revision" value="{{ item.revision }}"><input type="hidden" name="version" value="{{ item.version }}">
+            <label class="sr-only" for="complete-note-{{ loop.index }}">Completion note</label>
+            <textarea id="complete-note-{{ loop.index }}" name="assessment" minlength="10" maxlength="4000" required placeholder="What was completed?"></textarea>
+            <label class="sr-only" for="complete-reason-{{ loop.index }}">Completion reason</label>
+            <select id="complete-reason-{{ loop.index }}" name="closure_reason" required><option value="">Choose reason</option><option value="evidence_completed">Evidence Completed</option><option value="follow_up_no_longer_required">Follow-up No Longer Required</option></select>
+            <button class="btn btn--outline" type="submit">Mark Complete</button>
+          </form>
+        </details>
+        {% endif %}
       </div>
     </li>
   {% else %}<li class="needs-empty">No findings match this scope. Change the year or period, or clear the category filter.</li>{% endfor %}</ul>

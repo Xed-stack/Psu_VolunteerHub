@@ -1053,6 +1053,15 @@ def follow_up():
                       if finding_reviews.available() and current_user.role=='coordinator' else None)
     now = data['now']
     items = follow_up_items(data)
+    if finding_reviews.available() and current_user.role=='coordinator':
+        from app.models.finding_review import FindingReview
+        for item, entry in zip(items, finding_reviews.generated(data)):
+            built=finding_reviews.item_for(entry)
+            item['key']=built['key']; item['token']=built['token']
+            item['revision']=built['revision']; item['version']=built['version']
+        closed={row.finding_key for row in FindingReview.query.filter_by(
+            status='closed',campus_id=current_user.campus_id).all()}
+        items=[item for item in items if item.get('key') not in closed]
     for item in items:
         code = item['code']
         event = item.get('event')

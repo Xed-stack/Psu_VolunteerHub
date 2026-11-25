@@ -191,9 +191,9 @@ def authorized(row, completed=False):
     elif current_user.role not in ('director','admin'):abort(403)
 
 
-def resolve(key, token=''):
+def resolve(key, token='', completed=False):
     saved=FindingReview.query.filter_by(finding_key=key).first()
-    if saved:authorized(saved)
+    if saved:authorized(saved, completed=completed)
     try:
         payload=serializer().loads(token) if token else dict(key=key,scope=saved.scope) if saved else None
     except BadSignature:abort(400,description='The review source is invalid. Return to Needs Attention.')
@@ -221,13 +221,15 @@ def mutate(item, action, form):
     from app.utils.audit import log_activity
     if form.get('revision')!=item['revision'] or form.get('version',type=int)!=item['version']:
         abort(409,description='The evidence or review changed. Compare the latest values before saving.')
-    if action not in ('save','close','reopen','follow_up'):raise ValueError('Choose a listed review action.')
+    if action not in ('save','close','reopen','follow_up','complete'):raise ValueError('Choose a listed review action.')
     note=form.get('assessment',item['assessment'] if action=='follow_up' else '').strip()
     recommendation=form.get('recommendation',item['recommendation'] if action=='follow_up' else '')
     reason=form.get('closure_reason','')
     if len(note)>4000 or recommendation not in RECOMMENDATIONS:raise ValueError('Keep the assessment within 4,000 characters and choose a listed recommendation.')
-    if action in ('save','close','reopen') and len(note)<10:raise ValueError('Enter an assessment of at least 10 characters.')
+    if action in ('save','close','reopen','complete') and len(note)<10:raise ValueError('Enter an assessment of at least 10 characters.')
     if action=='close' and reason not in REASONS:raise ValueError('Choose a closure reason.')
+    if action=='complete' and reason not in ('evidence_completed','follow_up_no_longer_required'):
+        raise ValueError('Choose a listed completion reason.')
     if action=='reopen' and item['status']!='closed':raise ValueError('Only a closed review can be reopened.')
     if item['status']=='closed' and action!='reopen':raise ValueError('Reopen this review before changing its assessment.')
     if action=='follow_up' and not item.get('can_follow_up'):raise ValueError('This finding requires assessment rather than a corrective follow-up.')
@@ -246,8 +248,8 @@ def mutate(item, action, form):
     row=item['saved']
     values=dict(fingerprint=item['fingerprint'],snapshot=item['snapshot'],scope=item['scope'],
         actor_id=current_user.id,updated_at=now,assessment=note,recommendation=recommendation,
-        closure_reason=reason if action=='close' else '',
-        status='closed' if action=='close' else 'follow_up_sent' if action=='follow_up' else 'needs_review' if action=='reopen' else item['status'])
+        closure_reason=reason if action in ('close','complete') else '',
+        status='closed' if action in ('close','complete') else 'follow_up_sent' if action=='follow_up' else 'needs_review' if action=='reopen' else item['status'])
     if row:
         count=FindingReview.query.filter_by(id=row.id,version=item['version']).update(dict(values,version=item['version']+1),synchronize_session=False)
         if count!=1:abort(409,description='Another Director updated this review. Reload before saving.')
@@ -273,8 +275,8 @@ def mutate(item, action, form):
         db.session.add(FindingReviewEvent(review_id=row.id,campus_id=row.campus_id,actor_id=current_user.id,actor_name=current_user.name,
             action='evidence_changed',content=snapshot_content(row)))
     event=FindingReviewEvent(review_id=row.id,campus_id=row.campus_id,actor_id=current_user.id,actor_name=current_user.name,
-        action={'save':'assessed','close':'closed','reopen':'reopened','follow_up':'follow_up_sent'}[action],content=snapshot_content(row))
-    db.session.add(event);log_activity('finding_review_'+event.action,row,dict(fingerprint=row.fingerprint,version=row.version))
+        action={'save':'assessed','close':'closed','complete':'closed','reopen':'reopened','follow_up':'follow_up_sent'}[action],content=snapshot_content(row))
+    db.session.add(event);log_activity('finding_review_'+('completed' if action=='complete' else event.action),row,dict(fingerprint=row.fingerprint,version=row.version))
     if action=='follow_up' and row.finding_type=='record_attendance':
         if not attendance_open(db.session.get(Event,row.event_id)):
             raise ValueError('The activity ended before the reminder was saved. No reminder was sent.')

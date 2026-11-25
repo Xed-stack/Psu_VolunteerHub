@@ -1,9 +1,9 @@
 {% from 'partials/info_tip.html' import info_tip with context %}
 {% from 'workspace/finding_controls.html' import dates with context %}
-{% macro follow_up_list(items, limit=none, hide_correction_action=false) %}
-  {% set visible = items[:limit] if limit is not none else items %}<ul class="work-queue">{% for item in visible %}{{ queue_row(item,hide_correction_action) }}{% else %}<li><div><strong>No follow-up findings in this scope</strong><p>Recorded activity and attendance information does not currently trigger a review finding. Missing institutional evidence is assessed separately in Annual plans.</p></div></li>{% endfor %}</ul>
+{% macro follow_up_list(items, limit=none, hide_correction_action=false, allow_complete=false) %}
+  {% set visible = items[:limit] if limit is not none else items %}<ul class="work-queue">{% for item in visible %}{{ queue_row(item,hide_correction_action,allow_complete) }}{% else %}<li><div><strong>No follow-up findings in this scope</strong><p>Recorded activity and attendance information does not currently trigger a review finding. Missing institutional evidence is assessed separately in Annual plans.</p></div></li>{% endfor %}</ul>
 {% endmacro %}
-{% macro queue_row(item,hide_correction_action=false) %}
+{% macro queue_row(item,hide_correction_action=false,allow_complete=false) %}
   <li><div><small>{{ item.campus.name if item.campus else 'Unassigned campus' }}</small><strong>{{ item.title }}</strong>{% if item.event %}<p><a
   class="text-psu font-medium underline"
   href="{{ item.url if current_user.role == 'coordinator' and item.code != 'record_attendance' else linked_url('workspace.activity',event_id=item.event.id) }}"
@@ -28,7 +28,7 @@
   type="hidden"
   name="report_scope"
   value="{{ item.scope_query|tojson|forceescape }}"
->{% include 'partials/csrf_field.html' %}<input type="hidden" name="queue_return" value="{{ request.full_path.rstrip('?') if request.endpoint=='workspace.follow_up' else '' }}"><button class="btn btn--outline text-xs">{{ 'Remind Coordinator' if item.code=='record_attendance' else 'Notify Coordinator' }}</button></form>{% endif %}{% elif current_user.role=='director' and item.code=='record_attendance' %}<button class="btn btn--outline" disabled>Remind Coordinator</button><p class="scope-note">No active Coordinator is assigned.</p>{% endif %}</div></li>
+>{% include 'partials/csrf_field.html' %}<input type="hidden" name="queue_return" value="{{ request.full_path.rstrip('?') if request.endpoint=='workspace.follow_up' else '' }}"><button class="btn btn--outline text-xs">{{ 'Remind Coordinator' if item.code=='record_attendance' else 'Notify Coordinator' }}</button></form>{% endif %}{% elif current_user.role=='director' and item.code=='record_attendance' %}<button class="btn btn--outline" disabled>Remind Coordinator</button><p class="scope-note">No active Coordinator is assigned.</p>{% endif %}{% if allow_complete and item.token is defined %}<details class="needs-complete"><summary>Complete Finding</summary><form method="post" action="{{ url_for('finding_reviews.complete') }}{{ '?' ~ request.query_string.decode() if request.query_string else '' }}">{% include 'partials/csrf_field.html' %}<input type="hidden" name="key" value="{{ item.key }}"><input type="hidden" name="token" value="{{ item.token }}"><input type="hidden" name="revision" value="{{ item.revision }}"><input type="hidden" name="version" value="{{ item.version }}"><label class="sr-only" for="mobile-note-{{ item.key[:8] }}">Completion note</label><textarea id="mobile-note-{{ item.key[:8] }}" name="assessment" minlength="10" maxlength="4000" required placeholder="What was completed?"></textarea><label class="sr-only" for="mobile-reason-{{ item.key[:8] }}">Completion reason</label><select id="mobile-reason-{{ item.key[:8] }}" name="closure_reason" required><option value="">Choose reason</option><option value="evidence_completed">Evidence Completed</option><option value="follow_up_no_longer_required">Follow-up No Longer Required</option></select><button class="btn btn--outline" type="submit">Mark Complete</button></form></details>{% endif %}</div></li>
 {% endmacro %}
 {% macro annual_snapshot() %}<div class="annual-snapshot">{% for kind in ['AOP'] %}<a
   href="{{ url_for('goals.details',year=year,campus=campus_id,plan=kind) }}"
