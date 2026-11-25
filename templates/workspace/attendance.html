@@ -7,6 +7,7 @@
 {% block content %}<div class="roster-page">
 {% if selected_event %}
 {{ heading('Internal Attendance',selected_event) }}{{ timing(selected_event,now) }}{{ tabs(selected_event) }}
+{% if external_registration_available %}<p class="mb-4"><a class="btn btn--outline" href="{{ roster_link('workspace.external_new',selected_event.id) }}">Add External Participants</a></p>{% endif %}
 {% if selected_event.date <= now %}
 <form method="get" class="roster-filters"><input type="hidden" name="event_id" value="{{ selected_event.id }}">{{ context_fields(['event_id','volunteer_search','attendance_status']) }}{{ search_input('volunteer_search','Search Attendance Roster','Name, email, or volunteer ID…') }}<label class="field">Attendance Status<select name="attendance_status">{% for value,label in [('','All Statuses'),('present','Attended'),('absent','Not Attended'),('unmarked','Unrecorded')] %}<option value="{{ value }}" {{ 'selected' if attendance_filter == value }}>{{ label }}</option>{% endfor %}</select></label>{{ actions() }}</form>
 {{ results(pagination.total,volunteer_search,'volunteer name, A–Z') }}

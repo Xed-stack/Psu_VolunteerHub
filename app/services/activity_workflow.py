@@ -20,6 +20,13 @@ def attendance_open(event, now=None):
             and event.date <= now < event.end_date)
 
 
+def external_registration_open(event, now=None):
+    now = now or local_now()
+    return event.lifecycle_status == 'approved' and (
+        (event.date > now and (event.end_date is None or event.end_date > event.date))
+        or attendance_open(event, now))
+
+
 def validate_cover(content, filename):
     from PIL import Image, UnidentifiedImageError
     suffix = Path(filename).suffix.lower()

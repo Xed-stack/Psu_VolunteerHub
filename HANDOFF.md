@@ -1,5 +1,24 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## External Participant Entry Clarification, 25 November 2026
+
+Upcoming approved activities missing an end time now show actionable guidance
+and an Edit Activity Schedule link in the shared attendance timing notice.
+Started/ended attendance locks remain unchanged. Local activity 2's external
+page returned HTTP 200 with this action; four focused roster checks passed and
+whitespace passed. No data or schedule was changed. Native-link/source audit
+retains existing styles and permissions. This small template change is local.
+The user confirmed advance external registration. It is now implemented with a
+separate registration-window helper, existing named/CSV form and a direct action
+on Attendance. Upcoming entries create confirmed registrations without Attendance
+rows; early presence is rejected. Ongoing attendance and ended locking remain.
+30 distinct focused cases and four Chromium groups passed; build, template parse,
+syntax, whitespace, rendered critique and guideline/Antislop gates passed. QA and
+limits: `docs/qa/EXTERNAL_ADVANCE_REGISTRATION.md`. Local activity 2's entry links
+and registration-only form were verified HTTP 200 after preview reload. No preview
+records were changed. Published to both configured remotes after verification. Preserve unrelated
+`follow_up.html` changes.
+
 ## Director Activities Remake, 25 November 2026
 
 Follow-up: removed the Director's Cancelled schedule tab at the user's request;

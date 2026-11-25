@@ -81,11 +81,15 @@ def test_readonly_states_have_text_and_no_save_controls(client,actors,ongoing,ph
         response=client.get(path);assert response.status_code==200
         tree=parse_html(response.text).one('main',id='main-content')
         assert not tree.all('select',name='status')
-        assert not [b for b in tree.all('button') if b.text.startswith('Save')]
+        if phase=='upcoming' and path.endswith('/new'):
+            assert tree.one('button',type='submit').text=='Save Named Roster'
+            assert not tree.all('input',name='mark_present')
+        else:
+            assert not [b for b in tree.all('button') if b.text.startswith('Save')]
         assert 'View Registrations' in tree.text if phase=='upcoming' else 'Open Combined Report' in tree.text
     if phase!='upcoming':assert 'Excused' in client.get('/attendance?event_id=1').text
-    assert client.post('/workspace/activities/1/external/new',data={'roster':'Rejected Name'}).status_code==409
-    assert ExternalGroup.query.count()==0
+    assert client.post('/workspace/activities/1/external/new',data={'roster':'Named Person'}).status_code==(302 if phase=='upcoming' else 409)
+    assert ExternalGroup.query.count()==(1 if phase=='upcoming' else 0)
 
 
 def test_recorded_choices_cannot_misleadingly_clear_but_blank_post_unchanged(client,actors,ongoing):
@@ -125,8 +129,9 @@ def test_exact_boundaries_and_final_recheck(client,actors,ongoing,monkeypatch,wh
     sign_in(client,actors)
     event=db.session.get(Event,1)
     clock=event.date if when=='start' else event.end_date
-    from app.services.activity_workflow import attendance_open
+    from app.services.activity_workflow import attendance_open,external_registration_open
     monkeypatch.setattr('app.routes.workspace.attendance_open',lambda e:attendance_open(e,clock))
+    monkeypatch.setattr('app.routes.workspace.external_registration_open',lambda e:external_registration_open(e,clock))
     response=client.post('/workspace/activities/1/external/new',data={'roster':'Boundary Person'})
     assert response.status_code==(302 if allowed else 409)
     assert ExternalGroup.query.count()==(1 if allowed else 0)

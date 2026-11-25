@@ -18,7 +18,7 @@ from app.models.user import User, Skill
 from app.models.event import Event, Registration, Attendance, Campus, ExternalParticipant, SdgGoal
 from app.models.workspace import FormDraft, PartnerAgency, PartnerAgreement, ExternalGroup
 from app.models.notification import notify
-from app.services.activity_workflow import attendance_open, local_now, save_document
+from app.services.activity_workflow import attendance_open, external_registration_open, local_now, save_document
 from app.utils.decorators import roles_required, role_required
 from app.utils.audit import log_activity
 
@@ -894,17 +894,21 @@ def external(event_id):
     event = owned_event(event_id, lock=request.method == 'POST')
     from app.ui import roster_link
     errors = {}
-    adding = request.endpoint == 'workspace.external_new' or (request.method == 'POST' and request.form.get('action') != 'attendance')
+    adding = request.form.get('action') != 'attendance' if request.method == 'POST' else request.endpoint == 'workspace.external_new'
     values = {key:request.form.get(key,'') for key in ('group_name','roster','mark_present')}
     def entry_response(code=200, editable=None):
+        allowed = external_registration_open(event) if editable is None else editable
         return render_template('workspace/external_form.html',event=event,errors=errors,values=values,
-                               editable=attendance_open(event) if editable is None else editable,now=local_now()),code
+                               editable=allowed,attendance_editable=allowed and attendance_open(event),now=local_now()),code
     if request.method == 'POST':
-        if not attendance_open(event):
-            if adding:
-                errors['roster'] = 'The activity is not open for attendance. These participants were not saved.'
-                return entry_response(409,editable=False)
+        if adding and not external_registration_open(event):
+            errors['roster'] = 'External registration is closed. These participants were not saved.'
+            return entry_response(409,editable=False)
+        if not adding and not attendance_open(event):
             abort(409, description='External attendance can only be recorded while the activity is ongoing.')
+        if adding and request.form.get('mark_present') == 'yes' and not attendance_open(event):
+            errors['roster'] = 'Names can be registered now, but attendance opens only when the activity is ongoing. Submit names without marking attendance.'
+            return entry_response(409)
         if request.form.get('action') == 'attendance':
             ids = request.form.getlist('registration_id', type=int)
             statuses = request.form.getlist('status')
@@ -960,9 +964,9 @@ def external(event_id):
                 db.session.flush()
                 if request.form.get('mark_present') == 'yes':
                     db.session.add(Attendance(registration_id=registration.id, event_id=event.id, status='present'))
-            if not attendance_open(event):
+            if not external_registration_open(event) or (request.form.get('mark_present') == 'yes' and not attendance_open(event)):
                 db.session.rollback()
-                errors['roster'] = 'The activity ended before the roster was saved. No participants were added.'
+                errors['roster'] = 'Registration or attendance closed before the roster was saved. No participants were added.'
                 return entry_response(409,editable=False)
             db.session.commit()
             flash('Named external roster saved.', 'success')
@@ -984,7 +988,8 @@ def external(event_id):
     from app.pagination import paginate
     pagination = paginate(query.order_by(ExternalParticipant.name, Registration.id), per_page=25)
     return render_template('workspace/external.html', event=event, groups=groups, registrations=pagination.items,
-                           pagination=pagination, errors=errors, editable=attendance_open(event), now=local_now())
+                           pagination=pagination, errors=errors, editable=attendance_open(event),
+                           can_register=external_registration_open(event),now=local_now())
 
 
 def report_data(args=None, forced_campus=None):

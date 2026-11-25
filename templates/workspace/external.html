@@ -6,7 +6,8 @@
 {% block title %}External Attendance | PSU Volunteer Hub{% endblock %}
 {% block content %}<div class="roster-page">
 {{ heading('External Attendance',event) }}{{ timing(event,now) }}{{ tabs(event,true) }}
-<div class="roster-section-heading"><h2>Named External Roster</h2>{% if editable %}<a class="btn btn--primary" href="{{ roster_link('workspace.external_new',event.id) }}">Add External Participants</a>{% endif %}</div>
+<div class="roster-section-heading"><h2>Named External Roster</h2>{% if can_register %}<a class="btn btn--primary" href="{{ roster_link('workspace.external_new',event.id) }}">Add External Participants</a>{% endif %}</div>
+{% if can_register and not editable %}<p class="scope-note">External registration is open. Names added now have attendance Unrecorded until attendance is recorded during the activity.</p>{% endif %}
 <form method="get" class="roster-filters">{{ context_fields(['q','attendance_status']) }}{{ search_input('q','Search External Volunteers','Name or email address…') }}<label class="field">Attendance Status<select name="attendance_status">{% for value,label in [('','All Statuses'),('present','Attended'),('absent','Not Attended'),('unmarked','Unrecorded')] %}<option value="{{ value }}" {{ 'selected' if request.args.get('attendance_status') == value }}>{{ label }}</option>{% endfor %}</select></label>{{ actions() }}</form>
 {{ results(pagination.total,request.args.get('q',''),'volunteer name, A–Z') }}
 <form class="roster-records" method="post" action="{{ roster_link('workspace.external',event.id) }}" data-attendance-workspace data-no-draft><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="attendance">

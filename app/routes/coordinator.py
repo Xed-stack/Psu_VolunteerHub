@@ -29,7 +29,7 @@ from app.dashboard import summarize_report, resolve_period, dashboard_evidence, 
 from app.reports import (
     build_events_report, batched_events_report, render_csv, render_pdf, ReportError, parse_date_range)
 from datetime import datetime, timedelta
-from app.services.activity_workflow import attendance_open, local_now
+from app.services.activity_workflow import attendance_open, external_registration_open, local_now
 
 coordinator_bp = Blueprint('coordinator', __name__, url_prefix='')
 
@@ -652,6 +652,7 @@ def attendance():
                            attendance_counts=attendance_counts,
                            attendance_opens_at=attendance_opens_at,
                            attendance_locked=bool(selected_event and not attendance_open(selected_event, now)),
+                           external_registration_available=bool(selected_event and external_registration_open(selected_event, now)),
                            activity_ended=bool(selected_event and now >= (selected_event.end_date or selected_event.date)))
 
 
