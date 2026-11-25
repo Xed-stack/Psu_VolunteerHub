@@ -1,5 +1,30 @@
 # PSU Volunteer Hub — Continuation Handoff
 
+## Director Activities Remake, 25 November 2026
+
+Follow-up: removed the Director's Cancelled schedule tab at the user's request;
+the available tabs are Upcoming, Ongoing, Past Activities and All Activities.
+This removes the navigation entry without changing historical records or routes.
+
+Director desktop Activities now reuses the Coordinator card layout with campus
+selection, scoped tab counts, five-item pagination, SDGs and actual active
+finding counts. A Director-only entry endpoint rechecks evidence: active findings
+open event-scoped Needs Attention across all dates; otherwise Activity Details.
+Existing review closure/change semantics and generated fallback are reused.
+Direct details remain accessible from review source links. Coordinator behavior,
+permissions, saved drafts, calculations and narrow layout are retained.
+
+30 activity/review regressions and five browser groups passed; six route/card
+tests passed again after final cleanup. Build, template parsing, contrast,
+whitespace, rendered Design Critique, current Web Design Guidelines audit and
+Antislop gate passed. QA and limits: `docs/qa/DIRECTOR_ACTIVITIES_REFERENCE.md`.
+Existing port-5000 preview reloaded and Director Activities verified HTTP 200.
+Skills continued: UI/UX Pro Max, Frontend Design, Design Critique, Ponytail full,
+Antislop core/UI/Human during work, Web Design Guidelines and Webapp Testing.
+The user authorized committing and pushing both the remake and Cancelled-tab
+removal to both configured `codex/ui-workflow-overhaul` branches. Preserve concurrent unrelated edits,
+including the generated queue return-link adjustment in `follow_up.html`.
+
 ## Reports Directory Historical Card Removal, 25 November 2026
 
 Removed Historical Source Records and its historical-aggregate group copy from

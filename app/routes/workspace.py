@@ -311,20 +311,29 @@ def activities():
     coordinator = current_user.role == 'coordinator'
     if campus and not coordinator:
         query = query.filter_by(campus_id=campus)
+    director = current_user.role == 'director'
+    campuses = Campus.query.order_by(Campus.name).all() if director else []
+    selected_campus = next((item for item in campuses if item.id == campus),None)
+    if director and request.args.get('campus_id') and not selected_campus:
+        abort(400,description='Choose a listed campus.')
     counts = {}
-    if coordinator:
+    if coordinator or director:
         scoped = base
         if search:
             scoped = scoped.filter(search_filter)
         if category:
             scoped = scoped.filter_by(category=category)
+        if campus and director:
+            scoped = scoped.filter_by(campus_id=campus)
         counts = {key: scoped.filter(condition).count() for key, condition in conditions.items() if key != 'all'}
         counts['all'] = scoped.count()
-    per_page = 5 if coordinator else 15
+    per_page = 5 if coordinator or director else 15
     pagination = db.paginate(query.order_by(Event.date.asc() if state in ('upcoming', 'ongoing') else Event.date.desc(), Event.id).statement,
                              per_page=per_page, max_per_page=per_page, error_out=False)
     categories = [row[0] for row in base.with_entities(Event.category).filter(Event.category.isnot(None)).distinct().order_by(Event.category)]
-    if coordinator:
+    if coordinator or director:
+        from app.services.director_activities import attention_counts
+        findings = attention_counts(pagination.items, current_user, now) if director else {}
         ids = [event.id for event in pagination.items]
         registered = dict(db.session.query(Registration.event_id, func.count(Registration.id)).filter(
             Registration.event_id.in_(ids), Registration.status.in_(('confirmed', 'completed'))).group_by(Registration.event_id).all()) if ids else {}
@@ -335,6 +344,10 @@ def activities():
             percent = round(count * 100 / target) if target else None
             if event.lifecycle_status == 'cancelled':
                 status, tone = 'Cancelled', 'neutral'
+            elif director and event.lifecycle_status != 'approved':
+                status, tone = event.lifecycle_status.title(), 'neutral'
+            elif director and not event.end_date:
+                status, tone = 'End Time Missing', 'gold'
             elif event.date > now:
                 status, tone = 'Upcoming', 'blue'
             elif event.end_date and event.end_date > now:
@@ -345,12 +358,30 @@ def activities():
                 status, tone = 'Scheduled', 'neutral'
             cards.append(dict(event=event, registered=count, target=target, percent=percent,
                               status=status, tone=tone,
-                              low=state == 'upcoming' and percent is not None and percent < 50))
-        return render_template('workspace/coordinator_activities.html', cards=cards, pagination=pagination,
+                              low=not director and state == 'upcoming' and percent is not None and percent < 50,
+                              finding_count=findings.get(event.id,0),
+                              open_url=url_for('workspace.open_activity',event_id=event.id,return_to=request.full_path.rstrip('?')) if director else None))
+        campus_name = selected_campus.name if selected_campus else 'All Campuses'
+        if coordinator:
+            campus_name = current_user.campus.name if current_user.campus else 'Campus Not Assigned'
+        return render_template('workspace/activities.html' if director else 'workspace/coordinator_activities.html', cards=cards, pagination=pagination,
                                state=state, search=search, now=now, categories=categories, counts=counts,
-                               campus_name=current_user.campus.name if current_user.campus else 'Campus Not Assigned')
+                               campuses=campuses,campus_name=campus_name)
     return render_template('workspace/activities.html', pagination=pagination, state=state, search=search, now=now,
                            categories=categories, campuses=Campus.query.order_by(Campus.name).all())
+
+
+@workspace_bp.route('/activities/<int:event_id>/open')
+@login_required
+@role_required('director')
+def open_activity(event_id):
+    from app.ui import back_url
+    from app.services.director_activities import attention_counts
+    event = owned_event(event_id)
+    if attention_counts([event], current_user, local_now()).get(event.id):
+        return redirect(url_for('workspace.follow_up',event_id=event.id,period='all',year=event.date.year,
+                                review_tab='active',page=1,return_to=back_url('workspace.activities')))
+    return redirect(url_for('workspace.activity',event_id=event.id,return_to=back_url('workspace.activities')))
 
 
 @workspace_bp.route('/activities/<int:event_id>')

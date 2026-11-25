@@ -240,6 +240,7 @@ def presentation_context():
         ('/workspace/registrations/','Back to Registration'),('/workspace/registrations','Back to Registrations'),
         ('/opportunities','Back to Activities'),('/volunteer_dash','Back to Dashboard'),
         ('/workspace/campuses/','Back to Campus Workspace'),('/workspace/follow-up','Back to Needs Attention'),
+        ('/workspace/activities','Back to Activities'),
         ('/director/calendar','Back to Calendar'),('/coordinator/calendar','Back to Calendar'),
         ('/workspace/overview','Back to Overview'),('/annual-goals','Back to Annual Evidence')]
         if previous.startswith(prefix)),None)

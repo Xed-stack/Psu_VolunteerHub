@@ -1404,7 +1404,21 @@ html[data-js] [data-period-inactive] { display:none !important; }
 .aop-goal-actions > div { display:contents; }
 .needs-desktop { display:none; }
 .report-sdg-alignment { display:none; }
+.director-activities-desktop { display:none; }
 @media (min-width:1024px) {
+  .director-activities-desktop { display:block; }
+  .director-activities-original { display:none; }
+  .director-activities-desktop .activities-select { display:flex; flex-direction:column; gap:.25rem; font-size:.875rem; }
+  .director-activities-desktop .activities-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .director-activities-desktop .activities-search, .director-activities-desktop .activities-filters__actions { grid-column:1 / -1; }
+  .director-activities-desktop .activities-select { min-width:0; }
+  .director-activities-desktop .activities-select select { width:100%; }
+  .director-activities-desktop .activities-card { grid-template-columns:minmax(0,1fr) minmax(0,40%); }
+  .director-activities-desktop .activities-card__side { width:auto; }
+  @media (min-width:1280px) {
+    .director-activities-desktop .activities-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .director-activities-desktop .activities-search { grid-column:auto; }
+  }
   .report-attendance-sdg { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; align-items:start; }
   .report-sdg-alignment { display:block; }
   .sdg-alignment-table { margin-top:1rem; width:100%; table-layout:fixed; font-size:.875rem; font-variant-numeric:tabular-nums; }
@@ -1423,7 +1437,7 @@ html[data-js] [data-period-inactive] { display:none !important; }
 }
 @media (min-width:1024px) {
   body:has(.needs-desktop) .breadcrumbs { display:none; }
-  .needs-original { display:none; }
+  body:has(.needs-desktop) .needs-original { display:none; }
   .needs-desktop { display:block; min-width:0; }
   .needs-back { display:inline-flex; min-height:44px; align-items:center; color:#475569; font-size:.875rem; text-decoration:underline; text-underline-offset:3px; }
   .needs-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; }

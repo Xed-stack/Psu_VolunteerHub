@@ -1,0 +1,62 @@
+{% from 'partials/search_ui.html' import chips, empty with context %}
+{% set director = current_user.role == 'director' %}
+<div class="activities-reference">
+<header class="activities-reference__heading"><div><h1>Activities</h1><p>{{ 'Review campus activities and open active findings or activity details.' if director else 'Review scheduled activities, institutional readiness checks, and recorded outcomes across PSU campuses.' }}</p></div>{% if not director %}<a class="btn btn--primary" href="{{ url_for('workspace.create_activity',step=1) }}">Create Activity</a>{% endif %}</header>
+<nav class="activities-tabs" aria-label="Activity Schedule">{% for value,label in [('upcoming','Upcoming'),('ongoing','Ongoing'),('past','Past Activities'),('all','All Activities')] %}<a
+  class="activities-tab{{ ' is-active' if state == value }}"
+  href="{{ query_url(state=value) }}"
+  {% if state == value %}aria-current="page"{% endif %}
+><span>{{ label }}</span><span class="activities-tab__count">{{ counts.get(value,0) }}</span></a>{% endfor %}</nav>
+{{ chips() }}
+<form method="get" class="activities-filters">
+  <input type="hidden" name="state" value="{{ state }}">
+  <label class="activities-search"><span class="sr-only">Search activities</span><span class="material-symbols-outlined" aria-hidden="true">search</span><input
+    id="activities-q"
+    type="search"
+    name="q"
+    value="{{ search }}"
+    placeholder="Search activities by title, description, or department…"
+    autocomplete="off"
+  ></label>
+  {% if director %}<label class="activities-select"><span>Campus</span><select name="campus_id" aria-label="Campus"><option value="">All Campuses</option>{% for campus in campuses %}<option value="{{ campus.id }}" {{ 'selected' if request.args.get('campus_id',type=int)==campus.id }}>{{ campus.name }}</option>{% endfor %}</select></label>{% else %}<span class="activities-campus-fixed" aria-label="Campus scope is fixed to {{ campus_name }}"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Campus: {{ campus_name }} (fixed)</span>{% endif %}
+  <label class="activities-select"><span{{ ' class=sr-only' if not director }}>Category</span><select name="category"><option value="">All Categories</option>{% for category in categories %}<option
+    value="{{ category }}"
+    {{ 'selected' if category == request.args.get('category') }}
+  >{{ category }}</option>{% endfor %}</select></label>
+  <div class="activities-filters__actions"><button class="btn btn--primary" type="submit">Apply Filters</button><a class="btn btn--outline" href="{{ url_for('workspace.activities') }}">Reset</a></div>
+</form>
+{% set state_word = {'upcoming':'upcoming','ongoing':'ongoing','past':'past','cancelled':'cancelled','all':'all'}.get(state,state) %}
+<div class="activities-summary" role="status"><p>Showing {{ pagination.items|length }} of {{ pagination.total }} {{ state_word }} activities · {{ campus_name }}</p><p>Sorted by {{ 'Earliest date' if state in ['upcoming','ongoing'] else 'Latest date' }}</p></div>
+<ul class="activities-cards">
+{% for card in cards %}{% set event = card.event %}{% set target_label = 'Target Volunteers' if event.participant_type and 'volunteer' in event.participant_type.lower() else 'Target Participants' %}
+  <li class="activities-card{{ ' activities-card--attention' if card.low or card.finding_count }}">
+    <div class="activities-card__main">
+      <p class="activities-card__meta"><span>{{ event.campus.name if event.campus else 'Unassigned' }}</span><span aria-hidden="true">·</span><span>{{ event.conducting_department or 'Department not recorded' }}</span><span aria-hidden="true">·</span><span>{{ event.category or 'General' }}</span></p>
+      <h2><a href="{{ card.open_url or linked_url('workspace.activity',event_id=event.id) }}">{{ highlight(event.title,search) }}</a></h2>
+      <p class="activities-card__schedule"><span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>{{ event.date.strftime('%d %b %Y') }} <span aria-hidden="true">·</span> {{ event.date.strftime('%I:%M %p') }}{% if event.end_date %} <span aria-hidden="true">–</span> {{ event.end_date.strftime('%d %b %Y · %I:%M %p') if director and event.end_date.date()!=event.date.date() else event.end_date.strftime('%I:%M %p') }} PHT{% elif director %} PHT · End time not recorded{% endif %}</p>
+      {% if event.proposal_document %}<p class="activities-card__note"><span class="material-symbols-outlined" aria-hidden="true">description</span>Approved Proposal{% if event.proposal_document.name %}: {{ event.proposal_document.name }}{% endif %}</p>{% endif %}
+      {% if director %}<p class="activities-card__note">{{ event.location or 'Location not recorded' }} · {{ event.lifecycle_status|title }}</p><p class="activities-card__note">{% for goal in event.sdgs %}SDG {{ goal.number }}{% if not loop.last %}, {% endif %}{% else %}No SDGs Assigned{% endfor %}</p>{% if card.finding_count %}<p class="activities-card__warning">{{ card.finding_count }} active {{ 'finding' if card.finding_count==1 else 'findings' }} to review</p>{% endif %}{% endif %}
+      {% if card.low %}<p class="activities-card__warning"><span class="material-symbols-outlined" aria-hidden="true">warning</span>Low Registration {{ card.registered }}/{{ card.target }}</p>{% endif %}
+    </div>
+    <div class="activities-card__side">
+      <span class="activities-status activities-status--{{ card.tone }}"><span class="activities-status__dot" aria-hidden="true"></span>{{ card.status }}</span>
+      {% if card.target %}<p class="activities-card__target">{{ target_label }} {{ card.registered }} / {{ card.target }}</p><span class="activities-card__track" role="presentation"><span style="width: {{ 100 if card.percent > 100 else card.percent }}%"></span></span><p class="activities-card__fill">{{ card.percent }}% {{ 'registered against target' if director else 'filled' }}{% if event.slots %} · Cap: {{ event.slots }}{% endif %}</p>{% else %}<p class="activities-card__target">No target recorded</p>{% endif %}
+      {% if card.low or card.finding_count %}<span class="activities-status activities-status--gold">Needs Attention</span>{% endif %}
+      <a class="btn btn--primary activities-card__view" href="{{ card.open_url or linked_url('workspace.activity',event_id=event.id) }}">{{ 'Review Findings' if director and card.finding_count else 'View Activity' }} <span aria-hidden="true">→</span></a>
+    </div>
+  </li>
+{% else %}
+  <li class="activities-card activities-card--empty">{{ empty(search,'activities') }}</li>
+{% endfor %}
+</ul>
+<p class="activities-pagination__summary">Showing {{ (pagination.page-1)*pagination.per_page + (1 if pagination.items else 0) }} to {{ (pagination.page-1)*pagination.per_page + pagination.items|length }} of {{ pagination.total }} entries</p>
+{% if pagination.pages > 1 %}<nav class="activities-pagination" aria-label="Activity pages">
+  <a class="btn btn--outline" href="{{ page_url(pagination.prev_num) }}" {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>Previous</a>
+  {% for number in range(1,pagination.pages + 1) %}<a
+    class="activities-pagination__page{{ ' is-current' if number == pagination.page }}"
+    href="{{ page_url(number) }}"
+    {% if number == pagination.page %}aria-current="page"{% endif %}
+  >{{ number }}</a>{% endfor %}
+  <a class="btn btn--outline" href="{{ page_url(pagination.next_num) }}" {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>Next</a>
+</nav>{% endif %}
+</div>

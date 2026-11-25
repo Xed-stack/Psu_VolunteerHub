@@ -2,7 +2,7 @@
 {% block content %}
 <div class="needs-original">{{ super() }}</div>
 <div class="needs-desktop">
-  <a class="needs-back" href="{{ url_for('workspace.overview') }}">Back to Overview</a>
+  <a class="needs-back" href="{{ back_url('workspace.overview') }}">{{ ui_return_label or 'Back to Overview' }}</a>
   <header class="needs-heading"><div><h1>Needs Attention</h1><span class="needs-pending">{{ tab_counts.active }} {{ 'Action Pending' if tab_counts.active==1 else 'Actions Pending' }}</span></div><p>University Director Role</p></header>
   {{ scope_controls(false) }}
   <div class="needs-view-row"><nav aria-label="Director Review Views"><a href="{{ query_url(review_tab='active',page=1,export=none) }}" {{ 'aria-current=page' if review_tab=='active' }}>Active <span>{{ tab_counts.active }}</span></a><a href="{{ query_url(review_tab='reviewed',page=1,export=none) }}" {{ 'aria-current=page' if review_tab=='reviewed' }}>Reviewed <span>{{ tab_counts.reviewed }}</span></a></nav>

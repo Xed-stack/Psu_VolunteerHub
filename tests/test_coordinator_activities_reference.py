@@ -59,4 +59,4 @@ def test_coordinator_activities_reference_layout(app, client, actors):
 
     sign_in(client, actors, 'director')
     director = client.get('/workspace/activities').get_data(as_text=True)
-    assert 'workspace-tabs' in director and 'activities-reference' not in director
+    assert 'director-activities-desktop' in director and 'activities-reference' in director
